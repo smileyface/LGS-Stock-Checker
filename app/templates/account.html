@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Account Settings for {{ username }}</h2>
+
+<!-- Update Username -->
+<h3>Update Username</h3>
+<form method="POST">
+    <div class="mb-3">
+        <label for="new_username" class="form-label">New Username</label>
+        <input
+            type="text"
+            class="form-control"
+            id="new_username"
+            name="new_username"
+            placeholder="Enter your new username"
+            value="{{ username }}"
+            required
+        >
+    </div>
+    <button type="submit" name="update_username" class="btn btn-primary">Update Username</button>
+</form>
+
+<hr>
+
+<!-- Manage Stores -->
+<h3>Manage Stores</h3>
+<form method="POST">
+    <div class="list-group">
+        {% for store in stores %}
+        <label class="list-group-item">
+            <input
+                type="checkbox"
+                name="stores"
+                value="{{ store }}"
+                {% if store in user.selected_stores %}checked{% endif %}
+            >
+            {{ store }}
+        </label>
+        {% endfor %}
+    </div>
+    <button type="submit" name="update_stores" class="btn btn-success mt-3">Update Stores</button>
+</form>
+{% endblock %}

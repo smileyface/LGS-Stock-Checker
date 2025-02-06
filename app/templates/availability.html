@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/availability.js') }}"></script>
+{% endblock %}
+
+{% block title %}availability{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">availability Listings</h2>
+    <button id="refreshavailability" class="btn btn-primary" data-url="{{ url_for('main.refresh_availability') }}">
+        Refresh availability
+        <span id="refreshSpinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
+            style="display: none;"></span>
+    </button>
+    <p id="lastUpdated">Last Updated: Never</p>
+
+    <table class="table table-striped" id="availabilityTable">
+        <thead>
+            <tr>
+                <th>Card Name</th>
+                <th>Store</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Condition</th>
+                <th>Finish</th>
+                <th>Last Updated</th>
+                <th>Refresh</th>
+            </tr>
+        </thead>
+        <tbody id="availabilityTableBody">
+            {% for card, stores in availability.items() %}
+            {% for store, listings in stores.items() %}
+            {% for listing in listings %}
+            <tr data-card="{{ card }}" data-store="{{ store }}">
+                <td>{{ card }}</td>
+                <td>{{ store }}</td>
+                <td>{{ listing["price"] }}</td>
+                <td>{{ listing["stock"] }}</td>
+                <td>{{ listing["condition"] }}</td>
+                <td>{{ listing["finish"] }}</td>
+                <td class="last-updated">{{ listing["last_updated"] }}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary refresh-card">
+                        Refresh
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Edit Card</h2>
+
+<form method="POST">
+    <div class="mb-3">
+        <label for="amount" class="form-label">Amount</label>
+        <input
+            type="number"
+            class="form-control"
+            id="amount"
+            name="amount"
+            value="{{ card.amount }}"
+            min="1"
+            required
+        >
+    </div>
+    <div class="mb-3">
+        <label for="card_name" class="form-label">Card Name</label>
+        <input
+            type="text"
+            class="form-control"
+            id="card_name"
+            name="card_name"
+            value="{{ card.card_name }}"
+            maxlength="100"
+            required
+        >
+    </div>
+    <div class="mb-3">
+        <label for="set_code" class="form-label">Set Code</label>
+        <input
+            type="text"
+            class="form-control"
+            id="set_code"
+            name="set_code"
+            value="{{ card.set_code }}"
+            pattern="[A-Za-z0-9]*"
+        >
+    </div>
+    <div class="mb-3">
+        <label for="collector_id" class="form-label">Collector Number</label>
+        <input
+            type="text"
+            class="form-control"
+            id="collector_id"
+            name="collector_id"
+            value="{{ card.collector_id }}"
+            pattern="[A-Za-z0-9]*"
+        >
+    </div>
+    <div class="mb-3">
+    <label class="form-label">Finish</label>
+    <select class="form-select" name="finish">
+        <option value="normal" {% if card.finish == "normal" %}selected{% endif %}>Normal</option>
+        <option value="foil" {% if card.finish == "foil" %}selected{% endif %}>Foil</option>
+        <option value="etched" {% if card.finish == "etched" %}selected{% endif %}>Etched</option>
+        <option value="N/A" {% if card.finish == "N/A" %}selected{% endif %}>N/A</option>
+    </select>
+</div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <button type="submit" name="delete" class="btn btn-danger">Remove Card</button>
+</form>
+
+<a href="{{ url_for('main.cards') }}" class="btn btn-secondary mt-3">Cancel</a>
+{% endblock %}

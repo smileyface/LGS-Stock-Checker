@@ -1,0 +1,164 @@
+1 Adrix and Nev, Twincasters
+1 Beastmaster Ascension
+1 Blowfly Infestation
+1 Glen Elendra Archmage
+1 Glissa Sunslayer (ONE) 318 F
+1 Grave Pact
+1 Heroic Intervention
+1 Horizon Stone
+1 Misty Rainforest
+1 Morphic Pool
+1 Necroskitter
+1 Overgrown Tomb
+1 Persistent Constrictor
+1 Polluted Delta
+1 Rejuvenating Springs
+1 Reliquary Tower
+1 Second Harvest
+1 Tekuthal, Inquiry Dominus (ONE) 302 F
+1 Tendershoot Dryad
+1 Three Visits
+1 Undergrowth Stadium
+1 Verdant Catacombs
+1 Zagoth Triome (IKO) 313
+2 Aetherflux Reservoir (KLD) 192
+1 Brain Freeze (SCG) 29
+2 Cyclonic Rift (MM3) 35
+1 Deflecting Swat (CMM) 214
+1 Fabricate (HOP) 9
+1 Fierce Guardianship (CMM) 94
+1 Jeska's Will (MKC) 156
+1 Mystical Tutor (DMR) 60
+1 Narset's Reversal (WAR) 62
+1 Pyretic Ritual (M11) 153
+1 Scalding Tarn (MH2) 254
+1 Swan Song (C16) 98
+1 Training Center (CMM) 434
+1 Underworld Breach (THB) 161
+4 Get Lost (LCI) 14
+1 Abeyance (WTH) 1
+1 Alhammarret's Archive (C21) 233
+1 Blighted Woodland (CLB) 881
+1 Breeding Pool (RVR) 275
+1 Fatestitcher (ALA) 43
+1 Flooded Strand (MH3) 220
+2 Floodfarm Verge (DSK) 259
+1 Hallowed Fountain (RVR) 280
+1 Heliod, Sun-Crowned (CMM) 29
+1 Helix Pinnacle (PLST) EVE-68
+1 Idyllic Tutor (THB) 24
+1 Misty Rainforest (MH2) 250
+1 Nature's Lore (MKC) 178
+1 Settle the Wreckage (XLN) 34
+1 Static Orb (MB2) 234
+1 Temple Garden (RVR) 290
+1 Toothy, Imaginary Friend (BBD) 12
+1 Walking Ballista (2XM) 306
+1 Windswept Heath (MH3) 235
+1 Adeline, Resplendent Cathar (MOC) 167
+1 Basilisk Collar (FDN) 669
+1 Buried Ruin (ONC) 147
+1 Caduceus, Staff of Hermes (ACR) 2
+1 Commander's Plate (CMR) 305
+1 Danitha Capashen, Paragon (WOC) 64
+1 Daybreak Coronet (WOC) 65
+1 Dazzling Theater // Prop Room (DSK) 3
+1 Emeria, the Sky Ruin (C14) 293
+1 Enlightened Tutor (DMR) 6
+1 Excalibur, Sword of Eden (ACR) 72
+1 Generous Gift (BLC) 106
+1 Inventors' Fair (KLD) 247
+1 Knight of the White Orchid (MOC) 193
+2 Land Tax (CMM) 37
+1 Mother of Runes (CLB) 702
+1 Nykthos, Shrine to Nyx (THS) 223
+1 Open the Armory (CMR) 34
+1 Pearl Medallion (MH3) 294
+1 Shadowspear (THB) 236
+1 Sheltered by Ghosts (DSK) 30
+1 Sigarda's Aid (CMR) 384
+1 Smothering Tithe (CMM) 57
+1 Spirit Mantle (CMR) 385
+1 Sword of the Animist (CMM) 413
+1 Swords to Plowshares (BLC) 109
+1 Teferi's Protection (2X2) 32
+1 Thran Power Suit (BRO) 253
+1 Umbra Mystic (WOC) 82
+1 Unquestioned Authority (J22) 260
+4 Heartfire Hero (BLB) 138
+4 Manifold Mouse (BLB) 318
+4 Slickshot Show-Off (OTJ) 146
+1 Thalia and The Gitrog Monster (MOM) 316 F
+1 The Scarab God (CMM) 353 F
+1 Basking Broodscale (MH3) 145
+1 Swarm Shambler (J22) 734
+1 Littjara Mirrorlake (NCC) 412
+1 Intruder Alarm (WOT) 21
+1 Dreamtide Whale (MH3) 59
+1 Innkeeper's Talent (BLB) 180
+1 Ripples of Potential (LCC) 77
+1 Neerdiv, Devious Diver (J25) 36
+1 Tamiyo, the Moon Sage (AVR) 79
+1 Teferi, Who Slows the Sunset (MID) 245
+1 Cephalid Constable (JUD) 35
+1 Dreamshackle Geist (VOW) 58
+1 Fatestitcher (PLST) ALA-43
+1 Fear of Sleep Paralysis (DSC) 12
+1 Gideon's Avenger (M12) 17
+1 Gideon's Lawkeeper (J22) 190
+1 Goldmeadow Harrier (PLST) DDF-3
+1 Grand Arbiter Augustin IV (MMA) 176
+1 Kelpie Guide (STX) 45
+1 Minister of Impediments (DIS) 144
+1 Tishana's Tidebinder (LCI) 81
+1 Topplegeist (SOI) 45
+1 Vedalken Mastermind (5DN) 40
+1 Azorius Signet (BLC) 265
+1 Basalt Monolith (C13) 237
+1 Chromatic Lantern (RTR) 226
+1 Everflowing Chalice (MKC) 227
+1 Fellwar Stone (BLC) 269
+1 Isochron Scepter (2XM) 264
+1 Lightning Greaves (PLST) CMM-398
+1 Mind Stone (BLC) 280
+1 Mjölnir, Storm Hammer (ACR) 74
+1 Scepter of Dominance (CON) 17
+1 Sol Ring (BLC) 129
+1 Talisman of Progress (M3C) 313
+1 Thought Vessel (BLC) 289
+1 An Offer You Can't Refuse (BLC) 170
+1 Arcane Denial (OTC) 89
+1 Blustersquall (RTR) 30
+1 Dovin's Veto (TSR) 375
+1 Dramatic Reversal (KLD) 44
+1 Enlightened Tutor (DMR) 263
+1 Icy Blast (KTK) 42
+1 Toils of Night and Day (BOK) 57
+1 Borrowing 100,000 Arrows (A25) 45
+1 Don't Move (REX) 1
+1 Idyllic Tutor (PTHB) 24p
+1 Freed from the Real (PLST) SOK-38
+1 Greater Auramancy (WOT) 4
+1 Mana Breach (PLST) EXO-38
+1 Mind Over Matter (EXO) 40
+1 Propaganda (OTC) 108
+1 Retreat to Coralhelm (DSC) 126
+1 Solitary Sanctuary (WOE) 30
+1 Stasis (5ED) 127
+1 Time of Ice (DOM) 70
+1 Verity Circle (RNA) 58
+1 City of Brass (5ED) 413
+1 Command Tower (BLC) 130
+1 Demolition Field (FDN) 687
+1 Deserted Beach (WHO) 270
+1 Flooded Strand (MH3) 464
+1 Glacial Fortress (BLC) 307
+1 Hall of Heliod's Generosity (DSC) 283
+1 Hallowed Fountain (RNA) 251
+1 Hengegate Pathway // Mistgate Pathway (KHM) 260
+1 Mystic Gate (M3C) 359
+1 Mystic Sanctuary (MKC) 277
+1 Nimbus Maze (IMA) 242
+1 Port Town (AFC) 255
+1 Sea of Clouds (CLB) 360
+1 Arwen Undómiel (LTR) 645

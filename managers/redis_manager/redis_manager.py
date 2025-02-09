@@ -1,9 +1,10 @@
+import logging
 import os
+from datetime import datetime, timedelta
 
 import redis
 from rq import Queue
 from rq_scheduler import Scheduler
-from datetime import timedelta
 from utility.logger import logger
 
 # Detect if running inside Docker or on Windows
@@ -17,7 +18,8 @@ REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 class RedisManager:
     """Handles Redis connections, queues, and scheduled tasks."""
     def __init__(self):
-        self.redis_conn = redis.Redis()
+        logging.info(f"Connecting to Redis at: " + REDIS_URL)
+        self.redis_conn = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
         self.queue = Queue(connection=self.redis_conn)
         self.scheduler = Scheduler(queue=self.queue, connection=self.redis_conn)
         self.functions = {}  # Registry for callable functions
@@ -46,7 +48,7 @@ class RedisManager:
             logger.info(f"🔄 Rescheduling {func_name} every {interval_hours} hours.")
 
         self.scheduler.schedule(
-            scheduled_time=timedelta(hours=interval_hours),
+            scheduled_time=datetime.utcnow() + timedelta(hours=interval_hours),
             func=self.functions[func_name],
             args=args,
             kwargs=kwargs,
@@ -66,6 +68,3 @@ class RedisManager:
         """Loads data from Redis."""
         data = self.redis_conn.get(key)
         return data if data else None
-
-# Singleton instance
-redis_manager = RedisManager()

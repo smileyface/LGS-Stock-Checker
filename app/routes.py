@@ -3,6 +3,7 @@ import redis
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, session, flash
 from rq import Queue
 
+from managers.availability_manager.availability_update import load_availability_state
 from managers.card_manager.card_manager import parse_card_list
 from core.store_manager import STORE_REGISTRY
 from worker.tasks import update_availability, update_availability_single_card

@@ -1,55 +1,42 @@
-import os
-import json
+from werkzeug.security import check_password_hash, generate_password_hash
+from managers.user_manager.user_storage import load_json, save_json, get_user_directory
 from utility.logger import logger
+import os
 
-# 🔹 File Paths
-BASE_DIR = "/data"
-USER_DATA_PATH = os.path.join(BASE_DIR, "user_data")
-USER_DB_FILE = os.path.join(BASE_DIR, "users.json")
 
-logger.info(f"📁 BASE_DIR: {BASE_DIR}")
-logger.info(f"📁 USER_DATA_PATH: {USER_DATA_PATH}")
-logger.info(f"📁 USER_DB_FILE: {USER_DB_FILE}")
+def add_user(username, password):
+    """Creates a new user with a hashed password."""
+    logger.info(f"➕ Adding user: {username}")
+    users = load_json()
+    if username in users:
+        logger.warning(f"🚨 User '{username}' already exists.")
+        return False
 
-# Ensure directories exist
-logger.info(f"🔧 Ensuring user data directory exists at: {USER_DATA_PATH}")
-os.makedirs(USER_DATA_PATH, exist_ok=True)
+    hashed_password = generate_password_hash(password)
+    users[username] = {"password": hashed_password, "selected_stores": []}
+    save_json(users)
+    logger.info(f"✅ User '{username}' added successfully.")
+    return True
 
-def load_json(file_path):
-    """Loads JSON data from a file."""
-    logger.info(f"📥 Attempting to load JSON from: {file_path}")
-    if not os.path.exists(file_path):
-        logger.warning(f"🚨 File not found: {file_path}")
-        return None
-    try:
-        with open(file_path, "r") as file:
-            return json.load(file)
-    except json.JSONDecodeError:
-        logger.error(f"❌ Error: Could not decode JSON from {file_path}.")
-        return None
 
-def save_json(data, file_path):
-    """Saves JSON data to a file."""
-    logger.info(f"💾 Saving JSON to: {file_path}")
-    try:
-        with open(file_path, "w") as file:
-            json.dump(data, file, indent=4)
-    except Exception as e:
-        logger.error(f"❌ Error: Could not save JSON to {file_path}. {e}")
+def authenticate_user(username, password):
+    """Checks if the provided password matches the stored hash."""
+    logger.info(f"🔑 Authenticating user: {username}")
+    users = load_json()
+    if username in users:
+        return check_password_hash(users[username]["password"], password)
+    logger.warning(f"❌ Authentication failed for user: {username}")
+    return False
 
-def get_user_directory(username):
-    """Returns the directory path for a user's data."""
-    user_dir = os.path.join(USER_DATA_PATH, username)
-    logger.info(f"📂 Resolving user directory: {user_dir}")
-    os.makedirs(user_dir, exist_ok=True)  # Ensure user folder exists
-    return user_dir
 
-def load_users():
-    """Loads all users from the `users.json` file."""
-    logger.info("📥 Loading users...")
-    return load_json(USER_DB_FILE) or {}
-
-def save_users(users):
-    """Saves all users to the `users.json` file."""
-    logger.info("💾 Saving user database...")
-    save_json(users, USER_DB_FILE)
+def update_username(old_username, new_username):
+    """Renames a user's account, transferring all associated data."""
+    logger.info(f"✏️ Renaming user '{old_username}' to '{new_username}'")
+    users = load_json()
+    if old_username in users:
+        users[new_username] = users.pop(old_username)
+        os.rename(get_user_directory(old_username), get_user_directory(new_username))
+        save_json(users)
+        logger.info(f"✅ Username updated successfully.")
+    else:
+        logger.warning(f"🚨 User '{old_username}' not found.")

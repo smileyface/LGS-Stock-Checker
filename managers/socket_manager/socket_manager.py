@@ -1,6 +1,6 @@
 from flask_socketio import SocketIO, emit
 from flask import request
-from managers.redis_manager.redis_manager import redis_conn, REDIS_URL
+from managers.redis_manager.redis_manager import REDIS_URL
 import json
 
 # Initialize Flask-SocketIO

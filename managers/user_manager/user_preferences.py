@@ -1,4 +1,4 @@
-from managers.user_manager.user_storage import get_user_directory, load_json, save_json, load_users
+from managers.user_manager.user_storage import get_user_directory, save_users, load_users, load_json, save_json
 from utility.logger import logger
 import os
 
@@ -9,14 +9,14 @@ def update_selected_stores(username, selected_stores):
     users = load_users()
     if username in users:
         users[username]["selected_stores"] = selected_stores
-        save_json(users)
+        save_users(users)
     else:
         logger.warning(f"🚨 User '{username}' not found.")
 
 
 def get_selected_stores(username):
     """Retrieves a user's selected stores."""
-    users = load_json(get_user_directory(username))
+    users = load_users()
     return users.get(username, {}).get("selected_stores", [])
 
 

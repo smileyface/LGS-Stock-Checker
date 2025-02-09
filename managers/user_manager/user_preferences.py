@@ -1,4 +1,4 @@
-from managers.user_manager.user_storage import get_user_directory, load_json, save_json
+from managers.user_manager.user_storage import get_user_directory, load_json, save_json, load_users
 from utility.logger import logger
 import os
 
@@ -6,7 +6,7 @@ import os
 def update_selected_stores(username, selected_stores):
     """Updates a user's preferred stores."""
     logger.info(f"🛍️ Updating stores for user '{username}': {selected_stores}")
-    users = load_json(get_user_directory(username))
+    users = load_users()
     if username in users:
         users[username]["selected_stores"] = selected_stores
         save_json(users)

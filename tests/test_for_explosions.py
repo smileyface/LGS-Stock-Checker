@@ -2,6 +2,8 @@ import unittest
 import importlib
 import inspect
 import pkgutil
+import warnings
+import redis.exceptions
 
 
 def import_all_modules_from_packages(*packages):
@@ -9,9 +11,15 @@ def import_all_modules_from_packages(*packages):
     modules = []
     for package in packages:
         for _, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-            module = importlib.import_module(module_name)
-            modules.append(module)
-            print(f"✅ Successfully imported {module_name}")  # Green check emoji
+            try:
+                module = importlib.import_module(module_name)
+                modules.append(module)
+                print(f"✅ Successfully imported {module_name}")  # Green check emoji
+            except (ImportError, redis.exceptions.ConnectionError) as e:
+                if "redis" in str(e).lower():
+                    warnings.warn(f"⚠️ Skipping {module_name} due to missing Redis dependency or connection error.")
+                else:
+                    raise e
     return modules
 
 

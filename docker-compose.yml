@@ -2,7 +2,7 @@ services:
   test-runner:
     build: .
     container_name: test-runner
-    command: python test_for_explosions.py
+    command: python tests/test_for_explosions.py
     depends_on:
       - redis
     environment:

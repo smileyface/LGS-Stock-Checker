@@ -3,7 +3,7 @@ import json
 import time
 from managers.redis_manager import redis_manager
 from core.store_manager import load_store_availability
-from user_manager import get_user, get_user_directory, load_card_list, save_json
+from managers.user_manager import get_user, get_user_directory, load_card_list, save_json
 from utility.logger import logger
 
 # Configurable setting to enable or disable auto-triggering updates

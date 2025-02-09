@@ -38,7 +38,8 @@ class RedisManager:
     def schedule_task(self, func_name, interval_hours, *args, **kwargs):
         """Schedules a recurring task."""
         job_id = f"scheduled_{func_name}"
-        existing_job = self.scheduler.get_job(job_id)
+        existing_jobs = self.scheduler.get_jobs()
+        existing_job = next((job for job in existing_jobs if job.id == job_id), None)
 
         if existing_job:
             self.scheduler.cancel(existing_job)

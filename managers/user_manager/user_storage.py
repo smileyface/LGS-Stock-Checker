@@ -36,6 +36,7 @@ def save_json(data, file_path):
             json.dump(data, file, indent=4)
     except Exception as e:
         logger.error(f"❌ Error: Could not save JSON to {file_path}. {e}")
+    return True
 
 def get_user_directory(username):
     """Returns the directory path for a user's data."""
@@ -43,3 +44,13 @@ def get_user_directory(username):
     logger.info(f"📂 Resolving user directory: {user_dir}")
     os.makedirs(user_dir, exist_ok=True)  # Ensure user folder exists
     return user_dir
+
+def load_users():
+    """Loads all users from the `users.json` file."""
+    logger.info("📥 Loading users...")
+    return load_json(USER_DB_FILE) or {}
+
+def save_users(users):
+    """Saves all users to the `users.json` file."""
+    logger.info("💾 Saving user database...")
+    save_json(users, USER_DB_FILE)

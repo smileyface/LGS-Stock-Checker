@@ -18,7 +18,7 @@ logger.info(f"🔧 Ensuring user data directory exists at: {USER_DATA_PATH}")
 os.makedirs(USER_DATA_PATH, exist_ok=True)
 
 # 🔹 Utility Functions
-from managers.user_manager.user_storage import load_json, save_json, get_user_directory
+from managers.user_manager.user_storage import load_json, save_json, get_user_directory, load_users, save_users
 
 # 🔹 User Account Management
 from managers.user_manager.user_auth import add_user, authenticate_user, update_username
@@ -30,15 +30,7 @@ from managers.user_manager.user_preferences import update_selected_stores, get_s
 from managers.user_manager.user_cards import load_card_list, save_card_list
 
 # 🔹 User Data Management
-def load_users():
-    """Loads all users from the `users.json` file."""
-    logger.info("📥 Loading users...")
-    return load_json(USER_DB_FILE) or {}
 
-def save_users(users):
-    """Saves all users to the `users.json` file."""
-    logger.info("💾 Saving user database...")
-    save_json(users, USER_DB_FILE)
 
 def get_user(username):
     """Retrieves a user's data, including selected stores."""

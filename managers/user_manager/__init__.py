@@ -1,43 +1,12 @@
-from werkzeug.security import check_password_hash, generate_password_hash
-from managers.user_manager.user_storage import get_user_directory
-from managers.user_manager.user_auth import load_users, save_users
-from utility.logger import logger
-import os
+from .user_storage import load_json, save_json, get_user_directory
+from .user_auth import add_user, authenticate_user, update_username
+from .user_preferences import update_selected_stores, get_selected_stores, load_user_config, save_user_config
+from .user_cards import load_card_list, save_card_list
+from .user_manager import save_users, load_users
 
-
-def add_user(username, password):
-    """Creates a new user with a hashed password."""
-    logger.info(f"➕ Adding user: {username}")
-    users = load_users()
-    if username in users:
-        logger.warning(f"🚨 User '{username}' already exists.")
-        return False
-
-    hashed_password = generate_password_hash(password)
-    users[username] = {"password": hashed_password, "selected_stores": []}
-    save_users(users)
-    logger.info(f"✅ User '{username}' added successfully.")
-    return True
-
-
-def authenticate_user(username, password):
-    """Checks if the provided password matches the stored hash."""
-    logger.info(f"🔑 Authenticating user: {username}")
-    users = load_users()
-    if username in users:
-        return check_password_hash(users[username]["password"], password)
-    logger.warning(f"❌ Authentication failed for user: {username}")
-    return False
-
-
-def update_username(old_username, new_username):
-    """Renames a user's account, transferring all associated data."""
-    logger.info(f"✏️ Renaming user '{old_username}' to '{new_username}'")
-    users = load_users()
-    if old_username in users:
-        users[new_username] = users.pop(old_username)
-        os.rename(get_user_directory(old_username), get_user_directory(new_username))
-        save_users(users)
-        logger.info(f"✅ Username updated successfully.")
-    else:
-        logger.warning(f"🚨 User '{old_username}' not found.")
+__all__ = [
+    "load_json", "save_json", "get_user_directory", "load_users", "save_users",
+    "add_user", "authenticate_user", "update_username",
+    "update_selected_stores", "get_selected_stores", "load_user_config", "save_user_config",
+    "load_card_list", "save_card_list"
+]

@@ -2,11 +2,11 @@ import json
 
 from rq import Queue
 
-from managers.redis_manager.redis_manager import redis_conn, get_cached_listing, cache_listing
+from managers.redis_manager.redis_manager import redis_conn
 from core.store_manager import STORE_REGISTRY
 from managers.user_manager.user_manager import load_card_list, get_user
 
-from core.socket_manager import socketio
+from managers.socket_manager.socket_manager import socketio
 
 
 

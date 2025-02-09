@@ -3,8 +3,8 @@ import redis
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, session, flash
 from rq import Queue
 
-from core.card_manager import parse_card_list
-from core.store_manager import STORE_REGISTRY, load_store_availability
+from managers.card_manager.card_manager import parse_card_list
+from core.store_manager import STORE_REGISTRY
 from worker.tasks import update_availability, update_availability_single_card
 from managers.user_manager.user_manager import (
     add_user,

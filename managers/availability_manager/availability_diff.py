@@ -1,5 +1,6 @@
 from utility.logger import logger
 
+
 def detect_changes(old_availability, new_availability):
     """Detects differences between two availability states."""
     logger.info("🔄 Detecting changes in availability data...")

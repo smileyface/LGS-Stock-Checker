@@ -1,8 +1,18 @@
+import os
+
 import redis
 from rq import Queue
 from rq_scheduler import Scheduler
 from datetime import timedelta
 from utility.logger import logger
+
+# Detect if running inside Docker or on Windows
+if os.getenv("RUNNING_IN_DOCKER"):
+    REDIS_HOST = "redis"  # Use "redis" inside Docker
+else:
+    REDIS_HOST = "localhost"  # Use "localhost" on Windows
+REDIS_PORT = 6379
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
 class RedisManager:
     """Handles Redis connections, queues, and scheduled tasks."""

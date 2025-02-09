@@ -5,8 +5,8 @@ from rq import Queue
 
 from core.card_manager import parse_card_list
 from core.store_manager import STORE_REGISTRY, load_store_availability
-from core.tasks import update_availability, update_availability_single_card
-from core.user_manager import (
+from worker.tasks import update_availability, update_availability_single_card
+from managers.user_manager.user_manager import (
     add_user,
     authenticate_user,
     get_user,

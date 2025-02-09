@@ -1,5 +1,19 @@
-version: "3.9"
 services:
+  test-runner:
+    build: .
+    container_name: test-runner
+    command: python tests/test_for_explosions.py
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+    restart: "no"  # Prevents automatic restart on failure
+    healthcheck:  # This tells Docker Compose if the service is "healthy"
+      test: ["CMD", "test", "-f", "/app/tests_passed"]  # Only passes if the file exists
+      interval: 10s
+      retries: 3
+      start_period: 5s
+
   web-app:
     build: .
     container_name: web-app
@@ -8,6 +22,7 @@ services:
     volumes:
       - ./data:/data # Persistent storage for users
     depends_on:
+      - test-runner
       - redis
     environment:
       - REDIS_HOST=redis
@@ -27,6 +42,7 @@ services:
     container_name: rq-worker
     command: rq worker default
     depends_on:
+      - test-runner
       - redis
     environment:
       - REDIS_HOST=redis

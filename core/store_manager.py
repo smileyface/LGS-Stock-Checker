@@ -1,7 +1,7 @@
 import os
 import time
 
-from core.user_manager import load_json, save_json
+from managers.user_manager.user_manager import load_json, save_json
 from stores.authority_games_mesa_az import Authority_Games_Mesa_Arizona
 
 STORE_REGISTRY = {

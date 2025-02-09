@@ -1,4 +1,14 @@
 services:
+  test-runner:
+    build: .
+    container_name: test-runner
+    command: python test_for_explosions.py
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+    restart: "no"  # Ensures it does not restart if it fails
+
   web-app:
     build: .
     container_name: web-app
@@ -7,6 +17,7 @@ services:
     volumes:
       - ./data:/data # Persistent storage for users
     depends_on:
+      - test-runner
       - redis
     environment:
       - REDIS_HOST=redis
@@ -26,6 +37,7 @@ services:
     container_name: rq-worker
     command: rq worker default
     depends_on:
+      - test-runner
       - redis
     environment:
       - REDIS_HOST=redis

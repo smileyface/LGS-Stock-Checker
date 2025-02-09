@@ -7,7 +7,7 @@ import os
 def add_user(username, password):
     """Creates a new user with a hashed password."""
     logger.info(f"➕ Adding user: {username}")
-    users = load_users(USER_DB_FILE)
+    users = load_users()
     if users is None:
         users = {}
     if username in users:
@@ -16,7 +16,7 @@ def add_user(username, password):
 
     hashed_password = generate_password_hash(password)
     users[username] = {"password": hashed_password, "selected_stores": []}
-    save_users(users, USER_DB_FILE)
+    save_users(users)
     logger.info(f"✅ User '{username}' added successfully.")
     return True
 
@@ -30,6 +30,7 @@ def authenticate_user(username, password):
         return None
 
     users = load_users()
+
     if username in users:
         return check_password_hash(users[username]["password"], password)
     logger.warning(f"❌ Authentication failed for user: {username}")

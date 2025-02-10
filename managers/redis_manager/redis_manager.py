@@ -17,7 +17,7 @@ REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 class RedisManager:
     """Handles Redis connections, queues, and scheduled tasks."""
     def __init__(self):
-        self.redis_conn = redis.Redis()
+        self.redis_conn = redis.Redis().from_url(REDIS_URL)
         self.queue = Queue(connection=self.redis_conn)
         self.scheduler = Scheduler(queue=self.queue, connection=self.redis_conn)
         self.functions = {}  # Registry for callable functions

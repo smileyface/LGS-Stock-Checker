@@ -68,6 +68,3 @@ class RedisManager:
         """Loads data from Redis."""
         data = self.redis_conn.get(key)
         return data if data else None
-
-# Singleton instance
-redis_manager = RedisManager()

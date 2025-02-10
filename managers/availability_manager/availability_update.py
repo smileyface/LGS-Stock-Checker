@@ -54,8 +54,13 @@ def save_availability_state(username, availability):
     logger.info(f"💾 Availability state saved for {username}.")
 
 
-def update_wanted_cards_availability():
-    """Fetches and caches availability for wanted cards only."""
+def update_wanted_cards_availability(username=None):
+        #Fetches and caches availability for wanted cards only.
+    if username:
+        users = [get_user(username)]  # Fetch only this user
+    else:
+        users = get_user("all")  # Fetch all users in the background
+
     wanted_cards = get_wanted_cards()
     logger.info(f"🔄 Updating availability for {len(wanted_cards)} wanted cards.")
 

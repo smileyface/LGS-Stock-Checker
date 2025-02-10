@@ -117,6 +117,8 @@ def queue_wanted_card_updates():
     redis_manager.schedule_task("update_wanted_cards_availability", 0.5)
     logger.info("⏳ Scheduled wanted card availability updates every 30 minutes.")
 
+# Register function before scheduling
+redis_manager.register_function("update_wanted_cards_availability", update_wanted_cards_availability)
 
 # Schedule wanted card updates on startup
 queue_wanted_card_updates()

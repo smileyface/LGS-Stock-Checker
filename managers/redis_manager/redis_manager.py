@@ -1,10 +1,10 @@
 import logging
 import os
+from datetime import datetime, timedelta
 
 import redis
 from rq import Queue
 from rq_scheduler import Scheduler
-from datetime import timedelta
 from utility.logger import logger
 
 # Detect if running inside Docker or on Windows
@@ -48,7 +48,7 @@ class RedisManager:
             logger.info(f"🔄 Rescheduling {func_name} every {interval_hours} hours.")
 
         self.scheduler.schedule(
-            scheduled_time=timedelta(hours=interval_hours),
+            scheduled_time=datetime.utcnow() + timedelta(hours=interval_hours),
             func=self.functions[func_name],
             args=args,
             kwargs=kwargs,

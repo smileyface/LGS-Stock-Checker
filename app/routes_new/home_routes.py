@@ -1,7 +1,12 @@
 from flask_socketio import SocketIO, emit
-from flask import session
+from flask import session, Blueprint, render_template
 
 socketio = SocketIO()
+
+home_bp = Blueprint("home_bp", __name__)
+@home_bp.route("/")
+def index():
+    return render_template("index.html")
 
 @socketio.on('connect')
 def handle_connect():

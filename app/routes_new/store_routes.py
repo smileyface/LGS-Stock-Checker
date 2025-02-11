@@ -1,9 +1,16 @@
 from flask_socketio import SocketIO, emit
-from flask import session, request
+from flask import session, request, Blueprint, render_template
 from core.store_manager import STORE_REGISTRY
 from managers.user_manager.user_manager import get_user, update_selected_stores
 
 socketio = SocketIO()
+
+
+store_bp = Blueprint("store_bp", __name__)
+
+@store_bp.route("/stores")
+def stores():
+    return render_template("stores.html")
 
 @socketio.on('get_stores')
 def handle_get_stores():

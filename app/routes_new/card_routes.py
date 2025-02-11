@@ -1,9 +1,9 @@
 from flask_socketio import SocketIO, emit
-from flask import session, request
+from flask import session, request, Blueprint
 from managers.card_manager.card_manager import parse_card_list, load_card_list, save_card_list
 
 socketio = SocketIO()
-
+card_bp = Blueprint("card_bp", __name__)
 @socketio.on('get_cards')
 def handle_get_cards():
     username = session.get('username')

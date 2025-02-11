@@ -47,8 +47,11 @@ class RedisManager:
             self.scheduler.cancel(existing_job)
             logger.info(f"🔄 Rescheduling {func_name} every {interval_hours} hours.")
 
+        # Ensure scheduled_time is a datetime object, not timedelta
+        scheduled_time = datetime.utcnow() + timedelta(hours=interval_hours)
+
         self.scheduler.schedule(
-            scheduled_time=datetime.utcnow() + timedelta(hours=interval_hours),
+            scheduled_time=scheduled_time,
             func=self.functions[func_name],
             args=args,
             kwargs=kwargs,

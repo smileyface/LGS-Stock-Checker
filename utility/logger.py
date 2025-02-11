@@ -17,7 +17,7 @@ class EmojiFormatter(logging.Formatter):
 
 # Global Logger
 logger = logging.getLogger("LGS_Stock_Checker")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 formatter = EmojiFormatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)

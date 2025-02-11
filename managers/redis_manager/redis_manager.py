@@ -37,30 +37,32 @@ class RedisManager:
         else:
             logger.error(f"❌ Attempted to queue unknown task: {func_name}")
 
-    def schedule_task(self, func_name, interval_hours, *args, **kwargs):
+    def schedule_task(self, func, interval_hours, *args, **kwargs):
         """Schedules a recurring task."""
-        job_id = f"scheduled_{func_name}"
-        existing_jobs = self.scheduler.get_jobs()
+        job_id = f"scheduled_{func.__name__}"  # Use function name dynamically
+
+        logger.info(f"📌 count of jobs already in the queue{self.scheduler.count()}")
+        self.scheduler.count()
+        existing_jobs = list(self.scheduler.get_jobs())  # Convert generator to list
+
         existing_job = next((job for job in existing_jobs if job.id == job_id), None)
 
         if existing_job:
             self.scheduler.cancel(existing_job)
-            logger.info(f"🔄 Rescheduling {func_name} every {interval_hours} hours.")
+            logger.info(f"🔄 Rescheduling {func.__name__} every {interval_hours} hours.")
 
-        # Ensure scheduled_time is a datetime object, not timedelta
         scheduled_time = datetime.utcnow() + timedelta(hours=interval_hours)
 
         self.scheduler.schedule(
             scheduled_time=scheduled_time,
-            func=self.functions[func_name],
+            func=func,
             args=args,
             kwargs=kwargs,
             interval=interval_hours * 3600,
-            repeat=None,
-            id=job_id
+            repeat=None
         )
 
-        logger.info(f"✅ Scheduled {func_name} every {interval_hours} hours.")
+        logger.info(f"✅ Scheduled {func.__name__} every {interval_hours} hours.")
 
     def store_data(self, key, data):
         """Stores data in Redis."""

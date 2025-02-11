@@ -119,7 +119,7 @@ def notify_users_of_changes(changes):
 
 def queue_wanted_card_updates():
     """Queues availability updates every 30 minutes for wanted cards only."""
-    redis_manager.schedule_task("update_wanted_cards_availability", 0.5)
+    redis_manager.schedule_task(update_wanted_cards_availability, 0.5)
     logger.info("⏳ Scheduled wanted card availability updates every 30 minutes.")
 
 # Register function before scheduling

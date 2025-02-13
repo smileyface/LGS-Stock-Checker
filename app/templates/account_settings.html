@@ -34,7 +34,7 @@
 
     <script>
         function updateUsername() {
-            fetch("{{ url_for('change_username') }}", {
+            fetch("{{ url_for('user_bp.change_username') }}", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ new_username: document.getElementById("new_username").value })
@@ -42,7 +42,7 @@
         }
 
         function updatePassword() {
-            fetch("{{ url_for('change_password') }}", {
+            fetch("{{ url_for('user_bp.change_username') }}", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -54,7 +54,7 @@
 
         function updateStores() {
             let selectedStores = Array.from(document.getElementById("stores_select").selectedOptions).map(o => o.value);
-            fetch("{{ url_for('update_stores') }}", {
+            fetch("{{ url_for('user_bp.update_stores') }}", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ stores: selectedStores })
@@ -62,6 +62,6 @@
         }
     </script>
 
-    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+    <a href="{{ url_for('home_bp.dashboard') }}">Back to Dashboard</a>
 </body>
 </html>

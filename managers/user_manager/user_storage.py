@@ -16,17 +16,26 @@ logger.info(f"🔧 Ensuring user data directory exists at: {USER_DATA_PATH}")
 os.makedirs(USER_DATA_PATH, exist_ok=True)
 
 def load_json(file_path):
-    """Loads JSON data from a file."""
+    """Loads JSON data from a file with detailed logging."""
     logger.info(f"📥 Attempting to load JSON from: {file_path}")
+
     if not os.path.exists(file_path):
         logger.warning(f"🚨 File not found: {file_path}")
         return None
+
     try:
         with open(file_path, "r") as file:
-            return json.load(file)
+            data = json.load(file)
+            file_size = os.path.getsize(file_path)
+            logger.info(f"✅ Successfully loaded JSON from {file_path} ({file_size} bytes).")
+            return data
     except json.JSONDecodeError:
         logger.error(f"❌ Error: Could not decode JSON from {file_path}.")
         return None
+    except Exception as e:
+        logger.error(f"❌ Unexpected error loading {file_path}: {str(e)}")
+        return None
+
 
 def save_json(data, file_path):
     """Saves JSON data to a file."""

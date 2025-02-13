@@ -12,13 +12,27 @@ ENABLE_AUTO_TRIGGER = False
 
 def get_wanted_cards():
     """Aggregates all cards that users have in their wanted lists."""
+    logger.info("📌 Starting wanted cards aggregation...")
+
     wanted_cards = set()
     users = get_user("all")  # Assuming this fetches all users
+    logger.info(f"👥 Retrieved {len(users)} users from the database.")
+
     for user in users:
-        user_cards = load_card_list(user["username"])
+        username = user["username"]
+        logger.info(f"📖 Loading card list for user '{username}'")
+
+        user_cards = load_card_list(username)
+        logger.info(f"📦 {username} has {len(user_cards)} cards in their wanted list.")
+
         for card in user_cards:
-            wanted_cards.add(card["card_name"])
+            card_name = card["card_name"]
+            wanted_cards.add(card_name)
+            logger.debug(f"➕ Added '{card_name}' to wanted cards set.")
+
+    logger.info(f"✅ Aggregation complete. Total unique wanted cards: {len(wanted_cards)}")
     return list(wanted_cards)
+
 
 
 def load_availability_state(username):

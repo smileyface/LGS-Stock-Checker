@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 from datetime import datetime, timedelta
 
@@ -19,7 +18,7 @@ REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 class RedisManager:
     """Handles Redis connections, queues, and scheduled tasks."""
     def __init__(self):
-        logging.info(f"Connecting to Redis at: " + REDIS_URL)
+        logger.info(f"Connecting to Redis at: " + REDIS_URL)
         self.redis_conn = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
         self.queue = Queue(connection=self.redis_conn)
         self.scheduler = Scheduler(queue=self.queue, connection=self.redis_conn)

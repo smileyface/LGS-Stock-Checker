@@ -1,89 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - LGS Stock Checker</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-    <script>
-        var socket = io();
+{% extends "base.html" %}
 
-        socket.on('connect', function() {
-            console.log("Connected to server");
-            socket.emit('get_cards');
-        });
+{% block content %}
+<div class="container mt-4">
+    <h1>Dashboard</h1>
+    <p>Welcome, <strong>{{ username }}</strong>!</p>
 
-        socket.on('cards_data', function(data) {
-            if (data.error) {
-                document.getElementById("cardTableBody").innerHTML = `<tr><td colspan="5">${data.error}</td></tr>`;
-            } else {
-                let tableHTML = "";
-                data.cards.forEach((card, index) => {
-                    tableHTML += `
-                        <tr data-index="${index}">
-                            <td>${card.amount}</td>
-                            <td>${card.card_name}</td>
-                            <td>${card.set_code || "N/A"}</td>
-                            <td>${card.collector_id || "N/A"}</td>
-                            <td>${card.finish}</td>
-                        </tr>`;
-                });
-                document.getElementById("cardTableBody").innerHTML = tableHTML;
-            }
-        });
+    <h2>Your Tracked Cards</h2>
+    <table class="table table-striped table-bordered" id="cardTable">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Card Name</th>
+                <th>Set Code</th>
+                <th>Collector Number</th>
+                <th>Finish</th>
+            </tr>
+        </thead>
+        <tbody id="cardTableBody">
+            <tr class="placeholder-row" style="display: none;"><td colspan="5">Loading...</td></tr>
+        </tbody>
+    </table>
 
-        function saveCards() {
-            let cardInput = document.getElementById("new_card").value;
-            socket.emit('save_cards', { cards: [cardInput] });
-        }
-    </script>
-</head>
-<body>
-    <div class="container mt-4">
-        <h1>Dashboard</h1>
-        <p>Welcome, <strong>{{ username }}</strong>!</p>
 
-        <h2>Your Tracked Cards</h2>
-
-        <div class="mb-3">
-            <input type="text" id="searchBar" class="form-control" placeholder="Search for a card..." onkeyup="filterCards()">
+    <h2>Filter Stores</h2>
+    <div class="mb-3">
+        {% for store in all_stores %}
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="storeFilter" value="{{ store }}" id="store_{{ store }}">
+            <label class="form-check-label" for="store_{{ store }}">{{ store }}</label>
         </div>
-
-        <table class="table table-striped" id="cardTable">
-            <thead>
-                <tr>
-                    <th>Amount</th>
-                    <th>Card Name</th>
-                    <th>Set Code</th>
-                    <th>Collector Number</th>
-                    <th>Finish</th>
-                </tr>
-            </thead>
-            <tbody id="cardTableBody">
-                <tr><td colspan="5">Loading...</td></tr>
-            </tbody>
-        </table>
-
-        <h3>Add a New Card</h3>
-        <div class="input-group mb-3">
-            <input type="text" id="new_card" class="form-control" placeholder="Enter card details">
-            <button class="btn btn-primary" onclick="saveCards()">Save</button>
-        </div>
-
-        <a href="{{ url_for('account_settings') }}" class="btn btn-secondary">Account Settings</a>
+        {% endfor %}
     </div>
 
-    <script>
-        function filterCards() {
-            let input = document.getElementById("searchBar").value.toLowerCase();
-            let rows = document.querySelectorAll("#cardTable tbody tr");
+    <h2>Card Availability</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Card Name</th>
+                <th>Stores</th>
+            </tr>
+        </thead>
+        <tbody id="availabilityTableBody">
+            <tr><td colspan="2">Loading...</td></tr>
+        </tbody>
+    </table>
 
-            rows.forEach(row => {
-                let cardName = row.cells[1].innerText.toLowerCase();
-                row.style.display = cardName.includes(input) ? "" : "none";
-            });
-        }
-    </script>
-</body>
-</html>
+    <a href="{{ url_for('user_bp.account_settings') }}" class="btn btn-secondary">Account Settings</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

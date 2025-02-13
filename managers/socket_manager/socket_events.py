@@ -1,18 +1,40 @@
 from flask_socketio import emit
-from managers.redis_manager import redis_manager
-import json
 
-def send_inventory_update(username):
+from managers.availability_manager.availability_manager import get_card_availability
+from managers.user_manager.user_manager import load_card_list
+from utility.logger import logger
+
+
+def send_card_availability_update(username):
     """
-    Fetch the latest inventory state from Redis and send it to the client.
+    Fetch the latest card availability state and send it to the client.
     """
-    redis_key = f"{username}_inventory_results"
-    inventory = redis_manager.get_all_hash_fields(redis_key)
+    logger.info(f"📩 Received request for card availability update from {username}")
 
-    # Convert Redis byte-string response to JSON
-    formatted_inventory = {
-        key: json.loads(value) for key, value in inventory.items()
-    }
+    availability = get_card_availability(username)
+    if availability is None:
+        logger.warning(f"🚨 No availability data found for {username}")
+        return
 
-    emit("inventory_update", formatted_inventory, broadcast=True)
-    print(f"📡 Sent inventory update for {username}")
+    emit("card_availability_data", availability, broadcast=True)
+    logger.info(f"📡 Sent card availability update for {username} with {len(availability)} available")
+
+
+def send_card_list(username):
+    """
+    Fetches the user's tracked cards from the correct manager and sends them.
+    """
+    logger.info(f"📩 Received request for tracked card list from {username}")
+
+    if not username:
+        emit("error", {"message": "Username is required"}, namespace="/")
+        logger.error("❌ Error: Username is missing in get_cards request")
+        return
+
+    cards = load_card_list(username)
+    if cards is None:
+        logger.warning(f"🚨 No tracked cards found for {username}")
+        return
+
+    emit("cards_data", {"username": username, "tracked_cards": cards})
+    logger.info(f"📡 Sent card list for {username} with {len(cards)} items")

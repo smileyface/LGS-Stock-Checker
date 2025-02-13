@@ -1,34 +1,69 @@
-var socket = io.connect(window.location.origin);
-
-socket.on("inventory_update", function (data) {
-    console.log("🔄 Received inventory update:", data.card);
-
-    if (data.items.length === 0) {
-        console.log(`Skipping update: No items for ${data.card} at ${data.store}.`);
-        return;
-    }
-
-    let table = document.getElementById("inventoryTable");
-    if (!table) return; // ✅ Prevents running on the wrong page
-
-    let tbody = table.getElementsByTagName("tbody")[0];
-
-    // Find and remove old entries for this card/store
-    [...tbody.getElementsByTagName("tr")].forEach(row => {
-        if (row.cells[0].innerText === data.card && row.cells[1].innerText === data.store) {
-            row.remove();
+function waitForFunction(fnName, callback) {
+    let attempts = 10; // Maximum retries
+    let interval = setInterval(() => {
+        if (typeof window[fnName] === "function") {
+            clearInterval(interval);
+            callback();
         }
-    });
+        attempts--;
+        if (attempts === 0) {
+            console.warn(`⚠️ Function ${fnName} not found after multiple attempts.`);
+            clearInterval(interval);
+        }
+    }, 200);
+}
 
-    // Insert new listings
-    data.items.forEach(item => {
-        let newRow = tbody.insertRow();
-        newRow.insertCell(0).innerText = data.card;
-        newRow.insertCell(1).innerText = data.store;
-        newRow.insertCell(2).innerText = item.condition;
-        newRow.insertCell(3).innerText = item.finish;
-        newRow.insertCell(4).innerText = item.set;
-        newRow.insertCell(5).innerText = item.stock;
-        newRow.insertCell(6).innerText = item.price;
+var socket = io.connect(window.location.origin, {
+    transports: ["websocket", "polling"], // Ensure WebSockets are prioritized
+    reconnection: true, // Enable automatic reconnection
+    reconnectionAttempts: 10, // Retry up to 10 times
+    reconnectionDelay: 5000, // Wait 5 seconds between retries
+    timeout: 20000 // 20 seconds timeout before failing
+});
+
+// Debugging for connection status
+socket.on("connect", function () {
+    console.log("🔗 Connected to WebSocket Server!");
+    socket.emit("get_cards");
+    socket.emit("get_card_availability");
+});
+
+socket.on("connect_error", function (error) {
+    console.error("❌ WebSocket Connection Error:", error);
+});
+
+socket.on("disconnect", function (reason) {
+    console.warn("⚠️ Disconnected from WebSocket Server:", reason);
+});
+
+socket.on("server_log", function (data) {
+    console.log(`📢 [SERVER LOG]: ${data.level}: ${data.message}`);
+});
+
+// Handle tracked cards update
+socket.on("cards_data", function (data) {
+    console.log("🛠️ Received cards_data:", data);
+
+    waitForFunction("updateCardTable", () => {
+        window.updateCardTable(data);
     });
 });
+
+
+// Handle availability updates
+socket.on("card_availability_data", function (data) {
+    if (!window.updateAvailabilityTable) {
+        console.warn("⚠️ updateAvailabilityTable function not found!");
+        return;
+    }
+    window.updateAvailabilityTable(data);
+});
+
+
+
+
+
+// Function to trigger card availability request
+function requestCardAvailability(selectedStores) {
+    socket.emit("get_card_availability", { stores: selectedStores });
+}

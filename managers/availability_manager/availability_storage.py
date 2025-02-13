@@ -7,7 +7,7 @@ from utility.logger import logger
 def load_availability(username):
     """Loads the availability state for a user from Redis, falling back to JSON."""
     redis_key = f"{username}_availability"
-    data = redis_manager.redis_conn.get(redis_key)
+    data = redis_manager.load_data(redis_key)
 
     if data:
         logger.info(f"📥 Loaded availability for {username} from Redis.")
@@ -25,7 +25,7 @@ def load_availability(username):
 def save_availability(username, availability):
     """Saves availability data in Redis and JSON as backup."""
     redis_key = f"{username}_availability"
-    redis_manager.redis_conn.set(redis_key, json.dumps(availability))
+    redis_manager.save_data(redis_key, json.dumps(availability))
 
     json_path = os.path.join(get_user_directory(username), "availability.json")
     with open(json_path, "w") as file:

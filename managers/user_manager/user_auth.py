@@ -48,3 +48,6 @@ def update_username(old_username, new_username):
         logger.info(f"✅ Username updated successfully.")
     else:
         logger.warning(f"🚨 User '{old_username}' not found.")
+
+def update_password(username, old_password, new_password):
+    pass

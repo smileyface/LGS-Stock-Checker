@@ -38,33 +38,47 @@ class RedisManager:
         else:
             logger.error(f"❌ Attempted to queue unknown task: {func_name}")
 
-    def schedule_task(self, func, interval_hours, *args, **kwargs):
-        """Schedules a recurring task."""
-        job_id = f"scheduled_{func.__name__}"  # Use function name dynamically
+    def get_safe_jobs(self, scheduler):
+        """Retrieve jobs safely, ensuring no decode errors."""
+        try:
+            job_ids = scheduler.connection.zrange(scheduler.scheduled_jobs_key, 0, -1)
+            logger.debug(f"🔍 Raw job data from Redis -> {job_ids}")
 
-        logger.debug(f"📌 Count of jobs already in the queue: {self.scheduler.count()}")
+            # Ensure we don't call `.decode()` on a str
+            job_ids = [job_id if isinstance(job_id, str) else job_id.decode("utf-8") for job_id in job_ids]
 
-        self.scheduler.count()
-        existing_jobs = list(self.scheduler.get_jobs())  # Convert generator to list
+            return set(job_ids)
+        except Exception as e:
+            logger.error(f"❌ Error calling get_jobs(): {e}")
+            return set()
 
-        existing_job = next((job for job in existing_jobs if job.id == job_id), None)
 
-        if existing_job:
-            self.scheduler.cancel(existing_job)
-            logger.info(f"🔄 Rescheduling {func.__name__} every {interval_hours} hours.")
+    def schedule_task(self, func_name, interval_hours, *args, **kwargs):
+        """Schedules a recurring task while ensuring jobs are properly handled."""
 
+        existing_jobs = self.get_safe_jobs(self.scheduler)  # Get existing jobs safely
+        logger.debug(f"🔍 📌 Count of jobs already in the queue: {len(existing_jobs)}")
+
+        job_id = f"scheduled_{func_name}"  # Unique job ID for scheduling
+
+        # If job already exists, cancel it before rescheduling
+        if job_id in existing_jobs:
+            self.scheduler.cancel(job_id)
+            logger.info(f"🔄 Rescheduling {func_name} every {interval_hours} hours.")
+
+        # Schedule the task
         scheduled_time = datetime.utcnow() + timedelta(hours=interval_hours)
-
         self.scheduler.schedule(
             scheduled_time=scheduled_time,
-            func=func,
+            func=self.functions[func_name],  # Dynamically call function from registry
             args=args,
             kwargs=kwargs,
-            interval=interval_hours * 3600,
-            repeat=None
+            interval=interval_hours * 3600,  # Convert hours to seconds
+            repeat=None,  # Repeat indefinitely
+            id=job_id
         )
 
-        logger.info(f"✅ Scheduled {func.__name__} every {interval_hours} hours.")
+        logger.info(f"✅ Scheduled {func_name} every {interval_hours} hours.")
 
 
     def save_data(self, key, value, field=None):

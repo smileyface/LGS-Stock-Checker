@@ -1,5 +1,4 @@
 import json
-from rq import Queue
 from managers.redis_manager import redis_manager
 from managers.user_manager import load_card_list, get_user
 from managers.socket_manager import socketio
@@ -11,8 +10,6 @@ def update_availability(username):
     """
     Background task to enqueue jobs for updating availability, one card at a time.
     """
-    queue = Queue(connection=redis_manager.redis_conn)
-
     # Load the user's card list and selected stores
     card_list = load_card_list(username)
     user = get_user(username)
@@ -20,8 +17,7 @@ def update_availability(username):
 
     for store_name in selected_stores:
         for card in card_list:
-            queue.enqueue(update_availability_single_card, username, store_name, card)
-            logger.info(f"📌 Enqueued job for {card['card_name']} at {store_name}.")
+            redis_manager.queue_task("update_availability_single_card", username, store_name, card)
 
 
 def update_availability_single_card(username, store_name, card):
@@ -39,7 +35,7 @@ def update_availability_single_card(username, store_name, card):
 
     # Save to Redis under user availability
     redis_key = f"{username}_availability_results"
-    redis_manager.redis_conn.hset(redis_key, f"{store_name}_{card_name}", json.dumps(available_items))
+    redis_manager.save_data(redis_key, f"{store_name}_{card_name}", json.dumps(available_items))
 
     # Emit WebSocket event to update UI
     socketio.emit(

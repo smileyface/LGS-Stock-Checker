@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from datetime import datetime, timedelta
@@ -41,7 +42,8 @@ class RedisManager:
         """Schedules a recurring task."""
         job_id = f"scheduled_{func.__name__}"  # Use function name dynamically
 
-        logger.info(f"📌 count of jobs already in the queue{self.scheduler.count()}")
+        logger.debug(f"📌 Count of jobs already in the queue: {self.scheduler.count()}")
+
         self.scheduler.count()
         existing_jobs = list(self.scheduler.get_jobs())  # Convert generator to list
 
@@ -64,12 +66,70 @@ class RedisManager:
 
         logger.info(f"✅ Scheduled {func.__name__} every {interval_hours} hours.")
 
-    def store_data(self, key, data):
-        """Stores data in Redis."""
-        self.redis_conn.set(key, data)
-        logger.info(f"💾 Stored data under key: {key}")
 
-    def load_data(self, key):
-        """Loads data from Redis."""
-        data = self.redis_conn.get(key)
-        return data if data else None
+    def save_data(self, key, value, field=None):
+        """
+        Save data to Redis.
+
+        - If `field` is provided, uses a Redis hash (`hset`).
+        - Otherwise, stores the entire `value` as a string (`set`).
+        """
+        try:
+            value_json = json.dumps(value)  # Ensure value is serialized
+
+            if field:
+                self.redis_conn.hset(key, field, value_json)
+                logger.info(f"💾 Saved data to Redis Hash {key}[{field}]")
+            else:
+                self.redis_conn.set(key, value_json)
+                logger.info(f"💾 Saved data to Redis Key {key}")
+
+        except Exception as e:
+            logger.error(f"❌ Error saving data to Redis: {e}")
+
+    def load_data(self, key, field=None):
+        """
+        Load data from Redis.
+
+        - If `field` is provided, retrieves from a Redis hash (`hget`).
+        - Otherwise, retrieves the entire value stored as a string (`get`).
+        """
+        try:
+            if field:
+                data = self.redis_conn.hget(key, field)
+                if data:
+                    return json.loads(data.decode("utf-8"))
+                else:
+                    return None
+            else:
+                data = self.redis_conn.get(key)
+                if data:
+                    return json.loads(data.decode("utf-8"))
+                else:
+                    return None
+        except Exception as e:
+            logger.error(f"❌ Error loading data from Redis: {e}")
+            return None
+
+    def get_all_hash_fields(self, key):
+        """Retrieve all fields and values from a Redis hash."""
+        data = self.redis_conn.hgetall(key)
+        return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
+
+    def delete_data(self, key, field=None):
+        """
+        Deletes data from Redis.
+
+        - If `field` is provided, deletes a field from a Redis hash (`hdel`).
+        - Otherwise, deletes the entire key (`delete`).
+        """
+        try:
+            if field:
+                self.redis_conn.hdel(key, field)
+                logger.info(f"🗑️ Deleted field {field} from Redis Hash {key}")
+            else:
+                self.redis_conn.delete(key)
+                logger.info(f"🗑️ Deleted Redis Key {key}")
+
+        except Exception as e:
+            logger.error(f"❌ Error deleting data from Redis: {e}")

@@ -2,7 +2,7 @@ import os
 from flask import Flask
 import redis
 from flask_session import Session
-from app.routes import main
+from app.routes import register_blueprints
 from managers.socket_manager.socket_manager import socketio
 
 def create_app():
@@ -21,7 +21,7 @@ def create_app():
     Session(app)
 
     # ✅ Register blueprints
-    app.register_blueprint(main)
+    register_blueprints(app)
 
     # ✅ Attach SocketIO with Redis message queue
     socketio.init_app(app, message_queue="redis://redis:6379")

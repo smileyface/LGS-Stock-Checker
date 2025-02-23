@@ -1,6 +1,6 @@
 from flask_socketio import emit
 
-from managers.availability_manager.availability_manager import get_card_availability
+from managers.availability_manager.availability_manager import check_availability
 from managers.user_manager.user_manager import load_card_list
 from utility.logger import logger
 
@@ -11,7 +11,7 @@ def send_card_availability_update(username):
     """
     logger.info(f"📩 Received request for card availability update from {username}")
 
-    availability = get_card_availability(username)
+    availability = check_availability(username)
     if availability is None:
         logger.warning(f"🚨 No availability data found for {username}")
         return

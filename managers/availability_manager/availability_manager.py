@@ -1,9 +1,6 @@
-import json
-import os
-from managers.availability_manager.availability_storage import load_availability, save_availability
-from managers.availability_manager.availability_diff import detect_changes
 from managers.redis_manager import redis_manager
-from managers.user_manager.user_manager import load_card_list
+from managers.store_manager import cache_handler
+from managers.user_manager.user_preferences import get_selected_stores
 from utility.logger import logger
 
 def check_availability(username):
@@ -15,45 +12,26 @@ def check_availability(username):
     return {"status": "queued", "message": "Availability update has been triggered."}
 
 
-def get_card_availability(username):
-    """Fetches a list of user cards that are available in stores."""
-    redis_key = f"{username}_availability_results"
+def get_single_card_availability(username, card_name):
+    """Fetches availability **only** from the stores the user has selected."""
+    user_stores = get_selected_stores(username)  # Fetch user's selected stores
+    logger.info(f"🔍 User {username} is checking {card_name} in stores: {user_stores}")
 
-    logger.info(f"🔍 Checking cache for availability data: {redis_key}")
-    availability_data = redis_manager.get_all_hash_fields(redis_key)  # Fetch all availability data
+    # Filter out only selected stores from the cache
+    cached_availability = cache_handler.get_cached_availability(card_name, user_stores)
 
-    if availability_data:
-        logger.info(f"✅ Data found in cache for {username}")
-    else:
-        logger.warning(f"🚨 No cache data found for {username}. Availability check may need store queries.")
+    if cached_availability and len(cached_availability) == len(user_stores):
+        return cached_availability  # ✅ If all selected stores are fresh, return immediately
 
-    # Convert stored JSON strings back into Python objects
-    parsed_data = {key: json.loads(value) for key, value in availability_data.items()} if availability_data else {}
+    # Identify stores needing fresh data
+    stores_to_check = [store for store in user_stores if store not in cached_availability]
+    fresh_data = {}
 
-    available_cards = []
+    for store in stores_to_check:
+        fresh_data[store] = store.check_availability(card_name)
 
-    # Load user's wanted cards
-    logger.info(f"📖 Loading tracked cards for user: {username}")
-    user_cards = load_card_list(username)
+        # Update cache per store
+        cache_handler.store_availability_in_cache(card_name, store, fresh_data[store])
 
-    for card in user_cards:
-        card_name = card["card_name"]
-        logger.debug(f"🔎 Checking availability for card: {card_name}")
-
-        # Check if this card is available in any store
-        stores_with_card = {
-            store: listings
-            for store, listings in parsed_data.items()
-            if store.endswith(f"_{card_name}") and listings  # Ensure there are listings
-        }
-
-        if stores_with_card:
-            logger.info(f"✅ {card_name} found in stores: {list(stores_with_card.keys())}")
-            available_cards.append({
-                "card_name": card_name,
-                "stores": stores_with_card
-            })
-        else:
-            logger.warning(f"🚨 {card_name} not found in any store.")
-
-    return available_cards  # Returns a list of available cards
+    # Combine fresh and cached results, ensuring only user-selected stores are returned
+    return {**cached_availability, **fresh_data}

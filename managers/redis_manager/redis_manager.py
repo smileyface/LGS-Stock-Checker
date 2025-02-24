@@ -115,6 +115,11 @@ class RedisManager:
         data = self.redis_conn.hgetall(key)
         return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
 
+    def set_hash_field(self, key, field, value):
+        """Sets a field in a Redis hash."""
+        self.redis_conn.hset(key, field, value)
+        logger.info(f"💾 Set hash field '{field}' in key '{key}'")
+
     def delete_data(self, key, field=None):
         """
         Deletes data from Redis.

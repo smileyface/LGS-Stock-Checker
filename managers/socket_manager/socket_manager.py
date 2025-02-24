@@ -1,22 +1,19 @@
-from flask_socketio import SocketIO, emit
-from flask import request
-from managers.redis_manager.redis_manager import REDIS_URL
+from flask_socketio import SocketIO
+
+from managers.extensions import socketio
+from managers.redis_manager import REDIS_URL
 from utility.logger import logger
-import json
 
-
-# Initialize Flask-SocketIO
-socketio = SocketIO(
-    message_queue=REDIS_URL,
-    cors_allowed_origins="*",
-    async_mode="eventlet"
-)
+def init_socketio(app):
+    """Initialize and register all socket events."""
+    socketio.init_app(app, cors_allowed_origins="*")
+    register_socket_events(socketio)
 
 # Store active WebSocket connections
 connected_clients = set()
 
 # 🔹 WebSocket Connection Handling
-from managers.socket_manager.socket_connections import handle_connect, handle_disconnect
+from managers.socket_manager.socket_connections import handle_connect
 
 # 🔹 WebSocket Event Handling
 from managers.socket_manager.socket_handlers import handle_get_cards, handle_get_card_availability, handle_save_cards, handle_parse_card_list

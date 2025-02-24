@@ -1,7 +1,5 @@
 import os
-import sys
-import json
-from werkzeug.security import check_password_hash, generate_password_hash
+
 from utility.logger import logger
 
 # 🔹 File Paths
@@ -18,16 +16,14 @@ logger.info(f"🔧 Ensuring user data directory exists at: {USER_DATA_PATH}")
 os.makedirs(USER_DATA_PATH, exist_ok=True)
 
 # 🔹 Utility Functions
-from managers.user_manager.user_storage import load_json, save_json, get_user_directory, load_users, save_users
+from managers.user_manager.user_storage import load_users
+
 
 # 🔹 User Account Management
-from managers.user_manager.user_auth import add_user, authenticate_user, update_username
 
 # 🔹 User Preferences
-from managers.user_manager.user_preferences import update_selected_stores, get_selected_stores, load_user_config, save_user_config
 
 # 🔹 Card List Management
-from managers.user_manager.user_cards import load_card_list, save_card_list
 
 # 🔹 User Data Management
 

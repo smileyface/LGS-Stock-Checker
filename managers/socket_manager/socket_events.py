@@ -1,10 +1,8 @@
 from flask_socketio import emit
 
 from managers.store_manager import get_cached_availability
-from managers.user_manager import get_selected_stores
-from managers.user_manager.user_manager import load_card_list
+from managers.user_manager import get_selected_stores, load_card_list
 from utility.logger import logger
-from worker.tasks import update_availability
 
 
 def send_card_availability_update(username):

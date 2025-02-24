@@ -1,10 +1,10 @@
 from flask_socketio import SocketIO
 from flask import session, request, Blueprint, redirect, render_template, url_for
 
-from managers.store_manager.store_manager import STORE_REGISTRY
+from managers.store_manager import STORE_REGISTRY
 from managers.user_manager import update_selected_stores
 from managers.user_manager.user_auth import update_password
-from managers.user_manager.user_manager import add_user, authenticate_user, get_user, update_username
+from managers.user_manager import add_user, authenticate_user, get_user, update_username, update_password
 
 socketio = SocketIO()
 

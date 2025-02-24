@@ -1,10 +1,13 @@
-from managers.card_manager import parse_card_list
-from managers.socket_manager.socket_manager import socketio
 from flask import session
-from managers.redis_manager import redis_manager
-from managers.socket_manager.socket_events import send_card_availability_update, send_card_list
+
+from managers.card_manager import parse_card_list
+from managers.tasks_manager import update_availability
 from utility.logger import logger
-from worker.tasks import update_availability
+
+from managers.socket_manager.socket_events import send_card_availability_update, send_card_list
+from managers.socket_manager.socket_manager import socketio
+
+
 
 
 def get_username():
@@ -56,7 +59,6 @@ def handle_parse_card_list(data):
         logger.info("✅ Parsed card list sent to front end.")
     else:
         logger.warning("🚨 'parse_card_list' request missing 'raw_list' field.")
-
 
 
 def handle_save_cards():

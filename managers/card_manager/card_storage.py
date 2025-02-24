@@ -1,5 +1,5 @@
 import os
-from managers.user_manager.user_storage import get_user_directory, load_json, save_json
+from managers.user_manager import get_user_directory, load_json, save_json
 
 
 def load_card_list(username):

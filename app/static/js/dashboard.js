@@ -34,7 +34,7 @@ window.updateCardTable = function (data) {
             card.collector_id || "N/A",
             card.finish
         ];
-        console.log(`🛠️ Adding row #${index + 1}:`, rowData); // ✅ Debug each row added
+        //console.log(`🛠️ Adding row #${index + 1}:`, rowData); // ✅ Debug each row added
         table.row.add(rowData);
     });
 

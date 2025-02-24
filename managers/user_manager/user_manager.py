@@ -19,20 +19,15 @@ os.makedirs(USER_DATA_PATH, exist_ok=True)
 from managers.user_manager.user_storage import load_users
 
 
-# 🔹 User Account Management
+def get_user(mode):
+    """Fetches user data."""
+    users_data = load_users()
 
-# 🔹 User Preferences
+    if mode == "all":
+        # Convert list to dict if necessary
+        return users_data  # Already a dictionary
 
-# 🔹 Card List Management
-
-# 🔹 User Data Management
-
-
-def get_user(username):
-    """Retrieves a user's data, including selected stores."""
-    logger.info(f"🔍 Fetching user data for: {username}")
-    users = load_users()
-    return users.get(username, {"selected_stores": []})
+    return users_data[mode]  # Return specific user
 
 def get_all_users():
     """Returns a list of all registered usernames."""

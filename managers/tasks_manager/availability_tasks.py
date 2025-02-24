@@ -17,7 +17,8 @@ def update_availability(username):
 
     for store_name in selected_stores:
         for card in card_list:
-            redis_manager.queue_task("update_availability_single_card", username, store_name, card)
+            redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
+                                     username, store_name, card)
 
 
 def update_availability_single_card(username, store_name, card):
@@ -30,7 +31,7 @@ def update_availability_single_card(username, store_name, card):
     card_name = card["card_name"]
 
     # Fetch availability using the existing logic
-    available_items = get_single_card_availability(card, store)
+    available_items = get_single_card_availability(username, card, store)
 
     # Cache the results
     store_availability_in_cache(card_name, store_name, available_items)
@@ -51,4 +52,7 @@ def update_availability_single_card(username, store_name, card):
 
 
 # Register function so Redis can use it
-redis_manager.register_function("update_availability_single_card", update_availability_single_card)
+redis_manager.register_function(
+    "managers.tasks_manager.availability_tasks.update_availability_single_card",
+    update_availability_single_card
+)

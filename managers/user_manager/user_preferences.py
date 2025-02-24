@@ -1,3 +1,4 @@
+from managers.user_manager.user_manager import get_user
 from managers.user_manager.user_storage import get_user_directory, save_users, load_users, load_json, save_json
 from utility.logger import logger
 import os
@@ -15,9 +16,20 @@ def update_selected_stores(username, selected_stores):
 
 
 def get_selected_stores(username):
-    """Retrieves a user's selected stores."""
-    users = load_users()
+    """Returns the selected stores for a given user."""
+    users = get_user("all")  # Fetch all users
+    logger.info(f"🔍 Users data type: {type(users)} | Content: {users}")  # Debug log
+
+    if isinstance(users, list):
+        # If users is a list of dicts, find the right one
+        user_data = next((u for u in users if u.get("username") == username), None)
+        if user_data:
+            return user_data.get("selected_stores", [])
+        return []  # Default empty if user not found
+
+    # If users is a dictionary, continue as expected
     return users.get(username, {}).get("selected_stores", [])
+
 
 
 def load_user_config(username):

@@ -52,7 +52,7 @@ def get_total_availability(username):
             card_name = card["card_name"]
 
             # Step 4: Use `get_single_card_availability` to handle caching & fetching logic
-            availability = get_single_card_availability(card, store_obj)
+            availability = get_single_card_availability(username, card, store_obj)
             if availability:
                 store_results[card_name] = availability  # Save results for the store
 
@@ -62,26 +62,21 @@ def get_total_availability(username):
     logger.info(f"📊 Finished fetching availability for user: {username}")
     return total_availability  # Returns all available data
 
-def get_single_card_availability(username, card_name):
+def get_single_card_availability(username, card_name, store):
     """Fetches availability **only** from the stores the user has selected."""
-    user_stores = get_selected_stores(username)  # Fetch user's selected stores
-    logger.info(f"🔍 User {username} is checking {card_name} in stores: {user_stores}")
+    logger.info(f"🔍 User {username} is checking {card_name} in stores: {store}")
 
     # Filter out only selected stores from the cache
     cached_availability = cache_handler.get_cached_availability(card_name)
 
-    if cached_availability and len(cached_availability) == len(user_stores):
+    if cached_availability and len(cached_availability) == len(store):
         return cached_availability  # ✅ If all selected stores are fresh, return immediately
 
     # Identify stores needing fresh data
-    stores_to_check = [store for store in user_stores if store not in cached_availability]
-    fresh_data = {}
+    fresh_data = {store: store.check_availability(card_name)}
 
-    for store in stores_to_check:
-        fresh_data[store] = store.check_availability(card_name)
-
-        # Update cache per store
-        cache_handler.store_availability_in_cache(card_name, store, fresh_data[store])
+    # Update cache per store
+    cache_handler.store_availability_in_cache(card_name, store.store_name, fresh_data[store])
 
     # Combine fresh and cached results, ensuring only user-selected stores are returned
     return {**cached_availability, **fresh_data}

@@ -51,4 +51,7 @@ def update_availability_single_card(username, store_name, card):
 
 
 # Register function so Redis can use it
-redis_manager.register_function("update_availability_single_card", update_availability_single_card)
+redis_manager.register_function(
+    "managers.tasks_manager.availability_tasks.update_availability_single_card",
+    update_availability_single_card
+)

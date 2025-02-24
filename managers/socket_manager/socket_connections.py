@@ -8,10 +8,8 @@ def handle_connect():
     """Handle new WebSocket connections."""
     print(f"🟢 Client connected: {request.sid}")
     connected_clients.add(request.sid)
-    emit("connect")
 
 def handle_disconnect():
     """Handle WebSocket disconnections."""
     print(f"🔴 Client disconnected: {request.sid}")
     connected_clients.discard(request.sid)
-    emit("disconnect")

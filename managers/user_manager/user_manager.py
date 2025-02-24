@@ -19,15 +19,6 @@ os.makedirs(USER_DATA_PATH, exist_ok=True)
 from managers.user_manager.user_storage import load_users
 
 
-# 🔹 User Account Management
-
-# 🔹 User Preferences
-
-# 🔹 Card List Management
-
-# 🔹 User Data Management
-
-
 def get_user(mode):
     """Fetches user data."""
     users_data = load_users()

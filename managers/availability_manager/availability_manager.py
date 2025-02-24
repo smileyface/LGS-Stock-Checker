@@ -1,8 +1,6 @@
 from managers.redis_manager import redis_manager
-from managers.store_manager import cache_handler, get_cached_availability, store_availability_in_cache
-from managers.store_manager.store_manager import STORE_REGISTRY
-from managers.user_manager.user_preferences import get_selected_stores
-from managers.user_manager.user_cards import load_card_list
+from managers.store_manager import cache_handler, get_cached_availability, store_availability_in_cache, STORE_REGISTRY
+from managers.user_manager import get_selected_stores, load_card_list
 from utility.logger import logger
 
 def check_availability(username):

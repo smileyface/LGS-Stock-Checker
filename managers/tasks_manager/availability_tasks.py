@@ -1,6 +1,6 @@
 from managers.availability_manager import get_single_card_availability
 from managers.redis_manager import redis_manager
-from managers.socket_manager import socketio
+from managers.extensions import socketio
 from managers.store_manager import store_availability_in_cache, STORE_REGISTRY
 from managers.user_manager import load_card_list, get_user
 from utility.logger import logger

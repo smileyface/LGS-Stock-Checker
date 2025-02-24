@@ -5,7 +5,7 @@ from managers.tasks_manager import update_availability
 from utility.logger import logger
 
 from managers.socket_manager.socket_events import send_card_availability_update, send_card_list
-from managers.socket_manager.socket_manager import socketio
+from managers.extensions import socketio
 
 
 

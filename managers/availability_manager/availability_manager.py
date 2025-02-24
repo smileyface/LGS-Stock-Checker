@@ -77,6 +77,7 @@ def get_single_card_availability(username, card, store):
 
     # Update cache per store
     cache_handler.store_availability_in_cache(card['card_name'], store.store_name, fresh_data[store])
+    logger.debug(f"💾 Cached availability data for {card['card_name']} at {store.store_name}: {fresh_data[store]}")
 
     # Combine fresh and cached results, ensuring only user-selected stores are returned
     return {**cached_availability, **fresh_data}

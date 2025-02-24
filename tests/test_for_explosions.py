@@ -3,7 +3,13 @@ import importlib
 import inspect
 import pkgutil
 import warnings
+from unittest.mock import MagicMock, patch
 import redis.exceptions
+
+# Mock Redis before importing any modules
+mock_redis = MagicMock()
+patch("redis.Redis", return_value=mock_redis).start()
+patch("rq_scheduler.Scheduler", return_value=mock_redis).start()
 
 
 def import_all_modules_from_packages(*packages):

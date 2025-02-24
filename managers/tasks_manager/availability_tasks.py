@@ -53,10 +53,6 @@ def update_availability_single_card(username, store_name, card):
     else:
         logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}.")
 
-    # Cache the results
-    store_availability_in_cache(card_name, store_name, available_items)
-    logger.debug(f"💾 Cached availability data for {card_name} at {store_name}: {available_items}")
-
     # Emit WebSocket event to update UI
     logger.info(f"📡 Sending WebSocket update for {card_name} at {store_name} to user {username}...")
     socketio.emit(

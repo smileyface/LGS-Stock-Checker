@@ -25,11 +25,9 @@ def get_user(mode):
 
     if mode == "all":
         # Convert list to dict if necessary
-        if isinstance(users_data, list):
-            return {user["username"]: user for user in users_data if "username" in user}
         return users_data  # Already a dictionary
 
-    return users_data.get(mode)  # Return specific user
+    return users_data[mode]  # Return specific user
 
 def get_all_users():
     """Returns a list of all registered usernames."""

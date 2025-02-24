@@ -1,7 +1,9 @@
-from werkzeug.security import check_password_hash, generate_password_hash
-from managers.user_manager.user_storage import load_users, save_users, get_user_directory, USER_DB_FILE
-from utility.logger import logger
 import os
+
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from managers.user_manager.user_storage import load_users, save_users, get_user_directory
+from utility.logger import logger
 
 
 def add_user(username, password):
@@ -49,5 +51,8 @@ def update_username(old_username, new_username):
     else:
         logger.warning(f"🚨 User '{old_username}' not found.")
 
+
 def update_password(username, old_password, new_password):
-    pass
+    users = load_users()
+    if authenticate_user(username, old_password):
+        users[username]["password"] = generate_password_hash(new_password)

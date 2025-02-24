@@ -1,7 +1,8 @@
-from flask import Blueprint
+from .availability_routes import availability_bp
+from .home_routes import home_bp
 from .home_routes import home_bp
 from .user_routes import user_bp
-from .availability_routes import availability_bp
+
 
 def register_blueprints(app):
     app.register_blueprint(home_bp)

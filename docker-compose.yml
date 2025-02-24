@@ -47,4 +47,5 @@ services:
     environment:
       - REDIS_HOST=redis
       - RUNNING_IN_DOCKER=true
+      - RQ_WORKER=1
     restart: unless-stopped

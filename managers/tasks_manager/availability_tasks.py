@@ -1,3 +1,7 @@
+import os
+
+from flask import Flask
+
 from managers.availability_manager import get_single_card_availability
 from managers.redis_manager import redis_manager
 from managers.extensions import socketio
@@ -6,6 +10,23 @@ from managers.user_manager import load_card_list, get_user
 from stores.store import Store
 from utility.logger import logger
 
+
+def is_running_in_worker():
+    """Detect if the current process is an RQ worker."""
+    return os.environ.get("RQ_WORKER") == "1"
+
+def create_worker_app():
+    """Create a Flask app only for RQ workers."""
+    app = Flask(__name__)
+
+    if is_running_in_worker():  # Only initialize socketio in workers
+        socketio.init_app(app)
+        app.config["WORKER_MODE"] = True
+
+    return app
+
+# Only create this app if we're running inside a worker
+worker_app = create_worker_app() if is_running_in_worker() else None
 
 def update_availability(username):
     """

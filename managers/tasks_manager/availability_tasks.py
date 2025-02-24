@@ -3,6 +3,7 @@ from managers.redis_manager import redis_manager
 from managers.extensions import socketio
 from managers.store_manager import store_availability_in_cache, STORE_REGISTRY
 from managers.user_manager import load_card_list, get_user
+from stores.store import Store
 from utility.logger import logger
 
 
@@ -23,20 +24,41 @@ def update_availability(username):
 
 def update_availability_single_card(username, store_name, card):
     """Background task to update the availability for a single card at a store."""
-    store = STORE_REGISTRY.get(store_name)
+
+    logger.info(f"📌 Task started: Updating availability for {card['card_name']} at {store_name} (User: {username})")
+
+    # Ensure store_name is in the correct format
+    if isinstance(store_name, Store):
+        store = store_name
+        store_name = store_name.store_name  # Extract actual name
+        logger.debug(f"🔄 Store provided as object. Using store_name: {store_name}")
+    else:
+        store = STORE_REGISTRY.get(store_name)
+        logger.debug(f"🔍 Retrieved store from STORE_REGISTRY: {store}")
+
+    # Validate store exists
     if not store:
-        logger.warning(f"🚨 Store '{store_name}' is not configured.")
+        logger.warning(f"🚨 Store '{store_name}' is not configured or missing from STORE_REGISTRY. Task aborted.")
         return
 
     card_name = card["card_name"]
+    logger.info(f"🔍 Checking availability for {card_name} at {store_name}")
 
     # Fetch availability using the existing logic
     available_items = get_single_card_availability(username, card, store)
 
+    if available_items:
+        logger.info(
+            f"✅ Found {len(available_items)} available listings for {card_name} at {store_name}. Caching results...")
+    else:
+        logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}.")
+
     # Cache the results
     store_availability_in_cache(card_name, store_name, available_items)
+    logger.debug(f"💾 Cached availability data for {card_name} at {store_name}: {available_items}")
 
     # Emit WebSocket event to update UI
+    logger.info(f"📡 Sending WebSocket update for {card_name} at {store_name} to user {username}...")
     socketio.emit(
         "availability_update",
         {
@@ -48,7 +70,7 @@ def update_availability_single_card(username, store_name, card):
         namespace="/"
     )
 
-    logger.info(f"✅ Updated availability for {card_name} at {store_name}. WebSocket event sent.")
+    logger.info(f"✅ Availability update completed for {card_name} at {store_name}. WebSocket event sent.")
 
 
 # Register function so Redis can use it

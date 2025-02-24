@@ -113,7 +113,7 @@ class RedisManager:
     def get_all_hash_fields(self, key):
         """Retrieve all fields and values from a Redis hash."""
         data = self.redis_conn.hgetall(key)
-        return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
+        return {k: json.loads(v) for k, v in data.items()} if data else {}
 
     def set_hash_field(self, key, field, value):
         """Sets a field in a Redis hash."""

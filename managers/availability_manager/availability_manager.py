@@ -62,21 +62,25 @@ def get_total_availability(username):
     logger.info(f"📊 Finished fetching availability for user: {username}")
     return total_availability  # Returns all available data
 
-def get_single_card_availability(username, card_name, store):
+def get_single_card_availability(username, card, store):
     """Fetches availability **only** from the stores the user has selected."""
-    logger.info(f"🔍 User {username} is checking {card_name} in stores: {store}")
+    logger.info(f"🔍 User {username} is checking {card['card_name']} in stores: {store}")
 
     # Filter out only selected stores from the cache
-    cached_availability = cache_handler.get_cached_availability(card_name)
+    cached_availability = cache_handler.get_cached_availability(card['card_name'])
 
-    if cached_availability and len(cached_availability) == len(store):
-        return cached_availability  # ✅ If all selected stores are fresh, return immediately
+    if cached_availability and store.store_name in cached_availability:
+        logger.info(
+            f"✅ Cache hit: Availability data for {card['card_name']} at {store.store_name} is valid. "
+            f"Returning cached data.")
+        return cached_availability[store.store_name]["available"]  # Only return relevant availability
 
     # Identify stores needing fresh data
-    fresh_data = {store: store.check_availability(card_name)}
+    fresh_data = {store: store.check_availability(card)}
 
     # Update cache per store
-    cache_handler.store_availability_in_cache(card_name, store.store_name, fresh_data[store])
+    cache_handler.store_availability_in_cache(card['card_name'], store.store_name, fresh_data[store])
+    logger.debug(f"💾 Cached availability data for {card['card_name']} at {store.store_name}: {fresh_data[store]}")
 
     # Combine fresh and cached results, ensuring only user-selected stores are returned
     return {**cached_availability, **fresh_data}

@@ -31,7 +31,7 @@ def update_availability_single_card(username, store_name, card):
     card_name = card["card_name"]
 
     # Fetch availability using the existing logic
-    available_items = get_single_card_availability(card, store)
+    available_items = get_single_card_availability(username, card, store)
 
     # Cache the results
     store_availability_in_cache(card_name, store_name, available_items)

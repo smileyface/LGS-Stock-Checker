@@ -1,4 +1,5 @@
-from managers.user_manager import get_user, get_user_directory, save_users, load_users, load_json, save_json
+from managers.user_manager.user_manager import get_user
+from managers.user_manager.user_storage import get_user_directory, save_users, load_users, load_json, save_json
 from utility.logger import logger
 import os
 

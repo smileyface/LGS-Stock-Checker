@@ -1,11 +1,19 @@
+import os
+from flask_socketio import SocketIO
+
+from flask import Flask
+
 from managers.availability_manager import get_single_card_availability
-from managers.redis_manager import redis_manager
-from managers.extensions import socketio
-from managers.store_manager import store_availability_in_cache, STORE_REGISTRY
+from managers.redis_manager import redis_manager, REDIS_URL
+from managers.store_manager import STORE_REGISTRY
 from managers.user_manager import load_card_list, get_user
 from stores.store import Store
 from utility.logger import logger
 
+
+def is_running_in_worker():
+    """Detect if the current process is an RQ worker."""
+    return os.environ.get("RQ_WORKER") == "1"
 
 def update_availability(username):
     """
@@ -23,6 +31,7 @@ def update_availability(username):
 
 
 def update_availability_single_card(username, store_name, card):
+    socketio = SocketIO(message_queue=REDIS_URL)
     """Background task to update the availability for a single card at a store."""
 
     logger.info(f"📌 Task started: Updating availability for {card['card_name']} at {store_name} (User: {username})")
@@ -51,12 +60,13 @@ def update_availability_single_card(username, store_name, card):
         logger.info(
             f"✅ Found {len(available_items)} available listings for {card_name} at {store_name}. Caching results...")
     else:
-        logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}.")
+        logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}. Moving on.")
+        return
 
     # Emit WebSocket event to update UI
-    logger.info(f"📡 Sending WebSocket update for {card_name} at {store_name} to user {username}...")
+    logger.info(f"📡 Preparing WebSocket event for {card_name} at {store_name} (User: {username})")
     socketio.emit(
-        "availability_update",
+        "card_availability_data",
         {
             "username": username,
             "store": store_name,
@@ -65,12 +75,6 @@ def update_availability_single_card(username, store_name, card):
         },
         namespace="/"
     )
+    logger.info(f"✅ WebSocket event sent for {card_name} at {store_name} to user {username}")
 
-    logger.info(f"✅ Availability update completed for {card_name} at {store_name}. WebSocket event sent.")
 
-
-# Register function so Redis can use it
-redis_manager.register_function(
-    "managers.tasks_manager.availability_tasks.update_availability_single_card",
-    update_availability_single_card
-)

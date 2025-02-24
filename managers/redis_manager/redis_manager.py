@@ -27,15 +27,21 @@ class RedisManager:
     def register_function(self, full_func_name, func_ref):
         """Registers a function for task queuing using its full name."""
         self.functions[full_func_name] = func_ref
+        self.redis_conn.hset("registered_functions", full_func_name, "1")  # Store in Redis
         logger.info(f"🔧 Registered function: {full_func_name}")
 
     def queue_task(self, func_name, *args, **kwargs):
-        """Queues a task using the full function name reference."""
+        """Queues a task by registered function name."""
+        # Ensure function exists in Redis
+        if not self.redis_conn.hexists("registered_functions", func_name):
+            logger.error(f"❌ Attempted to queue unknown task: {func_name} (Not in Redis)")
+            return
+
         if func_name in self.functions:
-            self.queue.enqueue(func_name, *args, **kwargs)  # Pass just the string name
+            self.queue.enqueue(self.functions[func_name], *args, **kwargs)
             logger.info(f"📌 Queued task: {func_name}")
         else:
-            logger.error(f"❌ Attempted to queue unknown task: {func_name}")
+            logger.error(f"❌ Attempted to queue unknown task: {func_name} (Not in Local Registry)")
 
     def schedule_task(self, func, interval_hours, *args, **kwargs):
         """Schedules a recurring task."""
@@ -137,3 +143,4 @@ class RedisManager:
 
         except Exception as e:
             logger.error(f"❌ Error deleting data from Redis: {e}")
+

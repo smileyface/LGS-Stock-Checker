@@ -4,6 +4,7 @@ from stores.store import Store
 
 class Authority_Games_Mesa_Arizona(Store):
     def __init__(self):
+        super().__init__()
         self.homepage = "https://authoritygames.crystalcommerce.com/"
         self.search_url = "https://authoritygames.crystalcommerce.com/products/search"
         self.store_name = "Authority Games"

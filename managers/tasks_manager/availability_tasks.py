@@ -5,6 +5,7 @@ from flask import Flask
 from managers.availability_manager import get_single_card_availability
 from managers.redis_manager import redis_manager
 from managers.extensions import socketio
+from managers.socket_manager.socket_manager import init_socketio
 from managers.store_manager import store_availability_in_cache, STORE_REGISTRY
 from managers.user_manager import load_card_list, get_user
 from stores.store import Store
@@ -20,7 +21,7 @@ def create_worker_app():
     app = Flask(__name__)
 
     if is_running_in_worker():  # Only initialize socketio in workers
-        socketio.init_app(app)
+        socketio.init_app(app, cors_allowed_origins="*")
         app.config["WORKER_MODE"] = True
 
     return app

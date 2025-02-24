@@ -77,7 +77,7 @@ def update_availability_single_card(username, store_name, card):
     # Emit WebSocket event to update UI
     logger.info(f"📡 Sending WebSocket update for {card_name} at {store_name} to user {username}...")
     socketio.emit(
-        "availability_update",
+        "card_availability_data",
         {
             "username": username,
             "store": store_name,

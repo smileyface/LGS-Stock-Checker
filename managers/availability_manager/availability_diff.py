@@ -7,11 +7,17 @@ def detect_changes(old_availability, new_availability):
 
     changes = {"added": {}, "removed": {}, "updated": {}}
 
-    # Detect removed cards
-    for card in old_availability.keys():
-        if card not in new_availability:
-            changes["removed"][card] = old_availability[card]
+    if not old_availability:
+        logger.info(f"🚨 No previous availability found")
+    else:
+        # Detect removed cards
+        for card in old_availability.keys():
+            if card not in new_availability:
+                changes["removed"][card] = old_availability[card]
 
+    if not new_availability:
+        logger.info(f"🚨 No new availability found")
+        return []
     # Detect new or updated cards
     for card, stores in new_availability.items():
         if card not in old_availability:

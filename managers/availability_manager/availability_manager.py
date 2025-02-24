@@ -69,8 +69,11 @@ def get_single_card_availability(username, card, store):
     # Filter out only selected stores from the cache
     cached_availability = cache_handler.get_cached_availability(card['card_name'])
 
-    if cached_availability and len(cached_availability) == len(store):
-        return cached_availability  # ✅ If all selected stores are fresh, return immediately
+    if cached_availability and store.store_name in cached_availability:
+        logger.info(
+            f"✅ Cache hit: Availability data for {card['card_name']} at {store.store_name} is valid. "
+            f"Returning cached data.")
+        return cached_availability[store.store_name]["available"]  # Only return relevant availability
 
     # Identify stores needing fresh data
     fresh_data = {store: store.check_availability(card)}

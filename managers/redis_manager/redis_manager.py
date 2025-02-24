@@ -24,15 +24,15 @@ class RedisManager:
         self.scheduler = Scheduler(queue=self.queue, connection=self.redis_conn)
         self.functions = {}  # Registry for callable functions
 
-    def register_function(self, name, func):
-        """Allows modules to register functions for Redis tasks."""
-        self.functions[name] = func
-        logger.info(f"🔗 Registered Redis function: {name}")
+    def register_function(self, full_func_name, func_ref):
+        """Registers a function for task queuing using its full name."""
+        self.functions[full_func_name] = func_ref
+        logger.info(f"🔧 Registered function: {full_func_name}")
 
     def queue_task(self, func_name, *args, **kwargs):
-        """Queues a task by registered function name."""
+        """Queues a task using the full function name reference."""
         if func_name in self.functions:
-            self.queue.enqueue(self.functions[func_name], *args, **kwargs)
+            self.queue.enqueue(func_name, *args, **kwargs)  # Pass just the string name
             logger.info(f"📌 Queued task: {func_name}")
         else:
             logger.error(f"❌ Attempted to queue unknown task: {func_name}")

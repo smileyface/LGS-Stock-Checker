@@ -17,7 +17,8 @@ def update_availability(username):
 
     for store_name in selected_stores:
         for card in card_list:
-            redis_manager.queue_task("update_availability_single_card", username, store_name, card)
+            redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
+                                     username, store_name, card)
 
 
 def update_availability_single_card(username, store_name, card):

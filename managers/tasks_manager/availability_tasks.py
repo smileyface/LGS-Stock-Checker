@@ -48,3 +48,7 @@ def update_availability_single_card(username, store_name, card):
     )
 
     logger.info(f"✅ Updated availability for {card_name} at {store_name}. WebSocket event sent.")
+
+
+# Register function so Redis can use it
+redis_manager.register_function("update_availability_single_card", update_availability_single_card)

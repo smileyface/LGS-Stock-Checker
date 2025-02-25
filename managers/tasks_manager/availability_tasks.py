@@ -2,7 +2,7 @@ import os
 
 from flask import Flask
 
-from managers.availability_manager import get_single_card_availability
+
 from managers.extensions import socketio
 from managers.redis_manager import redis_manager
 from managers.store_manager import STORE_REGISTRY
@@ -44,6 +44,7 @@ def update_availability(username):
 
 
 def update_availability_single_card(username, store_name, card):
+    from managers.availability_manager import get_single_card_availability
     """Background task to update the availability for a single card at a store."""
 
     logger.info(f"📌 Task started: Updating availability for {card['card_name']} at {store_name} (User: {username})")

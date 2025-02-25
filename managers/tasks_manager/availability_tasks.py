@@ -76,9 +76,9 @@ def update_availability_single_card(username, store_name, card):
         logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}.")
 
     # Emit WebSocket event to update UI
-    logger.info(f"📡 Sending WebSocket update for {card_name} at {store_name} to user {username}...")
+    logger.info(f"📡 Preparing WebSocket event for {card_name} at {store_name} (User: {username})")
     socketio.emit(
-        "card_availability_data",
+        "availability_update",
         {
             "username": username,
             "store": store_name,
@@ -87,8 +87,7 @@ def update_availability_single_card(username, store_name, card):
         },
         namespace="/"
     )
-
-    logger.info(f"✅ Availability update completed for {card_name} at {store_name}. WebSocket event sent.")
+    logger.info(f"✅ WebSocket event sent for {card_name} at {store_name} to user {username}")
 
 
 # Register function so Redis can use it

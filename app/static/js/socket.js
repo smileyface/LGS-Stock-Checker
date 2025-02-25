@@ -61,7 +61,9 @@ socket.on("card_availability_data", function (data) {
 });
 
 
-
+socket.on('availability_update', (data) => {
+    console.log("🔔 Received availability update:", data);
+});
 
 
 // Function to trigger card availability request

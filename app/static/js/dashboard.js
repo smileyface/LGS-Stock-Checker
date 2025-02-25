@@ -49,7 +49,7 @@ window.updateAvailabilityTable = function (data) {
 
     tableBody.innerHTML = "";
 
-    if (data.tracked_cards.length === 0) {
+    if (data.tracked_cards.length == 0) {
         console.warn("⚠️ No tracked cards available, keeping placeholder row.");
         cardList.innerHTML = `<tr><td colspan="5" class="text-center">No available cards found.</td></tr>`;
         table.draw();

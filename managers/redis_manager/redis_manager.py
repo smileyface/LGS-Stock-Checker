@@ -143,3 +143,4 @@ class RedisManager:
 
         except Exception as e:
             logger.error(f"❌ Error deleting data from Redis: {e}")
+

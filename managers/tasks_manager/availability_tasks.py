@@ -3,10 +3,9 @@ import os
 from flask import Flask
 
 from managers.availability_manager import get_single_card_availability
-from managers.redis_manager import redis_manager
 from managers.extensions import socketio
-from managers.socket_manager.socket_manager import init_socketio
-from managers.store_manager import store_availability_in_cache, STORE_REGISTRY
+from managers.redis_manager import redis_manager
+from managers.store_manager import STORE_REGISTRY
 from managers.user_manager import load_card_list, get_user
 from stores.store import Store
 from utility.logger import logger
@@ -90,8 +89,3 @@ def update_availability_single_card(username, store_name, card):
     logger.info(f"✅ WebSocket event sent for {card_name} at {store_name} to user {username}")
 
 
-# Register function so Redis can use it
-redis_manager.register_function(
-    "managers.tasks_manager.availability_tasks.update_availability_single_card",
-    update_availability_single_card
-)

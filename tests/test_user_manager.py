@@ -1,11 +1,8 @@
 import unittest
 from unittest.mock import patch, mock_open
-from managers.user_manager.user_auth import add_user, authenticate_user, update_username
-from managers.user_manager.user_cards import load_card_list, save_card_list
-from managers.user_manager.user_manager import load_users, save_users, get_user, get_all_users
-from managers.user_manager.user_preferences import update_selected_stores, get_selected_stores, load_user_config, \
-    save_user_config
-from managers.user_manager.user_storage import load_json, save_json, get_user_directory
+from managers.user_manager import add_user, authenticate_user, update_username, load_card_list, save_card_list, \
+    load_users, save_users, get_user, get_all_users, update_selected_stores, get_selected_stores, load_user_config, \
+    save_user_config, load_json, save_json, get_user_directory
 
 
 class TestUserAuth(unittest.TestCase):

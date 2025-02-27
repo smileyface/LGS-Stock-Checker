@@ -53,10 +53,10 @@
     <div class="mb-3">
     <label class="form-label">Finish</label>
     <select class="form-select" name="finish">
-        <option value="normal" {% if card.finish == "normal" %}selected{% endif %}>Normal</option>
-        <option value="foil" {% if card.finish == "foil" %}selected{% endif %}>Foil</option>
-        <option value="etched" {% if card.finish == "etched" %}selected{% endif %}>Etched</option>
-        <option value="N/A" {% if card.finish == "N/A" %}selected{% endif %}>N/A</option>
+        <option value="normal" {% if card.finish=="normal" %}selected{% endif %}>Normal</option>
+        <option value="foil" {% if card.finish=="foil" %}selected{% endif %}>Foil</option>
+        <option value="etched" {% if card.finish=="etched" %}selected{% endif %}>Etched</option>
+        <option value="N/A" {% if card.finish=="N/A" %}selected{% endif %}>N/A</option>
     </select>
 </div>
 

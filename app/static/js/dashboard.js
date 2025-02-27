@@ -34,7 +34,7 @@ window.updateCardTable = function (data) {
             card.collector_id || "N/A",
             card.finish
         ];
-        console.log(`🛠️ Adding row #${index + 1}:`, rowData); // ✅ Debug each row added
+        //console.log(`🛠️ Adding row #${index + 1}:`, rowData); // ✅ Debug each row added
         table.row.add(rowData);
     });
 
@@ -49,10 +49,19 @@ window.updateAvailabilityTable = function (data) {
 
     tableBody.innerHTML = "";
 
+    let table = $("#availableTable").DataTable(); // ✅ Get existing DataTable instance
+    table.clear(); // ✅ Clears old data
+
+    if (data.length == 0) {
+        console.warn("⚠️ No tracked cards available, keeping placeholder row.");
+        availabilityTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Fetching available cards</td></tr>`;
+        table.draw();
+        return;
+    }
     if (data.error) {
         tableBody.innerHTML = `<tr><td colspan="4">${data.error}</td></tr>`;
     } else {
-        data.availability.forEach((card, index) => {
+        data.items.forEach((card, index) => {
             let storeDetails = "";
             Object.keys(card.stores).forEach(store => {
                 let storeInfo = card.stores[store]

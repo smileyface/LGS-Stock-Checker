@@ -20,14 +20,16 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./data:/data # Persistent storage for users
+      - .:/app
     depends_on:
       - test-runner
       - redis
+      - db
     environment:
       - REDIS_HOST=redis
       - RUNNING_IN_DOCKER=true
       - FLASK_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@db:5432/lgs_stock_checker
     restart: unless-stopped
 
   redis:
@@ -48,3 +50,18 @@ services:
       - REDIS_HOST=redis
       - RUNNING_IN_DOCKER=true
     restart: unless-stopped
+
+    db:
+      image: postgres:latest
+      restart: always
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: password
+        POSTGRES_DB: lgs_stock_checker
+      ports:
+        - "5432:5432"
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

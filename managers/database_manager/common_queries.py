@@ -39,6 +39,14 @@ def update_password(username, password_hash, session):
     logger.info(f"✅ Password for {username} updated successfully!")
 
 
+@db_query
+def get_users_stores(username, session):
+    user = session.query(User).where(User.username == username).first()
+    if not user:
+        return []
+    return user.selected_stores  # This uses the relationship defined in the SQLAlchemy model
+
+
 # --- CARD QUERIES ---
 def get_cards_by_name(card_name):
     """Fetch cards using raw SQL."""
@@ -59,12 +67,12 @@ def get_all_cards():
 
 
 # --- STORE QUERIES ---
-def get_store_by_name(store_name):
-    """Fetch a store by its name."""
-    session = get_session()
-    store = session.query(Store).filter(Store.name == store_name).first()
-    session.close()
-    return store
+
+@db_query
+def get_store_metadata(slug, session):
+    """Fetch store details from the database."""
+    store = session.execute("SELECT * FROM stores WHERE slug = :slug", {"slug": slug}).fetchone()
+    return dict(store) if store else None
 
 
 def get_all_stores():

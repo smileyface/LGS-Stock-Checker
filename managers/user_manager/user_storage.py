@@ -1,65 +1,30 @@
-import os
-import json
-from utility.logger import logger
 
-# 🔹 File Paths
-BASE_DIR = "/data"
-USER_DATA_PATH = os.path.join(BASE_DIR, "user_data")
-USER_DB_FILE = os.path.join(BASE_DIR, "users.json")
+import managers.database_manager as database_manager
 
-logger.info(f"📁 BASE_DIR: {BASE_DIR}")
-logger.info(f"📁 USER_DATA_PATH: {USER_DATA_PATH}")
-logger.info(f"📁 USER_DB_FILE: {USER_DB_FILE}")
+def get_user(username):
+    """
+    Fetch user details by username.
+    Returns a dictionary containing user details or None if not found.
+    """
+    user = database_manager.get_user_by_username(username)
+    if user:
+        return {
+            "username": user.username,
+            "password_hash": user.password_hash,
+            "selected_stores": user.selected_stores  # Assuming JSON serialized list
+        }
+    return None
 
-# Ensure directories exist
-logger.info(f"🔧 Ensuring user data directory exists at: {USER_DATA_PATH}")
-os.makedirs(USER_DATA_PATH, exist_ok=True)
+def add_new_user(username, password_hash):
+    """
+    Adds a new user to the database.
+    Returns the created user object.
+    """
+    return database_manager.add_user_to_db(username, password_hash)
 
-def load_json(file_path):
-    """Loads JSON data from a file with detailed logging."""
-    logger.info(f"📥 Attempting to load JSON from: {file_path}")
-
-    if not os.path.exists(file_path):
-        logger.warning(f"🚨 File not found: {file_path}")
-        return None
-
-    try:
-        with open(file_path, "r") as file:
-            data = json.load(file)
-            file_size = os.path.getsize(file_path)
-            logger.info(f"✅ Successfully loaded JSON from {file_path} ({file_size} bytes).")
-            return data
-    except json.JSONDecodeError:
-        logger.error(f"❌ Error: Could not decode JSON from {file_path}.")
-        return None
-    except Exception as e:
-        logger.error(f"❌ Unexpected error loading {file_path}: {str(e)}")
-        return None
-
-
-def save_json(data, file_path):
-    """Saves JSON data to a file."""
-    logger.info(f"💾 Saving JSON to: {file_path}")
-    try:
-        with open(file_path, "w") as file:
-            json.dump(data, file, indent=4)
-    except Exception as e:
-        logger.error(f"❌ Error: Could not save JSON to {file_path}. {e}")
-    return True
-
-def get_user_directory(username):
-    """Returns the directory path for a user's data."""
-    user_dir = os.path.join(USER_DATA_PATH, username)
-    logger.info(f"📂 Resolving user directory: {user_dir}")
-    os.makedirs(user_dir, exist_ok=True)  # Ensure user folder exists
-    return user_dir
-
-def load_users():
-    """Loads all users from the `users.json` file."""
-    logger.info("📥 Loading users...")
-    return load_json(USER_DB_FILE) or {}
-
-def save_users(users):
-    """Saves all users to the `users.json` file."""
-    logger.info("💾 Saving user database...")
-    save_json(users, USER_DB_FILE)
+def user_exists(username):
+    """
+    Checks if a user already exists in the database.
+    Returns True if exists, False otherwise.
+    """
+    return database_manager.get_user_by_username(username) is not None

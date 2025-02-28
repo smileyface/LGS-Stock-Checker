@@ -11,6 +11,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@db:5432
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 
+
 def init_db():
     """Initialize the database schema."""
     Base.metadata.create_all(bind=engine)

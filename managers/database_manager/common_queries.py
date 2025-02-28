@@ -1,12 +1,15 @@
 from sqlalchemy import text
+
 from managers.database_manager.database_manager import get_session
 from managers.database_manager.session_manager import db_query
 from managers.database_manager.tables import User, Card, Store
+
+
 # --- USER QUERIES ---
 @db_query
 def get_user_by_username(username, session):
     """Fetch user details from the database."""
-    return session.query(User).filter(User.username == username).first()
+    return session.query(User).where(User.username == username)
 
 @db_query
 def add_user(username, password_hash, session):
@@ -16,6 +19,11 @@ def add_user(username, password_hash, session):
     session.commit()
     return new_user
 
+@db_query
+def update_username(old_username, new_username, session):
+    user = get_user_by_username(old_username)
+    user.username = new_username
+    session.commit()
 
 # --- CARD QUERIES ---
 def get_cards_by_name(card_name):

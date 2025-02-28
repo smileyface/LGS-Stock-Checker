@@ -1,21 +1,19 @@
 from sqlalchemy import text
 from managers.database_manager.database_manager import get_session
+from managers.database_manager.session_manager import db_query
 from managers.database_manager.tables import User, Card, Store
 # --- USER QUERIES ---
-def get_user_by_username(username):
+@db_query
+def get_user_by_username(username, session):
     """Fetch user details from the database."""
-    session = get_session()
-    user = session.query(User).filter(User.username == username).first()
-    session.close()
-    return user
+    return session.query(User).filter(User.username == username).first()
 
-def add_user(username, password_hash):
+@db_query
+def add_user(username, password_hash, session):
     """Insert a new user into the database."""
-    session = get_session()
     new_user = User(username=username, password_hash=password_hash)
     session.add(new_user)
     session.commit()
-    session.close()
     return new_user
 
 

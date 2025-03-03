@@ -2,8 +2,8 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from managers.database_manager.tables import Base
-from managers.database_manager.database_manager import get_session, engine, SessionLocal
 
 # Override database connection for tests
 TEST_DATABASE_URL = "sqlite:///:memory:"  # Use an in-memory database for testing

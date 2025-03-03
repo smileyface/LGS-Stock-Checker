@@ -2,6 +2,7 @@ import json
 
 from managers.redis_manager import redis_manager
 from utility.logger import logger
+import managers.user_manager as user_manager
 
 
 def check_availability(username):
@@ -32,7 +33,7 @@ def get_card_availability(username):
 
     # Load user's wanted cards
     logger.info(f"📖 Loading tracked cards for user: {username}")
-    user_cards = load_card_list(username)
+    user_cards = user_manager.load_card_list(username)
 
     for card in user_cards:
         card_name = card["card_name"]

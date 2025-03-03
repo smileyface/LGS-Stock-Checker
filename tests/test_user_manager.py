@@ -1,13 +1,15 @@
 import pytest
-from tests.utils.db_mock import get_test_session
+from sqlalchemy.orm import scoped_session, sessionmaker
+from werkzeug.security import generate_password_hash
+
+from managers.database_manager.tables import User
 from managers.user_manager import (
-    user_exists, get_user, add_user, update_username,
-    authenticate_user, update_selected_stores, get_selected_stores,
+    get_user, add_user, update_username,
+    authenticate_user, get_selected_stores,
     load_card_list, save_card_list
 )
-from managers.database_manager.tables import User
-from werkzeug.security import generate_password_hash
-from sqlalchemy.orm import scoped_session, sessionmaker
+from tests.utils.db_mock import get_test_session
+
 
 @pytest.fixture(scope="function")
 def db_session():

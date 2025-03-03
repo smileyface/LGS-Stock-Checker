@@ -1,7 +1,5 @@
-from utility.logger import logger
-import os
-
 import managers.database_manager as database_manager
+from utility.logger import logger
 
 
 def update_selected_stores(username, selected_stores):

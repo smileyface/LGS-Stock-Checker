@@ -1,6 +1,6 @@
-import os
 import json
 import time
+
 from managers.redis_manager import redis_manager
 from managers.store_manager.store_manager import load_store_availability
 from managers.user_manager import get_user, load_card_list

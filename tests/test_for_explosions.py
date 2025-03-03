@@ -6,10 +6,8 @@ import warnings
 
 import redis.exceptions
 
-from tests.utils.redis_mock import *
-from tests.utils.db_mock import *
-
 from managers.database_manager.tables import Store
+from tests.utils.db_mock import *
 
 
 # Insert mock store data

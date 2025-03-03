@@ -10,7 +10,7 @@ def authenticate_user(username, password):
 
     user = database_manager.get_user_by_username(username)
 
-    if check_password_hash(user.password, password):
+    if check_password_hash(user.password_hash, password):
         logger.info(f"✅ User '{username}' authenticated.")
         return True
     logger.warning(f"❌ Authentication failed for user: {username}")

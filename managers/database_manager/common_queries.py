@@ -80,7 +80,7 @@ def get_users_cards(username, session):
 
 
 @db_query
-def update_user_card_preferences(username, card_list, session):
+def update_user_tracked_cards(username, card_list, session):
     """
     Updates the user's card preferences in the database.
 

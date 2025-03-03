@@ -1,7 +1,6 @@
-from utility.logger import logger
 import managers.database_manager as database_manager
-from  managers.user_manager.user_manager import user_exists
-import os
+from managers.user_manager.user_manager import user_exists
+from utility.logger import logger
 
 
 def load_card_list(username):
@@ -41,7 +40,7 @@ def save_card_list(username, card_list):
     logger.info(f"💾 Saving card list for user: '{username}'")
 
     # Clear existing cards and add new ones
-    database_manager.update_user_card_preferences(username, card_list)
+    database_manager.update_user_tracked_cards(username, card_list)
 
     logger.info(f"✅ Successfully saved {len(card_list)} cards for user: '{username}'")
     return True

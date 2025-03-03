@@ -1,55 +1,48 @@
-import unittest
-from unittest.mock import patch, mock_open
-from managers.user_manager.user_auth import add_user, authenticate_user, update_username
-from managers.user_manager.user_cards import load_card_list, save_card_list
-from managers.user_manager.user_manager import load_users, save_users, get_user, get_all_users
-from managers.user_manager.user_preferences import update_selected_stores, get_selected_stores, load_user_config, \
-    save_user_config
-from managers.user_manager.user_storage import load_json, save_json, get_user_directory
+import pytest
+from tests.utils.db_mock import get_test_session
+from managers.user_manager import (
+    user_exists, get_user, add_user, update_username,
+    authenticate_user, update_selected_stores, get_selected_stores,
+    load_card_list, save_card_list
+)
+from managers.database_manager.tables import User
+from werkzeug.security import generate_password_hash
+from sqlalchemy.orm import scoped_session, sessionmaker
 
+@pytest.fixture(scope="function")
+def db_session():
+    session_factory = sessionmaker(bind=get_test_session().bind)
+    session = scoped_session(session_factory)
+    yield session
+    session.rollback()
+    session.remove()
 
-class TestUserAuth(unittest.TestCase):
+def test_user_manager_package(db_session):
+    """Tests the package as a black box using the actual database structure."""
+    # Insert a mock user into the test database with hashed password
+    test_user = User(username="testuser", password_hash=generate_password_hash("password"))
+    db_session.add(test_user)
+    db_session.commit()
 
-    @patch("managers.user_manager.user_storage.load_json", return_value={})
-    @patch("managers.user_manager.user_storage.save_json")
-    def test_add_user(self, mock_save_json, mock_load_json):
-        self.assertTrue(add_user("testuser", "password123"))
-        mock_save_json.assert_called()
+    # Authentication
+    assert authenticate_user("testuser", "password")  # 🔹 Should work now
 
+    # User retrieval
+    user = get_user("testuser")
+    assert user["username"] == "testuser"
 
-    @patch("managers.user_manager.user_storage.load_json", return_value={"testuser": {"password": "hashedpassword"}})
-    @patch("managers.user_manager.user_auth.check_password_hash", return_value=True)
-    def test_authenticate_user_success(self, mock_check, mock_load_json):
-        self.assertTrue(authenticate_user("testuser", "password123"))
-        mock_check.assert_called()
+    # User creation
+    assert add_user("newuser", "password")
 
+    # Username update
+    update_username("testuser", "newtestuser")
+    user = get_user("newtestuser")
+    assert user["username"] == "newtestuser"
 
-class TestUserCards(unittest.TestCase):
+    # Card management
+    assert load_card_list("testuser") == []  # No cards inserted yet
+    assert save_card_list("testuser", [{"card_name": "Lightning Bolt"}])
+    assert load_card_list("testuser") == [{"card_name": "Lightning Bolt"}]
 
-    @patch("managers.user_manager.user_storage.load_json", return_value=["card1", "card2"])
-    def test_load_card_list(self, mock_load_json):
-        self.assertEqual(load_card_list("testuser"), ["card1", "card2"])
-        mock_load_json.assert_called()
-
-    @patch("managers.user_manager.user_storage.save_json")
-    def test_save_card_list(self, mock_save_json):
-        save_card_list("testuser", ["card1", "card2"])
-        mock_save_json.assert_called()
-
-
-class TestUserPreferences(unittest.TestCase):
-
-    @patch("managers.user_manager.user_storage.load_users", return_value={"testuser": {"selected_stores": []}})
-    @patch("managers.user_manager.user_storage.save_users")
-    def test_update_selected_stores(self, mock_save_users, mock_load_users):
-        update_selected_stores("testuser", ["Store A", "Store B"])
-        mock_save_users.assert_called()
-
-    @patch("managers.user_manager.user_storage.load_users", return_value={"testuser": {"selected_stores": ["Store A"]}})
-    def test_get_selected_stores(self, mock_load_users):
-        self.assertEqual(get_selected_stores("testuser"), ["Store A"])
-        mock_load_users.assert_called()
-
-
-if __name__ == "__main__":
-    unittest.main()
+    # Store preferences
+    assert get_selected_stores("testuser") == []

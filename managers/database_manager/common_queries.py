@@ -1,7 +1,6 @@
 from sqlalchemy import text
 
-from managers.database_manager.database_manager import get_session
-from managers.database_manager.session_manager import db_query
+from managers.database_manager.session_manager import db_query, get_session
 from managers.database_manager.tables import User, Card, Store, UserTrackedCards, user_store_preferences
 from utility.logger import logger
 

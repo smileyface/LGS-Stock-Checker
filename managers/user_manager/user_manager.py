@@ -1,7 +1,6 @@
 from werkzeug.security import generate_password_hash
 
 import managers.database_manager as database_manager
-from managers.user_manager.user_auth import update_password
 from utility.logger import logger
 
 

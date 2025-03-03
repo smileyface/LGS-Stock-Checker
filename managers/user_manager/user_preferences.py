@@ -1,6 +1,7 @@
-from managers.user_manager.user_storage import get_user_directory, save_users, load_users, load_json, save_json
 from utility.logger import logger
 import os
+
+import managers.database_manager as database_manager
 
 
 def update_selected_stores(username, selected_stores):
@@ -16,17 +17,4 @@ def update_selected_stores(username, selected_stores):
 
 def get_selected_stores(username):
     """Retrieves a user's selected stores."""
-    users = load_users()
-    return users.get(username, {}).get("selected_stores", [])
-
-
-def load_user_config(username):
-    """Loads a user's settings (e.g., selected stores)."""
-    logger.info(f"⚙️ Loading config for user '{username}'")
-    return load_json(os.path.join(get_user_directory(username), "config.json")) or {}
-
-
-def save_user_config(username, config_data):
-    """Saves a user's settings (e.g., selected stores)."""
-    logger.info(f"💾 Saving config for user '{username}'")
-    save_json(config_data, os.path.join(get_user_directory(username), "config.json"))
+    return database_manager.get_user_stores(username)

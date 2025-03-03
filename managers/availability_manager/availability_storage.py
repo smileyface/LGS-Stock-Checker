@@ -1,7 +1,6 @@
 import os
 import json
 from managers.redis_manager import redis_manager
-from managers.user_manager import get_user_directory
 from utility.logger import logger
 
 def load_availability(username):

@@ -3,7 +3,7 @@ import json
 import time
 from managers.redis_manager import redis_manager
 from managers.store_manager.store_manager import load_store_availability
-from managers.user_manager import get_user, get_user_directory, load_card_list, save_json
+from managers.user_manager import get_user, load_card_list
 from utility.logger import logger
 
 # Configurable setting to enable or disable auto-triggering updates
@@ -45,13 +45,6 @@ def load_availability_state(username):
         logger.info(f"📥 Loaded availability from Redis for {username}.")
         return json.loads(availability)
 
-    # Fallback to JSON storage
-    json_path = os.path.join(get_user_directory(username), "availability.json")
-    if os.path.exists(json_path):
-        with open(json_path, "r") as file:
-            logger.warning(f"⚠️ Redis empty. Loaded availability from JSON for {username}.")
-            return json.load(file)
-
     logger.warning(f"⚠️ No availability data found for {username}. Returning empty state.")
     return {}
 
@@ -60,10 +53,6 @@ def save_availability_state(username, availability):
     """Saves availability state in Redis and JSON for persistence."""
     redis_key = f"{username}_availability"
     redis_manager.store_data(redis_key, json.dumps(availability))
-
-    # Also save to JSON for backup
-    json_path = os.path.join(get_user_directory(username), "availability.json")
-    save_json(availability, json_path)
 
     logger.info(f"💾 Availability state saved for {username}.")
 

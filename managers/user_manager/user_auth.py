@@ -1,10 +1,7 @@
-import os
-
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import managers.database_manager as database_manager
 from utility.logger import logger
-
 
 
 def authenticate_user(username, password):

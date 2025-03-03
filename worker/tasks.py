@@ -1,8 +1,9 @@
 import json
 from managers.redis_manager import redis_manager
+from managers.store_manager.stores import STORE_REGISTRY
 from managers.user_manager import load_card_list, get_user
 from managers.socket_manager import socketio
-from managers.store_manager.store_manager import STORE_REGISTRY, save_store_availability
+from managers.store_manager.store_manager import save_store_availability
 from utility.logger import logger
 
 

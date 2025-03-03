@@ -1,10 +1,8 @@
 import json
-import os
-from managers.availability_manager.availability_storage import load_availability, save_availability
-from managers.availability_manager.availability_diff import detect_changes
+
 from managers.redis_manager import redis_manager
-from managers.user_manager.user_manager import load_card_list
 from utility.logger import logger
+
 
 def check_availability(username):
     """Manually triggers an availability update for a user's card list."""

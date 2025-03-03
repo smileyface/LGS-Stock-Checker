@@ -2,7 +2,7 @@ from sqlalchemy import text
 
 from managers.database_manager.database_manager import get_session
 from managers.database_manager.session_manager import db_query
-from managers.database_manager.tables import User, Card, Store
+from managers.database_manager.tables import User, Card, Store, UserTrackedCards, UserStorePreferences
 from utility.logger import logger
 
 
@@ -40,14 +40,75 @@ def update_password(username, password_hash, session):
 
 
 @db_query
-def get_users_stores(username, session):
+def get_user_stores(username, session):
     user = session.query(User).where(User.username == username).first()
     if not user:
         return []
     return user.selected_stores  # This uses the relationship defined in the SQLAlchemy model
 
 
+@db_query
+def add_user_store(username, store, session):
+    user = session.query(User).filter(User.username == username).first()
+    store_obj = session.query(Store).filter(Store.slug == store).first()
+
+    # Add the store to the user's preferences
+    new_preference = UserStorePreferences(user_id=user.id, store_id=store_obj.id)
+    session.add(new_preference)
+    session.commit()
+
+    logger.info(f"✅ Added '{store}' to user '{username}' preferences.")
+    return True
+
+
 # --- CARD QUERIES ---
+@db_query
+def get_users_cards(username, session):
+    """
+    Retrieves all tracked cards for a given user.
+    """
+    user = session.query(User).filter(User.username == username).first()
+
+    if not user:
+        logger.warning(f"🚨 User '{username}' not found. Cannot retrieve cards.")
+        return []
+
+    # Fetch all user card preferences
+    cards = session.query(UserTrackedCards).filter(UserTrackedCards.user_id == user.id).all()
+
+    return cards
+
+@db_query
+def update_user_card_preferences(username, card_list, session):
+    """
+    Updates the user's card preferences in the database.
+
+    Args:
+        username (str): The username of the user.
+        card_list (list of dict): A list of card preferences (card_name, set_code, finish).
+        session (Session): SQLAlchemy session.
+    """
+    # Fetch user ID
+    user = session.query(User).filter(User.username == username).first()
+    if not user:
+        logger.warning(f"🚨 User '{username}' not found in the database.")
+        return
+
+    # Remove existing card preferences
+    session.query(UserTrackedCards).filter(UserTrackedCards.user_id == user.id).delete()
+
+    # Insert new card preferences
+    for card in card_list:
+        new_pref = UserTrackedCards(
+            user_id=user.id,
+            card_name=card["card_name"]
+        )
+        session.add(new_pref)
+
+    session.commit()
+    logger.info(f"✅ Updated card preferences for user '{username}' with {len(card_list)} cards.")
+
+
 def get_cards_by_name(card_name):
     """Fetch cards using raw SQL."""
     session = get_session()

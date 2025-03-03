@@ -4,45 +4,50 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-# Association Table for User Store Preferences (Many-to-Many)
-user_store_preferences = Table(
-    "user_store_preferences",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
-    Column("store_id", Integer, ForeignKey("stores.id"), primary_key=True)
-)
+
+class UserStorePreferences(Base):
+    __tablename__ = "user_store_preferences"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), primary_key=True)
 
 
 # Users Table (Updated)
 class User(Base):
     __tablename__ = "users"
-
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
 
     # Relationship to stores (User's selected stores)
-    selected_stores = relationship("Store", secondary=user_store_preferences, backref="users")
+    selected_stores = relationship("Store", secondary=UserStorePreferences, backref="users")
 
 
 class Card(Base):
     __tablename__ = "cards"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    set_code = Column(String)
-    collector_id = Column(String)
-    finish = Column(String)
-    image_url = Column(Text)  # Store the URL instead of the actual image
+    name = Column(String, primary_key=True, index=True)
 
 
-class TrackedCard(Base):
-    __tablename__ = "tracked_cards"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    card_id = Column(Integer, ForeignKey("cards.id"))
+class UserTrackedCards(Base):
+    __tablename__ = "user_tracked_cards"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    card_name = Column(String, ForeignKey("cards.name"), nullable=False)
 
-    user = relationship("User")
-    card = relationship("Card")
+    # Relationship to specifications (one-to-many)
+    specifications = relationship("CardSpecification", back_populates="user_card")
+
+
+class CardSpecification(Base):
+    __tablename__ = "card_specifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_card_id = Column(Integer, ForeignKey("user_tracked_cards.id"), nullable=False)
+    set_code = Column(String, nullable=True)  # NULL = "Any Set"
+    collector_number = Column(String, nullable=True)  # NULL = "Any Collector Number"
+    finish = Column(String, nullable=True)  # NULL = "Any Finish"
+
+    # Relationship back to user_card_preferences
+    user_card = relationship("UserCardPreference", back_populates="specifications")
 
 
 class Store(Base):

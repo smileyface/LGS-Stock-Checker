@@ -1,8 +1,8 @@
-from managers.card_manager import parse_card_list
-from managers.socket_manager.socket_manager import socketio
 from flask import session
-from managers.redis_manager import redis_manager
+
+from managers.card_manager import parse_card_list
 from managers.socket_manager.socket_events import send_card_availability_update, send_card_list
+from managers.socket_manager.socket_manager import socketio
 from utility.logger import logger
 
 

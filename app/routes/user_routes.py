@@ -1,14 +1,15 @@
 from flask_socketio import SocketIO
 from flask import session, request, Blueprint, redirect, render_template, url_for
 
-from managers.store_manager.store_manager import STORE_REGISTRY
+from managers.store_manager.stores import STORE_REGISTRY
 from managers.user_manager import update_selected_stores
-from managers.user_manager.user_auth import update_password
-from managers.user_manager.user_manager import add_user, authenticate_user, get_user, update_username
+from managers.user_manager.user_auth import update_password, authenticate_user
+from managers.user_manager.user_manager import add_user, get_user, update_username
 
 socketio = SocketIO()
 
 user_bp = Blueprint("user_bp", __name__)
+
 
 @user_bp.route("/account")
 def account_settings():
@@ -19,6 +20,7 @@ def account_settings():
                            stores=get_user(session["username"]).get("selected_stores", []),
                            all_stores=list(STORE_REGISTRY.keys()))
 
+
 @user_bp.route("/account/update_stores", methods=["POST"])
 def update_stores():
     username = session.get("username")
@@ -27,6 +29,7 @@ def update_stores():
         update_selected_stores(username, selected_stores)
         return {"message": "Stores updated successfully"}
     return {"error": "User not logged in"}, 401
+
 
 @user_bp.route("/account/update_username", methods=["POST"])
 def change_username():
@@ -38,6 +41,7 @@ def change_username():
         return {"message": "Username updated successfully"}
     return {"error": "Invalid request"}, 400
 
+
 @user_bp.route("/account/update_password", methods=["POST"])
 def change_password():
     username = session.get("username")
@@ -48,6 +52,7 @@ def change_password():
             return {"message": "Password updated successfully"}
         return {"error": "Incorrect current password"}, 400
     return {"error": "Invalid request"}, 400
+
 
 @user_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -64,6 +69,7 @@ def login():
         return render_template("landing.html", error="Invalid credentials")
 
     return render_template("landing.html")
+
 
 @user_bp.route("/logout")
 def logout():

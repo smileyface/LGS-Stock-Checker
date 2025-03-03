@@ -1,7 +1,7 @@
 from flask_socketio import emit
 
-from managers.availability_manager.availability_manager import get_card_availability
-from managers.user_manager.user_manager import load_card_list
+from managers.availability_manager import get_card_availability
+from managers.user_manager import load_card_list
 from utility.logger import logger
 
 

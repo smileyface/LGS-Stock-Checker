@@ -2,7 +2,7 @@ from sqlalchemy import text
 
 from managers.database_manager.database_manager import get_session
 from managers.database_manager.session_manager import db_query
-from managers.database_manager.tables import User, Card, Store, UserTrackedCards, UserStorePreferences
+from managers.database_manager.tables import User, Card, Store, UserTrackedCards, user_store_preferences
 from utility.logger import logger
 
 
@@ -53,7 +53,7 @@ def add_user_store(username, store, session):
     store_obj = session.query(Store).filter(Store.slug == store).first()
 
     # Add the store to the user's preferences
-    new_preference = UserStorePreferences(user_id=user.id, store_id=store_obj.id)
+    new_preference = user_store_preferences(user_id=user.id, store_id=store_obj.id)
     session.add(new_preference)
     session.commit()
 
@@ -77,6 +77,7 @@ def get_users_cards(username, session):
     cards = session.query(UserTrackedCards).filter(UserTrackedCards.user_id == user.id).all()
 
     return cards
+
 
 @db_query
 def update_user_card_preferences(username, card_list, session):
@@ -131,9 +132,19 @@ def get_all_cards():
 
 @db_query
 def get_store_metadata(slug, session):
-    """Fetch store details from the database."""
-    store = session.execute("SELECT * FROM stores WHERE slug = :slug", {"slug": slug}).fetchone()
-    return dict(store) if store else None
+    """Fetch store details from the database and return it as a dictionary."""
+    store = session.query(Store).filter(Store.slug == slug).first()
+
+    if store:
+        return {
+            "id": store.id,
+            "name": store.name,
+            "slug": store.slug,
+            "homepage": store.homepage,
+            "search_url": store.search_url,
+            "fetch_strategy": store.fetch_strategy
+        }
+    return None
 
 
 def get_all_stores():

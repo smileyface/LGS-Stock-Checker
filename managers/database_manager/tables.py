@@ -5,10 +5,13 @@ from sqlalchemy.orm import relationship
 Base = declarative_base()
 
 
-class UserStorePreferences(Base):
-    __tablename__ = "user_store_preferences"
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    store_id = Column(Integer, ForeignKey("stores.id"), primary_key=True)
+# Define as a Table object, not an ORM class
+user_store_preferences = Table(
+    "user_store_preferences",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("store_id", Integer, ForeignKey("stores.id"), primary_key=True)
+)
 
 
 # Users Table (Updated)
@@ -19,7 +22,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
 
     # Relationship to stores (User's selected stores)
-    selected_stores = relationship("Store", secondary=UserStorePreferences, backref="users")
+    selected_stores = relationship("Store", secondary=user_store_preferences, backref="users")
 
 
 class Card(Base):
@@ -47,7 +50,7 @@ class CardSpecification(Base):
     finish = Column(String, nullable=True)  # NULL = "Any Finish"
 
     # Relationship back to user_card_preferences
-    user_card = relationship("UserCardPreference", back_populates="specifications")
+    user_card = relationship("UserTrackedCards", back_populates="specifications")
 
 
 class Store(Base):

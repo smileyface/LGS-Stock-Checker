@@ -82,37 +82,52 @@ window.updateAvailabilityTable = function (data) {
 document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");
 
-    // ✅ Remove placeholder row before initializing DataTable
-    let placeholderRow = document.querySelector("#cardTableBody .placeholder-row");
-    if (placeholderRow) {
-        placeholderRow.remove();
-        console.log("🛠️ Placeholder row removed before DataTable initialization.");
+    let cardSearchInput = document.getElementById("cardSearch");
+    let searchResultsList = document.getElementById("searchResults");
+
+    cardSearchInput.addEventListener("input", function () {
+        let query = cardSearchInput.value.trim();
+        if (query.length < 3) {
+            searchResultsList.innerHTML = "";
+            return;
+        }
+
+        socket.emit("search_cards", { query: query }); // ✅ Emit search request to backend
+    });
+
+    socket.on("search_results", function (data) {
+        searchResultsList.innerHTML = "";
+        data.forEach(card => {
+            let listItem = document.createElement("li");
+            listItem.className = "list-group-item list-group-item-action";
+            listItem.innerHTML = `${card.name} <small>(${card.set_code})</small>`;
+            listItem.onclick = () => selectCard(card);
+            searchResultsList.appendChild(listItem);
+        });
+    });
+});
+
+function selectCard(card) {
+    document.getElementById("cardSearch").value = card.name;
+    document.getElementById("searchResults").innerHTML = "";
+    document.getElementById("searchResults").setAttribute("data-selected-card", JSON.stringify(card));
+}
+
+// ✅ Emit add_card event via WebSocket
+document.getElementById("saveCardButton").addEventListener("click", function () {
+    let selectedCard = document.getElementById("searchResults").getAttribute("data-selected-card");
+    if (!selectedCard) {
+        alert("Please select a card before adding.");
+        return;
     }
 
+    let card = JSON.parse(selectedCard);
+    let amount = parseInt(document.getElementById("amount").value) || 1;
 
-    setTimeout(() => {
-        let columnCount = document.querySelectorAll("#cardTable thead tr th").length;
-        let firstRowColumns = document.querySelectorAll("#cardTable tbody tr:first-child td").length;
+    socket.emit("add_card", { card: card, amount: amount }); // ✅ Send card addition event
 
-        console.log(`🛠️ Debugging: Table has ${columnCount} headers and ${firstRowColumns} columns in first row.`);
-
-        // ✅ Only initialize DataTable if column counts match AND it's not already initialized
-        if (columnCount === firstRowColumns) {
-            if (!$.fn.DataTable.isDataTable("#cardTable")) {
-                console.log("✅ Initializing DataTable...");
-                $("#cardTable").DataTable({
-                    paging: false,
-                    searching: true,
-                    ordering: true,
-                    info: false
-                });
-            } else {
-                console.warn("⚠️ DataTable is already initialized. Skipping reinitialization.");
-            }
-        } else {
-            console.warn("⚠️ DataTable initialization skipped due to column mismatch.");
-        }
-    }, 500);
+    $("#addCardModal").modal("hide"); // Close modal
 });
+
 
 

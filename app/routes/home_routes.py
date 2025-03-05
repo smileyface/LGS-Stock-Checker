@@ -1,7 +1,7 @@
 from flask import session, Blueprint, render_template, redirect, url_for
 from flask_socketio import emit
 
-from managers.availability_manager.availability_manager import check_availability
+from managers.availability_manager.availability_manager import get_card_availability
 from managers.socket_manager.socket_manager import log_and_emit, socketio
 
 home_bp = Blueprint("home_bp", __name__)
@@ -19,7 +19,7 @@ def dashboard():
         return redirect(url_for("home_bp.landing_page"))
     return render_template("dashboard.html",
                            username=session["username"],
-                           card_availability=check_availability(session["username"]))
+                           card_availability=get_card_availability(session["username"]))
 
 @socketio.on('get_home_page')
 def handle_get_home_page():

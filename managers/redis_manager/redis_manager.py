@@ -24,24 +24,18 @@ class RedisManager:
         self.scheduler = Scheduler(queue=self.queue, connection=self.redis_conn)
         self.functions = {}  # Registry for callable functions
 
-    def register_function(self, full_func_name, func_ref):
-        """Registers a function for task queuing using its full name."""
-        self.functions[full_func_name] = func_ref
-        self.redis_conn.hset("registered_functions", full_func_name, "1")  # Store in Redis
-        logger.info(f"🔧 Registered function: {full_func_name}")
+    def register_function(self, name, func):
+        """Allows modules to register functions for Redis tasks."""
+        self.functions[name] = func
+        logger.info(f"🔗 Registered Redis function: {name}")
 
     def queue_task(self, func_name, *args, **kwargs):
         """Queues a task by registered function name."""
-        # Ensure function exists in Redis
-        if not self.redis_conn.hexists("registered_functions", func_name):
-            logger.error(f"❌ Attempted to queue unknown task: {func_name} (Not in Redis)")
-            return
-
         if func_name in self.functions:
             self.queue.enqueue(self.functions[func_name], *args, **kwargs)
             logger.info(f"📌 Queued task: {func_name}")
         else:
-            logger.error(f"❌ Attempted to queue unknown task: {func_name} (Not in Local Registry)")
+            logger.error(f"❌ Attempted to queue unknown task: {func_name}")
 
     def schedule_task(self, func, interval_hours, *args, **kwargs):
         """Schedules a recurring task."""
@@ -119,12 +113,7 @@ class RedisManager:
     def get_all_hash_fields(self, key):
         """Retrieve all fields and values from a Redis hash."""
         data = self.redis_conn.hgetall(key)
-        return {k: json.loads(v) for k, v in data.items()} if data else {}
-
-    def set_hash_field(self, key, field, value):
-        """Sets a field in a Redis hash."""
-        self.redis_conn.hset(key, field, value)
-        logger.info(f"💾 Set hash field '{field}' in key '{key}'")
+        return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
 
     def delete_data(self, key, field=None):
         """
@@ -143,4 +132,3 @@ class RedisManager:
 
         except Exception as e:
             logger.error(f"❌ Error deleting data from Redis: {e}")
-

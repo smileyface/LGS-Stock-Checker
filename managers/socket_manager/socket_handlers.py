@@ -1,39 +1,25 @@
 from flask import session
 
 from managers.card_manager import parse_card_list
-from managers.tasks_manager import update_availability
-from utility.logger import logger
-
 from managers.socket_manager.socket_events import send_card_availability_update, send_card_list
-from managers.extensions import socketio
-
-
+from managers.socket_manager.socket_manager import socketio
+from utility.logger import logger
 
 
 def get_username():
     """Helper function to get the username from the session."""
     return session.get("username")
 
-
 @socketio.on("get_card_availability")
 def handle_get_card_availability():
     """Handles a front-end request for updated card availability data."""
     logger.info("📩 Received 'get_card_availability' request from front end.")
-
     username = get_username()
-    if not username:
+    if username:
+        logger.info(f"🔍 Fetching card availability for user: {username}")
+        send_card_availability_update(username)
+    else:
         logger.warning("🚨 No username found for 'get_card_availability' request.")
-        return
-
-    logger.info(f"🔍 Fetching card availability for user: {username}")
-
-    # Send cached availability first
-    send_card_availability_update(username)
-
-    # Queue async updates for stale/missing data
-    update_availability(username)  # 🔄 Ensure fresh data is retrieved
-
-    logger.info(f"📌 Queued async availability check for {username}")
 
 
 @socketio.on("get_cards")
@@ -59,6 +45,7 @@ def handle_parse_card_list(data):
         logger.info("✅ Parsed card list sent to front end.")
     else:
         logger.warning("🚨 'parse_card_list' request missing 'raw_list' field.")
+
 
 
 def handle_save_cards():

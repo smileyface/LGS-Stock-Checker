@@ -1,7 +1,7 @@
-from .redis_manager import RedisManager, REDIS_URL
+from .redis_manager import RedisManager
 
 # Singleton instance
 redis_manager = RedisManager()
 
 
-__all__ = ["redis_manager", "REDIS_URL"]
+__all__ = ["redis_manager"]

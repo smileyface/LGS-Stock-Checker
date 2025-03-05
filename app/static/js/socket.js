@@ -56,14 +56,11 @@ socket.on("card_availability_data", function (data) {
         console.warn("⚠️ updateAvailabilityTable function not found!");
         return;
     }
-    console.log("📡 Received availability update:", data);
     window.updateAvailabilityTable(data);
 });
 
 
-socket.on('availability_update', (data) => {
-    console.log("🔔 Received availability update:", data);
-});
+
 
 
 // Function to trigger card availability request

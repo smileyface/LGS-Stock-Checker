@@ -12,12 +12,15 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@db:5432
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 
+
 def get_session():
     """Returns a new database session."""
     return SessionLocal()
 
+
 def db_query(func):
     """Decorator to manage database session scope for queries."""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         session = SessionLocal()  # Open a new session

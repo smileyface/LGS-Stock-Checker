@@ -132,18 +132,7 @@ def get_all_cards():
 @db_query
 def get_store_metadata(slug, session):
     """Fetch store details from the database and return it as a dictionary."""
-    store = session.query(Store).filter(Store.slug == slug).first()
-
-    if store:
-        return {
-            "id": store.id,
-            "name": store.name,
-            "slug": store.slug,
-            "homepage": store.homepage,
-            "search_url": store.search_url,
-            "fetch_strategy": store.fetch_strategy
-        }
-    return None
+    return session.query(Store).filter(Store.slug == slug).first()
 
 
 def get_all_stores():

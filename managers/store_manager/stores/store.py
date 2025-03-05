@@ -8,12 +8,12 @@ class Store:
         store_data = database_manager.get_store_metadata(slug)
         if not store_data:
             raise ValueError(f"Store with slug '{slug}' not found in database.")
-        self.id = store_data["id"]
-        self.store_name = store_data["name"]
-        self.slug = store_data["slug"]
-        self.homepage = store_data["homepage"]
-        self.search_url = store_data["search_url"]
-        self.fetch_strategy = store_data["fetch_strategy"]
+        self.id = store_data.id
+        self.store_name = store_data.name
+        self.slug = store_data.slug
+        self.homepage = store_data.homepage
+        self.search_url = store_data.search_url
+        self.fetch_strategy = store_data.fetch_strategy
 
     def get_search_params(self, card_name):
         return None

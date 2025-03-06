@@ -82,28 +82,60 @@ window.updateAvailabilityTable = function (data) {
 document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");
 
-    let cardSearchInput = document.getElementById("cardSearch");
-    let searchResultsList = document.getElementById("searchResults");
+    // ✅ Remove placeholder row before initializing DataTable
+    let placeholderRow = document.querySelector("#cardTableBody .placeholder-row");
+    if (placeholderRow) {
+        placeholderRow.remove();
+        console.log("🛠️ Placeholder row removed before DataTable initialization.");
+    }
 
-    cardSearchInput.addEventListener("input", function () {
-        let query = cardSearchInput.value.trim();
-        if (query.length < 3) {
-            searchResultsList.innerHTML = "";
-            return;
+    setTimeout(() => {
+        let columnCount = document.querySelectorAll("#cardTable thead tr th").length;
+        let firstRowColumns = document.querySelectorAll("#cardTable tbody tr:first-child td").length;
+
+        console.log(`🛠️ Debugging: Table has ${columnCount} headers and ${firstRowColumns} columns in first row.`);
+
+        // ✅ Ensure DataTable only initializes when valid rows exist
+        if (columnCount === firstRowColumns && firstRowColumns > 1) {
+            if (!$.fn.DataTable.isDataTable("#cardTable")) {
+                console.log("✅ Initializing DataTable...");
+                $("#cardTable").DataTable({
+                    paging: false,
+                    searching: true,
+                    ordering: true,
+                    info: false
+                });
+            } else {
+                console.warn("⚠️ DataTable is already initialized. Skipping reinitialization.");
+            }
+        } else {
+            console.warn("⚠️ DataTable initialization skipped due to column mismatch.");
         }
+    }, 500);
+});
 
-        socket.emit("search_cards", { query: query }); // ✅ Emit search request to backend
-    });
+// ✅ Handle Card Search via WebSocket
+let cardSearchInput = document.getElementById("cardSearch");
+let searchResultsList = document.getElementById("searchResults");
 
-    socket.on("search_results", function (data) {
+cardSearchInput.addEventListener("input", function () {
+    let query = cardSearchInput.value.trim();
+    if (query.length < 3) {
         searchResultsList.innerHTML = "";
-        data.forEach(card => {
-            let listItem = document.createElement("li");
-            listItem.className = "list-group-item list-group-item-action";
-            listItem.innerHTML = `${card.name} <small>(${card.set_code})</small>`;
-            listItem.onclick = () => selectCard(card);
-            searchResultsList.appendChild(listItem);
-        });
+        return;
+    }
+    socket.emit("search_cards", { query: query });
+});
+
+// ✅ Receive Search Results and Populate List
+socket.on("search_results", function (data) {
+    searchResultsList.innerHTML = "";
+    data.forEach(card => {
+        let listItem = document.createElement("li");
+        listItem.className = "list-group-item list-group-item-action";
+        listItem.innerHTML = `${card.name} <small>(${card.set_code})</small>`;
+        listItem.onclick = () => selectCard(card);
+        searchResultsList.appendChild(listItem);
     });
 });
 
@@ -113,7 +145,7 @@ function selectCard(card) {
     document.getElementById("searchResults").setAttribute("data-selected-card", JSON.stringify(card));
 }
 
-// ✅ Emit add_card event via WebSocket
+// ✅ Handle Adding a Card
 document.getElementById("saveCardButton").addEventListener("click", function () {
     let selectedCard = document.getElementById("searchResults").getAttribute("data-selected-card");
     if (!selectedCard) {
@@ -124,10 +156,10 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
     let card = JSON.parse(selectedCard);
     let amount = parseInt(document.getElementById("amount").value) || 1;
 
-    socket.emit("add_card", { card: card, amount: amount }); // ✅ Send card addition event
-
-    $("#addCardModal").modal("hide"); // Close modal
+    socket.emit("add_card", { card: card, amount: amount }); // ✅ Emit event via WebSocket
+    $("#addCardModal").modal("hide"); // ✅ Close modal
 });
+
 
 
 

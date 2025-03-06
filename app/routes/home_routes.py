@@ -3,7 +3,7 @@ import json
 from flask import session, Blueprint, render_template, redirect, url_for, current_app, jsonify
 from flask_socketio import emit
 
-from app import get_cached_card_names
+from app.caching import get_cached_card_names
 from managers.availability_manager.availability_manager import get_card_availability
 from managers.socket_manager.socket_manager import log_and_emit, socketio
 

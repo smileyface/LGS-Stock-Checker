@@ -1,8 +1,16 @@
 from flask_socketio import emit
 
 from managers.availability_manager import get_card_availability
+from managers.redis_manager.cache_manager import SCRYFALL_CARD_CACHE_KEY
 from managers.user_manager import load_card_list
+import managers.redis_manager as redis_manager
 from utility.logger import logger
+
+
+def send_full_card_list():
+    """Send cached card names to the frontend via WebSocket."""
+    card_names = redis_manager.load_data(SCRYFALL_CARD_CACHE_KEY)
+    emit("card_names_response", {"card_names": card_names})
 
 
 def send_card_availability_update(username):

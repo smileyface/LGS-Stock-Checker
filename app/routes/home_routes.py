@@ -1,6 +1,4 @@
-import json
-
-from flask import session, Blueprint, render_template, redirect, url_for, current_app, jsonify
+from flask import session, Blueprint, render_template, redirect, url_for, current_app
 from flask_socketio import emit
 
 from app.caching import get_cached_card_names

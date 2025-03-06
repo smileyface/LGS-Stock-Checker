@@ -28,7 +28,9 @@ socket.on("connect", function () {
     console.log("🔗 Connected to WebSocket Server!");
     socket.emit("get_cards");
     socket.emit("get_card_availability");
+    console.log("📡 Sent 'get_card_availability' event to backend");
     socket.emit("request_card_names"); // ✅ Ensure request happens only after connection
+    console.log("📡 Sent 'request_card_names' event to backend");
 });
 
 //Error connecting to the server
@@ -64,9 +66,6 @@ socket.on("card_availability_data", function (data) {
     }
     window.updateAvailabilityTable(data);
 });
-
-
-socket.emit("request_card_names"); // ✅ Ask backend for cached card names on load
 
 // ✅ Receive Search Results and Populate List
 socket.on("search_results", function (data) {

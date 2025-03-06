@@ -1,7 +1,7 @@
 from flask import session
 
 from managers.card_manager import parse_card_list
-from managers.socket_manager.socket_events import send_card_availability_update, send_card_list
+from managers.socket_manager.socket_events import send_card_availability_update, send_card_list, send_full_card_list
 from managers.socket_manager.socket_manager import socketio
 from utility.logger import logger
 
@@ -46,6 +46,11 @@ def handle_parse_card_list(data):
     else:
         logger.warning("🚨 'parse_card_list' request missing 'raw_list' field.")
 
+
+@socketio.on("request_card_names")
+def handle_request_card_names():
+    """Send cached card names to the frontend via WebSocket."""
+    send_full_card_list()
 
 
 def handle_save_cards():

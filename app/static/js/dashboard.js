@@ -47,6 +47,9 @@ window.updateAvailabilityTable = function (data) {
     let tableBody = document.getElementById("availabilityTableBody");
     if (!tableBody) return;
 
+    let table = $("#availabilityTable").DataTable(); // ✅ Get existing DataTable instance
+    table.clear(); // ✅ Clears old data
+
     tableBody.innerHTML = "";
 
     if (data.error) {
@@ -119,26 +122,37 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 500);
 });
 
-// ✅ Handle Card Search via WebSocket
-let cardSearchInput = document.getElementById("cardSearch");
-let searchResultsList = document.getElementById("searchResults");
+document.addEventListener("DOMContentLoaded", function () {
+    let cardSearchInput = document.getElementById("cardSearch");
+    let searchResultsList = document.getElementById("searchResults");
 
-cardSearchInput.addEventListener("input", function () {
-    let query = cardSearchInput.value.trim();
-    if (query.length < 3) {
+    cardSearchInput.addEventListener("input", function () {
+        let query = cardSearchInput.value.trim().toLowerCase();
+        if (query.length < 2) {
+            searchResultsList.innerHTML = "";
+            return;
+        }
+
+        // ✅ Filter card names from cache for autocomplete
+        let filteredResults = cardNameCache.filter(name => name.toLowerCase().includes(query)).slice(0, 10);
         searchResultsList.innerHTML = "";
-        return;
-    }
-    socket.emit("search_cards", { query: query });
+
+        filteredResults.forEach(cardName => {
+            let listItem = document.createElement("li");
+            listItem.className = "list-group-item list-group-item-action";
+            listItem.textContent = cardName;
+            listItem.onclick = () => selectCard(cardName);
+            searchResultsList.appendChild(listItem);
+        });
+    });
 });
 
-
-
-function selectCard(card) {
-    document.getElementById("cardSearch").value = card.name;
+function selectCard(cardName) {
+    document.getElementById("cardSearch").value = cardName;
     document.getElementById("searchResults").innerHTML = "";
-    document.getElementById("searchResults").setAttribute("data-selected-card", JSON.stringify(card));
+    document.getElementById("searchResults").setAttribute("data-selected-card", cardName);
 }
+
 
 // ✅ Handle Adding a Card
 document.getElementById("saveCardButton").addEventListener("click", function () {

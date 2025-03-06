@@ -1,7 +1,5 @@
 import json
 
-import requests
-
 from app.scryfall_api import fetch_scryfall_card_names
 
 SCRYFALL_CARD_CACHE_KEY = "scryfall_card_names"

@@ -13,6 +13,8 @@ function waitForFunction(fnName, callback) {
     }, 200);
 }
 
+let cardNameCache = [];
+
 var socket = io.connect(window.location.origin, {
     transports: ["websocket", "polling"], // Ensure WebSockets are prioritized
     reconnection: true, // Enable automatic reconnection
@@ -29,14 +31,17 @@ socket.on("connect", function () {
     socket.emit("request_card_names"); // ✅ Ensure request happens only after connection
 });
 
+//Error connecting to the server
 socket.on("connect_error", function (error) {
     console.error("❌ WebSocket Connection Error:", error);
 });
 
+//Disconnect from server
 socket.on("disconnect", function (reason) {
     console.warn("⚠️ Disconnected from WebSocket Server:", reason);
 });
 
+// Send log info to the console
 socket.on("server_log", function (data) {
     console.log(`📢 [SERVER LOG]: ${data.level}: ${data.message}`);
 });
@@ -60,7 +65,6 @@ socket.on("card_availability_data", function (data) {
     window.updateAvailabilityTable(data);
 });
 
-let cardNameCache = [];
 
 socket.emit("request_card_names"); // ✅ Ask backend for cached card names on load
 

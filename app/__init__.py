@@ -8,7 +8,7 @@ from flask_session import Session
 from app.routes import register_blueprints
 from managers.socket_manager import socketio
 
-from app.caching import get_cached_card_names, initialize_cache
+from app.caching import initialize_cache
 
 
 def create_app():

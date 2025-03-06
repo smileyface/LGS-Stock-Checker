@@ -33,4 +33,5 @@ def handle_request_card_names():
     """Send cached card names to the frontend via WebSocket."""
     redis_client = current_app.config["SESSION_REDIS"]
     card_names = get_cached_card_names(redis_client)
+
     emit("card_names_response", {"card_names": card_names})

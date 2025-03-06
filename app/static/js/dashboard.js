@@ -51,7 +51,12 @@ window.updateAvailabilityTable = function (data) {
 
     if (data.error) {
         tableBody.innerHTML = `<tr><td colspan="4">${data.error}</td></tr>`;
-    } else {
+    }
+    else if(data.length == 0) {
+        availabilityTable.innerHTML = `<tr><td colspan="5" class="text-center">No tracked cards found.</td></tr>`;
+        table.draw();
+    }
+    else {
         data.availability.forEach((card, index) => {
             let storeDetails = "";
             Object.keys(card.stores).forEach(store => {

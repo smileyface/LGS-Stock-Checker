@@ -68,6 +68,18 @@ socket.on("card_availability_data", function (data) {
 
 socket.emit("request_card_names"); // ✅ Ask backend for cached card names on load
 
+// ✅ Receive Search Results and Populate List
+socket.on("search_results", function (data) {
+    searchResultsList.innerHTML = "";
+    data.forEach(card => {
+        let listItem = document.createElement("li");
+        listItem.className = "list-group-item list-group-item-action";
+        listItem.innerHTML = `${card.name} <small>(${card.set_code})</small>`;
+        listItem.onclick = () => selectCard(card);
+        searchResultsList.appendChild(listItem);
+    });
+});
+
 socket.on("card_names_response", function (data) {
     if (!data || !Array.isArray(data.card_names)) {
         console.warn("⚠️ Invalid card names received:", data);

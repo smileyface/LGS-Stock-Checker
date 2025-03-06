@@ -127,17 +127,7 @@ cardSearchInput.addEventListener("input", function () {
     socket.emit("search_cards", { query: query });
 });
 
-// ✅ Receive Search Results and Populate List
-socket.on("search_results", function (data) {
-    searchResultsList.innerHTML = "";
-    data.forEach(card => {
-        let listItem = document.createElement("li");
-        listItem.className = "list-group-item list-group-item-action";
-        listItem.innerHTML = `${card.name} <small>(${card.set_code})</small>`;
-        listItem.onclick = () => selectCard(card);
-        searchResultsList.appendChild(listItem);
-    });
-});
+
 
 function selectCard(card) {
     document.getElementById("cardSearch").value = card.name;

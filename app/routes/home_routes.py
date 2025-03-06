@@ -1,6 +1,9 @@
-from flask import session, Blueprint, render_template, redirect, url_for
+import json
+
+from flask import session, Blueprint, render_template, redirect, url_for, current_app, jsonify
 from flask_socketio import emit
 
+from app import get_cached_card_names
 from managers.availability_manager.availability_manager import get_card_availability
 from managers.socket_manager.socket_manager import log_and_emit, socketio
 
@@ -24,3 +27,10 @@ def dashboard():
 @socketio.on('get_home_page')
 def handle_get_home_page():
     emit('home_page', {'message': 'Welcome to the LGS Stock Checker!'})
+
+@socketio.on("request_card_names")
+def handle_request_card_names():
+    """Send cached card names to the frontend via WebSocket."""
+    redis_client = current_app.config["SESSION_REDIS"]
+    card_names = get_cached_card_names(redis_client)
+    emit("card_names_response", {"card_names": card_names})

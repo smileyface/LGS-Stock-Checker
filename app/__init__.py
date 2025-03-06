@@ -1,9 +1,15 @@
+import json
 import os
+
+import requests
 from flask import Flask
 import redis
 from flask_session import Session
 from app.routes import register_blueprints
-from managers.socket_manager.socket_manager import socketio
+from managers.socket_manager import socketio
+
+from app.caching import get_cached_card_names, initialize_cache
+
 
 def create_app():
     app = Flask(__name__)
@@ -25,5 +31,8 @@ def create_app():
 
     # ✅ Attach SocketIO with Redis message queue
     socketio.init_app(app, message_queue="redis://redis:6379")
+
+    # ✅ Initialize card name cache
+    initialize_cache(app.config["SESSION_REDIS"])
 
     return app

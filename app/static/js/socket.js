@@ -26,6 +26,7 @@ socket.on("connect", function () {
     console.log("🔗 Connected to WebSocket Server!");
     socket.emit("get_cards");
     socket.emit("get_card_availability");
+    socket.emit("request_card_names"); // ✅ Ensure request happens only after connection
 });
 
 socket.on("connect_error", function (error) {
@@ -59,9 +60,18 @@ socket.on("card_availability_data", function (data) {
     window.updateAvailabilityTable(data);
 });
 
+let cardNameCache = [];
 
+socket.emit("request_card_names"); // ✅ Ask backend for cached card names on load
 
-
+socket.on("card_names_response", function (data) {
+    if (!data || !Array.isArray(data.card_names)) {
+        console.warn("⚠️ Invalid card names received:", data);
+        return;
+    }
+    cardNameCache = data.card_names;
+    console.log(`✅ Loaded ${data.card_names.length} card names for autocomplete.`);
+});
 
 // Function to trigger card availability request
 function requestCardAvailability(selectedStores) {

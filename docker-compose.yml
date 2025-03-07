@@ -22,7 +22,7 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - test-runner
+#      - test-runner
       - redis
       - db
     environment:
@@ -44,7 +44,7 @@ services:
     container_name: rq-worker
     command: rq worker default
     depends_on:
-      - test-runner
+#      - test-runner
       - redis
     environment:
       - REDIS_HOST=redis

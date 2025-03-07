@@ -2,7 +2,7 @@ from flask import session, Blueprint, render_template, redirect, url_for, curren
 from flask_socketio import emit
 
 from app.caching import get_cached_card_names
-from managers.availability_manager.availability_manager import get_card_availability
+from managers.availability_manager import get_card_availability
 from managers.socket_manager.socket_manager import log_and_emit, socketio
 
 home_bp = Blueprint("home_bp", __name__)

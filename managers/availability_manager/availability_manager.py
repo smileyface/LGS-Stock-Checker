@@ -1,6 +1,6 @@
 import json
 
-from managers.redis_manager import redis_manager
+import managers.redis_manager as redis_manager
 from utility.logger import logger
 import managers.user_manager as user_manager
 

@@ -53,13 +53,13 @@ def load_data(key, field=None):
         return None
 
 
-def get_all_hash_fields(self, key):
+def get_all_hash_fields(key):
     """Retrieve all fields and values from a Redis hash."""
-    data = self.redis_conn.hgetall(key)
+    data = redis_conn.hgetall(key)
     return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
 
 
-def delete_data(self, key, field=None):
+def delete_data(key, field=None):
     """
     Deletes data from Redis.
 
@@ -68,10 +68,10 @@ def delete_data(self, key, field=None):
     """
     try:
         if field:
-            self.redis_conn.hdel(key, field)
+            redis_conn.hdel(key, field)
             logger.info(f"🗑️ Deleted field {field} from Redis Hash {key}")
         else:
-            self.redis_conn.delete(key)
+            redis_conn.delete(key)
             logger.info(f"🗑️ Deleted Redis Key {key}")
 
     except Exception as e:

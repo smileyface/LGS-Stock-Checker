@@ -19,7 +19,7 @@ from managers.socket_manager.socket_connections import handle_connect
 
 # 🔹 WebSocket Event Handling
 from managers.socket_manager.socket_handlers import handle_get_cards, handle_get_card_availability, handle_save_cards, \
-    handle_parse_card_list, handle_request_card_names
+    handle_parse_card_list, handle_request_card_names, handle_add_user_tracked_card
 
 
 def log_and_emit(level, message):
@@ -44,3 +44,4 @@ def register_socket_events(socket_io: SocketIO):
     socket_io.on_event("save_cards", handle_save_cards)
     socket_io.on_event("parse_card_list", handle_parse_card_list)
     socket_io.on_event("request_card_names", handle_request_card_names)
+    socket_io.on_event("add_card", handle_add_user_tracked_card)

@@ -58,7 +58,7 @@ def handle_request_card_names():
 
 @socketio.on("add_card")
 def handle_add_user_tracked_card(data):
-    database_manager.add_user_card(data["username"], data["card"], None)
+    database_manager.add_user_card(get_username(), data["card"], None)
 
 def handle_save_cards():
     return None

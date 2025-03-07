@@ -49,6 +49,7 @@ def handle_parse_card_list(data):
 
 @socketio.on("request_card_names")
 def handle_request_card_names():
+    logger.info("📩 Received 'request_card_names' request from front end.")
     """Send cached card names to the frontend via WebSocket."""
     send_full_card_list()
 

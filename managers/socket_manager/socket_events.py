@@ -9,8 +9,22 @@ from utility.logger import logger
 
 def send_full_card_list():
     """Send cached card names to the frontend via WebSocket."""
-    card_names = redis_manager.load_data(SCRYFALL_CARD_CACHE_KEY)
-    emit("card_names_response", {"card_names": card_names})
+    logger.info("📩 Fetching full cached card list from Redis...")
+
+    try:
+        card_names = redis_manager.load_data(SCRYFALL_CARD_CACHE_KEY)
+
+        if not card_names:
+            logger.warning("⚠️ Cached card list is empty or unavailable.")
+            card_names = []  # Ensure frontend gets an empty list instead of None
+
+        emit("card_names_response", {"card_names": card_names})
+        logger.info(f"📡 Sent {len(card_names)} card names to frontend.")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to retrieve card names from Redis: {e}")
+        emit("card_names_response", {"card_names": []})  # Send empty list on failure
+
 
 
 def send_card_availability_update(username):

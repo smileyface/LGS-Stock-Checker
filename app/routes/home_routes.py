@@ -21,15 +21,3 @@ def dashboard():
     return render_template("dashboard.html",
                            username=session["username"],
                            card_availability=get_card_availability(session["username"]))
-
-@socketio.on('get_home_page')
-def handle_get_home_page():
-    emit('home_page', {'message': 'Welcome to the LGS Stock Checker!'})
-
-@socketio.on("request_card_names")
-def handle_request_card_names():
-    """Send cached card names to the frontend via WebSocket."""
-    redis_client = current_app.config["SESSION_REDIS"]
-    card_names = get_cached_card_names(redis_client)
-
-    emit("card_names_response", {"card_names": card_names})

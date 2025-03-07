@@ -35,16 +35,16 @@ def load_data(key, field=None):
     try:
         if field:
             data = redis_conn.hget(key, field)
-            logger.info(f"🔍 Redis HGET [{key}][{field}]: {data}")
+            logger.info(f"🔍 Redis HGET [{key}][{field}]: {len(data)}")
             if data:
-                return json.loads(data.decode("utf-8"))
+                return json.loads(data)
             else:
                 return None
         else:
             data = redis_conn.get(key)
             logger.info(f"🔍 Redis GET [{key}]: {len(data)}")
             if data:
-                return json.loads(data.decode("utf-8"))
+                return json.loads(data)
             else:
                 logger.warning(f"⚠️ Redis key {key} is empty or missing.")
                 return None

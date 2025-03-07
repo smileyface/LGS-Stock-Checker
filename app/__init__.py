@@ -30,7 +30,4 @@ def create_app():
     # ✅ Attach SocketIO with Redis message queue
     socketio.init_app(app, message_queue="redis://redis:6379")
 
-    # ✅ Initialize card name cache
-    initialize_cache(app.config["SESSION_REDIS"])
-
     return app

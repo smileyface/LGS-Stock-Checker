@@ -42,7 +42,7 @@ def load_data(key, field=None):
                 return None
         else:
             data = redis_conn.get(key)
-            logger.info(f"🔍 Redis GET [{key}]: {data}")
+            logger.info(f"🔍 Redis GET [{key}]: {len(data)}")
             if data:
                 return json.loads(data.decode("utf-8"))
             else:

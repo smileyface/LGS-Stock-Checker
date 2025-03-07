@@ -8,8 +8,6 @@ from flask_session import Session
 from app.routes import register_blueprints
 from managers.socket_manager import socketio
 
-from app.caching import initialize_cache
-
 
 def create_app():
     app = Flask(__name__)

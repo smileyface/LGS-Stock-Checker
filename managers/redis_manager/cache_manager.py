@@ -31,22 +31,22 @@ def save_data(key, value, field=None):
 def load_data(key, field=None):
     """
     Load data from Redis.
-
-    - If `field` is provided, retrieves from a Redis hash (`hget`).
-    - Otherwise, retrieves the entire value stored as a string (`get`).
     """
     try:
         if field:
             data = redis_conn.hget(key, field)
+            logger.info(f"🔍 Redis HGET [{key}][{field}]: {data}")
             if data:
                 return json.loads(data.decode("utf-8"))
             else:
                 return None
         else:
             data = redis_conn.get(key)
+            logger.info(f"🔍 Redis GET [{key}]: {data}")
             if data:
                 return json.loads(data.decode("utf-8"))
             else:
+                logger.warning(f"⚠️ Redis key {key} is empty or missing.")
                 return None
     except Exception as e:
         logger.error(f"❌ Error loading data from Redis: {e}")

@@ -162,10 +162,9 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
         return;
     }
 
-    let card = JSON.parse(selectedCard);
     let amount = parseInt(document.getElementById("amount").value) || 1;
 
-    socket.emit("add_card", { card: card, amount: amount }); // ✅ Emit event via WebSocket
+    socket.emit("add_card", { card: selectedCard, amount: amount }); // ✅ Emit event via WebSocket
     $("#addCardModal").modal("hide"); // ✅ Close modal
 });
 

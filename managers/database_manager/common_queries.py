@@ -89,6 +89,15 @@ def add_user_card(username, card_name, card_specs, session):
     :param card_specs: A list of specifications (set code, finish, etc.) for the card.
     :param session: SQLAlchemy session (handled by the @db_query decorator).
     """
+    # Ensure the card exists in the cards table
+    card_entry = session.query(Card).filter(Card.name == card_name).first()
+
+    if not card_entry:
+        logger.info(f"➕ Adding new card '{card_name}' to the database.")
+        card_entry = Card(name=card_name)
+        session.add(card_entry)
+        session.flush()  # Ensure it gets an ID before proceeding
+
     # Fetch the user from the database
     user = session.query(User).filter(User.username == username).first()
 

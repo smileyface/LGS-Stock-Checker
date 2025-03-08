@@ -36,7 +36,7 @@ def get_card_availability(username):
     user_cards = user_manager.load_card_list(username)
 
     for card in user_cards:
-        card_name = card["card_name"]
+        card_name = card.card_name
         logger.debug(f"🔎 Checking availability for card: {card_name}")
 
         # Check if this card is available in any store

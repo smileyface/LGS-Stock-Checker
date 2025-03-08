@@ -162,9 +162,20 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
         return;
     }
 
-    let amount = parseInt(document.getElementById("amount").value) || 1;
+    let cardSpecs = {
+        set_code: document.getElementById("setCode")?.value || "Unknown",
+        collector_id: document.getElementById("collectorNumber")?.value || "N/A",
+        finish: document.querySelector('input[name="finish"]:checked')?.value || "Non-Foil"
+    };
 
-    socket.emit("add_card", { card: selectedCard, amount: amount }); // ✅ Emit event via WebSocket
+    socket.emit("add_card", {
+        selectedCard: selectedCard,
+        amount: amount,
+        card_specs: cardSpecs
+    });
+
+    console.log("📡 Sent 'add_card' event with:", { selectedCard, amount, card_specs });
+
     $("#addCardModal").modal("hide"); // ✅ Close modal
 });
 

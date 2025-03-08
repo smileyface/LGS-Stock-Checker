@@ -162,6 +162,8 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
         return;
     }
 
+    let amount = document.getElementById("amount")
+
     let cardSpecs = {
         set_code: document.getElementById("setCode")?.value || "Unknown",
         collector_id: document.getElementById("collectorNumber")?.value || "N/A",
@@ -169,7 +171,7 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
     };
 
     socket.emit("add_card", {
-        selectedCard: selectedCard,
+        card: selectedCard,
         amount: amount,
         card_specs: cardSpecs
     });

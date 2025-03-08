@@ -3,9 +3,6 @@ import json
 from managers.redis_manager.redis_manager import redis_conn
 from utility.logger import logger
 
-SCRYFALL_CARD_CACHE_KEY = "scryfall_card_names"
-SCRYFALL_CARD_CACHE_EXPIRY = 86400
-
 
 def save_data(key, value, field=None):
     """

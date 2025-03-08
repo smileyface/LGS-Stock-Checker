@@ -8,6 +8,7 @@ from utility.logger import logger
 SCRYFALL_CARD_CACHE_KEY = "scryfall_card_names"
 SCRYFALL_CARD_CACHE_EXPIRY = 86400
 
+
 def fetch_scryfall_card_names():
     """Fetch all Magic: The Gathering card names from Scryfall and cache them."""
     cached_data = redis_manager.load_data(SCRYFALL_CARD_CACHE_KEY)

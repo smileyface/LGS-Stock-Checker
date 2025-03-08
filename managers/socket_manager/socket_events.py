@@ -1,9 +1,8 @@
 from flask_socketio import emit
 
+from externals import fetch_scryfall_card_names
 from managers.availability_manager import get_card_availability
-from managers.redis_manager.cache_manager import SCRYFALL_CARD_CACHE_KEY
 from managers.user_manager import load_card_list
-import managers.redis_manager as redis_manager
 from utility.logger import logger
 
 
@@ -12,7 +11,7 @@ def send_full_card_list():
     logger.info("📩 Fetching full cached card list from Redis...")
 
     try:
-        card_names = redis_manager.load_data(SCRYFALL_CARD_CACHE_KEY)
+        card_names = fetch_scryfall_card_names()
 
         if not card_names:
             logger.warning("⚠️ Cached card list is empty or unavailable.")
@@ -24,7 +23,6 @@ def send_full_card_list():
     except Exception as e:
         logger.error(f"❌ Failed to retrieve card names from Redis: {e}")
         emit("card_names_response", {"card_names": []})  # Send empty list on failure
-
 
 
 def send_card_availability_update(username):

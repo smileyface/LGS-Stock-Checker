@@ -1,4 +1,5 @@
 from sqlalchemy import text
+from sqlalchemy.orm import joinedload
 
 from managers.database_manager.session_manager import db_query, get_session
 from managers.database_manager.tables import User, Card, Store, UserTrackedCards, user_store_preferences, \
@@ -67,15 +68,20 @@ def get_users_cards(username, session):
     """
     Retrieves all tracked cards for a given user.
     """
-    user = session.query(User).filter(User.username == username).first()
+    user_id = session.query(User.id).filter(User.username == username).scalar()
 
-    if not user:
+    if not user_id:
         logger.warning(f"🚨 User '{username}' not found. Cannot retrieve cards.")
         return []
 
     # Fetch all user card preferences
-    cards = session.query(UserTrackedCards).filter(UserTrackedCards.user_id == user.id).all()
-
+    cards = (
+        session.query(UserTrackedCards)
+        .filter(UserTrackedCards.user_id == user_id)
+        .options(joinedload(UserTrackedCards.specifications))  # Eager load
+        .all()
+    )
+    logger.info(f"✅ Got {len(cards)} cards for {username}")
     return cards
 
 

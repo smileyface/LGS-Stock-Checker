@@ -5,8 +5,6 @@ from managers.availability_manager import get_card_availability
 from managers.user_manager import load_card_list
 from utility.logger import logger
 
-import managers.database_manager as database_manager
-
 
 def send_full_card_list():
     """Send cached card names to the frontend via WebSocket."""

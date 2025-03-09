@@ -22,7 +22,7 @@ def load_card_list(username):
             "card_name": card.card_name,
             "amount": card.amount,
             "specifications": [
-                {"set_code": spec.set_code, "collector_id": spec.collector_id, "finish": spec.finish}
+                {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
                 for spec in card.specifications
             ] if card.specifications else [],
         }

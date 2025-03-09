@@ -56,5 +56,17 @@ def send_card_list(username):
         logger.warning(f"🚨 No tracked cards found for {username}")
         return
 
-    emit("cards_data", {"username": username, "tracked_cards": cards})
-    logger.info(f"📡 Sent card list for {username} with {len(cards)} items")
+    card_list = [
+        {
+            "card_name": card.card_name,
+            "amount": card.amount,
+            "specifications": [
+                {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
+                for spec in card.specifications
+            ] if card.specifications else [],
+        }
+        for card in cards
+    ]
+
+    emit("cards_data", {"username": username, "tracked_cards": card_list})
+    logger.info(f"📡 Sent card list for {username} with {len(card_list)} items")

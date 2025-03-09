@@ -162,7 +162,7 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
         return;
     }
 
-    let amount = document.getElementById("amount").value
+    let amount = parseInt(document.getElementById("amount")?.value || "1", 10);
 
     let cardSpecs = {
         set_code: document.getElementById("setCode")?.value || "Unknown",

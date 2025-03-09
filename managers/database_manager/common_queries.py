@@ -85,7 +85,7 @@ def get_users_cards(username, session):
 
 
 @db_query
-def add_user_card(username, card_name, card_specs, session):
+def add_user_card(username, card_name, amount, card_specs, session):
     """
     Adds a new tracked card for a user, along with its specifications if applicable.
 
@@ -120,7 +120,7 @@ def add_user_card(username, card_name, card_specs, session):
         logger.info(f"🔄 User '{username}' is already tracking '{card_name}', updating specifications.")
     else:
         # Create a new tracked card entry
-        existing_card = UserTrackedCards(user_id=user.id, card_name=card_name)
+        existing_card = UserTrackedCards(user_id=user.id, amount=amount, card_name=card_name)
         session.add(existing_card)
 
     if card_specs:

@@ -60,7 +60,7 @@ def handle_request_card_names():
 def handle_add_user_tracked_card(data):
     logger.info("📩 Received 'add_card' request from front end.")
     """Add tracked card to the database and send an updated card list."""
-    database_manager.add_user_card(get_username(), data["card"], data["card_specs"])
+    database_manager.add_user_card(get_username(), data["card"], data["amount"], data["card_specs"])
     handle_get_cards()
 
 def handle_save_cards():

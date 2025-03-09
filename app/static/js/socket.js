@@ -88,16 +88,6 @@ socket.on("card_names_response", function (data) {
     console.log(`✅ Loaded ${data.card_names.length} card names for autocomplete.`);
 });
 
-socket.on("add_card_response", function(data) {
-    if(data == true) {
-        socket.emit("get_cards");
-        console.log("📡 Sent 'get_card' event to backend to update the list");
-    }
-    else {
-        console.error("❌ Card adding failed");
-    }
-});
-
 // Function to trigger card availability request
 function requestCardAvailability(selectedStores) {
     socket.emit("get_card_availability", { stores: selectedStores });

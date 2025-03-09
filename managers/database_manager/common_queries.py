@@ -59,7 +59,6 @@ def add_user_store(username, store, session):
     session.commit()
 
     logger.info(f"✅ Added '{store}' to user '{username}' preferences.")
-    return True
 
 
 # --- CARD QUERIES ---
@@ -109,7 +108,7 @@ def add_user_card(username, card_name, card_specs, session):
 
     if not user:
         logger.warning(f"🚨 User '{username}' not found. Cannot add card.")
-        return False
+        return
 
     # Check if the user is already tracking this card
     existing_card = session.query(UserTrackedCards).filter(
@@ -149,7 +148,6 @@ def add_user_card(username, card_name, card_specs, session):
                 logger.info(f"➕ Added specification {spec} for '{card_name}'.")
 
     logger.info(f"✅ Successfully added/updated '{card_name}' for user '{username}'.")
-    return True
 
 
 @db_query

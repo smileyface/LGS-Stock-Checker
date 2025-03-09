@@ -30,9 +30,9 @@ window.updateCardTable = function (data) {
         let rowData = [
             card.amount,
             card.card_name,
-            card.set_code || "N/A",
-            card.collector_id || "N/A",
-            card.finish
+            card.specifications.set_code || "N/A",
+            card.specifications.collector_number || "N/A",
+            card.specifications.finish || "N/A"
         ];
         console.log(`🛠️ Adding row #${index + 1}:`, rowData); // ✅ Debug each row added
         table.row.add(rowData);

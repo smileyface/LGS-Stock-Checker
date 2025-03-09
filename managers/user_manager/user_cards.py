@@ -20,12 +20,11 @@ def load_card_list(username):
     card_list = [
         {
             "card_name": card.card_name,
-            "amount": card.amount,  # If applicable
-            "card_specs": {
-                "set_code": card.specifications.set_code if card.specifications else None,
-                "collector_id": card.specifications.collector_id if card.specifications else None,
-                "finish": card.specifications.finish if card.specifications else None
-            }
+            "amount": card.amount,
+            "specifications": [
+                {"set_code": spec.set_code, "collector_id": spec.collector_id, "finish": spec.finish}
+                for spec in card.specifications
+            ] if card.specifications else [],
         }
         for card in cards
     ]

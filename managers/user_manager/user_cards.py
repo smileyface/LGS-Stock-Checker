@@ -30,7 +30,7 @@ def load_card_list(username):
     ]
 
     logger.info(f"✅ Loaded {len(card_list)} cards for user: '{username}'")
-    return card_list
+    return cards
 
 
 def save_card_list(username, card_list):

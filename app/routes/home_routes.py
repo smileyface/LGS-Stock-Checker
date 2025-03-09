@@ -18,4 +18,4 @@ def dashboard():
         return redirect(url_for("home_bp.landing_page"))
     return render_template("dashboard.html",
                            username=session["username"],
-                           card_availability=[get_card_availability(session["username"])])
+                           card_availability=[])

@@ -50,14 +50,14 @@ window.updateAvailabilityTable = function (data) {
     let table = $("#availabilityTable").DataTable(); // ✅ Get existing DataTable instance
     table.clear(); // ✅ Clears old data
 
+    // ✅ Remove all previous rows
     tableBody.innerHTML = "";
 
     if (data.error) {
-        tableBody.innerHTML = `<tr><td colspan="4">${data.error}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="2">${data.error}</td></tr>`;
     }
-    else if(data.length == 0) {
-        availabilityTable.innerHTML = `<tr><td colspan="5" class="text-center">No tracked cards found.</td></tr>`;
-        table.draw();
+    else if (!data.availability || data.availability.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="2" class="text-center">No tracked cards found.</td></tr>`;
     }
     else {
         data.availability.forEach((card, index) => {
@@ -85,7 +85,10 @@ window.updateAvailabilityTable = function (data) {
             tableBody.innerHTML += row;
         });
     }
+
+    table.draw(); // ✅ Ensures DataTables updates properly
 };
+
 
 document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");

@@ -48,22 +48,28 @@ socket.on("server_log", function (data) {
     console.log(`📢 [SERVER LOG]: ${data.level}: ${data.message}`);
 });
 
-// Handle tracked cards update
+// ✅ Wait for tables to be initialized before updating them
 socket.on("cards_data", function (data) {
     console.log("🛠️ Received cards_data:", data);
 
-    waitForFunction("updateCardTable", () => {
-        window.updateCardTable(data);
-    });
-});
-
-
-// Handle availability updates
-socket.on("card_availability_data", function (data) {
-    if (!window.updateAvailabilityTable) {
-        console.warn("⚠️ updateAvailabilityTable function not found!");
+    if (!$.fn.DataTable.isDataTable("#cardTable")) {
+        console.warn("⚠️ DataTable not initialized yet. Retrying...");
+        setTimeout(() => window.updateCardTable(data), 500);
         return;
     }
+
+    window.updateCardTable(data);
+});
+
+socket.on("card_availability_data", function (data) {
+    console.log("🛠️ Received card_availability_data:", data);
+
+    if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
+        console.warn("⚠️ DataTable not initialized yet. Retrying...");
+        setTimeout(() => window.updateAvailabilityTable(data), 500);
+        return;
+    }
+
     window.updateAvailabilityTable(data);
 });
 

@@ -1,37 +1,41 @@
-// ✅ Function to update tracked cards table
 window.updateCardTable = function (data) {
     let table = $("#cardTable").DataTable();
     table.clear();
 
     if (!data || !Array.isArray(data.tracked_cards) || data.tracked_cards.length === 0) {
         console.warn("⚠️ No tracked cards available, inserting placeholder row.");
-        table.row.add(["-", "No Cards", "-", "-", "-"]);
+        table.row.add(["-", "No Cards", "-", "-", "-"]); // ✅ Matches exactly 5 columns
         table.draw();
         return;
     }
 
     data.tracked_cards.forEach((card) => {
         let rowData = [
-            card.amount,
-            card.card_name,
+            card.amount || "-",
+            card.card_name || "-",
             card.set_code || "N/A",
             card.collector_id || "N/A",
-            card.finish
+            card.finish || "Non-Foil"
         ];
-        table.row.add(rowData);
+
+        if (rowData.length === 5) {
+            table.row.add(rowData);
+        } else {
+            console.error("❌ Invalid row data (incorrect column count):", rowData);
+        }
     });
 
     table.draw();
 };
 
-// ✅ Function to update availability table
+
 window.updateAvailabilityTable = function (data) {
     let table = $("#availabilityTable").DataTable();
     table.clear();
 
     if (!data || !Array.isArray(data.availability) || data.availability.length === 0) {
         console.warn("⚠️ No availability data available.");
-        table.row.add(["No Availability", ""]);
+        table.row.add(["No Availability", ""]); // ✅ Matches exactly 2 columns
         table.draw();
         return;
     }
@@ -46,10 +50,15 @@ window.updateAvailabilityTable = function (data) {
         });
 
         let row = [
-            card.card_name,
+            card.card_name || "-",
             `<button class="btn btn-outline-primary btn-sm" onclick="toggleStores(${index}, event)">Show Stores</button>${storeDetails}`
         ];
-        table.row.add(row);
+
+        if (row.length === 2) {
+            table.row.add(row);
+        } else {
+            console.error("❌ Invalid row data (incorrect column count):", row);
+        }
     });
 
     table.draw();
@@ -59,7 +68,7 @@ window.updateAvailabilityTable = function (data) {
 document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");
 
-    // ✅ Initialize Card Table
+    // ✅ Ensure DataTables initializes only once
     if (!$.fn.DataTable.isDataTable("#cardTable")) {
         console.log("✅ Initializing Card Table...");
         $("#cardTable").DataTable({
@@ -70,7 +79,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ✅ Initialize Availability Table
     if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
         console.log("✅ Initializing Availability Table...");
         $("#availabilityTable").DataTable({
@@ -81,6 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
+
 
 document.addEventListener("DOMContentLoaded", function () {
     let cardSearchInput = document.getElementById("cardSearch");

@@ -68,27 +68,43 @@ window.updateAvailabilityTable = function (data) {
 document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");
 
-    // ✅ Ensure DataTables initializes only once
-    if (!$.fn.DataTable.isDataTable("#cardTable")) {
-        console.log("✅ Initializing Card Table...");
-        $("#cardTable").DataTable({
-            paging: false,
-            searching: true,
-            ordering: true,
-            info: false
-        });
+    function initializeDataTables() {
+        if (!$.fn.DataTable.isDataTable("#cardTable")) {
+            console.log("✅ Initializing Card Table...");
+            $("#cardTable").DataTable({
+                paging: false,
+                searching: true,
+                ordering: true,
+                info: false
+            });
+        }
+
+        if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
+            console.log("✅ Initializing Availability Table...");
+            $("#availabilityTable").DataTable({
+                paging: false,
+                searching: true,
+                ordering: true,
+                info: false
+            });
+        }
     }
 
-    if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
-        console.log("✅ Initializing Availability Table...");
-        $("#availabilityTable").DataTable({
-            paging: false,
-            searching: true,
-            ordering: true,
-            info: false
-        });
+    function checkAndInitTables() {
+        let trackedCards = $("#cardTableBody tr").length;
+        let availabilityData = $("#availabilityTableBody tr").length;
+
+        if (trackedCards > 0 && availabilityData > 0) {
+            initializeDataTables();
+        } else {
+            console.warn("⚠️ Data missing, retrying DataTable initialization...");
+            setTimeout(checkAndInitTables, 1000); // Retry after 1 sec
+        }
     }
+
+    checkAndInitTables(); // Run check and initialize when ready
 });
+
 
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -139,6 +155,11 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
         finish: document.querySelector('input[name="finish"]:checked')?.value || "Non-Foil"
     };
 
+    if (!cardSpecs) {
+        console.error("❌ card_specs is undefined!", { selectedCard, amount });
+        return;
+    }
+
     socket.emit("add_card", {
         card: selectedCard,
         amount: amount,
@@ -147,7 +168,7 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
 
     console.log("📡 Sent 'add_card' event with:", { selectedCard, amount, card_specs });
 
-    $("#addCardModal").modal("hide"); // ✅ Close modal
+    $("#addCardModal").modal("hide");
 });
 
 

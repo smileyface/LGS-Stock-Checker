@@ -49,29 +49,49 @@ socket.on("server_log", function (data) {
 });
 
 // ✅ Wait for tables to be initialized before updating them
+// ✅ Wait for DataTable and Data before Updating
 socket.on("cards_data", function (data) {
     console.log("🛠️ Received cards_data:", data);
 
-    if (!$.fn.DataTable.isDataTable("#cardTable")) {
-        console.warn("⚠️ DataTable not initialized yet. Retrying...");
-        setTimeout(() => window.updateCardTable(data), 500);
-        return;
+    function attemptUpdate() {
+        if (!$.fn.DataTable.isDataTable("#cardTable")) {
+            console.warn("⚠️ DataTable not initialized yet. Retrying...");
+            setTimeout(attemptUpdate, 500);
+            return;
+        }
+
+        if (!data.tracked_cards || data.tracked_cards.length === 0) {
+            console.warn("⚠️ No tracked cards available.");
+            return;
+        }
+
+        window.updateCardTable(data);
     }
 
-    window.updateCardTable(data);
+    attemptUpdate(); // Start retry loop until ready
 });
 
 socket.on("card_availability_data", function (data) {
     console.log("🛠️ Received card_availability_data:", data);
 
-    if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
-        console.warn("⚠️ DataTable not initialized yet. Retrying...");
-        setTimeout(() => window.updateAvailabilityTable(data), 500);
-        return;
+    function attemptUpdate() {
+        if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
+            console.warn("⚠️ DataTable not initialized yet. Retrying...");
+            setTimeout(attemptUpdate, 500);
+            return;
+        }
+
+        if (!data.availability || data.availability.length === 0) {
+            console.warn("⚠️ No availability data.");
+            return;
+        }
+
+        window.updateAvailabilityTable(data);
     }
 
-    window.updateAvailabilityTable(data);
+    attemptUpdate(); // Start retry loop until ready
 });
+
 
 // ✅ Receive Search Results and Populate List
 socket.on("search_results", function (data) {

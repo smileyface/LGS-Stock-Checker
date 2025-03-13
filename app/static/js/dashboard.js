@@ -69,7 +69,14 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");
 
     function initializeDataTables() {
-        if (!$.fn.DataTable.isDataTable("#cardTable")) {
+        if ($.fn.DataTable.isDataTable("#cardTable")) {
+            console.log("✅ Card Table already initialized.");
+            return;
+        }
+
+        let rowCount = $("#cardTable tbody tr:not(.placeholder-row)").length;
+
+        if (rowCount > 0) {
             console.log("✅ Initializing Card Table...");
             $("#cardTable").DataTable({
                 paging: false,
@@ -77,33 +84,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 ordering: true,
                 info: false
             });
-        }
-
-        if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
-            console.log("✅ Initializing Availability Table...");
-            $("#availabilityTable").DataTable({
-                paging: false,
-                searching: true,
-                ordering: true,
-                info: false
-            });
-        }
-    }
-
-    function checkAndInitTables() {
-        let trackedCards = $("#cardTableBody tr").length;
-        let availabilityData = $("#availabilityTableBody tr").length;
-
-        if (trackedCards > 0 && availabilityData > 0) {
-            initializeDataTables();
         } else {
-            console.warn("⚠️ Data missing, retrying DataTable initialization...");
-            setTimeout(checkAndInitTables, 1000); // Retry after 1 sec
+            console.warn("⚠️ No data yet. Retrying DataTable initialization...");
+            setTimeout(initializeDataTables, 1000); // Retry after 1 second
         }
     }
 
-    checkAndInitTables(); // Run check and initialize when ready
+    initializeDataTables();
 });
+
 
 
 

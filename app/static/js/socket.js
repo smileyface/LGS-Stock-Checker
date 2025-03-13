@@ -76,13 +76,13 @@ socket.on("card_availability_data", function (data) {
 
     function attemptUpdate() {
         if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
-            console.warn("⚠️ DataTable not initialized yet. Retrying...");
+            console.warn("⚠️ Availability table not initialized yet. Retrying...");
             setTimeout(attemptUpdate, 500);
             return;
         }
 
         if (!data.availability || data.availability.length === 0) {
-            console.warn("⚠️ No availability data.");
+            console.info("⚠️ No availability data.");
             return;
         }
 

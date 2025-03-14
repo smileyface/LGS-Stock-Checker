@@ -35,7 +35,7 @@ window.updateAvailabilityTable = function (data) {
 
     if (!data || !Array.isArray(data.availability) || data.availability.length === 0) {
         console.warn("⚠️ No availability data available.");
-        table.row.add(["No Availability", ""]); // ✅ Matches exactly 2 columns
+        table.row.add(["No Availability", "", ""]); // ✅ Matches exactly 3 columns
         table.draw();
         return;
     }
@@ -68,7 +68,7 @@ window.updateAvailabilityTable = function (data) {
 document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");
 
-    function initializeDataTables() {
+    function initializeCardTable() {
         if ($.fn.DataTable.isDataTable("#cardTable")) {
             console.log("✅ Card Table already initialized.");
             return;
@@ -83,7 +83,23 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    initializeDataTables();
+    function initializeAvailabilityTable() {
+        if ($.fn.DataTable.isDataTable("#availabilityTable")) {
+            console.log("✅ Availability Table already initialized.");
+            return;
+        }
+
+        console.log("✅ Initializing Availability Table...");
+        $("#availabilityTable").DataTable({
+            paging: false,
+            searching: true,
+            ordering: true,
+            info: false
+        });
+    }
+
+    initializeCardTable();
+    initializeAvailabilityTable();
 });
 
 

@@ -32,7 +32,7 @@ def send_card_availability_update(username):
     logger.info(f"📩 Received request for card availability update from {username}")
 
     availability = get_card_availability(username)
-    if availability is None:
+    if availability is []:
         logger.info(f"🚨 No availability data found for {username}.")
         emit("no_availability", None, broadcast=True)
         return

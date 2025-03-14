@@ -3,8 +3,11 @@ window.updateCardTable = function (data) {
     table.clear();
 
     if (!data || !Array.isArray(data.tracked_cards) || data.tracked_cards.length === 0) {
-        console.warn("⚠️ No tracked cards available, inserting placeholder row.");
-        table.row.add(["-", "No Cards", "-", "-", "-"]); // ✅ Matches exactly 5 columns
+        console.warn("⚠️ No tracked cards available.");
+        table.row.add([
+            '<td colspan="5" class="text-center">No Cards Available</td>',
+            "", "", "", ""
+        ]); // Empty strings prevent column mismatch
         table.draw();
         return;
     }

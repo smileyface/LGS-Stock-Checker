@@ -92,6 +92,11 @@ socket.on("card_availability_data", function (data) {
     attemptUpdate(); // Start retry loop until ready
 });
 
+socket.on("no_availability", function() {
+    console.log("⚠️ No availability data received. Updating table.");
+    window.updateAvailabilityTable(null);
+});
+
 
 // ✅ Receive Search Results and Populate List
 socket.on("search_results", function (data) {

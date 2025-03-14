@@ -33,7 +33,8 @@ def send_card_availability_update(username):
 
     availability = get_card_availability(username)
     if availability is None:
-        logger.warning(f"🚨 No availability data found for {username}")
+        logger.info(f"🚨 No availability data found for {username}.")
+        emit("no_availability", None, broadcast=True)
         return
 
     emit("card_availability_data", availability, broadcast=True)

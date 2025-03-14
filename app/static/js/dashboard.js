@@ -74,20 +74,13 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        let rowCount = $("#cardTable tbody tr:not(.placeholder-row)").length;
-
-        if (rowCount > 0) {
-            console.log("✅ Initializing Card Table...");
-            $("#cardTable").DataTable({
-                paging: false,
-                searching: true,
-                ordering: true,
-                info: false
-            });
-        } else {
-            console.warn("⚠️ No data yet. Retrying DataTable initialization...");
-            setTimeout(initializeDataTables, 1000); // Retry after 1 second
-        }
+        console.log("✅ Initializing Card Table...");
+        $("#cardTable").DataTable({
+            paging: false,
+            searching: true,
+            ordering: true,
+            info: false
+        });
     }
 
     initializeDataTables();

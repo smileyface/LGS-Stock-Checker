@@ -71,7 +71,7 @@ def update_wanted_cards_availability(username=None):
         availability_update[card] = load_store_availability(card)
         availability_update[card]["last_updated"] = time.time()
 
-    previous_availability = load_availability_state("system")
+    previous_availability = load_availability_state(username)
     changes = availability_diff(previous_availability, availability_update)
 
     save_availability_state("system", availability_update)

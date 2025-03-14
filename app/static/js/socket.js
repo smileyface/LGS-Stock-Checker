@@ -13,6 +13,8 @@ function waitForFunction(fnName, callback) {
     }, 200);
 }
 
+let cardNameCache = [];
+
 var socket = io.connect(window.location.origin, {
     transports: ["websocket", "polling"], // Ensure WebSockets are prioritized
     reconnection: true, // Enable automatic reconnection
@@ -26,42 +28,96 @@ socket.on("connect", function () {
     console.log("🔗 Connected to WebSocket Server!");
     socket.emit("get_cards");
     socket.emit("get_card_availability");
+    console.log("📡 Sent 'get_card_availability' event to backend");
+    socket.emit("request_card_names"); // ✅ Ensure request happens only after connection
+    console.log("📡 Sent 'request_card_names' event to backend");
 });
 
+//Error connecting to the server
 socket.on("connect_error", function (error) {
     console.error("❌ WebSocket Connection Error:", error);
 });
 
+//Disconnect from server
 socket.on("disconnect", function (reason) {
     console.warn("⚠️ Disconnected from WebSocket Server:", reason);
 });
 
+// Send log info to the console
 socket.on("server_log", function (data) {
     console.log(`📢 [SERVER LOG]: ${data.level}: ${data.message}`);
 });
 
-// Handle tracked cards update
+// ✅ Wait for tables to be initialized before updating them
+// ✅ Wait for DataTable and Data before Updating
 socket.on("cards_data", function (data) {
     console.log("🛠️ Received cards_data:", data);
 
-    waitForFunction("updateCardTable", () => {
+    function attemptUpdate() {
+        if (!$.fn.DataTable.isDataTable("#cardTable")) {
+            console.warn("⚠️ DataTable not initialized yet. Retrying...");
+            setTimeout(attemptUpdate, 500);
+            return;
+        }
+
+        if (!data.tracked_cards || data.tracked_cards.length === 0) {
+            console.warn("⚠️ No tracked cards available.");
+            return;
+        }
+
         window.updateCardTable(data);
+    }
+
+    attemptUpdate(); // Start retry loop until ready
+});
+
+socket.on("card_availability_data", function (data) {
+    console.log("🛠️ Received card_availability_data:", data);
+
+    function attemptUpdate() {
+        if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
+            console.warn("⚠️ Availability table not initialized yet. Retrying...");
+            setTimeout(attemptUpdate, 500);
+            return;
+        }
+
+        if (!data.availability || data.availability.length === 0) {
+            console.info("⚠️ No availability data.");
+            return;
+        }
+
+        window.updateAvailabilityTable(data);
+    }
+
+    attemptUpdate(); // Start retry loop until ready
+});
+
+socket.on("no_availability", function() {
+    console.log("⚠️ No availability data received. Updating table.");
+    window.updateAvailabilityTable(null);
+});
+
+
+// ✅ Receive Search Results and Populate List
+socket.on("search_results", function (data) {
+    searchResultsList.innerHTML = "";
+    data.forEach(card => {
+        let listItem = document.createElement("li");
+        listItem.className = "list-group-item list-group-item-action";
+        listItem.innerHTML = `${card.name} <small>(${card.set_code})</small>`;
+        listItem.onclick = () => selectCard(card);
+        searchResultsList.appendChild(listItem);
     });
 });
 
-
-// Handle availability updates
-socket.on("card_availability_data", function (data) {
-    if (!window.updateAvailabilityTable) {
-        console.warn("⚠️ updateAvailabilityTable function not found!");
+socket.on("card_names_response", function (data) {
+    if (!data || !Array.isArray(data.card_names)) {
+        console.warn("⚠️ Invalid card names received:", data);
         return;
     }
-    window.updateAvailabilityTable(data);
+    cardNameCache = data.card_names;
+    console.log(`✅ Loaded ${data.card_names.length} card names for autocomplete.`);
 });
-
-
-
-
 
 // Function to trigger card availability request
 function requestCardAvailability(selectedStores) {

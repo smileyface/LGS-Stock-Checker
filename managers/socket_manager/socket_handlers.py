@@ -1,14 +1,16 @@
 from flask import session
 
 from managers.card_manager import parse_card_list
-from managers.socket_manager.socket_events import send_card_availability_update, send_card_list
+from managers.socket_manager.socket_events import send_card_availability_update, send_card_list, send_full_card_list
 from managers.socket_manager.socket_manager import socketio
+import managers.database_manager as database_manager
 from utility.logger import logger
 
 
 def get_username():
     """Helper function to get the username from the session."""
     return session.get("username")
+
 
 @socketio.on("get_card_availability")
 def handle_get_card_availability():
@@ -47,6 +49,19 @@ def handle_parse_card_list(data):
         logger.warning("🚨 'parse_card_list' request missing 'raw_list' field.")
 
 
+@socketio.on("request_card_names")
+def handle_request_card_names():
+    logger.info("📩 Received 'request_card_names' request from front end.")
+    """Send cached card names to the frontend via WebSocket."""
+    send_full_card_list()
+
+
+@socketio.on("add_card")
+def handle_add_user_tracked_card(data):
+    logger.info("📩 Received 'add_card' request from front end.")
+    """Add tracked card to the database and send an updated card list."""
+    database_manager.add_user_card(get_username(), data["card"], data["amount"], data["card_specs"])
+    handle_get_cards()
 
 def handle_save_cards():
     return None

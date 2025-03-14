@@ -1,7 +1,9 @@
 from sqlalchemy import text
+from sqlalchemy.orm import joinedload
 
 from managers.database_manager.session_manager import db_query, get_session
-from managers.database_manager.tables import User, Card, Store, UserTrackedCards, user_store_preferences
+from managers.database_manager.tables import User, Card, Store, UserTrackedCards, user_store_preferences, \
+    CardSpecification
 from utility.logger import logger
 
 
@@ -57,7 +59,6 @@ def add_user_store(username, store, session):
     session.commit()
 
     logger.info(f"✅ Added '{store}' to user '{username}' preferences.")
-    return True
 
 
 # --- CARD QUERIES ---
@@ -66,16 +67,87 @@ def get_users_cards(username, session):
     """
     Retrieves all tracked cards for a given user.
     """
-    user = session.query(User).filter(User.username == username).first()
+    user_id = session.query(User.id).filter(User.username == username).scalar()
 
-    if not user:
+    if not user_id:
         logger.warning(f"🚨 User '{username}' not found. Cannot retrieve cards.")
         return []
 
     # Fetch all user card preferences
-    cards = session.query(UserTrackedCards).filter(UserTrackedCards.user_id == user.id).all()
-
+    cards = (
+        session.query(UserTrackedCards)
+        .filter(UserTrackedCards.user_id == user_id)
+        .options(joinedload(UserTrackedCards.specifications))  # Eager load
+        .all()
+    )
+    logger.info(f"✅ Got {len(cards)} cards for {username}")
     return cards
+
+
+@db_query
+def add_user_card(username, card_name, amount, card_specs, session):
+    """
+    Adds a new tracked card for a user, along with its specifications if applicable.
+
+    :param username: The username of the user tracking the card.
+    :param card_name: The name of the card being tracked.
+    :param card_specs: A list of specifications (set code, finish, etc.) for the card.
+    :param session: SQLAlchemy session (handled by the @db_query decorator).
+    """
+    # Ensure the card exists in the cards table
+    card_entry = session.query(Card).filter(Card.name == card_name).first()
+
+    if not card_entry:
+        logger.info(f"➕ Adding new card '{card_name}' to the database.")
+        card_entry = Card(name=card_name)
+        session.add(card_entry)
+        session.flush()  # Ensure it gets an ID before proceeding
+
+    # Fetch the user from the database
+    user = session.query(User).filter(User.username == username).first()
+
+    if not user:
+        logger.warning(f"🚨 User '{username}' not found. Cannot add card.")
+        return
+
+    # Check if the user is already tracking this card
+    existing_card = session.query(UserTrackedCards).filter(
+        UserTrackedCards.user_id == user.id,
+        UserTrackedCards.card_name == card_name
+    ).first()
+
+    if existing_card:
+        logger.info(f"🔄 User '{username}' is already tracking '{card_name}', updating specifications.")
+    else:
+        # Create a new tracked card entry
+        existing_card = UserTrackedCards(user_id=user.id, amount=amount, card_name=card_name)
+        session.add(existing_card)
+
+    if card_specs:
+        # Ensure card_specs is a list
+        if not isinstance(card_specs, list):
+            card_specs = [card_specs]  # Convert single spec into a list
+
+        # Add or update specifications
+        for spec in card_specs:
+            spec_entry = session.query(CardSpecification).filter_by(
+                user_card_id=existing_card.id,
+                set_code=spec.get("set_code"),
+                finish=spec.get("finish"),
+                collector_number=spec.get("collector_number")
+            ).first()
+
+            if not spec_entry:
+                new_spec = CardSpecification(
+                    user_card_id=existing_card.id,
+                    set_code=spec.get("set_code"),
+                    finish=spec.get("finish"),
+                    collector_number=spec.get("collector_number")
+                )
+                session.add(new_spec)
+                logger.info(f"➕ Added specification {spec} for '{card_name}'.")
+
+    logger.info(f"✅ Successfully added/updated '{card_name}' for user '{username}'.")
 
 
 @db_query

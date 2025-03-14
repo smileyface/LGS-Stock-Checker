@@ -15,10 +15,22 @@ def load_card_list(username):
         return []
 
     logger.info(f"📖 Loading card list for user: '{username}'")
-    card_list = database_manager.get_users_cards(username)
+    cards = database_manager.get_users_cards(username)
+
+    card_list = [
+        {
+            "card_name": card.card_name,
+            "amount": card.amount,
+            "specifications": [
+                {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
+                for spec in card.specifications
+            ] if card.specifications else [],
+        }
+        for card in cards
+    ]
 
     logger.info(f"✅ Loaded {len(card_list)} cards for user: '{username}'")
-    return card_list
+    return cards
 
 
 def save_card_list(username, card_list):

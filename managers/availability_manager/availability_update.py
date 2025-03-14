@@ -1,7 +1,7 @@
 import json
 import time
 
-from managers.redis_manager import redis_manager
+import managers.redis_manager as redis_manager
 from managers.store_manager.store_manager import load_store_availability
 from managers.user_manager import get_user, load_card_list
 from utility.logger import logger
@@ -34,7 +34,6 @@ def get_wanted_cards():
     return list(wanted_cards)
 
 
-
 def load_availability_state(username):
     """Loads availability state for a user from Redis, falling back to JSON if needed."""
     redis_key = f"{username}_availability"
@@ -52,13 +51,13 @@ def load_availability_state(username):
 def save_availability_state(username, availability):
     """Saves availability state in Redis and JSON for persistence."""
     redis_key = f"{username}_availability"
-    redis_manager.store_data(redis_key, json.dumps(availability))
+    redis_manager.save_data(redis_key, json.dumps(availability))
 
     logger.info(f"💾 Availability state saved for {username}.")
 
 
 def update_wanted_cards_availability(username=None):
-        #Fetches and caches availability for wanted cards only.
+    #Fetches and caches availability for wanted cards only.
     if username:
         users = [get_user(username)]  # Fetch only this user
     else:
@@ -76,7 +75,7 @@ def update_wanted_cards_availability(username=None):
     changes = availability_diff(previous_availability, availability_update)
 
     save_availability_state("system", availability_update)
-    redis_manager.store_data("last_availability_update", str(time.time()))
+    redis_manager.save_data("last_availability_update", str(time.time()))
 
     if changes:
         logger.info("📢 Notifying users of availability changes.")
@@ -124,6 +123,7 @@ def queue_wanted_card_updates():
     """Queues availability updates every 30 minutes for wanted cards only."""
     redis_manager.schedule_task(update_wanted_cards_availability, 0.5)
     logger.info("⏳ Scheduled wanted card availability updates every 30 minutes.")
+
 
 # Register function before scheduling
 redis_manager.register_function("update_wanted_cards_availability", update_wanted_cards_availability)

@@ -42,7 +42,7 @@ def scrape_store_availability(card_name, username):
     logger.info(f"📂 Found {len(store_classes)} matching store scrapers.")
 
     for store_class in store_classes:
-        store_name = store_class.__name__
+        store_name = store_class.slug
         try:
             logger.info(f"🔍 Scraping '{store_name}' for card: {card_name}")
 

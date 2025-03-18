@@ -37,7 +37,11 @@ class Store:
 
     def check_availability(self, card):
         """Performs the search and checks the availability of the card, with detailed logging."""
-        card_name = card['card_name']
+        card_name = ""
+        if isinstance(card, str):
+            card_name = card
+        elif isinstance(card, dict):
+            card_name = card['card_name']
         values = []  # List to store valid results
 
         logger.info(f"🔄 Starting availability check for '{card_name}' at {self.store_name}")

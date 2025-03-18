@@ -43,7 +43,7 @@ def scrape_store_availability(card_name, username):
 
     for store_class in store_classes:
         store_instance = store_class()  # Instantiate store class
-        store_name = store_class.slug
+        store_name = store_instance.slug
 
         logger.info(f"🔍 Scraping '{store_name}' for card: {card_name}")
         try:

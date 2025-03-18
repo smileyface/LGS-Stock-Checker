@@ -2,8 +2,8 @@ import json
 
 import managers.redis_manager as redis_manager
 from managers import database_manager
+from managers.store_manager.store_manager import scrape_store_availability, save_store_availability
 from utility.logger import logger
-import managers.user_manager as user_manager
 
 
 def check_availability(username):
@@ -40,12 +40,23 @@ def get_card_availability(username):
         card_name = card.card_name
         logger.debug(f"🔎 Checking availability for card: {card_name}")
 
-        # Check if this card is available in any store
+        # Check if this card is available in cache
         stores_with_card = {
             store: listings
             for store, listings in parsed_data.items()
             if store.endswith(f"_{card_name}") and listings  # Ensure there are listings
         }
+
+        # If not found in cache, scrape it!
+        if not stores_with_card:
+            logger.warning(f"🚨 {card_name} not found in cache. Scraping now.")
+            scraped_data = scrape_store_availability(card_name, username)  # 🔥 Trigger scraping
+
+            if scraped_data:
+                # Save scraped data to Redis to avoid redundant scraping
+                save_store_availability(card_name, scraped_data)
+                stores_with_card = scraped_data
+                logger.info(f"✅ {card_name} scraped and saved to cache.")
 
         if stores_with_card:
             logger.info(f"✅ {card_name} found in stores: {list(stores_with_card.keys())}")
@@ -54,6 +65,6 @@ def get_card_availability(username):
                 "stores": stores_with_card
             })
         else:
-            logger.warning(f"🚨 {card_name} not found in any store.")
+            logger.warning(f"🚨 {card_name} still not found in any store after scraping.")
 
     return available_cards  # Returns a list of available cards

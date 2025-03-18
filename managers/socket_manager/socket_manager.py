@@ -8,7 +8,7 @@ socketio = SocketIO(
     message_queue=REDIS_URL,
     cors_allowed_origins="*",
     async_mode="eventlet",
-    engineio_logger=True
+    engineio_logger=False
 )
 
 # Store active WebSocket connections

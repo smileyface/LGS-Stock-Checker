@@ -7,5 +7,5 @@ STORE_REGISTRY = {
 def store_list(store_list):
     list_of_objects = []
     for x in store_list:
-        list_of_objects.append(STORE_REGISTRY[x.slug])
+        list_of_objects.append(STORE_REGISTRY[x.slug]())
     return list_of_objects

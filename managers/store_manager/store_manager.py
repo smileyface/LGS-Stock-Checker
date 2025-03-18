@@ -44,9 +44,9 @@ def scrape_store_availability(card_name, username):
     for store_class in store_classes:
         store_name = store_class.slug
         try:
+            store_instance = store_class()  # Instantiate store class
             logger.info(f"🔍 Scraping '{store_name}' for card: {card_name}")
 
-            store_instance = store_class()  # Instantiate store class
             store_listings = store_instance.check_store_availability(card_name)
 
             if store_listings:

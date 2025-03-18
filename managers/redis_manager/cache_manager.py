@@ -4,22 +4,26 @@ from managers.redis_manager.redis_manager import redis_conn
 from utility.logger import logger
 
 
-def save_data(key, value, field=None):
+def save_data(key, value, field=None, ex=None):
     """
-    Save data to Redis.
+    Save data to Redis with optional expiration.
 
-    - If `field` is provided, uses a Redis hash (`hset`).
-    - Otherwise, stores the entire `value` as a string (`set`).
+    - If `field` is provided, uses a Redis hash (`hset`) (no expiration support for hashes).
+    - Otherwise, stores the entire `value` as a string (`set`) with optional expiration (`ex`).
     """
     try:
         value_json = json.dumps(value)  # Ensure value is serialized
 
         if field:
             redis_conn.hset(key, field, value_json)
-            logger.info(f"💾 Saved data to Redis Hash {key}[{field}]")
+            logger.info(f"💾 Saved data to Redis Hash {key}[{field}] (No Expiration)")
         else:
-            redis_conn.set(key, value_json)
-            logger.info(f"💾 Saved data to Redis Key {key}")
+            if ex:
+                redis_conn.set(key, value_json, ex=ex)  # ✅ Now supports expiration!
+                logger.info(f"💾 Saved data to Redis Key {key} with expiration: {ex} seconds")
+            else:
+                redis_conn.set(key, value_json)
+                logger.info(f"💾 Saved data to Redis Key {key} (No Expiration)")
 
     except Exception as e:
         logger.error(f"❌ Error saving data to Redis: {e}")

@@ -47,7 +47,7 @@ def scrape_store_availability(card_name, username):
 
         logger.info(f"🔍 Scraping '{store_name}' for card: {card_name}")
         try:
-            store_listings = store_instance.check_store_availability(card_name)
+            store_listings = store_instance.check_availability(card_name)
 
             if store_listings:
                 scraped_data[store_name] = {

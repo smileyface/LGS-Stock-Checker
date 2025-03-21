@@ -27,7 +27,7 @@ window.updateCardTable = function (data) {
             card.finish || "Non-Foil"
         ];
 
-        if (rowData.length === 5) {
+        if (rowData.length === 6) {
             table.row.add(rowData);
         } else {
             console.error("❌ Invalid row data (incorrect column count):", rowData);

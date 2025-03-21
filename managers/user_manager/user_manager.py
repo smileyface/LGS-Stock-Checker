@@ -14,7 +14,7 @@ def get_user(username):
         return {
             "username": user.username,
             "password_hash": user.password_hash,
-            "selected_stores": user.selected_stores  # Assuming JSON serialized list
+            "selected_stores": database_manager.get_user_stores(username)  # Assuming JSON serialized list
         }
     return None
 

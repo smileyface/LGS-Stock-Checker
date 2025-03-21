@@ -1,8 +1,8 @@
 import json
 import time
-import managers.redis_manager as redis_manager
-import managers.socket_manager as socket_manager
+
 import managers.database_manager as database_manager
+import managers.redis_manager as redis_manager
 from managers.store_manager.stores import store_list  # Assuming this is your base store scraper
 from utility.logger import logger
 

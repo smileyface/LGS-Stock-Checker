@@ -8,6 +8,7 @@ import redis.exceptions
 
 from managers.database_manager.tables import Store
 from tests.utils.db_mock import *
+from tests.utils.redis_mock import *
 
 
 # Insert mock store data
@@ -27,10 +28,12 @@ def seed_test_store():
     finally:
         session.close()
 
+
 seed_test_store()
 
 # Import managers only after database override
 import managers, core  # Example: Import multiple packages
+
 
 def import_all_modules_from_packages(*packages):
     """Dynamically imports all submodules from multiple packages and prints successful imports."""
@@ -48,19 +51,40 @@ def import_all_modules_from_packages(*packages):
                     raise e
     return modules
 
+
 PACKAGES_TO_TEST = import_all_modules_from_packages(managers, core)
 
-class TestAllPackagesExceptions(unittest.TestCase):
+
+class TestAllFunctionsNoCrashes(unittest.TestCase):
     def test_all_functions_no_exceptions(self):
         for package in PACKAGES_TO_TEST:
             with self.subTest(package=package.__name__):
                 for name, func in inspect.getmembers(package, inspect.isfunction):
+                    params = inspect.signature(func).parameters
+
+                    # Generate safe test inputs
+                    args = []
+                    for param_name, param in params.items():
+                        if param.default is not inspect.Parameter.empty:
+                            args.append(param.default)
+                        elif param.annotation == str:
+                            args.append("test")
+                        elif param.annotation == int:
+                            args.append(0)
+                        elif param.annotation == list:
+                            args.append([])
+                        elif param.annotation == dict:
+                            args.append({})
+                        elif param.annotation == bool:
+                            args.append(False)
+                        else:
+                            args.append(None)  # Safe fallback
+
                     try:
-                        params = inspect.signature(func).parameters
-                        args = [None] * len(params)  # Provide dummy arguments
                         func(*args)
                     except Exception as e:
                         self.fail(f"Function {package.__name__}.{name} raised an exception: {e}")
+
 
 if __name__ == "__main__":
     unittest.main()

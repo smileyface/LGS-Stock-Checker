@@ -1,17 +1,16 @@
+from typing import Dict
 import json
 
 import managers.redis_manager as redis_manager
-from managers import database_manager
-from managers.store_manager.store_manager import scrape_store_availability, save_store_availability
+import managers.database_manager as database_manager
+import managers.store_manager as store_manager
 from utility.logger import logger
 
 
-def check_availability(username):
+def check_availability(username: str) -> Dict[str, str]:
     """Manually triggers an availability update for a user's card list."""
     logger.info(f"🔄 User {username} requested a manual availability refresh.")
-
     redis_manager.queue_task("update_wanted_cards_availability", username)
-
     return {"status": "queued", "message": "Availability update has been triggered."}
 
 
@@ -50,11 +49,11 @@ def get_card_availability(username):
         # If not found in cache, scrape it!
         if not stores_with_card:
             logger.warning(f"🚨 {card_name} not found in cache. Scraping now.")
-            scraped_data = scrape_store_availability(card_name, username)  # 🔥 Trigger scraping
+            scraped_data = store_manager.scrape_store_availability(card_name, username)  # 🔥 Trigger scraping
 
             if scraped_data:
                 # Save scraped data to Redis to avoid redundant scraping
-                save_store_availability(card_name, scraped_data)
+                store_manager.save_store_availability(card_name, scraped_data)
                 stores_with_card = scraped_data
                 logger.info(f"✅ {card_name} scraped and saved to cache.")
 
@@ -68,3 +67,4 @@ def get_card_availability(username):
             logger.warning(f"🚨 {card_name} still not found in any store after scraping.")
 
     return available_cards  # Returns a list of available cards
+

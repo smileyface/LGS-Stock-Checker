@@ -21,39 +21,39 @@ scheduler = Scheduler(queue=queue, connection=redis_conn)
 functions = {}  # Registry for callable functions
 
 
-def register_function(self, name, func):
+def register_function(name, func):
     """Allows modules to register functions for Redis tasks."""
-    self.functions[name] = func
+    functions[name] = func
     logger.info(f"🔗 Registered Redis function: {name}")
 
 
-def queue_task(self, func_name, *args, **kwargs):
+def queue_task(func_name, *args, **kwargs):
     """Queues a task by registered function name."""
-    if func_name in self.functions:
-        self.queue.enqueue(self.functions[func_name], *args, **kwargs)
+    if func_name in functions:
+        queue.enqueue(functions[func_name], *args, **kwargs)
         logger.info(f"📌 Queued task: {func_name}")
     else:
         logger.error(f"❌ Attempted to queue unknown task: {func_name}")
 
 
-def schedule_task(self, func, interval_hours, *args, **kwargs):
+def schedule_task(func, interval_hours, *args, **kwargs):
     """Schedules a recurring task."""
     job_id = f"scheduled_{func.__name__}"  # Use function name dynamically
 
-    logger.debug(f"📌 Count of jobs already in the queue: {self.scheduler.count()}")
+    logger.debug(f"📌 Count of jobs already in the queue: {scheduler.count()}")
 
-    self.scheduler.count()
-    existing_jobs = list(self.scheduler.get_jobs())  # Convert generator to list
+    scheduler.count()
+    existing_jobs = list(scheduler.get_jobs())  # Convert generator to list
 
     existing_job = next((job for job in existing_jobs if job.id == job_id), None)
 
     if existing_job:
-        self.scheduler.cancel(existing_job)
+        scheduler.cancel(existing_job)
         logger.info(f"🔄 Rescheduling {func.__name__} every {interval_hours} hours.")
 
     scheduled_time = datetime.utcnow() + timedelta(hours=interval_hours)
 
-    self.scheduler.schedule(
+    scheduler.schedule(
         scheduled_time=scheduled_time,
         func=func,
         args=args,

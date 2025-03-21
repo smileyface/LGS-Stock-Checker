@@ -151,6 +151,24 @@ def add_user_card(username, card_name, amount, card_specs, session):
 
 
 @db_query
+def delete_user_card(username, card_name, session):
+    user_id = session.query(User.id).filter(User.username == username).scalar()
+
+    if not user_id:
+        logger.warning(f"🚨 User '{username}' not found. Cannot delete cards.")
+        return []
+
+    deleted = session.query(UserTrackedCards).filter(
+        UserTrackedCards.user_id == user_id,
+        UserTrackedCards.card_name == card_name).delete()
+
+    if deleted == 0:
+        logger.warning(f"🚨 '{card_name}' not found for user '{username}'.")
+
+    logger.info(f"✅Deleted {deleted} record(s) for user '{username}' and card '{card_name}'.")
+
+
+@db_query
 def update_user_tracked_cards(username, card_list, session):
     """
     Updates the user's card preferences in the database.

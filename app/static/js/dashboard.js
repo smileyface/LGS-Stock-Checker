@@ -14,6 +14,12 @@ window.updateCardTable = function (data) {
 
     data.tracked_cards.forEach((card) => {
         let rowData = [
+            `
+            <div class="action-buttons" data-card-name="${card.card_name}">
+                <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
+                <button class="btn btn-sm btn-light delete-btn" title="Delete">❌</button>
+            </div>
+            `,
             card.amount || "-",
             card.card_name || "-",
             card.set_code || "N/A",
@@ -77,12 +83,28 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+
         console.log("✅ Initializing Card Table...");
         $("#cardTable").DataTable({
             paging: false,
             searching: true,
             ordering: true,
             info: false
+        });
+        $("#cardTable tbody").on("click", ".delete-btn", function () {
+            const row = $(this).closest("tr");
+            const cardName = row.find(".action-buttons").data("card-name");
+
+            if (!cardName) {
+                console.error("❌ Could not find card name to delete.");
+                return;
+            }
+
+            console.log(`🗑️ Deleting card: ${cardName}`);
+            socket.emit("delete_card", { card: cardName });
+
+            // Optional: remove the row from the table immediately
+            $("#cardTable").DataTable().row(row).remove().draw();
         });
     }
 

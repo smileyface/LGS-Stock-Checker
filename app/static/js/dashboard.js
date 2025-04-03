@@ -15,7 +15,7 @@ window.updateCardTable = function (data) {
     }
 
     data.tracked_cards.forEach((card) => {
-        let rowData = [
+        let $row = [
             `
             <div class="action-buttons" data-card-name="${card.card_name}">
                 <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>

@@ -109,36 +109,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
         $("#cardTable tbody").on("click", ".edit-btn", function(){
             const row = $(this).closest("tr");
-            row.find(".amount-cell").html(`<input type="number" class="form-control form-control-sm" value="${row.find(".amount-cell").text().trim()}" />`);
-            row.find(".set-cell").html(`<input type="text" class="form-control form-control-sm" value="${row.find(".set-cell").text().trim()}" />`);
-            row.find(".collector-cell").html(`<input type="text" class="form-control form-control-sm" value="${row.find(".collector-cell").text().trim()}" />`);
-            row.find(".finish-cell").html(`
-                <select class="form-control form-control-sm">
-                    <option${row.find(".finish-cell").text().includes("Non-Foil") ? " selected" : ""}>Non-Foil</option>
-                    <option${row.find(".finish-cell").text().includes("Foil") ? " selected" : ""}>Foil</option>
-                </select>`);
+            const amountCell = row.find(".amount-cell");
+            const currentAmount = amountCell.text().trim();
 
-            $(this).removeClass("edit-btn").addClass("save-btn").html("💾");
+            // Replace cell content with input field
+            amountCell.html(`<input type="number" class="form-control form-control-sm amount-input" value="${currentAmount}" min="1" style="max-width: 60px;" />`);
+
+            // Change button to Save
+            const btn = $(this);
+            btn.removeClass("edit-btn").addClass("save-btn").html("💾");
         });
 
         $("#cardTable tbody").on("click", ".save-btn", function(){
             const row = $(this).closest("tr");
-            const cardName = row.find(".name-cell").text().trim();
+            const amountInput = row.find(".amount-input");
+            const newAmount = amountInput.val();
+            const cardName = row.find(".action-buttons").data("card-name");
 
-            const updated = {
-                amount: parseInt(row.find(".amount-cell input").val()),
-                set_code: row.find(".set-cell input").val().trim(),
-                collector_number: row.find(".collector-cell input").val().trim(),
-                finish: row.find(".finish-cell select").val().trim(),
-            };
+            // Send update to backend
+            socket.emit("update_card", {
+                cards: cardName,
+                update_data: {
+                    amount: parseInt(newAmount, 10)
+                }
+            });
 
-            // Replace fields with new text
-            row.find(".amount-cell").text(updated.amount);
-            row.find(".set-cell").text(updated.set_code);
-            row.find(".collector-cell").text(updated.collector_number);
-            row.find(".finish-cell").text(updated.finish);
+            // Revert input to plain text
+            row.find(".amount-cell").text(newAmount);
 
-            $(this).removeClass("save-btn").addClass("edit-btn").html("✏️");
+            // Change button back to Edit
+            const btn = $(this);
+            btn.removeClass("save-btn").addClass("edit-btn").html("✏️");
 
             // Emit the change
             socket.emit("update_card", {

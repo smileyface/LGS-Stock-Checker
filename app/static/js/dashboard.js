@@ -142,11 +142,6 @@ document.addEventListener("DOMContentLoaded", function () {
             const btn = $(this);
             btn.removeClass("save-btn").addClass("edit-btn").html("✏️");
 
-            // Emit the change
-            socket.emit("update_card", {
-                original_name: cardName,
-                updates: updated
-            });
         });
     }
 

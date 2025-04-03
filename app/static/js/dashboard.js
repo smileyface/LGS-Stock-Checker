@@ -106,6 +106,46 @@ document.addEventListener("DOMContentLoaded", function () {
             // Optional: remove the row from the table immediately
             $("#cardTable").DataTable().row(row).remove().draw();
         });
+
+        $("#cardTable tbody").on("click", ".edit-btn", function(){
+            const row = $(this).closest("tr");
+            row.find(".amount-cell").html(`<input type="number" class="form-control form-control-sm" value="${row.find(".amount-cell").text().trim()}" />`);
+            row.find(".set-cell").html(`<input type="text" class="form-control form-control-sm" value="${row.find(".set-cell").text().trim()}" />`);
+            row.find(".collector-cell").html(`<input type="text" class="form-control form-control-sm" value="${row.find(".collector-cell").text().trim()}" />`);
+            row.find(".finish-cell").html(`
+                <select class="form-control form-control-sm">
+                    <option${row.find(".finish-cell").text().includes("Non-Foil") ? " selected" : ""}>Non-Foil</option>
+                    <option${row.find(".finish-cell").text().includes("Foil") ? " selected" : ""}>Foil</option>
+                </select>`);
+
+            $(this).removeClass("edit-btn").addClass("save-btn").html("💾");
+        });
+
+        $("#cardTable tbody").on("click", ".save-btn", function(){
+            const row = $(this).closest("tr");
+            const cardName = row.find(".name-cell").text().trim();
+
+            const updated = {
+                amount: parseInt(row.find(".amount-cell input").val()),
+                set_code: row.find(".set-cell input").val().trim(),
+                collector_number: row.find(".collector-cell input").val().trim(),
+                finish: row.find(".finish-cell select").val().trim(),
+            };
+
+            // Replace fields with new text
+            row.find(".amount-cell").text(updated.amount);
+            row.find(".set-cell").text(updated.set_code);
+            row.find(".collector-cell").text(updated.collector_number);
+            row.find(".finish-cell").text(updated.finish);
+
+            $(this).removeClass("save-btn").addClass("edit-btn").html("✏️");
+
+            // Emit the change
+            socket.emit("update_card", {
+                original_name: cardName,
+                updates: updated
+            });
+        });
     }
 
     function initializeAvailabilityTable() {

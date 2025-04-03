@@ -151,7 +151,25 @@ def add_user_card(username, card_name, amount, card_specs, session):
 
 
 @db_query
-def update_user_tracked_cards(username, card_list, session):
+def delete_user_card(username, card_name, session):
+    user_id = session.query(User.id).filter(User.username == username).scalar()
+
+    if not user_id:
+        logger.warning(f"🚨 User '{username}' not found. Cannot delete cards.")
+        return []
+
+    deleted = session.query(UserTrackedCards).filter(
+        UserTrackedCards.user_id == user_id,
+        UserTrackedCards.card_name == card_name).delete()
+
+    if deleted == 0:
+        logger.warning(f"🚨 '{card_name}' not found for user '{username}'.")
+
+    logger.info(f"✅Deleted {deleted} record(s) for user '{username}' and card '{card_name}'.")
+
+
+@db_query
+def update_user_tracked_cards_list(username, card_list, session):
     """
     Updates the user's card preferences in the database.
 
@@ -161,7 +179,7 @@ def update_user_tracked_cards(username, card_list, session):
         session (Session): SQLAlchemy session.
     """
     # Fetch user ID
-    user = session.query(User).filter(User.username == username).first()
+    user = get_user_by_username(username)
     if not user:
         logger.warning(f"🚨 User '{username}' not found in the database.")
         return
@@ -179,6 +197,30 @@ def update_user_tracked_cards(username, card_list, session):
 
     session.commit()
     logger.info(f"✅ Updated card preferences for user '{username}' with {len(card_list)} cards.")
+
+@db_query
+def update_user_tracked_card_preferences(username, card_name, preference, session):
+    user = get_user_by_username(username)
+    if not user:
+        raise ValueError(f"User '{username}' not found.")
+
+    card = session.query(UserTrackedCards).filter(
+        UserTrackedCards.user_id == user.id,
+        UserTrackedCards.card_name == card_name
+    ).first()
+
+    if not card:
+        raise ValueError(f"Card '{card_name}' not found for user '{username}'.")
+
+    # Update preferences
+    if "amount" in preference:
+        card.amount = preference["amount"]
+
+    # You can extend this block for other preferences too
+    # if "notify_on_availability" in preference:
+    #     card.notify_on_availability = preference["notify_on_availability"]
+
+    logger.info(f"✅Updated preferences for card '{card_name}' for user '{username}'.")
 
 
 def get_cards_by_name(card_name):

@@ -63,5 +63,16 @@ def handle_add_user_tracked_card(data):
     database_manager.add_user_card(get_username(), data["card"], data["amount"], data["card_specs"])
     handle_get_cards()
 
-def handle_save_cards():
-    return None
+
+@socketio.on("delete_card")
+def handle_delete_user_tracked_card(data):
+    logger.info("📩 Received 'delete_card' request from front end.")
+    database_manager.delete_user_card(get_username(), data["card"])
+    handle_get_cards()
+
+
+@socketio.on("update_card")
+def handle_update_user_tracked_cards(data):
+    logger.info("📩 Received 'update_card' request from front end.")
+    database_manager.update_user_tracked_card_preferences(get_username(), data["card"], data["update_data"])
+    handle_get_cards()

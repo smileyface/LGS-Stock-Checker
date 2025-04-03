@@ -9,6 +9,7 @@
     <table class="table table-striped table-bordered" id="cardTable">
         <thead>
             <tr>
+                <th style="width: 60px;"></th> <!-- Actions column -->
                 <th>Amount</th>
                 <th>Card Name</th>
                 <th>Set Code</th>
@@ -16,13 +17,14 @@
                 <th>Finish</th>
             </tr>
         </thead>
-        <tr class="placeholder-row">
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-        </tr>
+            <tr class="placeholder-row">
+                <td></td>  <!--Interaction cell-->
+                <td class="amount-cell">-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+            </tr>
     </table>
     <!-- Add Card Modal -->
     <div class="modal fade" id="addCardModal" tabindex="-1" aria-labelledby="addCardModalLabel" aria-hidden="true">

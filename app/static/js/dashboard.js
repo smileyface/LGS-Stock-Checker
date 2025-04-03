@@ -4,38 +4,37 @@ window.updateCardTable = function (data) {
 
     if (!data || !Array.isArray(data.tracked_cards) || data.tracked_cards.length === 0) {
         console.warn("⚠️ No tracked cards available.");
-        table.row.add([
-            '<td colspan="5" class="text-center">No Cards Available</td>',
-            "", "", "", ""
-        ]); // Empty strings prevent column mismatch
+        let $emptyRow = $(`
+            <tr>
+                <td colspan="6" class="text-center">No Cards Available</td>
+            </tr>
+        `);
+        table.row.add($emptyRow);
         table.draw();
         return;
     }
 
     data.tracked_cards.forEach((card) => {
         let rowData = [
-            `<td>
-                <div class="action-buttons" data-card-name="${card.card_name}">
-                    <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
-                    <button class="btn btn-sm btn-light delete-btn" title="Delete">❌</button>
-                </div>
-            </td>`,
-            `<td class="amount-cell">${card.amount || "-"}</td>`,
-            `<td>${card.card_name || "-"}</td>`,
-            `<td>${card.set_code || "N/A"}</td>`,
-            `<td>${card.collector_id || "N/A"}</td>`,
-            `<td>${card.finish || "Non-Foil"}</td>`
+            `
+            <div class="action-buttons" data-card-name="${card.card_name}">
+                <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
+                <button class="btn btn-sm btn-light delete-btn" title="Delete">❌</button>
+            </div>
+            `,
+            card.amount || "-",
+            card.card_name || "-",
+            card.set_code || "N/A",
+            card.collector_id || "N/A",
+            card.finish || "Non-Foil"
         ];
 
-        if (rowData.length === 6) {
-            table.row.add(rowData);
-        } else {
-            console.error("❌ Invalid row data (incorrect column count):", rowData);
-        }
+        table.row.add($row);
     });
 
     table.draw();
 };
+
 
 
 window.updateAvailabilityTable = function (data) {

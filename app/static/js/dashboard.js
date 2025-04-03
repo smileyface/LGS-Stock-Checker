@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Send update to backend
             socket.emit("update_card", {
-                cards: cardName,
+                card: cardName,
                 update_data: {
                     amount: parseInt(newAmount, 10)
                 }

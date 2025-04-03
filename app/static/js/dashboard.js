@@ -15,19 +15,21 @@ window.updateCardTable = function (data) {
     }
 
     data.tracked_cards.forEach((card) => {
-        let $row = [
-            `
-            <div class="action-buttons" data-card-name="${card.card_name}">
-                <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
-                <button class="btn btn-sm btn-light delete-btn" title="Delete">❌</button>
-            </div>
-            `,
-            card.amount || "-",
-            card.card_name || "-",
-            card.set_code || "N/A",
-            card.collector_id || "N/A",
-            card.finish || "Non-Foil"
-        ];
+        let $row = $(`
+            <tr>
+                <td>
+                    <div class="action-buttons" data-card-name="${card.card_name}">
+                        <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
+                        <button class="btn btn-sm btn-light delete-btn" title="Delete">❌</button>
+                    </div>
+                </td>
+                <td class="amount-cell">${card.amount || "-"}</td>
+                <td>${card.card_name || "-"}</td>
+                <td>${card.set_code || "N/A"}</td>
+                <td>${card.collector_id || "N/A"}</td>
+                <td>${card.finish || "Non-Foil"}</td>
+            </tr>
+        `);
 
         table.row.add($row);
     });

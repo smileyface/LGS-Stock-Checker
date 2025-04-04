@@ -77,7 +77,7 @@ socket.on("cards_data", function (data) {
 socket.on("card_availability_data", function (data) {
     console.log("📥 Received availability data:", data);
     availabilityMap = {}; // Reset for each batch
-    data.availability.forEach(entry => {
+    data.forEach(entry => {
         // Use card name as key; you could also include set/collector filters if needed
         availabilityMap[entry.card_name] = entry.stores;
     });

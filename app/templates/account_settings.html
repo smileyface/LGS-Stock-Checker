@@ -1,67 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Settings</title>
-</head>
-<body>
-    <h1>Account Settings</h1>
-    <p>Logged in as: {{ username }}</p>
+{% extends "base.html" %}
+
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Account Settings</h1>
+    <p class="mb-4">Logged in as: <strong>{{ username }}</strong></p>
 
     <h2>Update Username</h2>
-    <form id="username_form">
-        <input type="text" id="new_username" placeholder="New Username">
-        <button type="button" onclick="updateUsername()">Update</button>
+    <form id="username_form" class="mb-4">
+        <div class="input-group mb-2">
+            <input type="text" class="form-control" id="new_username" placeholder="New Username">
+            <button type="button" class="btn btn-primary" onclick="updateUsername()">Update</button>
+        </div>
     </form>
 
     <h2>Update Password</h2>
-    <form id="password_form">
-        <input type="password" id="current_password" placeholder="Current Password">
-        <input type="password" id="new_password" placeholder="New Password">
-        <button type="button" onclick="updatePassword()">Update</button>
+    <form id="password_form" class="mb-4">
+        <div class="row g-2 mb-2">
+            <div class="col">
+                <input type="password" class="form-control" id="current_password" placeholder="Current Password">
+            </div>
+            <div class="col">
+                <input type="password" class="form-control" id="new_password" placeholder="New Password">
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="updatePassword()">Update</button>
     </form>
 
     <h2>Update Preferred Stores</h2>
-    <form id="stores_form">
-        <select id="stores_select" multiple>
-            {% for store in all_stores %}
-                <option value="{{ store }}" {% if store in stores %}selected{% endif %}>{{ store }}</option>
-            {% endfor %}
-        </select>
-        <button type="button" onclick="updateStores()">Save Stores</button>
+    <form id="stores_form" class="mb-4">
+        <div class="mb-2">
+            <select id="stores_select" class="form-select" multiple>
+                {% for store in all_stores %}
+                    <option value="{{ store }}" {% if store in stores %}selected{% endif %}>{{ store }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="updateStores()">Save Stores</button>
     </form>
+</div>
 
-    <script>
-        function updateUsername() {
-            fetch("{{ url_for('user_bp.change_username') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ new_username: document.getElementById("new_username").value })
-            }).then(response => response.json()).then(data => alert(data.message || data.error));
-        }
+<script>
+    function updateUsername() {
+        fetch("{{ url_for('user_bp.change_username') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ new_username: document.getElementById("new_username").value })
+        }).then(response => response.json()).then(data => alert(data.message || data.error));
+    }
 
-        function updatePassword() {
-            fetch("{{ url_for('user_bp.change_username') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    current_password: document.getElementById("current_password").value,
-                    new_password: document.getElementById("new_password").value
-                })
-            }).then(response => response.json()).then(data => alert(data.message || data.error));
-        }
+    function updatePassword() {
+        fetch("{{ url_for('user_bp.change_username') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                current_password: document.getElementById("current_password").value,
+                new_password: document.getElementById("new_password").value
+            })
+        }).then(response => response.json()).then(data => alert(data.message || data.error));
+    }
 
-        function updateStores() {
-            let selectedStores = Array.from(document.getElementById("stores_select").selectedOptions).map(o => o.value);
-            fetch("{{ url_for('user_bp.update_stores') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ stores: selectedStores })
-            }).then(response => response.json()).then(data => alert(data.message || data.error));
-        }
-    </script>
-
-    <a href="{{ url_for('home_bp.dashboard') }}">Back to Dashboard</a>
-</body>
-</html>
+    function updateStores() {
+        let selectedStores = Array.from(document.getElementById("stores_select").selectedOptions).map(o => o.value);
+        fetch("{{ url_for('user_bp.update_stores') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stores: selectedStores })
+        }).then(response => response.json()).then(data => alert(data.message || data.error));
+    }
+</script>
+{% endblock %}

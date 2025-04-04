@@ -1,3 +1,5 @@
+
+
 window.updateCardTable = function (data) {
     let table = $("#cardTable").DataTable();
     table.clear();
@@ -15,6 +17,9 @@ window.updateCardTable = function (data) {
     }
 
     data.tracked_cards.forEach((card) => {
+        let available = availabilityMap[card.card_name] === true
+        ? "✅"
+        : "❌";
         let $row = $(`
             <tr>
                 <td>
@@ -28,7 +33,7 @@ window.updateCardTable = function (data) {
                 <td>${card.set_code || "N/A"}</td>
                 <td>${card.collector_id || "N/A"}</td>
                 <td>${card.finish || "Non-Foil"}</td>
-                <td>-<td>
+                <td>${available}<td>
             </tr>
         `);
 

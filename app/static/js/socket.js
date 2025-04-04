@@ -14,6 +14,8 @@ function waitForFunction(fnName, callback) {
 }
 
 let cardNameCache = [];
+let availabilityMap = {};
+
 
 var socket = io.connect(window.location.origin, {
     transports: ["websocket", "polling"], // Ensure WebSockets are prioritized
@@ -64,6 +66,7 @@ socket.on("cards_data", function (data) {
             console.warn("⚠️ No tracked cards available.");
             return;
         }
+        window.latestCardData = data; // Store for use when availability updates
 
         window.updateCardTable(data);
     }
@@ -72,25 +75,19 @@ socket.on("cards_data", function (data) {
 });
 
 socket.on("card_availability_data", function (data) {
-    console.log("🛠️ Received card_availability_data:", data);
+    console.log("📥 Received availability data:", data);
+    availabilityMap = {}; // Reset for each batch
 
-    function attemptUpdate() {
-        if (!$.fn.DataTable.isDataTable("#availabilityTable")) {
-            console.warn("⚠️ Availability table not initialized yet. Retrying...");
-            setTimeout(attemptUpdate, 500);
-            return;
-        }
-
-        if (!data.availability || data.availability.length === 0) {
-            console.info("⚠️ No availability data.");
-            return;
-        }
-
-        window.updateAvailabilityTable(data);
+    if (Array.isArray(data.availability)) {
+        data.availability.forEach(entry => {
+            // Use card name as key; you could also include set/collector filters if needed
+            availabilityMap[entry.card_name] = entry.available;
+        });
     }
 
-    attemptUpdate(); // Start retry loop until ready
+    window.updateCardTable(window.latestCardData); // Re-render with updated info
 });
+
 
 socket.on("no_availability", function() {
     console.log("⚠️ No availability data received. Updating table.");

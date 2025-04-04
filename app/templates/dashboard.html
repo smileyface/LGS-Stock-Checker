@@ -58,9 +58,6 @@
         Add Card
     </button>
 
-
-
-    <h2>Filter Stores</h2>
     <div class="mb-3">
         {% for store in all_stores %}
         <div class="form-check form-check-inline">
@@ -70,8 +67,6 @@
         {% endfor %}
     </div>
 
-
-    <a href="{{ url_for('user_bp.account_settings') }}" class="btn btn-secondary">Account Settings</a>
 </div>
 {% endblock %}
 

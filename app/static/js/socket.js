@@ -81,8 +81,6 @@ socket.on("card_availability_data", function (data) {
         // Use card name as key; you could also include set/collector filters if needed
         availabilityMap[entry.card_name] = entry.stores;
     });
-    }
-
     window.updateCardTable(window.latestCardData); // Re-render with updated info
 });
 

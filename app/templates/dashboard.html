@@ -15,6 +15,7 @@
                 <th>Set Code</th>
                 <th>Collector Number</th>
                 <th>Finish</th>
+                <th>Available</th>
             </tr>
         </thead>
             <tr class="placeholder-row">
@@ -24,6 +25,7 @@
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
+                <td>-</td> <!--Availability Cell -->
             </tr>
     </table>
     <!-- Add Card Modal -->
@@ -68,23 +70,6 @@
         {% endfor %}
     </div>
 
-    <h2>Card Availability</h2>
-    <table class="table table-striped" id="availabilityTable">
-        <thead>
-            <tr>
-                <th>Card Name</th>
-                <th>Stores</th>
-                <th>Price</th>
-            </tr>
-        </thead>
-        <tbody id="availabilityTableBody">
-        <tr class="placeholder-row">
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-        </tr>
-        </tbody>
-    </table>
 
     <a href="{{ url_for('user_bp.account_settings') }}" class="btn btn-secondary">Account Settings</a>
 </div>

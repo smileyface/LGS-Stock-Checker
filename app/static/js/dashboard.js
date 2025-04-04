@@ -17,9 +17,9 @@ window.updateCardTable = function (data) {
     }
 
     data.tracked_cards.forEach((card) => {
-        let available = availabilityMap[card.card_name] === true
-        ? "✅"
-        : "❌";
+        let available = availabilityMap[card.card_name] === undefined
+        ? "❌"
+        : "✅";
         let $row = $(`
             <tr>
                 <td>

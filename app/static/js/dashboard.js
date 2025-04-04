@@ -33,7 +33,7 @@ window.updateCardTable = function (data) {
                 <td>${card.set_code || "N/A"}</td>
                 <td>${card.collector_id || "N/A"}</td>
                 <td>${card.finish || "Non-Foil"}</td>
-                <td>${available}<td>
+                <td>${available}</td>
             </tr>
         `);
 

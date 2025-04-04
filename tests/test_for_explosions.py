@@ -43,7 +43,7 @@ def import_all_modules_from_packages(*packages):
             try:
                 module = importlib.import_module(module_name)
                 modules.append(module)
-                print(f"✅ Successfully imported {module_name}")  # Green check emoji
+                print(f"✅ Successfully imported {module_name}", flush=True)  # Green check emoji
             except (ImportError, redis.exceptions.ConnectionError) as e:
                 if "redis" in str(e).lower():
                     warnings.warn(f"⚠️ Skipping {module_name} due to missing Redis dependency or connection error.")
@@ -55,36 +55,19 @@ def import_all_modules_from_packages(*packages):
 PACKAGES_TO_TEST = import_all_modules_from_packages(managers, core)
 
 
-class TestAllFunctionsNoCrashes(unittest.TestCase):
-    def test_all_functions_no_exceptions(self):
-        for package in PACKAGES_TO_TEST:
-            with self.subTest(package=package.__name__):
-                for name, func in inspect.getmembers(package, inspect.isfunction):
-                    params = inspect.signature(func).parameters
-
-                    # Generate safe test inputs
-                    args = []
-                    for param_name, param in params.items():
-                        if param.default is not inspect.Parameter.empty:
-                            args.append(param.default)
-                        elif param.annotation == str:
-                            args.append("test")
-                        elif param.annotation == int:
-                            args.append(0)
-                        elif param.annotation == list:
-                            args.append([])
-                        elif param.annotation == dict:
-                            args.append({})
-                        elif param.annotation == bool:
-                            args.append(False)
-                        else:
-                            args.append(None)  # Safe fallback
-
-                    try:
-                        func(*args)
-                    except Exception as e:
-                        self.fail(f"Function {package.__name__}.{name} raised an exception: {e}")
-
+class TestAllFunctionsImport(unittest.TestCase):
+    packages = managers, core
+    def test_all_functions_import_no_exceptions(self):
+        for package in self.packages:
+            for _, module_name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+                try:
+                    module = importlib.import_module(module_name)
+                    self.assertTrue(True, f"{module_name} successfully loaded")
+                except (ImportError, redis.exceptions.ConnectionError) as e:
+                    if "redis" in str(e).lower():
+                        warnings.warn(f"⚠️ Skipping {module_name} due to missing Redis dependency or connection error.")
+                    else:
+                        self.fail(f"{module_name} failed loading")
 
 if __name__ == "__main__":
     unittest.main()

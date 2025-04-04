@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash
 
 from managers.database_manager.common_queries import (
     get_user_by_username, update_username, update_password,
-    get_users_cards, update_user_tracked_cards,
+    get_users_cards, update_user_tracked_cards_list,
     get_cards_by_name, get_all_cards, get_store_metadata, get_all_stores
 )
 from managers.database_manager.tables import User, Store
@@ -65,7 +65,7 @@ def test_card_queries(db_session):
     db_session.commit()
 
     card_list = [{"card_name": "Lightning Bolt"}, {"card_name": "Counterspell"}]
-    update_user_tracked_cards("testuser", card_list)
+    update_user_tracked_cards_list("testuser", card_list)
 
     # Get user cards
     cards = get_users_cards("testuser")

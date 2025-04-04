@@ -1,5 +1,7 @@
 import json
 import time
+from typing import Any
+from typing import Dict
 
 import managers.database_manager as database_manager
 import managers.redis_manager as redis_manager
@@ -9,8 +11,16 @@ from utility.logger import logger
 CACHE_EXPIRATION = 1800  # 30 minutes in seconds
 
 
-def load_store_availability(card_name, username):
-    """Loads availability data for a card from Redis storage, scraping if needed."""
+def load_store_availability(card_name: str, username: str) -> Dict:
+    """Retrieve availability data for a specified card from Redis cache or scrape it if not cached.
+
+    Args:
+        card_name (str): The name of the card to check availability for.
+        username (str): The username of the person requesting the availability check.
+    
+    Returns:
+        dict: A dictionary containing availability data if found, otherwise an empty dictionary.
+    """
     redis_key = f"store_availability_{card_name}"
     cached_data = redis_manager.load_data(redis_key)
 
@@ -27,8 +37,23 @@ def load_store_availability(card_name, username):
     return {}  # Return empty if nothing was found
 
 
-def scrape_store_availability(card_name, username):
-    """Scrapes only the stores selected by the user for a given card with detailed logging."""
+def scrape_store_availability(card_name: str, username: str) -> Dict[str, Any]:
+    """
+    Scrape availability of a specified card from user-selected stores.
+    
+    This function retrieves the stores selected by the user, instantiates
+    the corresponding store classes, and checks the availability of the
+    specified card in each store. Detailed logging is performed throughout
+    the process to track the progress and any issues encountered.
+    
+    Args:
+        card_name (str): The name of the card to check availability for.
+        username (str): The username of the user whose selected stores will be scraped.
+    
+    Returns:
+        dict: A dictionary containing the scraped data with store names as keys
+        and their respective listings and last updated timestamps as values.
+    """
     logger.info(f"🔄 Starting availability check for '{card_name}' requested by {username}")
 
     scraped_data = {}
@@ -69,7 +94,15 @@ def scrape_store_availability(card_name, username):
     return scraped_data
 
 
-def save_store_availability(card_name, listings):
-    """Saves scraped store availability to Redis with a 30-minute expiration."""
+def save_store_availability(card_name: str, listings: Dict) -> None:
+    """
+    Saves the availability of a store's card listings to Redis.
+    
+    Parameters:
+        card_name (str): The name of the card for which availability is being saved.
+        listings (dict): A list of store availability data for the specified card.
+    
+    The data is stored with a key prefixed by 'store_availability_' and expires after 30 minutes.
+    """
     redis_key = f"store_availability_{card_name}"
     redis_manager.save_data(redis_key, json.dumps(listings), ex=CACHE_EXPIRATION)  # ✅ Store with expiration

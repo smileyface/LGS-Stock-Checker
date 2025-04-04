@@ -6,6 +6,26 @@ from utility.logger import logger
 
 
 class Store:
+    """
+    Represents a store and provides methods to check card availability.
+
+    Attributes:
+        id (int): The unique identifier of the store.
+        store_name (str): The name of the store.
+        slug (str): The slug identifier for the store.
+        homepage (str): The homepage URL of the store.
+        search_url (str): The URL used for searching products in the store.
+        fetch_strategy (str): The strategy used to fetch data from the store.
+
+    Methods:
+        get_search_params(card_name): Returns search parameters for a given card name.
+        check_store_availability(soup): Checks the availability of products in the store.
+        get_price(soup): Retrieves the price of products from the store.
+        get_condition(soup): Retrieves the condition of products from the store.
+        get_stock(soup): Retrieves the stock information of products from the store.
+        get_product_rows(soup): Retrieves product rows from the store's HTML.
+        check_availability(card): Performs the search and checks the availability of the card, with detailed logging.
+    """
     def __init__(self, slug):
         store_data = database_manager.get_store_metadata(slug)
         if not store_data:

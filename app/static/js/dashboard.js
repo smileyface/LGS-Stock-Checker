@@ -1,3 +1,5 @@
+
+
 window.updateCardTable = function (data) {
     let table = $("#cardTable").DataTable();
     table.clear();
@@ -15,6 +17,9 @@ window.updateCardTable = function (data) {
     }
 
     data.tracked_cards.forEach((card) => {
+        let available = availabilityMap[card.card_name] === undefined
+        ? "❌"
+        : "✅";
         let $row = $(`
             <tr>
                 <td>
@@ -28,6 +33,7 @@ window.updateCardTable = function (data) {
                 <td>${card.set_code || "N/A"}</td>
                 <td>${card.collector_id || "N/A"}</td>
                 <td>${card.finish || "Non-Foil"}</td>
+                <td>${available}</td>
             </tr>
         `);
 
@@ -38,41 +44,6 @@ window.updateCardTable = function (data) {
 };
 
 
-
-window.updateAvailabilityTable = function (data) {
-    let table = $("#availabilityTable").DataTable();
-    table.clear();
-
-    if (!data || !Array.isArray(data.availability) || data.availability.length === 0) {
-        console.warn("⚠️ No availability data available.");
-        table.row.add(["No Availability", "", ""]); // ✅ Matches exactly 3 columns
-        table.draw();
-        return;
-    }
-
-    data.availability.forEach((card, index) => {
-        let storeDetails = "";
-        Object.keys(card.stores).forEach(store => {
-            let storeInfo = card.stores[store]
-                .map(s => `<li>${store}: $${s.price.toFixed(2)} - ${s.stock} in stock</li>`)
-                .join("");
-            storeDetails += `<ul class="store-list" id="store-details-${index}" style="display: none;">${storeInfo}</ul>`;
-        });
-
-        let row = [
-            card.card_name || "-",
-            `<button class="btn btn-outline-primary btn-sm" onclick="toggleStores(${index}, event)">Show Stores</button>${storeDetails}`
-        ];
-
-        if (row.length === 2) {
-            table.row.add(row);
-        } else {
-            console.error("❌ Invalid row data (incorrect column count):", row);
-        }
-    });
-
-    table.draw();
-};
 
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -163,9 +134,6 @@ document.addEventListener("DOMContentLoaded", function () {
     initializeCardTable();
     initializeAvailabilityTable();
 });
-
-
-
 
 document.addEventListener("DOMContentLoaded", function () {
     let cardSearchInput = document.getElementById("cardSearch");

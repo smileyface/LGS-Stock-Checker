@@ -77,12 +77,10 @@ socket.on("cards_data", function (data) {
 socket.on("card_availability_data", function (data) {
     console.log("📥 Received availability data:", data);
     availabilityMap = {}; // Reset for each batch
-
-    if (Array.isArray(data.availability)) {
-        data.availability.forEach(entry => {
-            // Use card name as key; you could also include set/collector filters if needed
-            availabilityMap[entry.card_name] = entry.available;
-        });
+    data.availability.forEach(entry => {
+        // Use card name as key; you could also include set/collector filters if needed
+        availabilityMap[entry.card_name] = entry.stores;
+    });
     }
 
     window.updateCardTable(window.latestCardData); // Re-render with updated info

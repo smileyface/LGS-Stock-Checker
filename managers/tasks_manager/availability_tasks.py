@@ -67,7 +67,7 @@ def update_availability_single_card(username, store_name, card):
     logger.info(f"🔍 Checking availability for {card_name} at {store_name}")
 
     # Fetch availability using the existing logic
-    available_items = {}
+    available_items = store_manager.scrape_store_availability(card_name)
 
     if available_items:
         logger.info(

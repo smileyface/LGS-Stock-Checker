@@ -20,7 +20,7 @@ def get_card_availability(username):
     for store in user_stores:
         for card in user_cards:
             logger.info(f"🔍 Checking availability for {card['card_name']} at {store}")
-            if redis_manager.cache_manager.get_availability_data(store, card["card_name"]) is None:
+            if redis_manager.cache_manager.get_availability_data(card["card_name"]) is None:
                 # Fetch availability for the specific card at the store
                 redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
                                                         username, store, card)

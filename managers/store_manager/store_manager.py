@@ -21,7 +21,7 @@ def load_store_availability(card_name, username):
     scraped_data = scrape_store_availability(card_name, username)
 
     if scraped_data:
-        save_store_availability(card_name, scraped_data)  # Save the scraped data
+        redis_manager.cache_manager.cache_availability_data(card_name, scraped_data)
         return scraped_data
 
     return {}  # Return empty if nothing was found
@@ -69,7 +69,3 @@ def scrape_store_availability(card_name, username):
     return scraped_data
 
 
-def save_store_availability(card_name, listings):
-    """Saves scraped store availability to Redis with a 30-minute expiration."""
-    redis_key = f"store_availability_{card_name}"
-    redis_manager.save_data(redis_key, json.dumps(listings), ex=CACHE_EXPIRATION)  # ✅ Store with expiration

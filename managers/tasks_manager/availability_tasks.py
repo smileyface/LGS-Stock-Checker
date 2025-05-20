@@ -5,7 +5,7 @@ from flask_socketio import SocketIO
 import managers.redis_manager as redis_manager
 import managers.store_manager as store_manager
 import managers.user_manager as user_manager
-from managers import socket_manager
+from managers import socket_manager, availability_manager
 from utility.logger import logger
 
 
@@ -77,7 +77,7 @@ def update_availability_single_card(username, store_name, card):
         return True # No results being found is not an error, but no results means no action is needed.
 
     # Cache availability results
-    redis_manager.cache_manager.cache_availability_data(store_name, card_name, available_items)
+    availability_manager.cache_availability_data(store_name, card_name, available_items)
     logger.info(f"✅ Cached availability results for {card_name} at {store_name}.")
 
     socket_manager.emit_card_availability_data(username, store_name, card_name, available_items)  # Send WebSocket event

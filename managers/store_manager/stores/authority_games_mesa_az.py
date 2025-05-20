@@ -19,7 +19,6 @@ class Authority_Games_Mesa_Arizona(Store):
                 product_type = "unknown"
                 if "magic_singles" in soup.prettify():
                     product_type = "magic_single"
-                product_name = product_row.find('h4', class_='name').get_text(strip=True)
                 product_price = self.get_price(product_row)
                 product_stock = self.get_stock(product_row)
                 product_condition = self.get_condition(product_row)
@@ -27,7 +26,7 @@ class Authority_Games_Mesa_Arizona(Store):
                 product_set = self.get_set(product_row)
 
                 available_products.append({
-                    "name": product_name,
+                    "store": self.slug,
                     "price": product_price,
                     "stock": product_stock,
                     "condition": product_condition.split(", ")[0],

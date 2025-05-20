@@ -3,6 +3,7 @@ from typing import Dict
 import managers.database_manager as database_manager
 import managers.redis_manager as redis_manager
 import managers.socket_manager as socket_manager
+from managers.availability_manager import availability_storage
 from utility.logger import logger
 
 
@@ -20,14 +21,13 @@ def get_card_availability(username):
     for store in user_stores:
         for card in user_cards:
             logger.info(f"🔍 Checking availability for {card['card_name']} at {store}")
-            if redis_manager.cache_manager.get_availability_data(card["card_name"]) is None:
+            data = availability_storage.get_availability_data(store, card["card_name"])
+            if data is None:
                 # Fetch availability for the specific card at the store
                 redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
-                                                        username, store, card)
+                                         username, store, card)
             else:
                 logger.info(f"✅ Availability data for {card['card_name']} at {store} is already cached.")
-                socket_manager.emit_card_availability_data(username, store, card["card_name"], redis_manager.cache_manager.get_availability_data(store, card["card_name"]))
+                socket_manager.emit_card_availability_data(username, store, card["card_name"],
+                                                           data)
     return {"status": "completed", "message": "Availability data has been fetched and sent to the UI."}
-
-
-

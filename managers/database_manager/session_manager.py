@@ -37,6 +37,7 @@ def db_query(func):
             logger.error(f"❌ Database query failed: {str(e)}")
             raise
         finally:
-            session.close()  # Close session safely
+            pass  # No explicit close needed here
+            logger.debug("🔍 Database session scope finished for db_query decorator.")
 
     return wrapper

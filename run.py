@@ -1,9 +1,9 @@
-from managers.tasks_manager import register_redis_function
-from utility.logger import logger
-
 import eventlet
 
 eventlet.monkey_patch()
+
+from managers.tasks_manager import register_redis_function
+from utility.logger import logger
 
 from app import create_app
 from managers.socket_manager.socket_manager import socketio, register_socket_events  # Import the initialized SocketIO

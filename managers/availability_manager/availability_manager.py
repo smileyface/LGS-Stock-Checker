@@ -1,6 +1,7 @@
 from typing import Dict
 
 import managers.database_manager as database_manager
+import managers.user_manager as user_manager
 import managers.redis_manager as redis_manager
 import managers.socket_manager as socket_manager
 from managers.availability_manager import availability_storage
@@ -15,8 +16,8 @@ def check_availability(username: str) -> Dict[str, str]:
 
 
 def get_card_availability(username):
-    user_stores = database_manager.get_user_stores(username)
-    user_cards = database_manager.get_users_cards(username)
+    user_stores = user_manager.get_selected_stores(username)
+    user_cards = user_manager.load_card_list(username)
 
     for store in user_stores:
         for card in user_cards:

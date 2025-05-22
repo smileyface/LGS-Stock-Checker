@@ -1,7 +1,7 @@
 import json
 import time
 
-import managers.database_manager as database_manager
+import managers.user_manager as user_manager
 import managers.redis_manager as redis_manager
 from managers.store_manager.stores import store_list  # Assuming this is your base store scraper
 from utility.logger import logger
@@ -34,7 +34,7 @@ def scrape_store_availability(card_name, username):
     scraped_data = {}
 
     # Fetch user's selected stores
-    user_stores = database_manager.get_user_stores(username)
+    user_stores = user_manager.get_selected_stores(username)
     logger.info(f"📥 Retrieved {len(user_stores)} stores selected by user '{username}'.")
 
     # Get actual store classes from store manager

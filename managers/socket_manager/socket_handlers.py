@@ -3,7 +3,7 @@ from flask import session
 from managers.card_manager import parse_card_list
 from managers.socket_manager.socket_events import send_card_availability_update, send_card_list, send_full_card_list
 from managers.socket_manager.socket_manager import socketio
-import managers.database_manager as database_manager
+import data.database as db
 from utility.logger import logger
 
 
@@ -60,19 +60,19 @@ def handle_request_card_names():
 def handle_add_user_tracked_card(data):
     logger.info("📩 Received 'add_card' request from front end.")
     """Add tracked card to the database and send an updated card list."""
-    database_manager.add_user_card(get_username(), data["card"], data["amount"], data["card_specs"])
+    db.add_user_card(get_username(), data["card"], data["amount"], data["card_specs"])
     handle_get_cards()
 
 
 @socketio.on("delete_card")
 def handle_delete_user_tracked_card(data):
     logger.info("📩 Received 'delete_card' request from front end.")
-    database_manager.delete_user_card(get_username(), data["card"])
+    db.delete_user_card(get_username(), data["card"])
     handle_get_cards()
 
 
 @socketio.on("update_card")
 def handle_update_user_tracked_cards(data):
     logger.info("📩 Received 'update_card' request from front end.")
-    database_manager.update_user_tracked_card_preferences(get_username(), data["card"], data["update_data"])
+    db.update_user_tracked_card_preferences(get_username(), data["card"], data["update_data"])
     handle_get_cards()

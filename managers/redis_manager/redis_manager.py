@@ -1,10 +1,10 @@
-import json
 import os
 from datetime import datetime, timedelta
 
 import redis
 from rq import Queue
 from rq_scheduler import Scheduler
+
 from utility.logger import logger
 
 # Detect if running inside Docker or on Windows

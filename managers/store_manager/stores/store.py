@@ -1,13 +1,13 @@
 import requests
-import managers.database_manager as database_manager
 from bs4 import BeautifulSoup
 
+import data.database as db
 from utility.logger import logger
 
 
 class Store:
     def __init__(self, slug):
-        store_data = database_manager.get_store_metadata(slug)
+        store_data = db.get_store_metadata(slug)
         if not store_data:
             raise ValueError(f"Store with slug '{slug}' not found in database.")
         self.id = store_data.id

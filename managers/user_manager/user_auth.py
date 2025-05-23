@@ -1,6 +1,6 @@
 from werkzeug.security import check_password_hash, generate_password_hash
 
-import managers.database_manager as database_manager
+import data.database as db
 from utility.logger import logger
 
 
@@ -8,7 +8,7 @@ def authenticate_user(username, password):
     """Checks if the provided password matches the stored hash."""
     logger.info(f"🔑 Authenticating user: {username}")
 
-    user = database_manager.get_user_by_username(username)
+    user = db.get_user_by_username(username)
 
     if check_password_hash(user.password_hash, password):
         logger.info(f"✅ User '{username}' authenticated.")
@@ -23,6 +23,6 @@ def update_password(username, old_password, new_password):
         logger.warning(f"❌ Password update failed for {username}. Incorrect current password.")
         return False
 
-    database_manager.update_password(username, generate_password_hash(new_password))
+    db.update_password(username, generate_password_hash(new_password))
     logger.info(f"✅ Password updated successfully for {username}.")
     return True

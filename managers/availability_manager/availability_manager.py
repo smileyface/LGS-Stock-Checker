@@ -1,6 +1,5 @@
 from typing import Dict
-
-import managers.database_manager as database_manager
+import data.database as db
 import managers.user_manager as user_manager
 import managers.redis_manager as redis_manager
 import managers.socket_manager as socket_manager
@@ -16,12 +15,12 @@ def check_availability(username: str) -> Dict[str, str]:
 
 
 def get_card_availability(username):
-    user_stores = user_manager.get_selected_stores(username)
+    user_stores = db.get_user_stores(username)
     user_cards = user_manager.load_card_list(username)
 
     for store in user_stores:
         for card in user_cards:
-            logger.info(f"🔍 Checking availability for {card['card_name']} at {store}")
+            logger.info(f"🔍 Checking availability for {card['card_name']} at {store.name}")
             data = availability_storage.get_availability_data(store, card["card_name"])
             if data is None:
                 # Fetch availability for the specific card at the store

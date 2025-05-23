@@ -1,5 +1,5 @@
-from flask_socketio import SocketIO, emit
 from flask import session, Blueprint
+from flask_socketio import SocketIO
 
 socketio = SocketIO()
 

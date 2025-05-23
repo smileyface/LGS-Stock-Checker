@@ -1,4 +1,4 @@
-import managers.database_manager as database_manager
+import data.database as db
 from utility.logger import logger
 
 
@@ -19,7 +19,7 @@ def update_selected_stores(username, selected_stores):
     # Add only new stores (prevent duplicates)
     for store in selected_stores:
         if store not in current_store_set:
-            database_manager.add_user_store(username, store)
+            db.add_user_store(username, store)
             logger.info(f"✅ Added store '{store}' for user '{username}'.")
 
     logger.info(f"🎯 Store preferences updated for '{username}'.")
@@ -28,4 +28,4 @@ def update_selected_stores(username, selected_stores):
 
 def get_selected_stores(username):
     """Retrieves a user's selected stores."""
-    return database_manager.get_user_stores(username)
+    return db.get_user_stores(username)

@@ -12,10 +12,6 @@ def db_query(func):
         session = SessionLocal()  # Open a new session
         try:
             result = func(*args, **kwargs, session=session)  # Pass session to function
-            if isinstance(result, list):  # If returning multiple ORM objects
-                session.expunge_all()  # Detach before session closes
-            elif result is not None:
-                session.expunge(result)  # Detach single ORM object
             session.commit()  # Commit if no errors
             return result
         except Exception as e:

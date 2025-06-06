@@ -8,3 +8,6 @@ class StoreSchema(BaseModel):
     homepage: str
     search_url: str
     fetch_strategy: str
+
+    class Config:
+        from_attributes = True

@@ -10,6 +10,9 @@ class UserSchema(BaseModel):
     selected_stores: List[StoreSchema] = []  # List of StoreSchema DTOs
     # Add other user fields as needed
 
+    class Config:
+        from_attributes = True # <--- THIS IS CRUCIAL FOR ORM CONVERSION
+
 
 class UserTrackedCardSchema(BaseModel):
     card_name: str

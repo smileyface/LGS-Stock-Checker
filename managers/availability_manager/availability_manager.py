@@ -1,5 +1,5 @@
 from typing import Dict
-import data.database as db
+import data
 import managers.user_manager as user_manager
 import managers.redis_manager as redis_manager
 import managers.socket_manager as socket_manager
@@ -15,19 +15,20 @@ def check_availability(username: str) -> Dict[str, str]:
 
 
 def get_card_availability(username):
-    user_stores = db.get_user_stores(username)
+    user_stores = data.get_user_stores(username)
     user_cards = user_manager.load_card_list(username)
 
     for store in user_stores:
         for card in user_cards:
-            logger.info(f"🔍 Checking availability for {card['card_name']} at {store.name}")
-            data = availability_storage.get_availability_data(store, card["card_name"])
-            if data is None:
+            logger.info(f"🔍 Checking availability for {card.card_name} at {store.name}")
+            cached_data = availability_storage.get_availability_data(store, card.card_name)
+            if cached_data is None:
                 # Fetch availability for the specific card at the store
+                # Pass the store's slug and the card as a dictionary
                 redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
-                                         username, store, card)
+                                         username, store.slug, card.model_dump())
             else:
-                logger.info(f"✅ Availability data for {card['card_name']} at {store} is already cached.")
-                socket_manager.emit_card_availability_data(username, store, card["card_name"],
-                                                           data)
+                logger.info(f"✅ Availability data for {card.card_name} at {store} is already cached.")
+                socket_manager.emit_card_availability_data(username, store.name, card.card_name,
+                                                           cached_data)
     return {"status": "completed", "message": "Availability data has been fetched and sent to the UI."}

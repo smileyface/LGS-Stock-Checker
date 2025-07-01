@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Table
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+Base = declarative_base()  # Note: The declarative_base() function is now in sqlalchemy.orm
 
 
 # Define as a Table object, not an ORM class

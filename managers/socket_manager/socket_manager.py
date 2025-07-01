@@ -22,7 +22,7 @@ from managers.socket_manager.socket_handlers import handle_get_cards, handle_get
     handle_parse_card_list, handle_request_card_names, handle_add_user_tracked_card, handle_delete_user_tracked_card
 
 
-def log_and_emit(level, message):
+def log_and_emit(level: str, message: str, sender_id: str = None):
     """Logs to the backend logger and emits to the front end."""
     if level == "info":
         logger.info(message)

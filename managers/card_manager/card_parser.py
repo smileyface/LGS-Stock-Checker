@@ -1,6 +1,6 @@
 import re
 
-def parse_card_list(string_list):
+def parse_card_list(string_list: str):
     """
     Parses a list of card specifications and returns filtering conditions.
     Each card is parsed into a dictionary with filtering criteria.

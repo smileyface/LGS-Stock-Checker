@@ -1,12 +1,16 @@
-from data import schema
+from typing import Optional
+from data.database import schema
 from data.database.session_manager import db_query
-from data.models.orm_models import Store
+from data.database.models.orm_models import Store
 
 
 @db_query
-def get_store_metadata(slug, session) -> schema.StoreSchema:
+def get_store_metadata(slug: str, session) -> Optional[schema.StoreSchema]:
     """Fetch store details from the database and return it as a dictionary."""
-    return schema.StoreSchema.model_validate(session.query(Store).filter(Store.slug == slug).first())
+    store_orm = session.query(Store).filter(Store.slug == slug).first()
+    if store_orm:
+        return schema.StoreSchema.model_validate(store_orm)
+    return None
 
 
 @db_query

@@ -1,71 +1,44 @@
-import json
-import time
+from typing import Dict, List
 
-import managers.user_manager as user_manager
-import managers.redis_manager as redis_manager
-from managers.store_manager.stores import store_list  # Assuming this is your base store scraper
+import data
+from managers.store_manager.stores import STORE_REGISTRY
 from utility.logger import logger
 
-CACHE_EXPIRATION = 1800  # 30 minutes in seconds
 
-
-def load_store_availability(card_name, username):
-    """Loads availability data for a card from Redis storage, scraping if needed."""
+def load_store_availability(card_name: str, username: str = None) -> Dict[str, List[Dict]]:
+    """
+    Loads availability data for a card, checking cache first.
+    If not cached, it scrapes all registered stores.
+    """
     redis_key = f"store_availability_{card_name}"
-    cached_data = redis_manager.load_data(redis_key)
-
+    cached_data = data.load_data(redis_key)
     if cached_data:
-        return json.loads(cached_data)  # ✅ Return cached data if found
+        logger.info(f"✅ Found cached availability for {card_name}")
+        return cached_data
 
-    # 🚨 Cache miss: Scrape the store websites
-    scraped_data = scrape_store_availability(card_name, username)
+    logger.info(f"⚠️ No cache for {card_name}, scraping all stores.")
+    availability = scrape_all_stores(card_name)
 
-    if scraped_data:
-        redis_manager.cache_manager.cache_availability_data(card_name, scraped_data)
-        return scraped_data
-
-    return {}  # Return empty if nothing was found
+    # Cache the results
+    data.save_data(redis_key, availability, ex=1800)  # Cache for 30 minutes
+    return availability
 
 
-def scrape_store_availability(card_name, username):
-    """Scrapes only the stores selected by the user for a given card with detailed logging."""
-    logger.info(f"🔄 Starting availability check for '{card_name}' requested by {username}")
-
-    scraped_data = {}
-
-    # Fetch user's selected stores
-    user_stores = user_manager.get_selected_stores(username)
-    logger.info(f"📥 Retrieved {len(user_stores)} stores selected by user '{username}'.")
-
-    # Get actual store classes from store manager
-    store_classes = store_list(user_stores)
-    logger.info(f"📂 Found {len(store_classes)} matching store scrapers.")
-
-    for store_class in store_classes:
-        store_instance = store_class()  # Instantiate store class
-        store_name = store_instance.slug
-
-        logger.info(f"🔍 Scraping '{store_name}' for card: {card_name}")
+def scrape_all_stores(card_name: str) -> Dict[str, List[Dict]]:
+    """Scrapes all registered stores for a given card's availability."""
+    availability = {}
+    for store_slug, store_impl in STORE_REGISTRY.items():
         try:
-            store_listings = store_instance.check_availability(card_name)
-
-            if store_listings:
-                scraped_data[store_name] = {
-                    "listings": store_listings,
-                    "last_updated": time.time(),
-                }
-                logger.info(f"✅ Scraping successful for '{store_name}'. Found {len(store_listings)} listings.")
-            else:
-                logger.warning(f"🚨 '{store_name}' returned no listings for '{card_name}'.")
-
+            results = store_impl.fetch_card_availability(card_name)
+            if results:
+                availability[store_slug] = results
         except Exception as e:
-            logger.error(f"❌ Error scraping '{store_name}': {e}")
-
-    if scraped_data:
-        logger.info(f"💾 Successfully scraped availability for '{card_name}'. Saving results.")
-    else:
-        logger.warning(f"🚨 No data scraped for '{card_name}'. Stores may be empty or failing.")
-
-    return scraped_data
+            logger.error(f"❌ Failed to scrape {store_slug} for {card_name}: {e}")
+    return availability
 
 
+def store_list(store_name: str = None):
+    """Returns a specific store implementation or a list of all stores."""
+    if store_name:
+        return STORE_REGISTRY.get(store_name)
+    return list(STORE_REGISTRY.values())

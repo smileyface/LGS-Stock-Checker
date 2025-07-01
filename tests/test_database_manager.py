@@ -1,31 +1,26 @@
 # tests/test_database_manager.py
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.session import Session
+from data.database.db_config import get_session
 
-from managers.database_manager.tables import Base
 
-# Override database connection for tests
-TEST_DATABASE_URL = "sqlite:///:memory:"  # Use an in-memory database for testing
-test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(bind=test_engine)
+# This file previously contained database setup fixtures that have now been
+# centralized into tests/conftest.py to be used across the entire test suite.
+# You can add specific tests for the database manager here if needed.
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_db():
-    """Creates a fresh database schema before tests run."""
-    Base.metadata.create_all(bind=test_engine)  # Create tables in test DB
-    yield  # Run tests
-    Base.metadata.drop_all(bind=test_engine)  # Drop tables after tests
-
-@pytest.fixture(scope="function")
-def db_session():
-    """Provides a new database session for each test."""
-    session = TestingSessionLocal()
-    yield session
-    session.rollback()  # Rollback any changes after each test
+def test_get_session(db_session):
+    """Verify that get_session returns a valid session object."""
+    session = get_session()
+    assert isinstance(session, Session)
     session.close()
 
-# Patch get_session to return the test session
-@pytest.fixture(autouse=True)
-def override_get_session(monkeypatch):
-    monkeypatch.setattr("managers.database_manager.database_manager.get_session", lambda: TestingSessionLocal())
+    # Test that the session is closed when the test function ends
+def test_get_session_is_scoped(db_session):
+    """
+    Verify that get_session returns a session from the scoped_session,
+    meaning it's the same session within the same thread/context.
+    """
+    session1 = get_session()
+    session2 = get_session()
+    assert session1 is session2
+    session1.close() # Closing one should not affect the other if they are the same

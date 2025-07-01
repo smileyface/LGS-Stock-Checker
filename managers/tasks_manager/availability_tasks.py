@@ -4,8 +4,7 @@ from flask_socketio import SocketIO
 
 import managers.redis_manager as redis_manager
 import managers.store_manager as store_manager
-import managers.user_manager as user_manager
-from managers import socket_manager, availability_manager
+from managers import user_manager, availability_manager
 from utility.logger import logger
 
 
@@ -45,29 +44,26 @@ def update_availability_single_card(username, store_name, card):
         Returns: True if the task was successful, False otherwise.
     """
 
+    # This is the correct way to emit from a background worker.
+    # It connects to the Redis message queue to publish the event.
     socketio = SocketIO(message_queue=redis_manager.REDIS_URL)
 
     logger.info(f"📌 Task started: Updating availability for {card['card_name']} at {store_name} (User: {username})")
 
     # Ensure store_name is in the correct format
-    if isinstance(store_name, store_manager.Store):
-        store = store_name
-        store_name = store_name.store_name  # Extract actual name
-        logger.debug(f"🔄 Store provided as object. Using store_name: {store_name}")
-    else:
-        store = store_manager.store_list(store_name)
-        logger.debug(f"🔍 Retrieved store from STORE_REGISTRY: {store}")
+    store = store_manager.store_list(store_name)
 
     # Validate store exists
     if not store:
         logger.warning(f"🚨 Store '{store_name}' is not configured or missing from STORE_REGISTRY. Task aborted.")
         return False
 
-    card_name = card["card_name"]
+    card_name = card.get("card_name")
     logger.info(f"🔍 Checking availability for {card_name} at {store_name}")
 
-    # Fetch availability using the existing logic
-    available_items = store_manager.scrape_store_availability(card_name)
+    # Fetch availability using the specific store's implementation
+    card_specs = card.get("specifications")
+    available_items = store.fetch_card_availability(card_name, card_specs)
 
     if available_items:
         logger.info(
@@ -80,8 +76,17 @@ def update_availability_single_card(username, store_name, card):
     availability_manager.cache_availability_data(store_name, card_name, available_items)
     logger.info(f"✅ Cached availability results for {card_name} at {store_name}.")
 
-    socket_manager.emit_card_availability_data(username, store_name, card_name, available_items)  # Send WebSocket event
+    # Directly use the worker's socketio instance to emit the event.
+    socketio.emit(
+        "card_availability_data",
+        {
+            "username": username,
+            "store": store_name,
+            "card_name": card_name,
+            "availability": available_items,
+        },
+        room=username
+    )
     logger.info(f"✅ WebSocket event sent for {card_name} at {store_name} to user {username}")
 
     return True
-

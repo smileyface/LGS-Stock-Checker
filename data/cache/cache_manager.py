@@ -1,15 +1,17 @@
 import json
+from typing import Any, Dict, Optional
 
-from managers.redis_manager.redis_manager import redis_conn
+from data.redis_client import redis_conn
 from utility.logger import logger
 
 
-def save_data(key, value, field=None, ex=None):
+def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[int] = None) -> None:
     """
     Save data to Redis with optional expiration.
 
     - If `field` is provided, uses a Redis hash (`hset`) (no expiration support for hashes).
     - Otherwise, stores the entire `value` as a string (`set`) with optional expiration (`ex`).
+    - Logs the action with a timestamp and status.
     """
     try:
         value_json = json.dumps(value)  # Ensure value is serialized
@@ -29,38 +31,32 @@ def save_data(key, value, field=None, ex=None):
         logger.error(f"❌ Error saving data to Redis: {e}")
 
 
-def load_data(key, field=None):
+def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
     """
     Load data from Redis.
     """
     try:
-        if field:
-            data = redis_conn.hget(key, field)
-            logger.info(f"🔍 Redis HGET [{key}][{field}]: {len(data)}")
-            if data:
-                return json.loads(data)
-            else:
-                return None
+        data = redis_conn.hget(key, field) if field else redis_conn.get(key)
+
+        if data:
+            logger.info(f"🔍 Redis GET [{key}]: {len(data)} bytes")
+            return json.loads(data)
         else:
-            data = redis_conn.get(key)
-            logger.info(f"🔍 Redis GET [{key}]: {len(data)}")
-            if data:
-                return json.loads(data)
-            else:
-                logger.warning(f"⚠️ Redis key {key} is empty or missing.")
-                return None
+            logger.warning(f"⚠️ Redis key {key} is empty or missing.")
+            return None
     except Exception as e:
         logger.error(f"❌ Error loading data from Redis: {e}")
         return None
 
 
-def get_all_hash_fields(key):
+def get_all_hash_fields(key: str) -> Dict[str, Any]:
+
     """Retrieve all fields and values from a Redis hash."""
     data = redis_conn.hgetall(key)
     return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
 
 
-def delete_data(key, field=None):
+def delete_data(key: str, field=None) -> None:
     """
     Deletes data from Redis.
 

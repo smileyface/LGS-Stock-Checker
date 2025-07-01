@@ -1,9 +1,11 @@
 from flask import session
+from pydantic import ValidationError
 
 from managers.card_manager import parse_card_list
 from managers.socket_manager.socket_events import send_card_availability_update, send_card_list, send_full_card_list
 from managers.socket_manager.socket_manager import socketio
-import data.database as db
+from managers.socket_manager.socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema
+import data as db
 from utility.logger import logger
 
 
@@ -37,16 +39,18 @@ def handle_get_cards():
 
 
 @socketio.on("parse_card_list")
-def handle_parse_card_list(data):
+def handle_parse_card_list(data: dict):
     """Handles a request to parse a raw card list input."""
     logger.info("📩 Received 'parse_card_list' request from front end.")
-    if "raw_list" in data:
+    try:
+        validated_data = ParseCardListSchema.model_validate(data)
         logger.info("📝 Parsing raw card list from user input.")
-        parsed_cards = parse_card_list(data["raw_list"])
+        parsed_cards = parse_card_list(validated_data.raw_list)
         socketio.emit("parsed_cards", {"cards": parsed_cards})
         logger.info("✅ Parsed card list sent to front end.")
-    else:
-        logger.warning("🚨 'parse_card_list' request missing 'raw_list' field.")
+    except ValidationError as e:
+        logger.error(f"❌ Invalid 'parse_card_list' data received: {e}")
+        socketio.emit("error", {"message": f"Invalid request: {e}"})
 
 
 @socketio.on("request_card_names")
@@ -57,22 +61,47 @@ def handle_request_card_names():
 
 
 @socketio.on("add_card")
-def handle_add_user_tracked_card(data):
+def handle_add_user_tracked_card(data: dict):
     logger.info("📩 Received 'add_card' request from front end.")
     """Add tracked card to the database and send an updated card list."""
-    db.add_user_card(get_username(), data["card"], data["amount"], data["card_specs"])
-    handle_get_cards()
+    try:
+        validated_data = AddCardSchema.model_validate(data)
+        username = get_username()
+        db.add_user_card(
+            username,
+            validated_data.card,
+            validated_data.amount,
+            validated_data.card_specs
+        )
+        handle_get_cards()
+    except ValidationError as e:
+        logger.error(f"❌ Invalid 'add_card' data received: {e}")
+        socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
 
 
 @socketio.on("delete_card")
-def handle_delete_user_tracked_card(data):
+def handle_delete_user_tracked_card(data: dict):
     logger.info("📩 Received 'delete_card' request from front end.")
-    db.delete_user_card(get_username(), data["card"])
-    handle_get_cards()
+    try:
+        validated_data = DeleteCardSchema.model_validate(data)
+        username = get_username()
+        db.delete_user_card(username, validated_data.card)
+        handle_get_cards()
+    except ValidationError as e:
+        logger.error(f"❌ Invalid 'delete_card' data received: {e}")
+        socketio.emit("error", {"message": f"Invalid data for delete_card: {e}"})
 
 
 @socketio.on("update_card")
-def handle_update_user_tracked_cards(data):
+def handle_update_user_tracked_cards(data: dict):
     logger.info("📩 Received 'update_card' request from front end.")
-    db.update_user_tracked_card_preferences(get_username(), data["card"], data["update_data"])
-    handle_get_cards()
+    try:
+        validated_data = UpdateCardSchema.model_validate(data)
+        username = get_username()
+        db.update_user_tracked_card_preferences(
+            username, validated_data.card, validated_data.update_data
+        )
+        handle_get_cards()
+    except ValidationError as e:
+        logger.error(f"❌ Invalid 'update_card' data received: {e}")
+        socketio.emit("error", {"message": f"Invalid data for update_card: {e}"})

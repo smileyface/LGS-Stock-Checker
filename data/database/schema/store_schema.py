@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class StoreSchema(BaseModel):
@@ -9,5 +9,4 @@ class StoreSchema(BaseModel):
     search_url: str
     fetch_strategy: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

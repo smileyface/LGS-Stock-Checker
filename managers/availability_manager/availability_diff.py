@@ -1,11 +1,38 @@
+from typing import Dict, List, TypedDict
+
 from utility.logger import logger
 
 
-def detect_changes(old_availability, new_availability):
+# Type Aliases for clarity
+Listing = Dict[str, str]
+StoreAvailability = Dict[str, List[Listing]]
+CardAvailability = Dict[str, StoreAvailability]
+
+
+class UpdateDetail(TypedDict):
+    """Represents the new and removed listings for a card at a specific store."""
+
+    new: List[Listing]
+    removed: List[Listing]
+
+
+UpdatedStoreInfo = Dict[str, UpdateDetail]
+UpdatedCards = Dict[str, UpdatedStoreInfo]
+
+
+class Changes(TypedDict):
+    """Represents the overall changes in card availability."""
+
+    added: CardAvailability
+    removed: CardAvailability
+    updated: UpdatedCards
+
+
+def detect_changes(old_availability: CardAvailability, new_availability: CardAvailability) -> Changes:
     """Detects differences between two availability states."""
     logger.info("🔄 Detecting changes in availability data...")
 
-    changes = {"added": {}, "removed": {}, "updated": {}}
+    changes: Changes = {"added": {}, "removed": {}, "updated": {}}
 
     # Detect removed cards
     for card in old_availability.keys():

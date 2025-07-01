@@ -1,23 +1,15 @@
 import os
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
-from data.models.orm_models import Base
+# This will be the connection string for your actual database (e.g., PostgreSQL)
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./lgs_stock_checker.db")
 
-
-def init_db():
-    """Initialize the database schema."""
-    Base.metadata.create_all(bind=engine)
-
-
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@db:5432/lgs_stock_checker")
-
-# SQLAlchemy Setup
 engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
 
+# Use a scoped_session to ensure a unique session per thread/request
+SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 def get_session():
-    """Returns a new database session."""
+    """Provides a database session from the session factory."""
     return SessionLocal()

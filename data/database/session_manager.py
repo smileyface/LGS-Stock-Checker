@@ -19,7 +19,7 @@ def db_query(func):
             logger.error(f"❌ Database query failed: {str(e)}")
             raise
         finally:
-            pass  # No explicit close needed here
+            SessionLocal.remove()  # Ensure the session is closed and returned to the pool
             logger.debug("🔍 Database session scope finished for db_query decorator.")
 
     return wrapper

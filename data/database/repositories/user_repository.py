@@ -5,14 +5,14 @@ Includes operations to fetch user details, add new users, update usernames and p
 retrieve selected stores, and manage user store preferences. Utilizes internal schema
 models and database session management patterns.
 """
-
 from typing import List, Optional
 
 from data.database import schema
 from data.database.session_manager import db_query
-from data.database.models.orm_models import User, Store, user_store_preferences
+from data.database.models.orm_models import User, UserTrackedCards, Store, user_store_preferences
 from utility.logger import logger
 
+from sqlalchemy.orm import joinedload
 
 @db_query
 def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema]:
@@ -203,3 +203,48 @@ def get_all_users(session) -> List[schema.UserPublicSchema]:
     """
     users_orm = session.query(User).all()
     return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
+
+
+@db_query
+def get_users_tracking_card(card_name: str, session=None) -> list[User]:
+    """
+    Finds all users who are tracking a specific card.
+    
+    Args:
+        card_name (str): The name of the card to search for.
+        session: The database session, injected by the db_query decorator.
+
+    Returns:
+        list[User]: A list of User objects who are tracking the specified card.
+    """
+    return session.query(User).join(User.cards).filter(UserTrackedCards.card_name == card_name).all()
+
+
+@db_query
+def get_tracking_users_for_cards(card_names: list[str], session=None) -> dict[str, list[User]]:
+    """
+    Efficiently finds all users tracking any of the given card names.
+
+    Args:
+        card_names (list[str]): A list of card names to check.
+        session: The database session, injected by the db_query decorator.
+
+    Returns:
+        dict[str, list[User]]: A dictionary mapping each card name to a list of User ORM objects tracking it.
+    """
+    if not card_names:
+        return {}
+
+    tracked_cards_with_users = (
+        session.query(UserTrackedCards)
+        .filter(UserTrackedCards.card_name.in_(card_names))
+        .options(joinedload(UserTrackedCards.user))
+        .all()
+    )
+
+    card_to_users_map = {name: [] for name in card_names}
+    for tracked_card in tracked_cards_with_users:
+        if tracked_card.user:
+            card_to_users_map[tracked_card.card_name].append(tracked_card.user)
+
+    return card_to_users_map

@@ -24,6 +24,9 @@ class User(Base):
     # Relationship to stores (User's selected stores)
     selected_stores = relationship("Store", secondary=user_store_preferences, backref="users")
 
+    # Relationship to the cards the user is tracking
+    cards = relationship("UserTrackedCards", back_populates="user", cascade="all, delete-orphan")
+
 
 class Card(Base):
     __tablename__ = "cards"
@@ -38,7 +41,10 @@ class UserTrackedCards(Base):
     amount = Column(Integer, nullable=False)
 
     # Relationship to specifications (one-to-many)
-    specifications = relationship("CardSpecification", back_populates="user_card")
+    specifications = relationship("CardSpecification", back_populates="user_card", cascade="all, delete-orphan")
+
+    # Relationship back to the user
+    user = relationship("User", back_populates="cards")
 
 
 class CardSpecification(Base):

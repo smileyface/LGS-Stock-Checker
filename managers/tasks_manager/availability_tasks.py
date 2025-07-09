@@ -20,7 +20,7 @@ def update_availability(username):
     # Load the user's card list and selected stores
     card_list = user_manager.load_card_list(username)
     user = user_manager.get_user(username)
-    selected_stores = user.get("selected_stores", [])
+    selected_stores = user.selected_stores if user else []
 
     if not card_list:
         logger.error(f"❌ No card list found for user: {username}. Task aborted.")

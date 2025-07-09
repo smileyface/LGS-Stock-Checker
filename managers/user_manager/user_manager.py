@@ -43,17 +43,23 @@ def add_user(username: str, password: str) -> bool:
         return False
 
     hashed_password = generate_password_hash(password)  # ✅ Hash password BEFORE inserting
-    data.add_user(username, hashed_password)
+    result = data.add_user(username, hashed_password)
 
-    logger.info(f"✅ User '{username}' added successfully.")
-    return True
+    if result:
+        logger.info(f"✅ User '{username}' added successfully.")
+        return True
+    else:
+        logger.error(f"❌ Failed to add user '{username}' at the data layer.")
+        return False
 
 
-def update_username(old_username, new_username):
+def update_username(old_username: str, new_username: str) -> bool:
     """Renames a user's account, transferring all associated data."""
     logger.info(f"✏️ Renaming user '{old_username}' to '{new_username}'")
     if user_exists(old_username):
         data.update_username(old_username, new_username)
         logger.info(f"✅ Username updated successfully.")
+        return True
     else:
         logger.warning(f"🚨 User '{old_username}' not found.")
+        return False

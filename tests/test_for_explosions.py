@@ -117,9 +117,9 @@ def test_all_functions_no_crashes(package, seed_data, db_session):
                 args.append(param.default)
             elif hasattr(param.annotation, '__total__'):  # Heuristic for TypedDict
                 args.append({})
-            elif origin is dict:
+            elif param.annotation is dict or origin is dict:
                 args.append({})
-            elif origin is list:
+            elif param.annotation is list or origin is list:
                 args.append([])
             elif param.annotation == str:
                 args.append("test_string")

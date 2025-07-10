@@ -1,10 +1,9 @@
-import json
 import os
 
-import requests
-from flask import Flask
 import redis
+from flask import Flask
 from flask_session import Session
+
 from app.routes import register_blueprints
 from managers.socket_manager import socketio
 

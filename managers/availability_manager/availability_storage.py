@@ -1,24 +1,30 @@
 import json
 
-from managers.redis_manager import redis_manager
+import data
 from utility.logger import logger
 
+CACHE_EXPIRY = 1800  # Cache availability results for 30 minutes
 
-def load_availability(username):
-    """Loads the availability state for a user from Redis, falling back to JSON."""
-    redis_key = f"{username}_availability"
-    data = redis_manager.load_data(redis_key)
+def _availability_cache_name(store_name, card_name):
+    """
+    Generate a unique cache name for availability data based on card name.
+    """
+    return f"availability:{store_name}:{card_name}"
 
-    if data:
-        logger.info(f"📥 Loaded availability for {username} from Redis.")
-        return json.loads(data)
 
-    logger.warning(f"⚠️ No availability data found for {username}.")
-    return {}
+def cache_availability_data(store_name, card_name, available_items):
+    """
+    Cache availability results for a specific card at a store for 30 minutes.
+    """
+    # Save availability data to Redis
+    data.save_data(_availability_cache_name(store_name, card_name), available_items, ex=CACHE_EXPIRY)
+    logger.info(f"✅ Cached availability results for {card_name}")
 
-def save_availability(username, availability):
-    """Saves availability data in Redis and JSON as backup."""
-    redis_key = f"{username}_availability"
-    redis_manager.save_data(redis_key, json.dumps(availability))
 
-    logger.info(f"💾 Availability data saved for {username}.")
+def get_availability_data(store_name, card_name):
+    """
+    Retrieve availability data for a specific card at a store from Redis.
+    """
+    # Retrieve availability data from Redis
+    # The data.load_data function already handles JSON deserialization.
+    return data.load_data(_availability_cache_name(store_name, card_name))

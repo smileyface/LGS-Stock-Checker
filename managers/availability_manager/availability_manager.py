@@ -1,9 +1,9 @@
 from typing import Dict
-import json
-
+import data
+import managers.user_manager as user_manager
 import managers.redis_manager as redis_manager
-import managers.database_manager as database_manager
-import managers.store_manager as store_manager
+import managers.socket_manager as socket_manager
+from . import availability_storage
 from utility.logger import logger
 
 
@@ -15,56 +15,21 @@ def check_availability(username: str) -> Dict[str, str]:
 
 
 def get_card_availability(username):
-    """Fetches a list of user cards that are available in stores."""
-    redis_key = f"{username}_availability_results"
+    user_stores = data.get_user_stores(username)
+    user_cards = user_manager.load_card_list(username)
 
-    logger.info(f"🔍 Checking cache for availability data: {redis_key}")
-    availability_data = redis_manager.get_all_hash_fields(redis_key)  # Fetch all availability data
-
-    if availability_data:
-        logger.info(f"✅ Data found in cache for {username}")
-    else:
-        logger.warning(f"🚨 No cache data found for {username}. Availability check may need store queries.")
-
-    # Convert stored JSON strings back into Python objects
-    parsed_data = {key: json.loads(value) for key, value in availability_data.items()} if availability_data else {}
-
-    available_cards = []
-
-    # Load user's wanted cards
-    logger.info(f"📖 Loading tracked cards for user: {username}")
-    user_cards = database_manager.get_users_cards(username)
-
-    for card in user_cards:
-        card_name = card.card_name
-        logger.debug(f"🔎 Checking availability for card: {card_name}")
-
-        # Check if this card is available in cache
-        stores_with_card = {
-            store: listings
-            for store, listings in parsed_data.items()
-            if store.endswith(f"_{card_name}") and listings  # Ensure there are listings
-        }
-
-        # If not found in cache, scrape it!
-        if not stores_with_card:
-            logger.warning(f"🚨 {card_name} not found in cache. Scraping now.")
-            scraped_data = store_manager.scrape_store_availability(card_name, username)  # 🔥 Trigger scraping
-
-            if scraped_data:
-                # Save scraped data to Redis to avoid redundant scraping
-                store_manager.save_store_availability(card_name, scraped_data)
-                stores_with_card = scraped_data
-                logger.info(f"✅ {card_name} scraped and saved to cache.")
-
-        if stores_with_card:
-            logger.info(f"✅ {card_name} found in stores: {list(stores_with_card.keys())}")
-            available_cards.append({
-                "card_name": card_name,
-                "stores": stores_with_card
-            })
-        else:
-            logger.warning(f"🚨 {card_name} still not found in any store after scraping.")
-
-    return available_cards  # Returns a list of available cards
-
+    for store in user_stores:
+        if not store or not store.slug:
+            continue
+        for card in user_cards:
+            logger.info(f"🔍 Checking availability for {card.card_name} at {store.name}")
+            cached_data = availability_storage.get_availability_data(store.slug, card.card_name)
+            if cached_data is None:
+                # Fetch availability for the specific card at the store
+                # Pass the store's slug and the card as a dictionary
+                redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
+                                         username, store.slug, card.model_dump())
+            else:
+                logger.info(f"✅ Availability data for {card.card_name} at {store.name} is already cached.")
+                socket_manager.socket_emit.emit_card_availability_data(username, store.name, card.card_name, cached_data)
+    return {"status": "completed", "message": "Availability data has been fetched and sent to the UI."}

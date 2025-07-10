@@ -1,33 +1,30 @@
-import json
 import os
 from datetime import datetime, timedelta
 
 import redis
 from rq import Queue
 from rq_scheduler import Scheduler
+
 from utility.logger import logger
 
-# Detect if running inside Docker or on Windows
-if os.getenv("RUNNING_IN_DOCKER"):
-    REDIS_HOST = "redis"  # Use "redis" inside Docker
-else:
-    REDIS_HOST = "localhost"  # Use "localhost" on Windows
-REDIS_PORT = 6379
-REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+# Use an environment variable for the job queue's Redis URL.
+# This is more flexible than detecting the OS.
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
-redis_conn = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
-queue = Queue(connection=redis_conn)
-scheduler = Scheduler(queue=queue, connection=redis_conn)
+# The job queue manager connects to Redis for its specific purpose.
+redis_job_conn = redis.from_url(REDIS_URL) # RQ expects bytes, so no decode_responses
+queue = Queue(connection=redis_job_conn)
+scheduler = Scheduler(queue=queue, connection=redis_job_conn)
 functions = {}  # Registry for callable functions
 
 
-def register_function(name, func):
+def register_function(name: str, func: callable):
     """Allows modules to register functions for Redis tasks."""
     functions[name] = func
     logger.info(f"🔗 Registered Redis function: {name}")
 
 
-def queue_task(func_name, *args, **kwargs):
+def queue_task(func_name: str, *args, **kwargs):
     """Queues a task by registered function name."""
     if func_name in functions:
         queue.enqueue(functions[func_name], *args, **kwargs)
@@ -36,19 +33,13 @@ def queue_task(func_name, *args, **kwargs):
         logger.error(f"❌ Attempted to queue unknown task: {func_name}")
 
 
-def schedule_task(func, interval_hours, *args, **kwargs):
+def schedule_task(func: callable, interval_hours: int, *args, **kwargs):
     """Schedules a recurring task."""
     job_id = f"scheduled_{func.__name__}"  # Use function name dynamically
-
     logger.debug(f"📌 Count of jobs already in the queue: {scheduler.count()}")
-
-    scheduler.count()
-    existing_jobs = list(scheduler.get_jobs())  # Convert generator to list
-
-    existing_job = next((job for job in existing_jobs if job.id == job_id), None)
-
-    if existing_job:
-        scheduler.cancel(existing_job)
+    # Check if a job with the same ID already exists and cancel it to reschedule.
+    if job_id in scheduler:
+        scheduler.cancel(job_id)
         logger.info(f"🔄 Rescheduling {func.__name__} every {interval_hours} hours.")
 
     scheduled_time = datetime.utcnow() + timedelta(hours=interval_hours)
@@ -65,3 +56,6 @@ def schedule_task(func, interval_hours, *args, **kwargs):
     logger.info(f"✅ Scheduled {func.__name__} every {interval_hours} hours.")
 
 
+def get_redis_url():
+    """Returns the configured Redis connection URL."""
+    return REDIS_URL

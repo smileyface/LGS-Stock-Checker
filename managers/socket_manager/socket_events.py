@@ -1,8 +1,9 @@
 from flask_socketio import emit
 
 from externals import fetch_scryfall_card_names
-from managers.availability_manager import get_card_availability
-from managers.user_manager import load_card_list
+import managers.availability_manager as availability_manager
+import managers.redis_manager as redis_manager
+import managers.user_manager as user_manager
 from utility.logger import logger
 
 
@@ -31,14 +32,8 @@ def send_card_availability_update(username):
     """
     logger.info(f"📩 Received request for card availability update from {username}")
 
-    availability = get_card_availability(username)
-    if availability is []:
-        logger.info(f"🚨 No availability data found for {username}.")
-        emit("no_availability", None, broadcast=True)
-        return
-
-    emit("card_availability_data", availability, broadcast=True)
-    logger.info(f"📡 Sent card availability update for {username} with {len(availability)} available")
+    availability_manager.get_card_availability(username)
+    logger.info(f"✅ Card availability data fetched for user {username}")
 
 
 def send_card_list(username):
@@ -52,7 +47,7 @@ def send_card_list(username):
         logger.error("❌ Error: Username is missing in get_cards request")
         return
 
-    cards = load_card_list(username)
+    cards = user_manager.load_card_list(username)
     if cards is None:
         logger.warning(f"🚨 No tracked cards found for {username}")
         return

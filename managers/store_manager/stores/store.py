@@ -1,89 +1,40 @@
-import requests
-import managers.database_manager as database_manager
-from bs4 import BeautifulSoup
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List
 
+import requests
+
+from managers.store_manager.filtering import filter_listings
 from utility.logger import logger
 
 
-class Store:
-    def __init__(self, slug):
-        store_data = database_manager.get_store_metadata(slug)
-        if not store_data:
-            raise ValueError(f"Store with slug '{slug}' not found in database.")
-        self.id = store_data.id
-        self.store_name = store_data.name
-        self.slug = store_data.slug
-        self.homepage = store_data.homepage
-        self.search_url = store_data.search_url
-        self.fetch_strategy = store_data.fetch_strategy
+class Store(ABC):
+    """Abstract base class for all store implementations."""
 
-    def get_search_params(self, card_name):
-        return None
+    def __init__(self, name: str, slug: str, homepage: str, search_url: str, fetch_strategy: str):
+        self.name = name
+        self.slug = slug
+        self.homepage = homepage
+        self.search_url = search_url
+        self.fetch_strategy = fetch_strategy
 
-    def check_store_availability(self, soup):
-        return None
+    @abstractmethod
+    def _scrape_listings(self, card_name: str) -> List[Dict[str, Any]]:
+        """
+        Scrapes the store's website for raw card listings.
+        This method must be implemented by each subclass.
+        """
+        pass
 
-    def get_price(self, soup):
-        return None
-
-    def get_condition(self, soup):
-        return None
-
-    def get_stock(self, soup):
-        return None
-
-    def get_product_rows(self, soup):
-        return None
-
-    def check_availability(self, card):
-        """Performs the search and checks the availability of the card, with detailed logging."""
-        card_name = ""
-        if isinstance(card, str):
-            card_name = card
-        elif isinstance(card, dict):
-            card_name = card['card_name']
-        values = []  # List to store valid results
-
-        logger.info(f"🔄 Starting availability check for '{card_name}' at {self.store_name}")
-
+    def fetch_card_availability(self, card_name: str, specifications: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Fetches and filters card availability from the store."""
+        logger.info(f"🔄 Starting availability check for '{card_name}' at {self.name}")
         try:
-            # Perform the search
-            logger.info(
-                f"🔍 Sending request to {self.store_name} with search params: {self.get_search_params(card_name)}")
-            response = requests.get(self.search_url, params=self.get_search_params(card_name))
-
-            # Handle server-side issues gracefully
-            if response.status_code == 503:
-                logger.warning(f"🚨 Service unavailable for {self.store_name}. Retrying later.")
-                return []  # Return an empty list to indicate no results
-
-            # Raise an exception for other HTTP errors
-            response.raise_for_status()
-            logger.info(f"✅ Successfully received response from {self.store_name}")
-
-            # Parse the response HTML
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # Fetch and process results from the store's availability checker
-            logger.info(f"🔍 Parsing store availability data for '{card_name}'")
-            results = self.check_store_availability(soup)
-
-            for result in results:
-                # Ensure the result matches the desired card name
-                if card_name.lower() in result['name'].lower():
-                    values.append(result)
-
-            if values:
-                logger.info(f"✅ Found {len(values)} matching listings for '{card_name}' at {self.store_name}")
-            else:
-                logger.warning(f"🚨 No listings found for '{card_name}' at {self.store_name}")
-
-            return values  # Return all valid results for this card
-
+            raw_listings = self._scrape_listings(card_name)
+            logger.info(f"✅ Found {len(raw_listings)} raw listings for '{card_name}' at {self.name}")
+            return filter_listings(card_name, raw_listings, specifications)
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Error connecting to {self.store_name}: {e}")
-            return []  # Return an empty list on connection failure
-
+            logger.error(f"❌ Error connecting to {self.name}: {e}")
+            return []
         except Exception as e:
-            logger.error(f"❌ An error occurred while checking availability for '{card_name}': {e}")
-            return []  # Return an empty list on any other exception
+            logger.error(f"❌ An error occurred while checking availability for '{card_name}' at {self.name}: {e}")
+            return []

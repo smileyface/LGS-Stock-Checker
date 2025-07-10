@@ -194,9 +194,12 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
         card_specs: cardSpecs
     });
 
-    console.log("📡 Sent 'add_card' event with:", { selectedCard, amount, card_specs });
+    console.log("📡 Sent 'add_card' event with:", { selectedCard, amount, cardSpecs });
 
     $("#addCardModal").modal("hide");
+
+    document.getElementById("cardSearch").value = "";
+    document.getElementById("amount").value = "1"; // Reset to default
 });
 
 

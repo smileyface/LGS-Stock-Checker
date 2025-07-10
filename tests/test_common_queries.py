@@ -1,80 +1,74 @@
 import pytest
+from data.database.models.orm_models import User, Card, CardSpecification, UserTrackedCards
 from werkzeug.security import generate_password_hash
-
-from managers.database_manager.common_queries import (
-    get_user_by_username, update_username, update_password,
-    get_users_cards, update_user_tracked_cards,
-    get_cards_by_name, get_all_cards, get_store_metadata, get_all_stores
-)
-from managers.database_manager.tables import User, Store
-from tests.utils.db_mock import get_test_session
+from data.database.repositories.card_repository import get_users_cards
 
 
-@pytest.fixture(scope="function")
-def db_session():
-    session = get_test_session()
-    yield session
-    session.rollback()
-    session.close()
+@pytest.fixture
+def seeded_user_with_cards(db_session):
+    """Fixture to create a user with multiple cards and specifications."""
+    user = User(username="carduser", password_hash=generate_password_hash("password"))
 
-
-def test_user_queries(db_session):
-    """Tests user-related queries."""
-    # Insert a mock user
-    test_user = User(username="testuser", password_hash=generate_password_hash("password"))
-    db_session.add(test_user)
+    # Create the unique card names in the 'cards' lookup table first
+    db_session.add_all([
+        Card(name="Lightning Bolt"),
+        Card(name="Counterspell"),
+        Card(name="Sol Ring")
+    ])
+    # Commit to ensure these exist before we reference them via foreign key.
     db_session.commit()
 
-    # Get user by username
-    user = get_user_by_username("testuser")
-    assert user.username == "testuser"
+    # Create the UserTrackedCards instances
+    tracked_card1 = UserTrackedCards(card_name="Lightning Bolt", amount=4)
+    tracked_card2 = UserTrackedCards(card_name="Counterspell", amount=2)
+    tracked_card3 = UserTrackedCards(card_name="Sol Ring", amount=1)
 
-    # Update username
-    update_username("testuser", "newtestuser")
-    user = get_user_by_username("newtestuser")
-    assert user.username == "newtestuser"
+    # Append specifications directly to the tracked card objects
+    tracked_card1.specifications.append(CardSpecification(set_code="2ED", finish="non-foil"))
+    tracked_card1.specifications.append(CardSpecification(set_code="3ED", finish="foil"))
+    tracked_card2.specifications.append(CardSpecification(set_code="CMR", finish="etched"))
 
-    # Update password
-    update_password("newtestuser", generate_password_hash("newpassword"))
-    user = get_user_by_username("newtestuser")
-    assert user.password_hash != test_user.password_hash  # Ensure password is updated
+    # Append the fully-formed tracked cards to the user's collection
+    user.cards.append(tracked_card1)
+    user.cards.append(tracked_card2)
+    user.cards.append(tracked_card3)
 
-
-def test_store_queries(db_session):
-    """Tests store-related queries."""
-    # Insert a mock store
-    test_store = Store(id=1, name="Test Store", slug="test-store", homepage="https://test.com",
-                       search_url="https://test.com/search", fetch_strategy="default")
-    db_session.add(test_store)
+    # Add the top-level user object; cascades will handle the rest.
+    db_session.add(user)
     db_session.commit()
 
-    # Get store metadata
-    store_metadata = get_store_metadata("test-store")
-    assert store_metadata["name"] == "Test Store"
-
-    # Get all stores
-    stores = get_all_stores()
-    assert len(stores) > 0
+    return user
 
 
-def test_card_queries(db_session):
-    """Tests card-related queries."""
-    # Insert a user and cards
-    test_user = User(username="testuser", password_hash=generate_password_hash("password"))
-    db_session.add(test_user)
-    db_session.commit()
+def test_get_users_cards(seeded_user_with_cards):
+    """
+    Tests the get_users_cards function to ensure it
+    returns cards with their associated specifications correctly.
+    """
+    username = seeded_user_with_cards.username
+    cards_data = get_users_cards(username)
 
-    card_list = [{"card_name": "Lightning Bolt"}, {"card_name": "Counterspell"}]
-    update_user_tracked_cards("testuser", card_list)
+    assert len(cards_data) == 3
 
-    # Get user cards
-    cards = get_users_cards("testuser")
-    assert len(cards) == 2
+    # Sort cards by name to make assertions deterministic
+    cards_data.sort(key=lambda c: c.card_name)
 
-    # Get cards by name (raw SQL)
-    retrieved_cards = get_cards_by_name("Lightning Bolt")
-    assert len(retrieved_cards) > 0
+    # Assertions for Counterspell
+    assert cards_data[0].card_name == "Counterspell"
+    assert cards_data[0].amount == 2
+    assert len(cards_data[0].specifications) == 1
+    assert cards_data[0].specifications[0].set_code == "CMR"
+    assert cards_data[0].specifications[0].finish == "etched"
 
-    # Get all cards
-    all_cards = get_all_cards()
-    assert len(all_cards) > 0
+    # Assertions for Lightning Bolt
+    assert cards_data[1].card_name == "Lightning Bolt"
+    assert cards_data[1].amount == 4
+    assert len(cards_data[1].specifications) == 2
+    spec_sets = {s.set_code for s in cards_data[1].specifications}
+    assert "2ED" in spec_sets
+    assert "3ED" in spec_sets
+
+    # Assertions for Sol Ring
+    assert cards_data[2].card_name == "Sol Ring"
+    assert cards_data[2].amount == 1
+    assert len(cards_data[2].specifications) == 0

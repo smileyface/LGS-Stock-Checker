@@ -127,44 +127,37 @@ def get_user_stores(username: str, session) -> List[schema.StoreSchema]:
 
 
 @db_query
-def add_user_store(username: str, store: str, session) -> None:
+def add_user_store(username: str, store_slug: str, session) -> None:
     """
-    Adds a store to the user's selected stores.
+    Adds a store to the user's selected stores using an idiomatic ORM approach.
 
     Args:
         username (str): The username of the user.
-        store (str): The slug of the store to add.
+        store_slug (str): The slug of the store to add.
         session (Session): The database session (injected by the db_query decorator).
-
-    Returns:
-        None: None if the operation was successful, otherwise raises an exception.
 
     Logs:
         Success or failure of the store addition operation.
     """
-    user = session.query(User).filter(User.username == username).first()
+    # Use joinedload to fetch the user and their selected stores in one query
+    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
     if not user:
         logger.warning(f"User '{username}' not found. Cannot add store preference.")
         return
 
-    store_obj = session.query(Store).filter(Store.slug == store).first()
-    if not store_obj:
-        logger.warning(f"Store with slug '{store}' not found. Cannot add store preference.")
+    # Check if the store is already in the user's preferences to prevent duplicates
+    if any(s.slug == store_slug for s in user.selected_stores):
+        logger.info(f"User '{username}' already has preference for store '{store_slug}'.")
         return
 
-    # Check if the preference already exists to prevent duplicates
-    existing_preference = session.query(user_store_preferences).filter_by(
-        user_id=user.id, store_id=store_obj.id
-    ).first()
-
-    if existing_preference:
-        logger.info(f"User '{username}' already has preference for store '{store}'.")
+    store_obj = session.query(Store).filter(Store.slug == store_slug).first()
+    if not store_obj:
+        logger.warning(f"Store with slug '{store_slug}' not found. Cannot add store preference.")
         return
 
     # Add the store to the user's preferences
-    new_preference = user_store_preferences.insert().values(user_id=user.id, store_id=store_obj.id)
-    session.execute(new_preference)
-    logger.info(f"✅ Added '{store}' to user '{username}' preferences.")
+    user.selected_stores.append(store_obj)
+    logger.info(f"✅ Added '{store_slug}' to user '{username}' preferences.")
 
 
 @db_query

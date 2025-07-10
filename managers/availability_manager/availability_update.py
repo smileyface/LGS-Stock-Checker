@@ -2,7 +2,7 @@ import time
 
 from managers import redis_manager
 import data
-from managers.socket_manager import socket_emit
+import managers.socket_manager as socket_manager
 import managers.store_manager as store_manager
 import managers.user_manager as user_manager
 from .availability_diff import Changes, detect_changes
@@ -135,7 +135,7 @@ def notify_users_of_changes(changes: Changes):
 
         for user in affected_users:
             logger.info(f"🔔 Emitting 'availability_changed' to user '{user.username}' for card '{card_name}'.")
-            socket_emit.emit_from_worker("availability_changed", card_change_summary, room=user.username)
+            socket_manager.socket_emit.emit_from_worker("availability_changed", card_change_summary, room=user.username)
 
 
 def queue_wanted_card_updates():

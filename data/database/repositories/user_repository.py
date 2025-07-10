@@ -215,7 +215,7 @@ def get_users_tracking_card(card_name: str, session=None) -> list[schema.UserPub
 
 
 @db_query
-def get_tracking_users_for_cards(card_names: list[str], session=None) -> dict[str, list[User]]:
+def get_tracking_users_for_cards(card_names: list[str], session=None) -> dict[str, list[schema.UserPublicSchema]]:
     """
     Efficiently finds all users tracking any of the given card names.
 

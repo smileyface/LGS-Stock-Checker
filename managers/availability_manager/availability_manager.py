@@ -2,8 +2,7 @@ from typing import Dict
 import data
 import managers.user_manager as user_manager
 import managers.redis_manager as redis_manager
-import managers.socket_manager as socket_manager
-from managers.availability_manager import availability_storage
+import managers.availability_manager as availability_manager
 from utility.logger import logger
 
 
@@ -19,16 +18,17 @@ def get_card_availability(username):
     user_cards = user_manager.load_card_list(username)
 
     for store in user_stores:
+        if not store or not store.slug:
+            continue
         for card in user_cards:
             logger.info(f"🔍 Checking availability for {card.card_name} at {store.name}")
-            cached_data = availability_storage.get_availability_data(store, card.card_name)
+            cached_data = availability_manager.availability_storage.get_availability_data(store.slug, card.card_name)
             if cached_data is None:
                 # Fetch availability for the specific card at the store
                 # Pass the store's slug and the card as a dictionary
                 redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
                                          username, store.slug, card.model_dump())
             else:
-                logger.info(f"✅ Availability data for {card.card_name} at {store} is already cached.")
-                socket_manager.emit_card_availability_data(username, store.name, card.card_name,
-                                                           cached_data)
+                logger.info(f"✅ Availability data for {card.card_name} at {store.name} is already cached.")
+                availability_manager.socket_emit.emit_card_availability_data(username, store.name, card.card_name, cached_data)
     return {"status": "completed", "message": "Availability data has been fetched and sent to the UI."}

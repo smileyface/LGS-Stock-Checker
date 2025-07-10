@@ -199,7 +199,7 @@ def get_all_users(session) -> List[schema.UserPublicSchema]:
 
 
 @db_query
-def get_users_tracking_card(card_name: str, session=None) -> list[User]:
+def get_users_tracking_card(card_name: str, session=None) -> list[schema.UserPublicSchema]:
     """
     Finds all users who are tracking a specific card.
     
@@ -208,9 +208,10 @@ def get_users_tracking_card(card_name: str, session=None) -> list[User]:
         session: The database session, injected by the db_query decorator.
 
     Returns:
-        list[User]: A list of User objects who are tracking the specified card.
+        list[schema.UserPublicSchema]: A list of User objects who are tracking the specified card.
     """
-    return session.query(User).join(User.cards).filter(UserTrackedCards.card_name == card_name).all()
+    users_orm = session.query(User).join(User.cards).filter(UserTrackedCards.card_name == card_name).all()
+    return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
 
 
 @db_query
@@ -223,7 +224,7 @@ def get_tracking_users_for_cards(card_names: list[str], session=None) -> dict[st
         session: The database session, injected by the db_query decorator.
 
     Returns:
-        dict[str, list[User]]: A dictionary mapping each card name to a list of User ORM objects tracking it.
+        dict[str, list[schema.UserPublicSchema]]: A dictionary mapping each card name to a list of User schemas.
     """
     if not card_names:
         return {}
@@ -238,6 +239,7 @@ def get_tracking_users_for_cards(card_names: list[str], session=None) -> dict[st
     card_to_users_map = {name: [] for name in card_names}
     for tracked_card in tracked_cards_with_users:
         if tracked_card.user:
-            card_to_users_map[tracked_card.card_name].append(tracked_card.user)
+            user_schema = schema.UserPublicSchema.model_validate(tracked_card.user)
+            card_to_users_map[tracked_card.card_name].append(user_schema)
 
     return card_to_users_map

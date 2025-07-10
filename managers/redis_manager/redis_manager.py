@@ -9,7 +9,7 @@ from utility.logger import logger
 
 # Use an environment variable for the job queue's Redis URL.
 # This is more flexible than detecting the OS.
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
 # The job queue manager connects to Redis for its specific purpose.
 redis_job_conn = redis.from_url(REDIS_URL) # RQ expects bytes, so no decode_responses

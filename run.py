@@ -2,24 +2,24 @@ import eventlet
 
 eventlet.monkey_patch()
 
+from managers import availability_manager
 from managers.tasks_manager import register_redis_function
-from managers.availability_manager.availability_update import queue_wanted_card_updates
 from managers.set_manager import initialize_set_data
 from utility.logger import logger
 
 from app import create_app
-from managers.socket_manager.socket_manager import socketio, register_socket_events  # Import the initialized SocketIO
+from managers.socket_manager import socketio, initialize_socket_handlers
 
 app = create_app()
 
 if __name__ == "__main__":
     with app.app_context():
         logger.info("🔹 Starting Flask-SocketIO server...")
-        register_socket_events(socketio)
+        initialize_socket_handlers()
         register_redis_function()
         initialize_set_data()
 
         # Schedule recurring background tasks
-        queue_wanted_card_updates()
+        availability_manager.queue_wanted_card_updates()
 
         socketio.run(app, debug=True, host="0.0.0.0", port=5000)

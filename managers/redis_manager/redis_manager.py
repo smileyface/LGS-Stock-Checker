@@ -54,3 +54,8 @@ def schedule_task(func: callable, interval_hours: int, *args, **kwargs):
     )
 
     logger.info(f"✅ Scheduled {func.__name__} every {interval_hours} hours.")
+
+
+def get_redis_url():
+    """Returns the configured Redis connection URL."""
+    return REDIS_URL

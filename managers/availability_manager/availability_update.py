@@ -1,9 +1,8 @@
 import time
 
-from flask_socketio import SocketIO
 from managers import redis_manager
-
 import data
+from managers.socket_manager import socket_emit
 import managers.store_manager as store_manager
 import managers.user_manager as user_manager
 from .availability_diff import Changes, detect_changes
@@ -109,10 +108,11 @@ def notify_users_of_changes(changes: Changes):
     and emits WebSocket notifications to them. This function is designed to be
     called from a background worker.
     """
-    # Create a SocketIO instance to publish events over the Redis message queue
-    socketio = SocketIO(message_queue=redis_manager.REDIS_URL)
 
-    all_changed_cards = set(changes["added"].keys()) | set(changes["removed"].keys()) | set(changes["updated"].keys())
+    added = changes.get("added", {})
+    removed = changes.get("removed", {})
+    updated = changes.get("updated", {})
+    all_changed_cards = set(added.keys()) | set(removed.keys()) | set(updated.keys())
 
     if not all_changed_cards:
         return
@@ -129,13 +129,13 @@ def notify_users_of_changes(changes: Changes):
 
         # Construct a change summary for this specific card
         card_change_summary = {k: v for k, v in {
-            "card_name": card_name, "added": changes["added"].get(card_name),
-            "removed": changes["removed"].get(card_name), "updated": changes["updated"].get(card_name),
+            "card_name": card_name, "added": added.get(card_name),
+            "removed": removed.get(card_name), "updated": updated.get(card_name),
         }.items() if v is not None}
 
         for user in affected_users:
             logger.info(f"🔔 Emitting 'availability_changed' to user '{user.username}' for card '{card_name}'.")
-            socketio.emit("availability_changed", card_change_summary, room=user.username)
+            socket_emit.emit_from_worker("availability_changed", card_change_summary, room=user.username)
 
 
 def queue_wanted_card_updates():

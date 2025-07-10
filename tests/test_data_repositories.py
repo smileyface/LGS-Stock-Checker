@@ -2,7 +2,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 import data
-from data.database.models.orm_models import User, Store
+from data.database.models.orm_models import User, Store, Card, UserTrackedCards
 
 
 @pytest.fixture
@@ -30,6 +30,30 @@ def seeded_store(db_session):
     db_session.refresh(store)
     return store
 
+
+@pytest.fixture
+def multiple_users_with_cards(db_session):
+    """Fixture to create multiple users tracking various cards."""
+    # Create unique card names
+    cards = [Card(name="Sol Ring"), Card(name="Brainstorm"), Card(name="Lurrus of the Dream-Den")]
+    db_session.add_all(cards)
+    db_session.commit()
+
+    # User 1 tracks Sol Ring and Brainstorm
+    user1 = User(username="user1", password_hash="hash1")
+    user1.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
+    user1.cards.append(UserTrackedCards(card_name="Brainstorm", amount=4))
+
+    # User 2 tracks Sol Ring and Lurrus
+    user2 = User(username="user2", password_hash="hash2")
+    user2.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
+    user2.cards.append(UserTrackedCards(card_name="Lurrus of the Dream-Den", amount=1))
+
+    # User 3 tracks no cards of interest
+    user3 = User(username="user3", password_hash="hash3")
+
+    db_session.add_all([user1, user2, user3])
+    db_session.commit()
 
 # --- User Repository Tests ---
 
@@ -154,3 +178,49 @@ def test_get_all_stores(seeded_store):
     stores = data.get_all_stores()
     assert len(stores) >= 1
     assert "test_store" in [s.slug for s in stores]
+
+
+# --- User-Card Query Tests ---
+
+def test_get_users_tracking_card(multiple_users_with_cards):
+    """Test finding all users who track a specific card."""
+    # Sol Ring is tracked by user1 and user2
+    users_tracking_sol_ring = data.get_users_tracking_card("Sol Ring")
+    assert len(users_tracking_sol_ring) == 2
+    usernames = {u.username for u in users_tracking_sol_ring}
+    assert "user1" in usernames
+    assert "user2" in usernames
+
+    # Brainstorm is only tracked by user1
+    users_tracking_brainstorm = data.get_users_tracking_card("Brainstorm")
+    assert len(users_tracking_brainstorm) == 1
+    assert users_tracking_brainstorm[0].username == "user1"
+
+    # A card tracked by no one
+    assert data.get_users_tracking_card("Black Lotus") == []
+
+
+def test_get_tracking_users_for_cards(multiple_users_with_cards):
+    """Test efficiently finding users for a list of cards."""
+    card_names = ["Sol Ring", "Lurrus of the Dream-Den", "Black Lotus"]
+    result = data.get_tracking_users_for_cards(card_names)
+
+    # Check Sol Ring
+    assert "Sol Ring" in result
+    sol_ring_users = result["Sol Ring"]
+    assert len(sol_ring_users) == 2
+    sol_ring_usernames = {u.username for u in sol_ring_users}
+    assert "user1" in sol_ring_usernames
+    assert "user2" in sol_ring_usernames
+
+    # Check Lurrus
+    assert "Lurrus of the Dream-Den" in result
+    assert len(result["Lurrus of the Dream-Den"]) == 1
+    assert result["Lurrus of the Dream-Den"][0].username == "user2"
+
+    # Check Black Lotus (tracked by no one)
+    assert "Black Lotus" in result
+    assert result["Black Lotus"] == []
+
+    # Check empty input
+    assert data.get_tracking_users_for_cards([]) == {}

@@ -2,13 +2,44 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
+
+from app import create_app
 from data.database.models.orm_models import Base
+
 
 # Use an in-memory SQLite database for fast, isolated tests
 TEST_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 # Use a scoped_session to mimic the application's session management
 TestingSessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+
+
+@pytest.fixture(scope="session")
+def app():
+    """Creates a test Flask application instance for the entire test session."""
+    _app = create_app()
+    return _app
+
+
+@pytest.fixture(autouse=True)
+def app_context(app):
+    """
+    Pushes a Flask application and request context for each test.
+    This makes 'app', 'g', 'request', and 'session' available.
+    It also pre-populates the request and session with test data needed
+    by the SocketIO handlers.
+    """
+    with app.test_request_context():
+        # Add 'sid' to the request object for SocketIO handlers
+        from flask import request
+        request.sid = "test_sid_12345"
+        request.namespace = "/"  # Add the default namespace for SocketIO handlers
+
+        # Populate the session with a test user
+        from flask import session
+        session['username'] = 'testuser'
+
+        yield
 
 
 @pytest.fixture(scope="function")
@@ -58,20 +89,13 @@ def mock_redis(mocker):
 @pytest.fixture(autouse=True)
 def mock_socketio_context(mocker):
     """
-    Mocks Flask-SocketIO context objects like 'request' and 'session'
-    to prevent 'Working outside of request context' errors. It also mocks
-    the 'emit' function to prevent actual network calls during tests.
+    Mocks the 'emit' function from Flask-SocketIO to prevent actual
+    network calls during tests. The necessary request/session context
+    is provided by the 'app_context' fixture.
     """
-    mock_request = mocker.MagicMock()
-    mock_request.sid = "test_sid_12345"
-    mocker.patch("managers.socket_manager.socket_connections.request", mock_request, create=True)
-    mocker.patch("managers.socket_manager.socket_handlers.request", mock_request, create=True)
-
-    # Mock the session object to provide a default username
-    mock_session = mocker.MagicMock()
-    mock_session.get.return_value = "testuser"
-    mocker.patch("managers.socket_manager.socket_handlers.session", mock_session, create=True)
-
-    # Patch the 'emit' function where it is *used* to ensure the mock is effective,
+    # Mock the main socketio object's emit function to prevent network calls
+    mocker.patch("managers.socket_manager.socket_emit.socketio.emit")
+    # Mock the SocketIO class itself within socket_emit to handle the worker case
+    mocker.patch("managers.socket_manager.socket_emit.SocketIO")
+    # Mock the emit function in socket_events, which is imported from flask_socketio
     mocker.patch("managers.socket_manager.socket_events.emit", create=True)
-    mocker.patch("managers.socket_manager.socket_emit.emit", create=True)

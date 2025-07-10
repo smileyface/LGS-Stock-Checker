@@ -2,7 +2,8 @@ from typing import Dict
 import data
 import managers.user_manager as user_manager
 import managers.redis_manager as redis_manager
-import managers.availability_manager as availability_manager
+import managers.socket_manager as socket_manager
+from . import availability_storage
 from utility.logger import logger
 
 
@@ -22,7 +23,7 @@ def get_card_availability(username):
             continue
         for card in user_cards:
             logger.info(f"🔍 Checking availability for {card.card_name} at {store.name}")
-            cached_data = availability_manager.availability_storage.get_availability_data(store.slug, card.card_name)
+            cached_data = availability_storage.get_availability_data(store.slug, card.card_name)
             if cached_data is None:
                 # Fetch availability for the specific card at the store
                 # Pass the store's slug and the card as a dictionary
@@ -30,5 +31,5 @@ def get_card_availability(username):
                                          username, store.slug, card.model_dump())
             else:
                 logger.info(f"✅ Availability data for {card.card_name} at {store.name} is already cached.")
-                availability_manager.socket_emit.emit_card_availability_data(username, store.name, card.card_name, cached_data)
+                socket_manager.socket_emit.emit_card_availability_data(username, store.name, card.card_name, cached_data)
     return {"status": "completed", "message": "Availability data has been fetched and sent to the UI."}

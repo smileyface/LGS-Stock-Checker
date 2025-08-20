@@ -161,6 +161,35 @@ def add_user_store(username: str, store_slug: str, session) -> None:
 
 
 @db_query
+def remove_user_store(username: str, store_slug: str, session) -> None:
+    """
+    Removes a store from the user's selected stores.
+
+    Args:
+        username (str): The username of the user.
+        store_slug (str): The slug of the store to remove.
+        session (Session): The database session (injected by the db_query decorator).
+
+    Logs:
+        Success or failure of the store removal operation.
+    """
+    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    if not user:
+        logger.warning(f"User '{username}' not found. Cannot remove store preference.")
+        return
+
+    # Find the specific store object in the user's collection to remove it
+    store_to_remove = next((s for s in user.selected_stores if s.slug == store_slug), None)
+
+    if store_to_remove:
+        user.selected_stores.remove(store_to_remove)
+        logger.info(f"✅ Removed '{store_slug}' from user '{username}' preferences.")
+    else:
+        logger.warning(f"User '{username}' does not have preference for store '{store_slug}'. Cannot remove.")
+
+
+
+@db_query
 def get_user_for_display(username: str, session) -> Optional[schema.UserPublicSchema]:
     """
     Retrieve a user by username from the database, excluding sensitive fields, and return as a UserPublicSchema instance.

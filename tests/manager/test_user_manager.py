@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 from managers.user_manager import (
     get_user,
@@ -23,8 +23,9 @@ CHECK_HASH_PATH = f"{USER_AUTH_MODULE_PATH}.check_password_hash"
 
 def test_get_user(mocker):
     """
-    Unit test for get_user.
-    Verifies it calls the data layer and returns the result.
+    GIVEN a username
+    WHEN get_user is called
+    THEN it calls the data layer's get_user_for_display and returns the result.
     """
     # Arrange
     # Patch the 'data' object as it is seen by the user_manager.py module
@@ -42,8 +43,9 @@ def test_get_user(mocker):
 
 def test_add_user(mocker):
     """
-    Unit test for add_user.
-    Verifies it hashes the password and calls the data layer.
+    GIVEN a new username and password
+    WHEN add_user is called
+    THEN it checks if the user exists, hashes the password, and calls the data layer to add the user.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_MANAGER_MODULE_PATH}.data")
@@ -62,25 +64,33 @@ def test_add_user(mocker):
 
 def test_update_username(mocker):
     """
-    Unit test for update_username.
-    Verifies it calls the data layer with correct arguments.
+    GIVEN an old and new username for a successful update
+    WHEN update_username is called
+    THEN it checks for the existence of both users and calls the data layer to perform the update.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_MANAGER_MODULE_PATH}.data")
-    mock_user_exists = mocker.patch(f"{USER_MANAGER_MODULE_PATH}.user_exists", return_value=True)
+    # Mock user_exists to return False for the new name check, and True for the old name check.
+    mock_user_exists = mocker.patch(
+        f"{USER_MANAGER_MODULE_PATH}.user_exists", side_effect=[False, True]
+    )
     old_username = "olduser"
     new_username = "newuser"
 
     # Act
-    update_username(old_username, new_username)
+    result = update_username(old_username, new_username)
 
     # Assert
-    mock_user_exists.assert_called_once_with(old_username)
+    assert result is True
+    expected_calls = [call(new_username), call(old_username)]
+    mock_user_exists.assert_has_calls(expected_calls)
     mock_data.update_username.assert_called_once_with(old_username, new_username)
 
 def test_authenticate_user_success(mocker):
     """
-    Unit test for authenticate_user with correct credentials.
+    GIVEN a user with a correct password
+    WHEN authenticate_user is called
+    THEN it retrieves the user, verifies the password hash, and returns True.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_AUTH_MODULE_PATH}.data")
@@ -99,7 +109,9 @@ def test_authenticate_user_success(mocker):
 
 def test_authenticate_user_wrong_password(mocker):
     """
-    Unit test for authenticate_user with an incorrect password.
+    GIVEN a user with an incorrect password
+    WHEN authenticate_user is called
+    THEN it retrieves the user, fails to verify the password hash, and returns False.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_AUTH_MODULE_PATH}.data")
@@ -118,7 +130,9 @@ def test_authenticate_user_wrong_password(mocker):
 
 def test_authenticate_user_no_user(mocker):
     """
-    Unit test for authenticate_user when the user does not exist.
+    GIVEN a username that does not exist
+    WHEN authenticate_user is called
+    THEN it fails to retrieve a user and returns False without checking a password.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_AUTH_MODULE_PATH}.data")
@@ -135,8 +149,9 @@ def test_authenticate_user_no_user(mocker):
 
 def test_get_selected_stores(mocker):
     """
-    Unit test for get_selected_stores.
-    Verifies it calls the data layer and returns the result.
+    GIVEN a username
+    WHEN get_selected_stores is called
+    THEN it calls the data layer's get_user_stores and returns the result.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_PREFS_MODULE_PATH}.data")
@@ -152,8 +167,9 @@ def test_get_selected_stores(mocker):
 
 def test_load_card_list(mocker):
     """
-    Unit test for load_card_list.
-    Verifies it calls the correct data layer function.
+    GIVEN a username for an existing user
+    WHEN load_card_list is called
+    THEN it checks if the user exists and calls the data layer to get the user's cards.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_CARDS_MODULE_PATH}.data")
@@ -171,8 +187,9 @@ def test_load_card_list(mocker):
 
 def test_save_card_list(mocker):
     """
-    Unit test for save_card_list.
-    Verifies it calls the correct data layer function.
+    GIVEN a username and a list of cards
+    WHEN save_card_list is called
+    THEN it checks if the user exists and calls the data layer to update the card list.
     """
     # Arrange
     mock_data = mocker.patch(f"{USER_CARDS_MODULE_PATH}.data")

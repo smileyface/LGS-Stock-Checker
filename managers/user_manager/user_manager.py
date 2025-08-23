@@ -21,10 +21,13 @@ def get_user(username: str) -> Optional[schema.UserPublicSchema]:
     return data.get_user_for_display(username)
 
 
-def user_exists(username):
+def user_exists(username: str) -> bool:
     """
     Checks if a user already exists in the database.
-    Returns True if exists, False otherwise.
+    Args:
+        username (str): The username to check.
+    Returns:
+        bool: True if the user exists, False otherwise.
     """
     return data.get_user_by_username(username) is not None
 
@@ -54,8 +57,21 @@ def add_user(username: str, password: str) -> bool:
 
 
 def update_username(old_username: str, new_username: str) -> bool:
-    """Renames a user's account, transferring all associated data."""
+    """
+    Renames a user's account, transferring all associated data.
+    Args:
+        old_username (str): The current username of the user to be renamed.
+        new_username (str): The new desired username for the user.
+    Returns:
+        bool: True if the username update was successful, False otherwise.
+    Logs:
+        Success or failure of the username update operation.
+        """
+        
     logger.info(f"✏️ Renaming user '{old_username}' to '{new_username}'")
+    if user_exists(new_username):
+        logger.warning(f"🚨 User '{new_username}' already exists.")
+        return False
     if user_exists(old_username):
         data.update_username(old_username, new_username)
         logger.info(f"✅ Username updated successfully.")

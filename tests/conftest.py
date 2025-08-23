@@ -2,22 +2,23 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
+from werkzeug.security import generate_password_hash
 
 from app import create_app
-from data.database.models.orm_models import Base
-
-
-# Use an in-memory SQLite database for fast, isolated tests
+from data.database.models.orm_models import Base, User, Store
+ # Use an in-memory SQLite database for fast, isolated tests
 TEST_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 # Use a scoped_session to mimic the application's session management
-TestingSessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+# expire_on_commit=False is crucial for tests where objects created in one
+# transaction need to be accessed after that transaction's session is closed.
+TestingSessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False))
 
 
 @pytest.fixture(scope="session")
 def app():
     """Creates a test Flask application instance for the entire test session."""
-    _app = create_app()
+    _app = create_app({"TESTING": True})
     return _app
 
 
@@ -56,6 +57,44 @@ def db_session():
         session.close()
         Base.metadata.drop_all(bind=engine)
 
+
+@pytest.fixture
+def seeded_user(db_session):
+    """Fixture to create and commit a test user to the database."""
+    user = User(username="testuser", password_hash=generate_password_hash("password"))
+    db_session.add(user)
+    db_session.commit()
+    return user
+
+
+@pytest.fixture
+def seeded_stores(db_session):
+    """Fixture to create and commit multiple test stores to the database."""
+    stores_data = [
+        Store(
+            name="Test Store",
+            slug="test_store",
+            homepage="https://test.com",
+            search_url="https://test.com/search",
+            fetch_strategy="default",
+        ),
+        Store(
+            name="Another Store",
+            slug="another_store",
+            homepage="https://another.com",
+            search_url="https://another.com/search",
+            fetch_strategy="default",
+        ),
+    ]
+    db_session.add_all(stores_data)
+    db_session.commit()
+    return stores_data
+
+
+@pytest.fixture
+def seeded_store(seeded_stores):
+    """Fixture to provide a single test store from the list of seeded stores."""
+    return next(s for s in seeded_stores if s.slug == "test_store")
 
 # This fixture is crucial for tests that call application code
 # which in turn tries to get a database session.

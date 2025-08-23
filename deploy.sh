@@ -20,6 +20,15 @@ else
     exit 1
 fi
 
+# Run tests before deploying
+echo "🧪 Running tests..."
+# This assumes pytest is installed in the environment.
+# If tests run in a container, you might use: docker compose run --rm app pytest
+if ! pytest; then
+    echo "❌ Tests failed. Aborting deployment."
+    exit 1
+fi
+
 # Rebuild and restart containers
 docker compose up -d --build
 

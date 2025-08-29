@@ -1,68 +1,44 @@
-services:
-  #test-runner:
-  #  build: .
-  #  container_name: test-runner
-  #  command: python tests/test_for_explosions.py
-  #  depends_on:
-  #    - redis
-  #  environment:
-  #    - REDIS_HOST=redis
-  #  restart: "no"  # Prevents automatic restart on failure
-  #  healthcheck:  # This tells Docker Compose if the service is "healthy"
-  #    test: ["CMD", "test", "-f", "/app/tests_passed"]  # Only passes if the file exists
-  #    interval: 10s
-  #    retries: 3
-  #    start_period: 5s
+version: '3.8'
 
-  web-app:
-    build: .
-    container_name: web-app
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: LGS_Stock_Backend/Dockerfile
     ports:
       - "5000:5000"
     volumes:
-      - .:/app
-    depends_on:
-#      - test-runner
-      - redis
-      - db
+      # Mount source code for live-reloading in development
+      - ./LGS_Stock_Backend:/app/LGS_Stock_Backend
+      - ./wsgi.py:/app/wsgi.py
     environment:
+      # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis
-      - RUNNING_IN_DOCKER=true
-      - FLASK_ENV=production
-      - DATABASE_URL=postgresql://postgres:password@db:5432/lgs_stock_checker
-    restart: unless-stopped
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    networks:
+      - stock-net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: LGS_Stock_Frontend/Dockerfile
+    ports:
+      - "8000:80"
+    volumes:
+      # Mount source code for live-reloading in development
+      - ./LGS_Stock_Frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+    networks:
+      - stock-net
 
   redis:
-    image: redis:latest
-    container_name: redis-server
-    ports:
-      - "6379:6379" # Ensure Redis is exposed
-    restart: unless-stopped
+    image: "redis:6.2-alpine"
+    networks:
+      - stock-net
 
-  rq-worker:
-    build: .
-    container_name: rq-worker
-    command: rq worker default
-    depends_on:
-#      - test-runner
-      - redis
-    environment:
-      - REDIS_HOST=redis
-      - RUNNING_IN_DOCKER=true
-    restart: unless-stopped
-
-  db:
-    image: postgres:latest
-    container_name: postgres-db
-    restart: always
-    environment:
-      POSTGRES_USER: lgs_user
-      POSTGRES_PASSWORD: lgs_password
-      POSTGRES_DB: lgs_stock_checker
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+networks:
+  stock-net:
+    driver: bridge

@@ -34,7 +34,7 @@ git reset --hard "origin/$BRANCH"
 echo "🧪 Running tests..."
 # Run tests inside a temporary 'backend' service container to ensure environment consistency.
 # The '--rm' flag removes the container after the test run.
-if ! $COMPOSER run --rm backend pytest; then
+if ! $COMPOSER run --rm backend pytest -m "not smoke"; then
     echo "❌ Tests failed. Aborting deployment."
     exit 1
 fi

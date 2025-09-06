@@ -13,9 +13,13 @@ user_bp = Blueprint("user_bp", __name__)
 @user_bp.route("/account")
 @login_required
 def account_settings():
+    user = get_user(session["username"])
+    # The user object is a Pydantic model, so we use attribute access.
+    # Provide a default empty list if the user is not found for any reason.
+    stores = user.selected_stores if user else []
     return render_template("account_settings.html",
                            username=session["username"],
-                           stores=get_user(session["username"]).get("selected_stores", []),
+                           stores=stores,
                            all_stores=list(STORE_REGISTRY.keys()))
 
 

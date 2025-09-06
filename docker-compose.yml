@@ -43,5 +43,3 @@ services:
 networks:
   stock-net:
     driver: bridge
-  stock-net:
-    driver: bridge

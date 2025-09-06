@@ -14,5 +14,5 @@ def initialize_socket_handlers():
     """
     # By importing these modules, the @socketio.on decorators within them
     # are executed, registering the event handlers automatically.
-    from . import socket_connections, socket_handlers, socket_events
+    from . import socket_connections, socket_handlers
     logger.info("✅ Socket.IO event handlers registered.")

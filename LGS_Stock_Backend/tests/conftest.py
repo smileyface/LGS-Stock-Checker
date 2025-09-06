@@ -18,7 +18,7 @@ TestingSessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=Fa
 @pytest.fixture(scope="session")
 def app():
     """Creates a test Flask application instance for the entire test session."""
-    _app = create_app({"TESTING": True})
+    _app = create_app("testing")
     return _app
 
 
@@ -136,5 +136,15 @@ def mock_socketio_context(mocker):
     mocker.patch("managers.socket_manager.socket_emit.socketio.emit")
     # Mock the SocketIO class itself within socket_emit to handle the worker case
     mocker.patch("managers.socket_manager.socket_emit.SocketIO")
-    # Mock the emit function in socket_events, which is imported from flask_socketio
-    mocker.patch("managers.socket_manager.socket_events.emit", create=True)
+
+
+@pytest.fixture(autouse=True)
+def mock_template_rendering(mocker):
+    """
+    Automatically mocks Flask's `render_template` function to prevent
+    TemplateNotFound errors in tests that call route functions.
+    This isolates route tests to their Python logic, not UI rendering.
+    """
+    # Patch where the function is looked up (in each route module that uses it).
+    mocker.patch("routes.home_routes.render_template", return_value="<mocked_template>")
+    mocker.patch("routes.user_routes.render_template", return_value="<mocked_template>")

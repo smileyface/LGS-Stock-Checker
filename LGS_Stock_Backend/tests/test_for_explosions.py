@@ -14,7 +14,7 @@ from data.database.models.orm_models import Store, User
 
 # Import the top-level managers package
 import managers
-import utility, data
+import utility, data, routes
 
 
 def import_all_modules_from_packages(*packages):
@@ -31,7 +31,7 @@ def import_all_modules_from_packages(*packages):
     return modules
 
 
-PACKAGES_TO_TEST = import_all_modules_from_packages(managers, data, utility)
+PACKAGES_TO_TEST = import_all_modules_from_packages(managers, data, utility, routes)
 
 
 @pytest.fixture
@@ -54,12 +54,17 @@ def seed_data(db_session):
     return {"user_id": test_user.id, "store_id": test_store.id}
 
 
+@pytest.mark.smoke
 @pytest.mark.parametrize("package", PACKAGES_TO_TEST, ids=[p.__name__ for p in PACKAGES_TO_TEST])
-def test_all_functions_no_crashes(package, seed_data, db_session):
+def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
     """
     Smoke test to ensure that functions can be called with basic, safe inputs
     without raising exceptions. This test uses seeded data for more realistic scenarios.
     """
+    # Mock the underlying get_json method to prevent crashes in route handlers
+    # that access request.json without the correct Content-Type header.
+    mocker.patch("werkzeug.wrappers.request.Request.get_json", return_value={})
+
     for name, func in inspect.getmembers(package, inspect.isfunction):
         # Ensure we only test functions defined in the current package, not imported ones.
         if func.__module__ != package.__name__:

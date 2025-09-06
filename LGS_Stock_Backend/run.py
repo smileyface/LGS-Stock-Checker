@@ -10,7 +10,7 @@ from flask_session import Session
 
 # Use absolute imports for clarity and robustness, as supported by your PYTHONPATH
 from LGS_Stock_Backend.routes import register_blueprints
-from LGS_Stock_Backend.managers.socket_manager import socketio
+from LGS_Stock_Backend.managers.socket_manager import socketio, initialize_socket_handlers
 
 
 def create_app(config_override=None):
@@ -37,8 +37,16 @@ def create_app(config_override=None):
     # Register blueprints
     register_blueprints(app)
 
-    # Attach SocketIO with Redis message queue for scaling
-    socketio.init_app(app, message_queue=f"redis://{redis_host}:6379")
+    # Initialize SocketIO with the app and specific configurations
+    socketio.init_app(
+        app,
+        message_queue=f"redis://{redis_host}:6379",
+        cors_allowed_origins="*",
+        async_mode="eventlet",
+        engineio_logger=False  # Set to True for detailed Engine.IO debugging
+    )
+    # Discover and register all socket event handlers
+    initialize_socket_handlers()
 
     return app
 
@@ -47,4 +55,3 @@ if __name__ == "__main__":
     app = create_app()
     # The host and port are passed here for the dev server run
     socketio.run(app, debug=True, host="0.0.0.0", port=5000)
-

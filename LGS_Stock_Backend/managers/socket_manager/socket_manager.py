@@ -1,15 +1,10 @@
 from flask_socketio import SocketIO
 
-import managers.redis_manager as redis_manager
 from utility.logger import logger
 
-# Initialize Flask-SocketIO
-socketio = SocketIO(
-    message_queue=redis_manager.get_redis_url(),
-    cors_allowed_origins="*",
-    async_mode="eventlet",
-    engineio_logger=False
-)
+# Create a single, uninitialized SocketIO instance.
+# It will be configured and initialized in the application factory.
+socketio = SocketIO()
 
 def initialize_socket_handlers():
     """

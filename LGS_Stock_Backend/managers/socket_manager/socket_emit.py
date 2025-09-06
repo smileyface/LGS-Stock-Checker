@@ -1,7 +1,7 @@
 from flask_socketio import SocketIO
 
 import managers.redis_manager as redis_manager
-from managers.socket_manager.socket_manager import socketio
+from managers.socket_manager import socketio
 from utility.logger import logger
 
 

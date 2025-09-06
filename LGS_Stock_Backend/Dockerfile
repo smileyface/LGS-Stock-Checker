@@ -11,11 +11,11 @@ COPY ./LGS_Stock_Backend/requirements.txt .
 
 # Install build-time system dependencies for packages like lxml, install Python packages,
 # then remove the build dependencies to keep the final image slim.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc libxml2-dev libxslt1-dev && \
+RUN apt-get update && \ 
+    apt-get install -y --no-install-recommends gcc libxml2-dev libxslt1-dev libpq-dev && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    apt-get purge -y --auto-remove gcc libxml2-dev libxslt1-dev && \
+    apt-get purge -y --auto-remove gcc libxml2-dev libxslt1-dev libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the backend source code and the WSGI entrypoint

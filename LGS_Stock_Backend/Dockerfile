@@ -8,6 +8,8 @@ ENV PYTHONPATH=/app
 
 # Copy requirements first to leverage Docker layer caching
 COPY ./LGS_Stock_Backend/requirements.txt .
+# Upgrade pip and then install requirements. This can solve dependency resolution issues.
+RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the backend source code and the WSGI entrypoint
@@ -16,6 +18,5 @@ COPY ./wsgi.py .
 
 # Expose the port the app runs on
 EXPOSE 5000
-
 # Run the app using gunicorn. It will find the 'app' object in 'wsgi.py'.
 CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "wsgi:app"]

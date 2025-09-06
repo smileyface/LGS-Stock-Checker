@@ -8,17 +8,15 @@ echo "🚀 Deploying branch: $BRANCH"
 # Navigate to the repo
 cd ~/LGS-Stock-Checker || exit 1
 
-# Fetch latest updates
+# Fetch latest updates from the remote repository
+echo "📡 Fetching latest updates from origin..."
 git fetch origin
 
-# Check if the branch exists on remote
-if git ls-remote --exit-code --heads origin "$BRANCH"; then
-    git checkout "$BRANCH"
-    git pull origin "$BRANCH"
-else
-    echo "❌ Branch '$BRANCH' not found on remote. Exiting..."
-    exit 1
-fi
+# Switch to the target branch and reset it to match the remote version exactly.
+# This discards any local changes, ensuring a clean deployment state.
+echo "🔄 Checking out and resetting branch '$BRANCH'..."
+git checkout "$BRANCH"
+git reset --hard "origin/$BRANCH"
 
 # Run tests before deploying
 echo "🧪 Running tests..."

@@ -40,6 +40,14 @@ This application uses Docker Compose, which often relies on an environment file 
     ```bash
     nano .env
     ```
+    You will need to set variables like `SECRET_KEY`. For the future email service, you would also add:
+    ```
+    SMTP_SERVER=smtp.gmail.com
+    SMTP_PORT=587
+    EMAIL_SENDER=your-email@gmail.com
+    EMAIL_PASSWORD=your-app-password
+    EMAIL_RECIPIENT=admin-email@example.com
+    ```
 
 ### 3. Running the Application
 

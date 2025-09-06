@@ -1,10 +1,17 @@
 from flask import session
 from pydantic import ValidationError
 
-from managers.card_manager import parse_card_list
-from managers.socket_manager.socket_events import send_card_availability_update, send_card_list, send_full_card_list
-from managers.socket_manager.socket_manager import socketio
-from managers.socket_manager.socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema
+#internal package imports
+from .socket_manager import socketio
+from .socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema
+
+#manager package imports
+import managers.card_manager as card_manager
+import managers.user_manager as user_manager
+import managers.availability_manager as availability_manager
+
+#project package imports
+from externals import fetch_scryfall_card_names
 import data as db
 from utility.logger import logger
 
@@ -21,7 +28,11 @@ def handle_get_card_availability():
     username = get_username()
     if username:
         logger.info(f"🔍 Fetching card availability for user: {username}")
-        send_card_availability_update(username)
+        """
+        Fetch the latest card availability state and send it to the client.
+        """
+        availability_manager.get_card_availability(username)
+        logger.info(f"✅ Card availability data fetched for user {username}")
     else:
         logger.warning("🚨 No username found for 'get_card_availability' request.")
 
@@ -33,10 +44,37 @@ def handle_get_cards():
     username = get_username()
     if username:
         logger.info(f"📜 Sending tracked cards list for user: {username}")
-        send_card_list(username)
+        """
+        Fetches the user's tracked cards from the correct manager and sends them.
+        """
+        logger.info(f"📩 Received request for tracked card list from {username}")
+
+        if not username:
+            socketio.emit("error", {"message": "Username is required"}, namespace="/")
+            logger.error("❌ Error: Username is missing in get_cards request")
+            return
+
+        cards = user_manager.load_card_list(username)
+        if cards is None:
+            logger.warning(f"🚨 No tracked cards found for {username}")
+            return
+
+        card_list = [
+            {
+                "card_name": card.card_name,
+                "amount": card.amount,
+                "specifications": [
+                    {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
+                    for spec in card.specifications
+                ] if card.specifications else [],
+            }
+            for card in cards
+        ]
+
+        socketio.emit("cards_data", {"username": username, "tracked_cards": card_list})
+        logger.info(f"📡 Sent card list for {username} with {len(card_list)} items")
     else:
         logger.warning("🚨 No username found for 'get_cards' request.")
-
 
 @socketio.on("parse_card_list")
 def handle_parse_card_list(data: dict):
@@ -45,7 +83,7 @@ def handle_parse_card_list(data: dict):
     try:
         validated_data = ParseCardListSchema.model_validate(data)
         logger.info("📝 Parsing raw card list from user input.")
-        parsed_cards = parse_card_list(validated_data.raw_list)
+        parsed_cards = card_manager.parse_card_list(validated_data.raw_list)
         socketio.emit("parsed_cards", {"cards": parsed_cards})
         logger.info("✅ Parsed card list sent to front end.")
     except ValidationError as e:
@@ -57,7 +95,21 @@ def handle_parse_card_list(data: dict):
 def handle_request_card_names():
     logger.info("📩 Received 'request_card_names' request from front end.")
     """Send cached card names to the frontend via WebSocket."""
-    send_full_card_list()
+    logger.info("📩 Fetching full cached card list from Redis...")
+
+    try:
+        card_names = fetch_scryfall_card_names()
+
+        if not card_names:
+            logger.warning("⚠️ Cached card list is empty or unavailable.")
+            card_names = []  # Ensure frontend gets an empty list instead of None
+
+        socketio.emit("card_names_response", {"card_names": card_names})
+        logger.info(f"📡 Sent {len(card_names)} card names to frontend.")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to retrieve card names from Redis: {e}")
+        socketio.emit("card_names_response", {"card_names": []})  # Send empty list on failure
 
 
 @socketio.on("add_card")

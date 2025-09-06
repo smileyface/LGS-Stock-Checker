@@ -1,13 +1,30 @@
 import os
+import redis
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-hard-to-guess-string'
-    # Add other global configuration variables here
+    # Use environment variable for security in production
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-very-secret-key'
+
+    # Configure Redis-based session storage
+    SESSION_TYPE = "redis"
+    SESSION_PERMANENT = False
+    SESSION_USE_SIGNER = True
+    SESSION_KEY_PREFIX = "session:"
+
+    # --- Email Configuration (for future implementation) ---
+    # It's best practice to load these from environment variables
+    # to avoid committing secrets to version control.
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+    EMAIL_SENDER = os.environ.get('EMAIL_SENDER')  # e.g., 'your-email@gmail.com'
+    EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')  # Your app password
+    EMAIL_RECIPIENT = os.environ.get('EMAIL_RECIPIENT')  # e.g., 'admin-email@example.com'
 
     @staticmethod
     def init_app(app):
-        pass
+        redis_host = os.getenv("REDIS_HOST", "redis")
+        app.config["SESSION_REDIS"] = redis.Redis(host=redis_host, port=6379)
 
 class DevelopmentConfig(Config):
     DEBUG = True

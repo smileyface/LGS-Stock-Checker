@@ -22,9 +22,9 @@ fi
 
 # Run tests before deploying
 echo "🧪 Running tests..."
-# This assumes pytest is installed in the environment.
-# If tests run in a container, you might use: docker compose run --rm app pytest
-if ! pytest; then
+# Run tests inside a temporary 'backend' service container to ensure environment consistency.
+# The '--rm' flag removes the container after the test run.
+if ! docker compose run --rm backend pytest; then
     echo "❌ Tests failed. Aborting deployment."
     exit 1
 fi

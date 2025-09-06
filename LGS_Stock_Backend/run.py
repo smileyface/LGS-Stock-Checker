@@ -9,15 +9,22 @@ from flask import Flask
 from flask_session import Session
 
 # Use absolute imports for clarity and robustness, as supported by your PYTHONPATH
+from LGS_Stock_Backend.config import config
 from LGS_Stock_Backend.routes import register_blueprints
 from LGS_Stock_Backend.managers.socket_manager import socketio, initialize_socket_handlers
 
 
 def create_app(config_override=None):
+def create_app(config_name=None):
     app = Flask(__name__)
 
     # Use environment variable for security
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "a-very-secret-key")
+    if config_name is None:
+        config_name = os.getenv('FLASK_CONFIG', 'default')
+    
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
 
     # 🔧 Configure Redis-based session storage
     app.config["SESSION_TYPE"] = "redis"
@@ -37,6 +44,7 @@ def create_app(config_override=None):
     # Register blueprints
     register_blueprints(app)
 
+    redis_host = os.getenv("REDIS_HOST", "redis")
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(
         app,
@@ -53,5 +61,15 @@ def create_app(config_override=None):
 # This block is only for running the local development server directly
 if __name__ == "__main__":
     app = create_app()
+    app = create_app('development')
+    # The host and port are passed here for the dev server run
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
+
+    return app
+
+# This block is only for running the local development server directly
+if __name__ == "__main__":
+    app = create_app()
+    app = create_app('development')
     # The host and port are passed here for the dev server run
     socketio.run(app, debug=True, host="0.0.0.0", port=5000)

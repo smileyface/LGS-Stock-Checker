@@ -1,6 +1,8 @@
 from flask import session, Blueprint, render_template, redirect, url_for
 
 from managers.socket_manager import log_and_emit
+from .decorators import login_required
+
 
 home_bp = Blueprint("home_bp", __name__)
 
@@ -12,10 +14,9 @@ def landing_page():
     return render_template("landing.html")
 
 @home_bp.route("/dashboard")
+@login_required
 def dashboard():
-    if "username" not in session:
-        log_and_emit("info", "ℹ️ No user is logged in. Redirecting to landing page")
-        return redirect(url_for("home_bp.landing_page"))
+    log_and_emit("info", f"✅ User '{session['username']}' accessed the dashboard.")
     return render_template("dashboard.html",
                            username=session["username"],
                            card_availability=[])

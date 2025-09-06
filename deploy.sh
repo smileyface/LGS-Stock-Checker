@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Auto-detect docker compose command
+if command -v docker-compose &> /dev/null; then
+    # docker-compose (standalone) is available
+    COMPOSER="docker-compose"
+elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
+    # docker compose (plugin) is available
+    COMPOSER="docker compose"
+else
+    echo "❌ Neither 'docker-compose' nor 'docker compose' command found. Aborting deployment."
+    exit 1
+fi
+
 # Set default branch to 'dev' if no argument is provided
 BRANCH=${1:-dev}
 
@@ -22,12 +34,13 @@ git reset --hard "origin/$BRANCH"
 echo "🧪 Running tests..."
 # Run tests inside a temporary 'backend' service container to ensure environment consistency.
 # The '--rm' flag removes the container after the test run.
-if ! docker compose run --rm backend pytest; then
+if ! $COMPOSER run --rm backend pytest; then
     echo "❌ Tests failed. Aborting deployment."
     exit 1
 fi
 
 # Rebuild and restart containers
-docker compose up -d --build
+echo "🚀 Rebuilding and restarting containers..."
+$COMPOSER up -d --build
 
 echo "✅ Deployment of '$BRANCH' completed!"

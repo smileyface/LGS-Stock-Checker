@@ -8,9 +8,15 @@ ENV PYTHONPATH=/app
 
 # Copy requirements first to leverage Docker layer caching
 COPY ./LGS_Stock_Backend/requirements.txt .
-# Upgrade pip and then install requirements. This can solve dependency resolution issues.
-RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install build-time system dependencies for packages like lxml, install Python packages,
+# then remove the build dependencies to keep the final image slim.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc libxml2-dev libxslt1-dev && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get purge -y --auto-remove gcc libxml2-dev libxslt1-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy the backend source code and the WSGI entrypoint
 COPY ./LGS_Stock_Backend ./LGS_Stock_Backend

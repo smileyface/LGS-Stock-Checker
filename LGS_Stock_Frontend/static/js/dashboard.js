@@ -1,50 +1,53 @@
+/**
+ * Renders the availability data as a series of Bootstrap badges.
+ * @param {string[] | undefined} stores - An array of store names where the card is available.
+ * @returns {string} - HTML string of badges.
+ */
+function renderAvailability(stores) {
+    if (!stores || stores.length === 0) {
+        return '<span class="badge bg-secondary">Not Available</span>';
+    }
+    // Creates a green badge for each store the card is available in.
+    return stores.map(store => `<span class="badge bg-success me-1">${store}</span>`).join(' ');
+}
 
-
-window.updateCardTable = function (data) {
-    let table = $("#cardTable").DataTable();
+/**
+ * Clears and repopulates the main card DataTable with tracked cards and their availability.
+ * @param {object} appState - The application state containing cards and availability.
+ */
+function updateCardTable(appState) {
+    const table = $("#cardTable").DataTable();
     table.clear();
 
-    if (!data || !Array.isArray(data.tracked_cards) || data.tracked_cards.length === 0) {
-        console.warn("⚠️ No tracked cards available.");
-        let $emptyRow = $(`
-            <tr>
-                <td colspan="6" class="text-center">No Cards Available</td>
-            </tr>
-        `);
-        table.row.add($emptyRow);
+    if (!appState.trackedCards || appState.trackedCards.length === 0) {
+        console.warn("updateCardTable called with no tracked cards. Clearing table.");
         table.draw();
         return;
     }
 
-    data.tracked_cards.forEach((card) => {
-        let available = availabilityMap[card.card_name] === undefined
-        ? "❌"
-        : "✅";
-        let $row = $(`
-            <tr>
-                <td>
-                    <div class="action-buttons" data-card-name="${card.card_name}">
-                        <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
-                        <button class="btn btn-sm btn-light delete-btn" title="Delete">❌</button>
-                    </div>
-                </td>
-                <td class="amount-cell">${card.amount || "-"}</td>
-                <td>${card.card_name || "-"}</td>
-                <td>${card.set_code || "N/A"}</td>
-                <td>${card.collector_id || "N/A"}</td>
-                <td>${card.finish || "Non-Foil"}</td>
-                <td>${available}</td>
-            </tr>
-        `);
+    const tableData = appState.trackedCards.map(card => {
+        // For each card, look up its availability in the map using its name.
+        const availableStores = appState.availabilityMap[card.card_name] || [];
+        const actionButtons = `
+            <div class="action-buttons" data-card-name="${card.card_name}">
+                <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
+                <button class="btn btn-sm btn-light delete-btn" title="Delete">❌</button>
+            </div>`;
 
-        table.row.add($row);
+        // The order must match the columns in the HTML table
+        return [
+            actionButtons,
+            `<div class="amount-cell">${card.amount || "-"}</div>`,
+            card.card_name || "-",
+            card.specifications?.[0]?.set_code || "N/A",
+            card.specifications?.[0]?.collector_number || "N/A",
+            card.specifications?.[0]?.finish || "Non-Foil",
+            renderAvailability(availableStores)
+        ];
     });
 
-    table.draw();
-};
-
-
-
+    table.rows.add(tableData).draw();
+}
 
 document.addEventListener("DOMContentLoaded", function () {
     console.log("✅ Dashboard.js is loaded!");
@@ -55,13 +58,17 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-
         console.log("✅ Initializing Card Table...");
         $("#cardTable").DataTable({
             paging: false,
             searching: true,
             ordering: true,
-            info: false
+            info: false,
+            // Ensure columns that contain HTML are not treated as plain text
+            "columnDefs": [
+                { "targets": [0, 1, 6], "type": "html", "orderable": false },
+                { "targets": [0], "width": "80px" } // Give action buttons a fixed width
+            ]
         });
         $("#cardTable tbody").on("click", ".delete-btn", function () {
             const row = $(this).closest("tr");
@@ -79,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
             $("#cardTable").DataTable().row(row).remove().draw();
         });
 
-        $("#cardTable tbody").on("click", ".edit-btn", function(){
+        $("#cardTable tbody").on("click", ".edit-btn", function () {
             const row = $(this).closest("tr");
             const amountCell = row.find(".amount-cell");
             const currentAmount = amountCell.text().trim();
@@ -92,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
             btn.removeClass("edit-btn").addClass("save-btn").html("💾");
         });
 
-        $("#cardTable tbody").on("click", ".save-btn", function(){
+        $("#cardTable tbody").on("click", ".save-btn", function () {
             const row = $(this).closest("tr");
             const amountInput = row.find(".amount-input");
             const newAmount = amountInput.val();
@@ -131,12 +138,9 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    initializeCardTable();
-    initializeAvailabilityTable();
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-    let cardSearchInput = document.getElementById("cardSearch");
+    // --- Autocomplete Search ---
+    let cardNameCache = []; // Local cache for autocomplete
+    const cardSearchInput = document.getElementById("cardSearch");
     let searchResultsList = document.getElementById("searchResults");
 
     cardSearchInput.addEventListener("input", function () {
@@ -146,8 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // ✅ Filter card names from cache for autocomplete
-        let filteredResults = cardNameCache.filter(name => name.toLowerCase().includes(query)).slice(0, 10);
+        const filteredResults = cardNameCache.filter(name => name.toLowerCase().includes(query)).slice(0, 10);
         searchResultsList.innerHTML = "";
 
         filteredResults.forEach(cardName => {
@@ -158,6 +161,17 @@ document.addEventListener("DOMContentLoaded", function () {
             searchResultsList.appendChild(listItem);
         });
     });
+
+    // --- Initialize Tables ---
+    initializeCardTable();
+    initializeAvailabilityTable();
+
+    // --- Listen for data updates from socket.js ---
+    document.addEventListener('app:dataUpdated', function (e) {
+        console.log("Received app:dataUpdated event", e.detail);
+        cardNameCache = e.detail.cardNameCache || []; // Update local cache
+        updateCardTable(e.detail);
+    });
 });
 
 function selectCard(cardName) {
@@ -165,7 +179,6 @@ function selectCard(cardName) {
     document.getElementById("searchResults").innerHTML = "";
     document.getElementById("searchResults").setAttribute("data-selected-card", cardName);
 }
-
 
 // ✅ Handle Adding a Card
 document.getElementById("saveCardButton").addEventListener("click", function () {
@@ -201,7 +214,3 @@ document.getElementById("saveCardButton").addEventListener("click", function () 
     document.getElementById("cardSearch").value = "";
     document.getElementById("amount").value = "1"; // Reset to default
 });
-
-
-
-

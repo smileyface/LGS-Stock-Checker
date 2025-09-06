@@ -1,28 +1,13 @@
-/**
- * Waits for a condition to be true before executing a callback.
- * @param {() => boolean} condition - A function that returns true when the condition is met.
- * @param {() => void} callback - The function to execute once the condition is met.
- */
-function pollUntil(condition, callback) {
-    let attempts = 20; // Maximum retries (e.g., 20 * 250ms = 5 seconds)
-    let interval = setInterval(() => {
-        if (condition()) {
-            clearInterval(interval);
-            callback();
-        } else if (--attempts === 0) {
-            console.warn(`⚠️ Condition not met after multiple attempts. Aborting.`);
-            clearInterval(interval);
-        }
-    }, 250);
-}
-
 // --- State Management ---
 // Encapsulate state in a single object to avoid polluting the global scope.
 const appState = {
     cardNameCache: [],
     availabilityMap: {},
-    latestCardData: null,
+    trackedCards: [],
 };
+
+// Debounce timer for UI updates to prevent rapid re-renders.
+let uiUpdateTimeout = null;
 
 var socket = io.connect(window.location.origin, {
     transports: ["websocket", "polling"], // Ensure WebSockets are prioritized
@@ -59,13 +44,14 @@ socket.on("server_log", function (data) {
 socket.on("cards_data", function (data) {
     console.log("🛠️ Received cards_data:", data);
 
-    if (!data || !data.tracked_cards || data.tracked_cards.length === 0) {
+    if (!data || !data.tracked_cards) {
         console.warn("⚠️ No tracked cards available in received data.");
+        appState.trackedCards = [];
         return;
     }
-    appState.latestCardData = data; // Store state locally
+    appState.trackedCards = data.tracked_cards; // Store state locally
 
-    // Now that we have the cards, request their availability.
+    // Now that we have the latest card list, request their availability.
     // This prevents the table from rendering twice in quick succession on initial load.
     socket.emit("get_card_availability");
     console.log("📡 Sent 'get_card_availability' event to backend");
@@ -73,30 +59,41 @@ socket.on("cards_data", function (data) {
 
 socket.on("card_availability_data", function (data) {
     console.log("📥 Received availability data:", data);
-    const newAvailabilityMap = {};
-    data.forEach(entry => {
-        // Use card name as key; you could also include set/collector filters if needed
-        newAvailabilityMap[entry.card_name] = entry.stores;
-    });
-    appState.availabilityMap = newAvailabilityMap;
 
-    // This is now the single point of truth for rendering the table with all data.
-    pollUntil(
-        () => $.fn.DataTable.isDataTable("#cardTable"),
-        () => window.updateCardTable(appState.latestCardData, appState.availabilityMap)
-    );
-});
+    // The backend sends incremental updates for each card/store combination.
+    // We need to build the availability map piece by piece.
+    if (data && data.card && data.store) {
+        const cardName = data.card;
+        const storeName = data.store;
+        const isAvailable = data.items && data.items.length > 0;
 
-// ✅ Receive Search Results and Populate List
-socket.on("search_results", function (data) {
-    searchResultsList.innerHTML = "";
-    data.forEach(card => {
-        let listItem = document.createElement("li");
-        listItem.className = "list-group-item list-group-item-action";
-        listItem.innerHTML = `${card.name} <small>(${card.set_code})</small>`;
-        listItem.onclick = () => selectCard(card);
-        searchResultsList.appendChild(listItem);
-    });
+        // Ensure the card has an entry in the map.
+        if (!appState.availabilityMap[cardName]) {
+            appState.availabilityMap[cardName] = [];
+        }
+
+        const storeIndex = appState.availabilityMap[cardName].indexOf(storeName);
+
+        if (isAvailable && storeIndex === -1) {
+            // Add the store to the list if it's available and not already present.
+            appState.availabilityMap[cardName].push(storeName);
+        } else if (!isAvailable && storeIndex !== -1) {
+            // Remove the store if it's no longer available.
+            appState.availabilityMap[cardName].splice(storeIndex, 1);
+        }
+    } else {
+        console.warn("⚠️ Received malformed availability data:", data);
+        return; // Do not proceed with malformed data.
+    }
+
+    // Debounce the UI update to prevent the table from re-rendering on every single event.
+    // This batches updates that arrive in quick succession.
+    clearTimeout(uiUpdateTimeout);
+    uiUpdateTimeout = setTimeout(() => {
+        console.log("🚀 Dispatching debounced UI update.");
+        const event = new CustomEvent('app:dataUpdated', { detail: appState });
+        document.dispatchEvent(event);
+    }, 200); // Wait 200ms after the last event to update the UI.
 });
 
 socket.on("card_names_response", function (data) {
@@ -107,8 +104,3 @@ socket.on("card_names_response", function (data) {
     appState.cardNameCache = data.card_names;
     console.log(`✅ Loaded ${data.card_names.length} card names for autocomplete.`);
 });
-
-// Function to trigger card availability request
-function requestCardAvailability(selectedStores) {
-    socket.emit("get_card_availability", { stores: selectedStores });
-}

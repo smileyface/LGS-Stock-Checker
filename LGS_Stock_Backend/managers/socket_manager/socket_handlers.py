@@ -21,6 +21,36 @@ def get_username():
     return session.get("username")
 
 
+def _send_user_cards(username: str):
+    """Fetches a user's card list, formats it, and emits it over Socket.IO."""
+    if not username:
+        logger.error("❌ Attempted to send card list for an empty username.")
+        return
+
+    logger.info(f"📜 Fetching and sending tracked cards for user: {username}")
+    cards = user_manager.load_card_list(username)
+
+    if cards is None:
+        # Send an empty list so the frontend can clear its state.
+        card_list = []
+        logger.warning(f"🚨 No tracked cards found for {username}, sending empty list.")
+    else:
+        card_list = [
+            {
+                "card_name": card.card_name,
+                "amount": card.amount,
+                "specifications": [
+                    {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
+                    for spec in card.specifications
+                ] if card.specifications else [],
+            }
+            for card in cards
+        ]
+
+    socketio.emit("cards_data", {"username": username, "tracked_cards": card_list})
+    logger.info(f"📡 Sent card list for {username} with {len(card_list)} items.")
+
+
 @socketio.on("get_card_availability")
 def handle_get_card_availability():
     """Handles a front-end request for updated card availability data."""
@@ -43,38 +73,10 @@ def handle_get_cards():
     logger.info("📩 Received 'get_cards' request from front end.")
     username = get_username()
     if username:
-        logger.info(f"📜 Sending tracked cards list for user: {username}")
-        """
-        Fetches the user's tracked cards from the correct manager and sends them.
-        """
-        logger.info(f"📩 Received request for tracked card list from {username}")
-
-        if not username:
-            socketio.emit("error", {"message": "Username is required"}, namespace="/")
-            logger.error("❌ Error: Username is missing in get_cards request")
-            return
-
-        cards = user_manager.load_card_list(username)
-        if cards is None:
-            logger.warning(f"🚨 No tracked cards found for {username}")
-            return
-
-        card_list = [
-            {
-                "card_name": card.card_name,
-                "amount": card.amount,
-                "specifications": [
-                    {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
-                    for spec in card.specifications
-                ] if card.specifications else [],
-            }
-            for card in cards
-        ]
-
-        socketio.emit("cards_data", {"username": username, "tracked_cards": card_list})
-        logger.info(f"📡 Sent card list for {username} with {len(card_list)} items")
+        _send_user_cards(username)
     else:
         logger.warning("🚨 No username found for 'get_cards' request.")
+
 
 @socketio.on("parse_card_list")
 def handle_parse_card_list(data: dict):
@@ -125,7 +127,7 @@ def handle_add_user_tracked_card(data: dict):
             validated_data.amount,
             validated_data.card_specs
         )
-        handle_get_cards()
+        _send_user_cards(username)
     except ValidationError as e:
         logger.error(f"❌ Invalid 'add_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
@@ -138,7 +140,7 @@ def handle_delete_user_tracked_card(data: dict):
         validated_data = DeleteCardSchema.model_validate(data)
         username = get_username()
         db.delete_user_card(username, validated_data.card)
-        handle_get_cards()
+        _send_user_cards(username)
     except ValidationError as e:
         logger.error(f"❌ Invalid 'delete_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for delete_card: {e}"})
@@ -153,7 +155,7 @@ def handle_update_user_tracked_cards(data: dict):
         db.update_user_tracked_card_preferences(
             username, validated_data.card, validated_data.update_data
         )
-        handle_get_cards()
+        _send_user_cards(username)
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for update_card: {e}"})

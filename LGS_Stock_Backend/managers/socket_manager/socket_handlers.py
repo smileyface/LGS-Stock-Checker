@@ -15,7 +15,6 @@ from externals import fetch_scryfall_card_names
 import data as db
 from utility.logger import logger
 
-
 def get_username():
     """Helper function to get the username from the session."""
     return session.get("username")

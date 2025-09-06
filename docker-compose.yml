@@ -9,8 +9,8 @@ services:
       # Mount source code for live-reloading in development
       - ./LGS_Stock_Backend:/app/LGS_Stock_Backend
       # Mount tests and pytest config for running tests in the container
-      - ./tests:/app/tests
-      - ./LGS_Stock_Backend/pytest.ini:/app/pytest.ini
+      # The tests are included in the LGS_Stock_Backend volume mount above.
+      - ./pytest.ini:/app/pytest.ini
       - ./wsgi.py:/app/wsgi.py
     environment:
       # Use the service name 'redis' to connect to the Redis container
@@ -41,5 +41,7 @@ services:
       - stock-net
 
 networks:
+  stock-net:
+    driver: bridge
   stock-net:
     driver: bridge

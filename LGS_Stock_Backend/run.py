@@ -1,5 +1,4 @@
 import os
-import redis
 import eventlet
 
 # Crucial for SocketIO performance with Gunicorn and event-based workers
@@ -8,35 +7,20 @@ eventlet.monkey_patch()
 from flask import Flask
 from flask_session import Session
 
-# Use absolute imports for clarity and robustness, as supported by your PYTHONPATH
-from LGS_Stock_Backend.config import config
-from LGS_Stock_Backend.routes import register_blueprints
-from LGS_Stock_Backend.managers.socket_manager import socketio, initialize_socket_handlers
+# Use imports relative to the LGS_Stock_Backend package root
+from settings import config
+from routes import register_blueprints
+from managers.socket_manager import socketio, initialize_socket_handlers
 
 
-def create_app(config_override=None):
 def create_app(config_name=None):
     app = Flask(__name__)
 
-    # Use environment variable for security
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "a-very-secret-key")
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'default')
     
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
-
-    # 🔧 Configure Redis-based session storage
-    app.config["SESSION_TYPE"] = "redis"
-    app.config["SESSION_PERMANENT"] = False
-    app.config["SESSION_USE_SIGNER"] = True
-    app.config["SESSION_KEY_PREFIX"] = "session:"
-    redis_host = os.getenv("REDIS_HOST", "redis")
-    app.config["SESSION_REDIS"] = redis.Redis(host=redis_host, port=6379)
-
-    # Apply overrides for testing or other environments
-    if config_override:
-        app.config.update(config_override)
 
     # Initialize session management
     Session(app)
@@ -60,16 +44,6 @@ def create_app(config_name=None):
 
 # This block is only for running the local development server directly
 if __name__ == "__main__":
-    app = create_app()
-    app = create_app('development')
-    # The host and port are passed here for the dev server run
-    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
-
-    return app
-
-# This block is only for running the local development server directly
-if __name__ == "__main__":
-    app = create_app()
     app = create_app('development')
     # The host and port are passed here for the dev server run
     socketio.run(app, debug=True, host="0.0.0.0", port=5000)

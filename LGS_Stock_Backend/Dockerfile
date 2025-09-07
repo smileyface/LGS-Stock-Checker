@@ -13,9 +13,12 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Copy requirements first to leverage Docker layer caching
 COPY ./LGS_Stock_Backend/requirements.txt .
 
-# Install Python dependencies into the virtual environment.
-# This stage has all the system dependencies needed for compilation.
-RUN pip install --no-cache-dir --upgrade pip && \
+# Install pre-compiled system packages for dependencies that are slow to build from source.
+# Then, install the rest of the Python packages with pip.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3-lxml && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 

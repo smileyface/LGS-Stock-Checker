@@ -56,6 +56,16 @@ fi
 echo "🛑 Stopping and removing old containers..."
 $COMPOSER down --remove-orphans
 
+# Add a small delay to allow the OS to fully release network ports.
+echo "⏳ Waiting for ports to be released..."
+sleep 2
+
+# --- Forceful Port Cleanup ---
+# Sometimes, a process can be left holding a port open. This command finds
+# any process using port 5000 and forcefully terminates it to ensure a clean start.
+echo "🔪 Forcibly clearing port 5000 to prevent allocation errors..."
+sudo fuser -k 5000/tcp || true # The '|| true' ensures the script doesn't fail if the port is already free.
+
 # Now, bring up the new services in detached mode.
 echo "🚀 Starting services..."
 $COMPOSER up -d

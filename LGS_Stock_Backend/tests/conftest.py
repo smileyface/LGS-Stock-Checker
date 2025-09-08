@@ -4,8 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
 from werkzeug.security import generate_password_hash
 
-from run import create_app
-from data.database.models.orm_models import Base, User, Store
+from LGS_Stock_Backend.run import create_app
+from LGS_Stock_Backend.data.database.models.orm_models import Base, User, Store
  # Use an in-memory SQLite database for fast, isolated tests
 TEST_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -104,7 +104,7 @@ def override_get_session(monkeypatch):
     Patch the session factory *where it is used* (in the session_manager).
     This ensures that the @db_query decorator uses the in-memory test database.
     """
-    monkeypatch.setattr("data.database.session_manager.SessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("LGS_Stock_Backend.data.database.session_manager.SessionLocal", TestingSessionLocal)
 
 
 @pytest.fixture(autouse=True)
@@ -117,12 +117,12 @@ def mock_redis(mocker):
     mock_data_redis = mocker.MagicMock()
     mock_data_redis.get.return_value = None  # Simulate key not found
     mock_data_redis.hgetall.return_value = {}  # Simulate empty hash
-    mocker.patch("data.redis_client.redis_conn", mock_data_redis)
+    mocker.patch("LGS_Stock_Backend.data.redis_client.redis_conn", mock_data_redis)
 
-    mocker.patch("managers.redis_manager.redis_manager.redis_job_conn", mocker.MagicMock())
+    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.redis_job_conn", mocker.MagicMock())
     # Mock the objects that capture the connection at import time
-    mocker.patch("managers.redis_manager.redis_manager.queue", mocker.MagicMock())
-    mocker.patch("managers.redis_manager.redis_manager.scheduler", mocker.MagicMock())
+    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mocker.MagicMock())
+    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.scheduler", mocker.MagicMock())
 
 
 @pytest.fixture(autouse=True)
@@ -133,9 +133,9 @@ def mock_socketio_context(mocker):
     is provided by the 'app_context' fixture.
     """
     # Mock the main socketio object's emit function to prevent network calls
-    mocker.patch("managers.socket_manager.socket_emit.socketio.emit")
+    mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.socketio.emit")
     # Mock the SocketIO class itself within socket_emit to handle the worker case
-    mocker.patch("managers.socket_manager.socket_emit.SocketIO")
+    mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.SocketIO")
 
 
 @pytest.fixture(autouse=True)
@@ -146,5 +146,5 @@ def mock_template_rendering(mocker):
     This isolates route tests to their Python logic, not UI rendering.
     """
     # Patch where the function is looked up (in each route module that uses it).
-    mocker.patch("routes.home_routes.render_template", return_value="<mocked_template>")
-    mocker.patch("routes.user_routes.render_template", return_value="<mocked_template>")
+    mocker.patch("LGS_Stock_Backend.routes.home_routes.render_template", return_value="<mocked_template>")
+    mocker.patch("LGS_Stock_Backend.routes.user_routes.render_template", return_value="<mocked_template>")

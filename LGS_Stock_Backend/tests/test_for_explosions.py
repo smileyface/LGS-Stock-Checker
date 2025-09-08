@@ -9,12 +9,8 @@ import pytest
 from werkzeug.security import generate_password_hash
 from flask_socketio import SocketIO
 
-import data
-from data.database.models.orm_models import Store, User
-
-# Import the top-level managers package
-import managers
-import utility, data, routes
+from LGS_Stock_Backend.data.database.models.orm_models import Store, User
+from LGS_Stock_Backend import managers, utility, data, routes
 
 
 def import_all_modules_from_packages(*packages):

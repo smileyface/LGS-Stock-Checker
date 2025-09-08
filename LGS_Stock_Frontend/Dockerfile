@@ -15,6 +15,3 @@ EXPOSE 80
 
 # The default Nginx command will start the server
 CMD ["nginx", "-g", "daemon off;"]
-
-# The default Nginx command will start the server
-CMD ["nginx", "-g", "daemon off;"]

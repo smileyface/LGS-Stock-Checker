@@ -20,22 +20,21 @@ RUN apt-get update && \
 # Start fresh with the slim image for a small final footprint.
 FROM python:3.9-slim
 
-WORKDIR /app
+WORKDIR /app/LGS_Stock_Backend
 
 # Copy the installed packages and executables from the builder stage.
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy the backend source code and the WSGI entrypoint
-COPY ./LGS_Stock_Backend ./LGS_Stock_Backend
-COPY ./wsgi.py .
+# Copy the backend source code. The WORKDIR is already set to the package root.
+COPY ./LGS_Stock_Backend .
 
 # Copy the frontend's templates and static assets into the backend's package
 # directory. This allows Flask's `render_template` and `url_for` to find them.
-COPY ./LGS_Stock_Frontend/templates ./LGS_Stock_Backend/templates
-COPY ./LGS_Stock_Frontend/static ./LGS_Stock_Backend/static
+COPY ./LGS_Stock_Frontend/templates ./templates
+COPY ./LGS_Stock_Frontend/static ./static
 
 # Expose the port the app runs on
 EXPOSE 5000
-# Run the app using gunicorn. It will find the 'app' object in 'wsgi.py'.
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "wsgi:app"]
+# Run the app using gunicorn. It will find the 'app' object in the 'run.py' file.
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "run:app"]

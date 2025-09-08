@@ -6,8 +6,6 @@ services:
   backend:
     volumes:
       - ./LGS_Stock_Backend:/app/LGS_Stock_Backend
-      - ./pytest.ini:/app/pytest.ini
-      - ./wsgi.py:/app/wsgi.py
   frontend:
     volumes:
       - ./LGS_Stock_Frontend:/usr/share/nginx/html

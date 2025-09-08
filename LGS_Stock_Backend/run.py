@@ -42,6 +42,10 @@ def create_app(config_name=None):
 
     return app
 
+# This object is what Gunicorn will look for.
+# It's created by calling the factory function.
+app = create_app()
+
 # This block is only for running the local development server directly
 if __name__ == "__main__":
     app = create_app('development')

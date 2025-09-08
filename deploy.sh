@@ -32,7 +32,7 @@ git reset --hard "origin/$BRANCH"
 
 # Build the new images first to ensure all dependencies are included.
 echo "🏗️ Building Docker images..."
-if ! $COMPOSER build; then
+if ! $COMPOSER -f docker-compose.yml build; then
     echo "❌ Docker build failed. Aborting deployment."
     exit 1
 fi
@@ -43,7 +43,7 @@ if [ "$BRANCH" = "master" ]; then
     echo "🔬 This is a release deployment to 'master'. Running tests..."
     # Install test dependencies and run tests against the newly built image.
     # The '--rm' flag removes the container after the test run.
-    if ! $COMPOSER run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements-dev.txt && pytest -m 'not smoke'"; then
+    if ! $COMPOSER -f docker-compose.yml run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements-dev.txt && pytest -m 'not smoke'"; then
         echo "❌ Tests failed. Aborting release deployment."
         exit 1
     fi
@@ -54,7 +54,7 @@ fi
 # If we reach here, either tests passed or were skipped.
 # First, tear down any existing services to free up ports and ensure a clean start.
 echo "🛑 Stopping and removing old containers..."
-$COMPOSER down --remove-orphans
+$COMPOSER -f docker-compose.yml down --remove-orphans
 
 # --- Aggressive Cleanup for Stubborn Port Conflicts ---
 # The "port is already allocated" error, even when 'lsof' shows the port is free,
@@ -69,7 +69,7 @@ sleep 5
 
 # Now, bring up the new services in detached mode.
 echo "🚀 Starting services..."
-$COMPOSER up -d
+$COMPOSER -f docker-compose.yml up -d
 
 # Clean up old, unused Docker images to save disk space.
 echo "🧹 Cleaning up old Docker images..."

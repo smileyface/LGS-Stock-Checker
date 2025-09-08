@@ -51,8 +51,13 @@ else
     echo "⏩ This is a test deployment to '$BRANCH'. Skipping tests."
 fi
 
-# If we reach here, either tests passed or were skipped. Bring up the services.
+# If we reach here, either tests passed or were skipped.
+# First, tear down any existing services to free up ports and ensure a clean start.
+echo "🛑 Stopping and removing old containers..."
+$COMPOSER down
+
+# Now, bring up the new services in detached mode.
 echo "🚀 Starting services..."
-$COMPOSER up -d --remove-orphans
+$COMPOSER up -d
 
 echo "✅ Deployment of '$BRANCH' completed!"

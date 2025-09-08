@@ -63,8 +63,13 @@ sleep 2
 # --- Forceful Port Cleanup ---
 # Sometimes, a process can be left holding a port open. This command finds
 # any process using port 5000 and forcefully terminates it to ensure a clean start.
-echo "🔪 Forcibly clearing port 5000 to prevent allocation errors..."
-fuser -k 5000/tcp || true # The '|| true' ensures the script doesn't fail if the port is already free.
+echo "🔪 Forcibly clearing port 5000..."
+# Use lsof for better logging to see what's using the port.
+echo "🔍 Processes currently using port 5000:"
+sudo lsof -i :5000 || echo "Port 5000 is free."
+# Use sudo with fuser to ensure we have permission to kill the process, which might be owned by root.
+echo "Terminating processes..."
+sudo fuser -k 5000/tcp || true # The '|| true' ensures the script doesn't fail if the port is already free.
 
 # Now, bring up the new services in detached mode.
 echo "🚀 Starting services..."

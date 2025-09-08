@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
     ports:
-      - "5000:5000"
+      - "0.0.0.0:5000:5000"
     environment:
       # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis
@@ -19,7 +19,7 @@ services:
       context: .
       dockerfile: LGS_Stock_Frontend/Dockerfile
     ports:
-      - "8000:80"
+      - "0.0.0.0:8000:80"
     depends_on:
       - backend
     networks:

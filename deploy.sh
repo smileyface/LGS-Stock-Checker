@@ -30,7 +30,14 @@ echo "🔄 Checking out and resetting branch '$BRANCH'..."
 git checkout "$BRANCH"
 git reset --hard "origin/$BRANCH"
 
-# Run tests before deploying
+# Build the new image first to ensure all dependencies are included.
+echo "🏗️ Building Docker images..."
+if ! $COMPOSER build; then
+    echo "❌ Docker build failed. Aborting deployment."
+    exit 1
+fi
+
+# Run tests against the newly built image.
 echo "🧪 Running tests..."
 # Run tests inside a temporary 'backend' service container to ensure environment consistency.
 # The '--rm' flag removes the container after the test run.
@@ -39,8 +46,8 @@ if ! $COMPOSER run --rm backend pytest -m "not smoke"; then
     exit 1
 fi
 
-# Rebuild and restart containers
-echo "🚀 Rebuilding and restarting containers..."
-$COMPOSER up -d --build
+# If tests pass, bring up the services with the new image.
+echo "🚀 Starting services..."
+$COMPOSER up -d
 
 echo "✅ Deployment of '$BRANCH' completed!"

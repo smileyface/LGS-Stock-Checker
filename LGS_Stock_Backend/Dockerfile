@@ -1,6 +1,6 @@
 # --- Stage 1: Builder ---
 # Use the full Python image which includes all the necessary build tools.
-FROM python:3.9 AS builder
+FROM python:3.9 as builder
 
 # Set the working directory
 WORKDIR /app
@@ -8,14 +8,13 @@ WORKDIR /app
 # Copy requirements first to leverage Docker layer caching
 COPY ./LGS_Stock_Backend/requirements.txt .
 
-# Install pre-compiled system packages for dependencies that are slow to build,
-# then install the rest of the Python packages with pip.
+# Install pre-compiled system packages for dependencies that are slow to build from source,
+# then install the rest of the Python packages with pip into the global site-packages.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3-lxml && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
-
 
 # --- Stage 2: Final Image ---
 # Start fresh with the slim image for a small final footprint.
@@ -23,7 +22,7 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Copy the virtual environment from the builder stage. This contains all our installed packages.
+# Copy the installed packages and executables from the builder stage.
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 

@@ -56,20 +56,16 @@ fi
 echo "🛑 Stopping and removing old containers..."
 $COMPOSER down --remove-orphans
 
-# Add a small delay to allow the OS to fully release network ports.
-echo "⏳ Waiting for ports to be released..."
-sleep 2
-
-# --- Forceful Port Cleanup ---
-# Sometimes, a process can be left holding a port open. This command finds
-# any process using port 5000 and forcefully terminates it to ensure a clean start.
-echo "🔪 Forcibly clearing port 5000..."
-# Use lsof for better logging to see what's using the port.
-echo "🔍 Processes currently using port 5000:"
-sudo lsof -i :5000 || echo "Port 5000 is free."
-# Use sudo with fuser to ensure we have permission to kill the process, which might be owned by root.
-echo "Terminating processes..."
-sudo fuser -k 5000/tcp || true # The '|| true' ensures the script doesn't fail if the port is already free.
+# --- Aggressive Cleanup for Stubborn Port Conflicts ---
+# The "port is already allocated" error, even when 'lsof' shows the port is free,
+# suggests Docker's internal networking state might be corrupt. Restarting the Docker
+# daemon is the most reliable way to clear this "ghost" allocation.
+# WARNING: This will temporarily stop ALL Docker containers on this machine.
+echo "⚠️ Performing aggressive cleanup to prevent port conflicts: Restarting Docker daemon..."
+sudo systemctl restart docker
+# Wait for the daemon to be fully ready again.
+echo "⏳ Waiting for Docker daemon to restart..."
+sleep 5
 
 # Now, bring up the new services in detached mode.
 echo "🚀 Starting services..."

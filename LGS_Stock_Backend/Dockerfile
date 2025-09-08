@@ -30,6 +30,11 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY ./LGS_Stock_Backend ./LGS_Stock_Backend
 COPY ./wsgi.py .
 
+# Copy the frontend's templates and static assets into the backend's package
+# directory. This allows Flask's `render_template` and `url_for` to find them.
+COPY ./LGS_Stock_Frontend/templates ./LGS_Stock_Backend/templates
+COPY ./LGS_Stock_Frontend/static ./LGS_Stock_Backend/static
+
 # Expose the port the app runs on
 EXPOSE 5000
 # Run the app using gunicorn. It will find the 'app' object in 'wsgi.py'.

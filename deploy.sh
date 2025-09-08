@@ -13,7 +13,7 @@ else
 fi
 
 # Set default branch to 'dev' if no argument is provided
-BRANCH=${1:-dev}
+BRANCH=${1:-master}
 
 echo "🚀 Deploying branch: $BRANCH"
 
@@ -30,24 +30,29 @@ echo "🔄 Checking out and resetting branch '$BRANCH'..."
 git checkout "$BRANCH"
 git reset --hard "origin/$BRANCH"
 
-# Build the new image first to ensure all dependencies are included.
+# Build the new images first to ensure all dependencies are included.
 echo "🏗️ Building Docker images..."
 if ! $COMPOSER build; then
     echo "❌ Docker build failed. Aborting deployment."
     exit 1
 fi
 
-# Run tests against the newly built image.
-echo "🧪 Running tests..."
-# Run tests inside a temporary 'backend' service container to ensure environment consistency.
-# The '--rm' flag removes the container after the test run.
-if ! $COMPOSER run --rm backend pytest -m "not smoke"; then
-    echo "❌ Tests failed. Aborting deployment."
-    exit 1
+# --- Conditional Test Execution ---
+# Only run tests for the 'master' branch, which is considered a release deployment.
+if [ "$BRANCH" = "master" ]; then
+    echo "🔬 This is a release deployment to 'master'. Running tests..."
+    # Install test dependencies and run tests against the newly built image.
+    # The '--rm' flag removes the container after the test run.
+    if ! $COMPOSER run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements-dev.txt && pytest -m 'not smoke'"; then
+        echo "❌ Tests failed. Aborting release deployment."
+        exit 1
+    fi
+else
+    echo "⏩ This is a test deployment to '$BRANCH'. Skipping tests."
 fi
 
-# If tests pass, bring up the services with the new image.
+# If we reach here, either tests passed or were skipped. Bring up the services.
 echo "🚀 Starting services..."
-$COMPOSER up -d
+$COMPOSER up -d --remove-orphans
 
 echo "✅ Deployment of '$BRANCH' completed!"

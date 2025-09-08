@@ -5,13 +5,6 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     ports:
       - "5000:5000"
-    volumes:
-      # Mount source code for live-reloading in development
-      - ./LGS_Stock_Backend:/app/LGS_Stock_Backend
-      # Mount tests and pytest config for running tests in the container
-      # The tests are included in the LGS_Stock_Backend volume mount above.
-      - ./pytest.ini:/app/pytest.ini
-      - ./wsgi.py:/app/wsgi.py
     environment:
       # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis
@@ -27,9 +20,6 @@ services:
       dockerfile: LGS_Stock_Frontend/Dockerfile
     ports:
       - "8000:80"
-    volumes:
-      # Mount source code for live-reloading in development
-      - ./LGS_Stock_Frontend:/usr/share/nginx/html
     depends_on:
       - backend
     networks:

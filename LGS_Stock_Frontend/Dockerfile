@@ -13,10 +13,4 @@ COPY ./LGS_Stock_Frontend/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 
 # The default Nginx command will start the server
-CMD ["nginx", "-g", "daemon off;"]nf /etc/nginx/conf.d/default.conf
-
-# Expose port 80
-EXPOSE 80
-
-# The default Nginx command will start the server
 CMD ["nginx", "-g", "daemon off;"]

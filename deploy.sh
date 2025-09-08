@@ -54,10 +54,14 @@ fi
 # If we reach here, either tests passed or were skipped.
 # First, tear down any existing services to free up ports and ensure a clean start.
 echo "🛑 Stopping and removing old containers..."
-$COMPOSER down
+$COMPOSER down --remove-orphans
 
 # Now, bring up the new services in detached mode.
 echo "🚀 Starting services..."
 $COMPOSER up -d
+
+# Clean up old, unused Docker images to save disk space.
+echo "🧹 Cleaning up old Docker images..."
+docker image prune -af
 
 echo "✅ Deployment of '$BRANCH' completed!"

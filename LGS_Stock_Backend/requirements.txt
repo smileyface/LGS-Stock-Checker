@@ -32,6 +32,9 @@ platformdirs==4.2.2
 psycopg2-binary==2.9.10
 pydantic==2.11.4
 pydantic_core==2.33.2
+pytest==8.3.4
+pytest-cov==5.0.0
+pytest-mock==3.14.0
 python-dateutil==2.9.0.post0
 python-engineio==4.11.2
 python-socketio==5.12.1

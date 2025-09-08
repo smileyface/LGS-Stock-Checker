@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
-    ports:
-      - "0.0.0.0:5000:5000"
     environment:
       # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis

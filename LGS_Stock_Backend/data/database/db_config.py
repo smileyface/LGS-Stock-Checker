@@ -2,8 +2,12 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-# This will be the connection string for your actual database (e.g., PostgreSQL)
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./lgs_stock_checker.db")
+# The database file should be located within the persistent volume.
+# The volume is mounted at /app/LGS_Stock_Backend/data/database in the container.
+DB_FILE_PATH = "LGS_Stock_Backend/data/database/lgs_stock.db"
+
+# Default to a SQLite database file located inside the persistent volume.
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_FILE_PATH}")
 
 engine = create_engine(DATABASE_URL)
 

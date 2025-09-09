@@ -7,10 +7,14 @@ services:
       # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - redis
     networks:
       - stock-net
+    volumes:
+      # Use a named volume called 'db_data'
+      - db_data:/app/LGS_Stock_Backend/data/database
 
   frontend:
     build:
@@ -31,3 +35,7 @@ services:
 networks:
   stock-net:
     driver: bridge
+
+# Declare the named volume at the bottom of the file
+volumes:
+  db_data:

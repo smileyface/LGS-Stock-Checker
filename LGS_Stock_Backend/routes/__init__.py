@@ -3,8 +3,8 @@ from .user_routes import user_bp
 
 # It's crucial to import the engine and Base model to create tables.
 # The path to the engine is inferred from the error traceback.
-from LGS_Stock_Backend.data.database.session_manager import engine
-from LGS_Stock_Backend.data.database.models.orm_models import Base
+from data.database.session_manager import engine
+from data.database.models.orm_models import Base
 
 
 def register_blueprints(app):

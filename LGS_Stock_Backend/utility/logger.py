@@ -5,12 +5,11 @@ import sys
 # Custom formatter to include emojis in log levels
 class EmojiFormatter(logging.Formatter):
     """
-    A custom log formatter that adds an emoji corresponding to the log level
-    and uses a standard format string for the log message.
+    A custom log formatter that replaces the textual log level (e.g., INFO)
+    with a corresponding emoji.
     """
-    # Define a standard format string for consistency.
-    # Example: 2023-10-27 10:30:00,123 - LGS_Stock_Checker - INFO - Log message
-    FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    # The format string now includes a custom field `level_emoji`
+    LOG_FORMAT = "%(asctime)s - %(name)s - %(level_emoji)s - %(message)s"
 
     EMOJIS = {
         "DEBUG": "🔍",
@@ -20,15 +19,15 @@ class EmojiFormatter(logging.Formatter):
         "CRITICAL": "🔥",
     }
 
-    def __init__(self, fmt=FORMAT, datefmt=None, style='%', validate=True):
-        super().__init__(fmt, datefmt, style, validate)
+    def __init__(self, datefmt=None):
+        # Initialize with our custom format string.
+        super().__init__(self.LOG_FORMAT, datefmt)
 
     def format(self, record):
-        # Let the parent class handle the initial formatting (timestamps, etc.)
-        original_message = super().format(record)
-        # Prepend the corresponding emoji to the formatted message
-        emoji = self.EMOJIS.get(record.levelname, "")
-        return f"{emoji} {original_message}"
+        # Add the custom 'level_emoji' attribute to the record.
+        record.level_emoji = self.EMOJIS.get(record.levelname, "")
+        # Let the parent class handle the final formatting.
+        return super().format(record)
 
 
 def setup_logger():

@@ -5,7 +5,7 @@ import redis
 from rq import Queue
 from rq_scheduler import Scheduler
 
-from utility.logger import logger
+from utility import logger
 
 # Use an environment variable for the job queue's Redis URL.
 # This is more flexible than detecting the OS.

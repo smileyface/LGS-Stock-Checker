@@ -1,6 +1,6 @@
 from flask_socketio import SocketIO
 
-from utility.logger import logger
+from utility import logger
 
 # Create a single, uninitialized SocketIO instance.
 # It will be configured and initialized in the application factory.

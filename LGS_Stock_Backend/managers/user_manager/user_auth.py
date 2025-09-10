@@ -7,7 +7,7 @@ Includes functions to authenticate users and update their passwords.
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from data import database
-from utility.logger import logger
+from utility import logger
 
 
 def authenticate_user(username: str, password: str) -> bool:

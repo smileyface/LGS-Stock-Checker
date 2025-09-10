@@ -1,8 +1,8 @@
 from typing import Dict, List
 
 from data import cache
-from managers.store_manager.stores import STORE_REGISTRY
-from utility.logger import logger
+from .stores import STORE_REGISTRY
+from utility import logger
 
 
 def load_store_availability(card_name: str, username: str = None) -> Dict[str, List[Dict]]:

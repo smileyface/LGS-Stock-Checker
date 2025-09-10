@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 import requests
 
 from managers.store_manager.filtering import filter_listings
-from utility.logger import logger
+from utility import logger
 
 
 class Store(ABC):

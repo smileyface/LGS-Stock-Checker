@@ -1,7 +1,7 @@
 import json
 
 from data import cache
-from utility.logger import logger
+from utility import logger
 
 CACHE_EXPIRY = 1800  # Cache availability results for 30 minutes
 

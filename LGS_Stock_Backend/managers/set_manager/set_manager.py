@@ -6,7 +6,7 @@ from typing import Optional
 from bidict import bidict
 
 from externals import scryfall_api
-from utility.logger import logger
+from utility import logger
 
 # --- Configuration ---
 # Construct a robust path to the file, assuming it's in the parent directory of 'managers'

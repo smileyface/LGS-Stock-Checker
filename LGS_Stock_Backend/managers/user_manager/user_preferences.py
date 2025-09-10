@@ -1,7 +1,7 @@
 from typing import List
 
 from data import database
-from utility.logger import logger
+from utility import logger
 
 
 def update_selected_stores(username: str, selected_stores: List[str]):

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from utility.logger import logger
+from utility import logger
 
 
 def filter_listings(

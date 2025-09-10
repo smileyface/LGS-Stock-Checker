@@ -1,7 +1,7 @@
 import managers.redis_manager as redis_manager
 from managers.availability_manager.availability_update import update_wanted_cards_availability
 from managers.tasks_manager.availability_tasks import update_availability_single_card
-from utility.logger import logger
+from utility import logger
 
 
 def register_redis_function():

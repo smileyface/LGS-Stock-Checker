@@ -1,7 +1,7 @@
 import managers.store_manager as store_manager
 from managers import availability_manager
 from managers.socket_manager import socket_emit
-from utility.logger import logger
+from utility import logger
 
 
 def update_availability_single_card(username, store_name, card):

@@ -7,7 +7,7 @@ import managers.socket_manager as socket_manager
 import managers.store_manager as store_manager
 import managers.user_manager as user_manager
 from .availability_diff import Changes, detect_changes
-from utility.logger import logger
+from utility import logger
 
 # Configurable setting to enable or disable auto-triggering updates
 ENABLE_AUTO_TRIGGER = False

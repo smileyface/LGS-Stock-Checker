@@ -2,7 +2,7 @@ from flask_socketio import SocketIO
 
 import managers.redis_manager as redis_manager
 from managers.socket_manager import socketio
-from utility.logger import logger
+from utility import logger
 
 
 def emit_card_availability_data(username, store_name, card_name, items):

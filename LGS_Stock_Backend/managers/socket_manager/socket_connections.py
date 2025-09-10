@@ -1,7 +1,7 @@
 from flask import request, session
 from flask_socketio import join_room
 from .socket_manager import socketio
-from utility.logger import logger
+from utility import logger
 
 
 @socketio.on('connect')

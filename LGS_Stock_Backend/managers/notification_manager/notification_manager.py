@@ -1,5 +1,5 @@
 from . import email_service
-from utility.logger import logger
+from utility import logger
 
 
 def send_email_notification(subject: str, body: str, recipient: str) -> bool:

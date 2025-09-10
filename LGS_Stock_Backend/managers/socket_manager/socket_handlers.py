@@ -13,7 +13,7 @@ import managers.availability_manager as availability_manager
 #project package imports
 from externals import fetch_scryfall_card_names
 from data import database
-from utility.logger import logger
+from utility import logger
 
 def get_username():
     """Helper function to get the username from the session."""

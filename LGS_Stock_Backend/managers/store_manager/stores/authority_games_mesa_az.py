@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 from managers.set_manager import set_code
 from managers.store_manager.stores.store import Store
-from utility.logger import logger
+from utility import logger
 
 
 class Authority_Games_Mesa_Arizona(Store):

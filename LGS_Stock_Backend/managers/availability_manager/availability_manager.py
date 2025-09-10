@@ -10,7 +10,7 @@ from managers import socket_manager
 
 # Project package imports
 from data import database
-from utility.logger import logger
+from utility import logger
 
 
 def check_availability(username: str) -> Dict[str, str]:

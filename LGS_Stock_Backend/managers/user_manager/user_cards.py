@@ -1,7 +1,7 @@
 from typing import List, Dict
 
 from data import database
-from utility.logger import logger
+from utility import logger
 
 
 def load_card_list(username):

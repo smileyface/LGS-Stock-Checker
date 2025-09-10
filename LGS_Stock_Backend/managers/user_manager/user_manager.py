@@ -3,7 +3,7 @@ from typing import Optional
 from werkzeug.security import generate_password_hash
 
 from data import database
-from utility.logger import logger
+from utility import logger
 
 
 def get_user(username: str) -> Optional[database.schema.UserPublicSchema]:

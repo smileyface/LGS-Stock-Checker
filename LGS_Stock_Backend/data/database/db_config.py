@@ -2,7 +2,6 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-from data.database.db_config import engine
 from data.database.models.orm_models import Base
 
 # The database file should be located within the persistent volume.

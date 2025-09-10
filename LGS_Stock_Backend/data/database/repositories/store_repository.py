@@ -2,9 +2,6 @@ from typing import Optional
 from data.database import schema
 from data.database.session_manager import db_query
 from data.database.models.orm_models import Store
-from .. import schema
-from ..session_manager import db_query
-from ..models.orm_models import Store
 
 
 @db_query

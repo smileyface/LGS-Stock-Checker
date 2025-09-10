@@ -1,9 +1,15 @@
 from typing import Dict
-from data import database
+
+# Internal package imports
+from . import availability_storage
+
+# Manager package imports
 from managers import user_manager
 from managers import redis_manager
 from managers import socket_manager
-from . import availability_storage
+
+# Project package imports
+from data import database
 from utility.logger import logger
 
 

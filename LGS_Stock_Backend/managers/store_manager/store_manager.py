@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-import data
+from data import cache
 from managers.store_manager.stores import STORE_REGISTRY
 from utility.logger import logger
 
@@ -11,7 +11,7 @@ def load_store_availability(card_name: str, username: str = None) -> Dict[str, L
     If not cached, it scrapes all registered stores.
     """
     redis_key = f"store_availability_{card_name}"
-    cached_data = data.load_data(redis_key)
+    cached_data = cache.load_data(redis_key)
     if cached_data:
         logger.info(f"✅ Found cached availability for {card_name}")
         return cached_data
@@ -20,7 +20,7 @@ def load_store_availability(card_name: str, username: str = None) -> Dict[str, L
     availability = scrape_all_stores(card_name)
 
     # Cache the results
-    data.save_data(redis_key, availability, ex=1800)  # Cache for 30 minutes
+    cache.save_data(redis_key, availability, ex=1800)  # Cache for 30 minutes
     return availability
 
 

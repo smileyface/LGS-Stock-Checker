@@ -2,7 +2,6 @@ import json
 from typing import List, Dict, Any, Optional, Union
 
 import requests
-
 from data import cache
 from utility import logger
 

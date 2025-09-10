@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, Optional
 
 from data.redis_client import redis_conn
-from utility.logger import logger
+from utility import logger
 
 
 def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[int] = None) -> None:

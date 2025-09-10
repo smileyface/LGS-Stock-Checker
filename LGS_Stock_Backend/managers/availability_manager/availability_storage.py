@@ -1,6 +1,6 @@
 import json
 
-import data
+from data import cache
 from utility.logger import logger
 
 CACHE_EXPIRY = 1800  # Cache availability results for 30 minutes
@@ -17,7 +17,7 @@ def cache_availability_data(store_name, card_name, available_items):
     Cache availability results for a specific card at a store for 30 minutes.
     """
     # Save availability data to Redis
-    data.save_data(_availability_cache_name(store_name, card_name), available_items, ex=CACHE_EXPIRY)
+    cache.save_data(_availability_cache_name(store_name, card_name), available_items, ex=CACHE_EXPIRY)
     logger.info(f"✅ Cached availability results for {card_name}")
 
 
@@ -26,5 +26,5 @@ def get_availability_data(store_name, card_name):
     Retrieve availability data for a specific card at a store from Redis.
     """
     # Retrieve availability data from Redis
-    # The data.load_data function already handles JSON deserialization.
-    return data.load_data(_availability_cache_name(store_name, card_name))
+    # The cache.load_data function already handles JSON deserialization.
+    return cache.load_data(_availability_cache_name(store_name, card_name))

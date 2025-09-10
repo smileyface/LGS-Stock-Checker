@@ -4,11 +4,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 
 from data.database.models.orm_models import Base
 
-# The database file should be located within the persistent volume.
-# The volume is mounted at /app/LGS_Stock_Backend/data/database in the container.
-DB_FILE_PATH = "LGS_Stock_Backend/data/database/lgs_stock.db"
-
-# Default to a SQLite database file located inside the persistent volume.
+# The database file should be located within the persistent volume, mounted at /app/persistent_data
+DB_FILE_PATH = "/app/persistent_data/lgs_stock.db"
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_FILE_PATH}")
 
 engine = create_engine(DATABASE_URL)

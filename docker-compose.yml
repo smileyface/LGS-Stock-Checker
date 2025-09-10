@@ -14,7 +14,7 @@ services:
       - stock-net
     volumes:
       # Use a named volume called 'db_data'
-      - db_data:/app/LGS_Stock_Backend/data/database
+      - db_data:/app/persistent_data
 
   frontend:
     build:

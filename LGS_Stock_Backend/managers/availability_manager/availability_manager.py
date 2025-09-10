@@ -1,8 +1,8 @@
 from typing import Dict
-import data
-import managers.user_manager as user_manager
-import managers.redis_manager as redis_manager
-import managers.socket_manager as socket_manager
+from data import database
+from managers import user_manager
+from managers import redis_manager
+from managers import socket_manager
 from . import availability_storage
 from utility.logger import logger
 
@@ -15,7 +15,7 @@ def check_availability(username: str) -> Dict[str, str]:
 
 
 def get_card_availability(username):
-    user_stores = data.get_user_stores(username)
+    user_stores = database.get_user_stores(username)
     user_cards = user_manager.load_card_list(username)
 
     for store in user_stores:

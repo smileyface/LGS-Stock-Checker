@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const filteredResults = cardNameCache.filter(name => name.toLowerCase().includes(query)).slice(0, 10);
+        const filteredResults = appState.cardNameCache.filter(name => name.toLowerCase().includes(query)).slice(0, 10);
         searchResultsList.innerHTML = "";
 
         filteredResults.forEach(cardName => {

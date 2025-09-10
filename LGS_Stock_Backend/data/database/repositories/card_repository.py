@@ -34,7 +34,7 @@ def get_users_cards(username: str, session) -> List[schema.UserTrackedCardSchema
 
 
 @db_query
-def add_user_card(username: str, card_name: str, amount: int, card_specs: List[Dict[str, Any]], session) -> None:
+def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[str, Any], session) -> None:
     """
     Adds or updates a tracked card for a user, including its specifications.
     This function handles finding the user, finding/creating the card in the global
@@ -71,6 +71,10 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: List[D
         tracked_card = UserTrackedCards(user_id=user.id, amount=amount, card_name=card_name)
         session.add(tracked_card)
 
+    # We need the ID for the specifications, so we flush to get it.
+    session.flush()
+
+    # Efficiently update specifications
     if card_specs:
         # Get all existing specs for this card at once to avoid N+1 queries
         existing_specs_query = session.query(CardSpecification).filter(CardSpecification.user_card_id == tracked_card.id)
@@ -78,21 +82,21 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: List[D
             (s.set_code, s.collector_number, s.finish) for s in existing_specs_query.all()
         }
 
-        for spec_data in card_specs:
-            spec_tuple = (
-                spec_data.get("set_code"),
-                spec_data.get("collector_number"),
-                spec_data.get("finish")
+        # The frontend sends a single spec object, not a list.
+        spec_tuple = (
+            card_specs.get("set_code"),
+            card_specs.get("collector_id"),  # The frontend sends 'collector_id'
+            card_specs.get("finish")
+        )
+        if spec_tuple not in existing_specs_set:
+            new_spec = CardSpecification(
+                user_card_id=tracked_card.id,
+                set_code=spec_tuple[0],
+                collector_number=spec_tuple[1],  # The DB model uses 'collector_number'
+                finish=spec_tuple[2]
             )
-            if spec_tuple not in existing_specs_set:
-                new_spec = CardSpecification(
-                    user_card_id=tracked_card.id,
-                    set_code=spec_tuple[0],
-                    collector_number=spec_tuple[1],
-                    finish=spec_tuple[2]
-                )
-                session.add(new_spec)
-                logger.info(f"➕ Added new specification {spec_tuple} for '{card_name}'.")
+            session.add(new_spec)
+            logger.info(f"➕ Added new specification {spec_tuple} for '{card_name}'.")
 
     logger.info(f"✅ Successfully processed '{card_name}' for user '{username}'.")
 

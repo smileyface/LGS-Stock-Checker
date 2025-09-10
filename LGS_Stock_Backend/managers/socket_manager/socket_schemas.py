@@ -12,7 +12,7 @@ class AddCardSchema(BaseModel):
     """Schema for validating the payload of the 'add_card' event."""
     card: str
     amount: int = Field(ge=1)
-    card_specs: List[Dict[str, Any]] = []
+    card_specs: Dict[str, Any] = {}
 
 
 class DeleteCardSchema(BaseModel):

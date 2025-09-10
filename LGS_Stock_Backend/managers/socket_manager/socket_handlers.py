@@ -124,6 +124,8 @@ def handle_add_user_tracked_card(data: dict):
             username,
             validated_data.card,
             validated_data.amount,
+            # Wrap the single spec dict in a list for the data layer
+            [validated_data.card_specs] if validated_data.card_specs else []
             validated_data.card_specs
         )
         _send_user_cards(username)

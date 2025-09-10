@@ -2,7 +2,6 @@ from typing import Optional
 
 from werkzeug.security import generate_password_hash
 
-import data
 from data import database
 from utility.logger import logger
 
@@ -18,7 +17,7 @@ def get_user(username: str) -> Optional[database.schema.UserPublicSchema]:
     Returns:
         UserPublicSchema or None: The user data as a UserPublicSchema if found, otherwise None.
     """
-    return data.get_user_for_display(username)
+    return database.get_user_for_display(username)
 
 
 def user_exists(username: str) -> bool:
@@ -29,7 +28,7 @@ def user_exists(username: str) -> bool:
     Returns:
         bool: True if the user exists, False otherwise.
     """
-    return data.get_user_by_username(username) is not None
+    return database.get_user_by_username(username) is not None
 
 
 def add_user(username: str, password: str) -> bool:
@@ -46,7 +45,7 @@ def add_user(username: str, password: str) -> bool:
         return False
 
     hashed_password = generate_password_hash(password)  # ✅ Hash password BEFORE inserting
-    result = data.add_user(username, hashed_password)
+    result = database.add_user(username, hashed_password)
 
     if result:
         logger.info(f"✅ User '{username}' added successfully.")
@@ -73,7 +72,7 @@ def update_username(old_username: str, new_username: str) -> bool:
         logger.warning(f"🚨 User '{new_username}' already exists.")
         return False
     if user_exists(old_username):
-        data.update_username(old_username, new_username)
+        database.update_username(old_username, new_username)
         logger.info(f"✅ Username updated successfully.")
         return True
     else:

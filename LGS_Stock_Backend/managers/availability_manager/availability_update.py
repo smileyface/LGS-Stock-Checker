@@ -1,7 +1,7 @@
 import time
 
 from managers import redis_manager
-import data
+from data import database, cache_manager
 import managers.socket_manager as socket_manager
 import managers.store_manager as store_manager
 import managers.user_manager as user_manager
@@ -43,7 +43,7 @@ def load_availability_state(username: str):
     redis_key = f"{username}_availability"
 
     # Try Redis first
-    availability = data.load_data(redis_key)
+    availability = cache_manager.load_data(redis_key)
     if availability:
         logger.info(f"📥 Loaded availability from Redis for {username}.")
         return availability
@@ -55,7 +55,7 @@ def load_availability_state(username: str):
 def save_availability_state(username: str, availability: dict):
     """Saves availability state in Redis."""
     redis_key = f"{username}_availability"
-    data.save_data(redis_key, availability)
+    cache_manager.save_data(redis_key, availability)
 
     logger.info(f"💾 Availability state saved to Redis for {username}.")
 
@@ -67,14 +67,14 @@ def update_wanted_cards_availability(username=None):
     If no username is provided, it runs a system-wide update for all wanted cards, updating the global 'system' state.
     """
     if username:
-        user_obj = data.get_user_by_username(username)  # Use data layer to get the full ORM object
+        user_obj = database.get_user_by_username(username)  # Use data layer to get the full ORM object
         if not user_obj:
             logger.error(f"Cannot update availability, user '{username}' not found.")
             return
         users = [user_obj]
         state_key = username
     else:
-        users = data.get_all_users()
+        users = database.get_all_users()
         state_key = "system"
 
     wanted_cards = get_wanted_cards(users)
@@ -94,7 +94,7 @@ def update_wanted_cards_availability(username=None):
     changes = detect_changes(previous_availability, availability_update)
 
     save_availability_state(state_key, availability_update)
-    data.save_data("last_availability_update", str(time.time()))
+    cache_manager.save_data("last_availability_update", str(time.time()))
 
     if changes:
         logger.info(f"📢 Notifying users of availability changes for context '{state_key}'.")
@@ -120,7 +120,7 @@ def notify_users_of_changes(changes: Changes):
     logger.info(f"📢 Processing notifications for {len(all_changed_cards)} changed cards.")
 
     # Fetch all affected users for all changed cards in a single database query.
-    affected_users_map = data.get_tracking_users_for_cards(list(all_changed_cards))
+    affected_users_map = database.get_tracking_users_for_cards(list(all_changed_cards))
 
     for card_name, affected_users in affected_users_map.items():
         if not affected_users:

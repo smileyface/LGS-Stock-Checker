@@ -12,7 +12,7 @@ import managers.availability_manager as availability_manager
 
 #project package imports
 from externals import fetch_scryfall_card_names
-import data as db
+from data import database
 from utility.logger import logger
 
 def get_username():
@@ -120,7 +120,7 @@ def handle_add_user_tracked_card(data: dict):
     try:
         validated_data = AddCardSchema.model_validate(data)
         username = get_username()
-        db.add_user_card(
+        database.add_user_card(
             username,
             validated_data.card,
             validated_data.amount,
@@ -138,7 +138,7 @@ def handle_delete_user_tracked_card(data: dict):
     try:
         validated_data = DeleteCardSchema.model_validate(data)
         username = get_username()
-        db.delete_user_card(username, validated_data.card)
+        database.delete_user_card(username, validated_data.card)
         _send_user_cards(username)
     except ValidationError as e:
         logger.error(f"❌ Invalid 'delete_card' data received: {e}")
@@ -151,7 +151,7 @@ def handle_update_user_tracked_cards(data: dict):
     try:
         validated_data = UpdateCardSchema.model_validate(data)
         username = get_username()
-        db.update_user_tracked_card_preferences(
+        database.update_user_tracked_card_preferences(
             username, validated_data.card, validated_data.update_data
         )
         _send_user_cards(username)

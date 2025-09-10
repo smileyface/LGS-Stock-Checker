@@ -6,7 +6,7 @@ Includes functions to authenticate users and update their passwords.
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-import data
+from data import database
 from utility.logger import logger
 
 
@@ -25,7 +25,7 @@ def authenticate_user(username: str, password: str) -> bool:
     """
     logger.info(f"🔑 Authenticating user: {username}")
 
-    user_data = data.get_user_by_username(username)
+    user_data = database.get_user_by_username(username)
 
     if not user_data:
         logger.warning(f"❌ User '{username}' not found.")
@@ -55,12 +55,12 @@ def update_password(username: str, old_password: str, new_password: str) -> bool
         Success or failure of the password update operation.
     """
     logger.info(f"🔑 Updating password for user: {username}")
-    user_data = data.get_user_by_username(username)
+    user_data = database.get_user_by_username(username)
     if not user_data or not check_password_hash(user_data.password_hash, old_password):
         logger.warning(f"❌ Password update failed for {username}. Incorrect current password.")
         return False
 
     new_password_hash = generate_password_hash(new_password)
-    data.update_password(username, new_password_hash)
+    database.update_password(username, new_password_hash)
     logger.info(f"✅ Password for user '{username}' updated successfully!")
     return True

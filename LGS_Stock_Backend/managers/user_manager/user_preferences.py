@@ -1,6 +1,6 @@
 from typing import List
 
-import data
+from data import database
 from utility.logger import logger
 
 
@@ -25,7 +25,7 @@ def update_selected_stores(username: str, selected_stores: List[str]):
     # Add only new stores (prevent duplicates)
     for store_slug in selected_stores:
         if store_slug not in current_store_slugs:
-            data.add_user_store(username, store_slug)
+            database.add_user_store(username, store_slug)
             logger.info(f"✅ Added store '{store_slug}' for user '{username}'.")
 
     logger.info(f"🎯 Store preferences updated for '{username}'.")
@@ -34,4 +34,4 @@ def update_selected_stores(username: str, selected_stores: List[str]):
 
 def get_selected_stores(username):
     """Retrieves a user's selected stores."""
-    return data.get_user_stores(username)
+    return database.get_user_stores(username)

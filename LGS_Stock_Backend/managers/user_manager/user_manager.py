@@ -3,11 +3,11 @@ from typing import Optional
 from werkzeug.security import generate_password_hash
 
 import data
-from data.database import schema
+from data import database
 from utility.logger import logger
 
 
-def get_user(username: str) -> Optional[schema.UserPublicSchema]:
+def get_user(username: str) -> Optional[database.schema.UserPublicSchema]:
     """
     Retrieve a user by username from the database, excluding sensitive fields, and return as a UserPublicSchema instance.
 

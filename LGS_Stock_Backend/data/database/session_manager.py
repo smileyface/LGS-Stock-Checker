@@ -1,7 +1,7 @@
 from functools import wraps
 
 from data.database.db_config import SessionLocal
-from utility.logger import logger
+from utility import logger
 
 
 def db_query(func):

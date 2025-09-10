@@ -1,6 +1,6 @@
 import os
 import redis
-from utility.logger import logger
+from utility import logger
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 

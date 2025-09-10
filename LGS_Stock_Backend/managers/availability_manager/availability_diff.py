@@ -1,6 +1,6 @@
 from typing import Dict, List, TypedDict
 
-from utility.logger import logger
+from utility import logger
 
 
 # Type Aliases for clarity

@@ -14,7 +14,7 @@ from ..session_manager import db_query
 from ..models.orm_models import User, UserTrackedCards, Store, user_store_preferences
 
 # Project package imports
-from utility.logger import logger
+from utility import logger
 
 
 @db_query

@@ -6,13 +6,16 @@ retrieve selected stores, and manage user store preferences. Utilizes internal s
 models and database session management patterns.
 """
 from typing import List, Optional
+from sqlalchemy.orm import joinedload
 
-from data.database import schema
-from data.database.session_manager import db_query
-from data.database.models.orm_models import User, UserTrackedCards, Store, user_store_preferences
+# Internal package imports (relative to the data.database package)
+from .. import schema
+from ..session_manager import db_query
+from ..models.orm_models import User, UserTrackedCards, Store, user_store_preferences
+
+# Project package imports
 from utility.logger import logger
 
-from sqlalchemy.orm import joinedload
 
 @db_query
 def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema]:
@@ -21,15 +24,18 @@ def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema
 
     Args:
         username (str): The unique username of the user to fetch.
-        session: The database session, injected by the db_query decorator.
 
     Returns:
         UserDBSchema or None: The user data as a UserDBSchema if found, otherwise None.
     """
-    user_orm = session.query(User).where(User.username == username).first()
+    logger.debug(f"📖 Querying for user '{username}' with full DB schema.")
+    user_orm = session.query(User).filter(User.username == username).first()
     if user_orm:
+        logger.debug(f"✅ Found user '{username}'.")
         # Use UserDBSchema.model_validate to convert the ORM object
         return schema.UserDBSchema.model_validate(user_orm)
+
+    logger.debug(f"❌ User '{username}' not found in database.")
     return None
 
 
@@ -41,7 +47,6 @@ def add_user(username: str, password_hash: str, session) -> Optional[schema.User
     Args:
         username (str): The username for the new user.
         password_hash (str): The hashed password for the new user.
-        session: The database session (injected by the db_query decorator).
 
     Returns:
         UserPublicSchema or None: The newly created user's public data, or None on failure.
@@ -49,6 +54,7 @@ def add_user(username: str, password_hash: str, session) -> Optional[schema.User
     Logs:
         Success or failure of the user addition operation.
     """
+    logger.info(f"➕ Adding user '{username}' to the database.")
     new_user = User(username=username, password_hash=password_hash)
     session.add(new_user)
     session.flush()  # Flush to assign an ID and ensure the object is persisted before the session closes.
@@ -64,7 +70,6 @@ def update_username(old_username: str, new_username: str, session):
     Args:
         old_username (str): The current username of the user.
         new_username (str): The new username to assign.
-        session: The database session (injected by the db_query decorator).
 
     Returns:
         None: None if the operation was successful, otherwise raises an exception.
@@ -72,7 +77,8 @@ def update_username(old_username: str, new_username: str, session):
     Logs:
         Success or failure of the username update operation.
     """
-    user = session.query(User).where(User.username == old_username).first()
+    logger.info(f"✏️ Updating username from '{old_username}' to '{new_username}'.")
+    user = session.query(User).filter(User.username == old_username).first()
     if not user:
         logger.warning(f"🚨 User '{old_username}' not found. Cannot update username.")
         return
@@ -88,7 +94,6 @@ def update_password(username, password_hash, session):
     Args:
         username (str): The username of the user whose password is to be updated.
         password_hash (str): The new hashed password.
-        session: The database session (injected by the db_query decorator).
 
     Returns:
         None: None if the operation was successful, otherwise raises an exception.
@@ -96,7 +101,8 @@ def update_password(username, password_hash, session):
     Logs:
         Success or failure of the password update operation.
     """
-    user = session.query(User).where(User.username == username).first()
+    logger.info(f"🔑 Updating password for user '{username}'.")
+    user = session.query(User).filter(User.username == username).first()
     if not user:
         logger.warning(f"🚨 User '{username}' not found. Cannot update password.")
         return
@@ -111,7 +117,6 @@ def get_user_stores(username: str, session) -> List[schema.StoreSchema]:
 
     Args:
         username (str): The username of the user.
-        session: The database session (injected by the db_query decorator).
 
     Returns:
         List[schema.StoreSchema]: A list of StoreSchema objects representing the user's selected stores.
@@ -119,10 +124,13 @@ def get_user_stores(username: str, session) -> List[schema.StoreSchema]:
     Logs:
         Success or failure of the store retrieval operation.
     """
-    user = session.query(User).where(User.username == username).first()
+    logger.debug(f"🛍️ Fetching selected stores for user '{username}'.")
+    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
     if not user:
+        logger.warning(f"🚨 User '{username}' not found. Cannot retrieve stores.")
         return []
     # Convert ORM objects to DTOs before returning
+    logger.debug(f"✅ Found {len(user.selected_stores)} stores for user '{username}'.")
     return [schema.StoreSchema.model_validate(store_orm) for store_orm in user.selected_stores]
 
 
@@ -134,7 +142,6 @@ def add_user_store(username: str, store_slug: str, session) -> None:
     Args:
         username (str): The username of the user.
         store_slug (str): The slug of the store to add.
-        session (Session): The database session (injected by the db_query decorator).
 
     Logs:
         Success or failure of the store addition operation.
@@ -168,7 +175,6 @@ def remove_user_store(username: str, store_slug: str, session) -> None:
     Args:
         username (str): The username of the user.
         store_slug (str): The slug of the store to remove.
-        session (Session): The database session (injected by the db_query decorator).
 
     Logs:
         Success or failure of the store removal operation.
@@ -196,7 +202,6 @@ def get_user_for_display(username: str, session) -> Optional[schema.UserPublicSc
 
     Args:
         username (str): The unique username of the user to fetch.
-        session: The database session, injected by the db_query decorator.
 
     Returns:
         UserPublicSchema or None: The user data as a UserPublicSchema if found, otherwise None.
@@ -204,7 +209,7 @@ def get_user_for_display(username: str, session) -> Optional[schema.UserPublicSc
     Logs:
         Success or failure of the user retrieval operation.
     """
-    user_orm = session.query(User).where(User.username == username).first()
+    user_orm = session.query(User).filter(User.username == username).first()
     if user_orm:
         logger.info(f"✅ User '{username}' retrieved successfully.")
         return schema.UserPublicSchema.model_validate(user_orm)
@@ -217,13 +222,12 @@ def get_all_users(session) -> List[schema.UserPublicSchema]:
     """
     Retrieve all users from the database, excluding sensitive fields.
 
-    Args:
-        session: The database session, injected by the db_query decorator.
-
     Returns:
         List[UserPublicSchema]: A list of all users as UserPublicSchema instances.
     """
+    logger.debug("📖 Querying for all users.")
     users_orm = session.query(User).all()
+    logger.info(f"✅ Retrieved {len(users_orm)} users from the database.")
     return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
 
 
@@ -234,12 +238,13 @@ def get_users_tracking_card(card_name: str, session) -> list[schema.UserPublicSc
     
     Args:
         card_name (str): The name of the card to search for.
-        session: The database session, injected by the db_query decorator.
 
     Returns:
         list[schema.UserPublicSchema]: A list of User objects who are tracking the specified card.
     """
+    logger.debug(f"📖 Querying for users tracking card '{card_name}'.")
     users_orm = session.query(User).join(User.cards).filter(UserTrackedCards.card_name == card_name).all()
+    logger.debug(f"✅ Found {len(users_orm)} users tracking '{card_name}'.")
     return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
 
 
@@ -250,7 +255,6 @@ def get_tracking_users_for_cards(card_names: list[str], session) -> dict[str, li
 
     Args:
         card_names (list[str]): A list of card names to check.
-        session: The database session, injected by the db_query decorator.
 
     Returns:
         dict[str, list[schema.UserPublicSchema]]: A dictionary mapping each card name to a list of User schemas.
@@ -258,6 +262,7 @@ def get_tracking_users_for_cards(card_names: list[str], session) -> dict[str, li
     if not card_names:
         return {}
 
+    logger.debug(f"📖 Querying for users tracking {len(card_names)} different cards.")
     tracked_cards_with_users = (
         session.query(UserTrackedCards)
         .filter(UserTrackedCards.card_name.in_(card_names))
@@ -271,4 +276,5 @@ def get_tracking_users_for_cards(card_names: list[str], session) -> dict[str, li
             user_schema = schema.UserPublicSchema.model_validate(tracked_card.user)
             card_to_users_map[tracked_card.card_name].append(user_schema)
 
+    logger.debug("✅ Finished mapping cards to tracking users.")
     return card_to_users_map

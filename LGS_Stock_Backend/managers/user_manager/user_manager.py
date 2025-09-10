@@ -9,13 +9,11 @@ from utility.logger import logger
 def get_user(username: str) -> Optional[database.schema.UserPublicSchema]:
     """
     Retrieve a user by username from the database, excluding sensitive fields, and return as a UserPublicSchema instance.
-
     Args:
         username (str): The unique username of the user to fetch.
-        session: The database session, injected by the db_query decorator.
 
     Returns:
-        UserPublicSchema or None: The user data as a UserPublicSchema if found, otherwise None.
+        Optional[database.schema.UserPublicSchema]: The user data as a UserPublicSchema if found, otherwise None.
     """
     return database.get_user_for_display(username)
 
@@ -62,11 +60,10 @@ def update_username(old_username: str, new_username: str) -> bool:
         old_username (str): The current username of the user to be renamed.
         new_username (str): The new desired username for the user.
     Returns:
-        bool: True if the username update was successful, False otherwise.
+        bool: True if the update was successful, False otherwise.
     Logs:
         Success or failure of the username update operation.
-        """
-        
+    """
     logger.info(f"✏️ Renaming user '{old_username}' to '{new_username}'")
     if user_exists(new_username):
         logger.warning(f"🚨 User '{new_username}' already exists.")
@@ -76,5 +73,5 @@ def update_username(old_username: str, new_username: str) -> bool:
         logger.info(f"✅ Username updated successfully.")
         return True
     else:
-        logger.warning(f"🚨 User '{old_username}' not found.")
+        logger.warning(f"🚨 User '{old_username}' not found. Cannot rename.")
         return False

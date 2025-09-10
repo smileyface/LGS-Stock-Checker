@@ -1,7 +1,8 @@
 import time
 
 from managers import redis_manager
-from data import database, cache_manager
+from data import database
+from data import cache
 import managers.socket_manager as socket_manager
 import managers.store_manager as store_manager
 import managers.user_manager as user_manager
@@ -43,7 +44,7 @@ def load_availability_state(username: str):
     redis_key = f"{username}_availability"
 
     # Try Redis first
-    availability = cache_manager.load_data(redis_key)
+    availability = cache.load_data(redis_key)
     if availability:
         logger.info(f"📥 Loaded availability from Redis for {username}.")
         return availability
@@ -55,7 +56,7 @@ def load_availability_state(username: str):
 def save_availability_state(username: str, availability: dict):
     """Saves availability state in Redis."""
     redis_key = f"{username}_availability"
-    cache_manager.save_data(redis_key, availability)
+    cache.save_data(redis_key, availability)
 
     logger.info(f"💾 Availability state saved to Redis for {username}.")
 
@@ -94,7 +95,7 @@ def update_wanted_cards_availability(username=None):
     changes = detect_changes(previous_availability, availability_update)
 
     save_availability_state(state_key, availability_update)
-    cache_manager.save_data("last_availability_update", str(time.time()))
+    cache.save_data("last_availability_update", str(time.time()))
 
     if changes:
         logger.info(f"📢 Notifying users of availability changes for context '{state_key}'.")

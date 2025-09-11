@@ -35,6 +35,14 @@ def get_card_availability(username):
                 # Pass the store's slug and the card as a dictionary
                 redis_manager.queue_task("managers.tasks_manager.availability_tasks.update_availability_single_card",
                                          username, store.slug, card.model_dump())
+                    # Immediately notify the client that a check has been queued for this specific card.
+                # This allows the UI to show a "checking..." state for the individual item.
+                socket_manager.socketio.emit(
+                    "availability_check_started",
+                    {"store": store.name, "card": card.card_name},
+                    room=username,
+                )
+                logger.info(f"⏳ Queued availability check for {card.card_name} at {store.name}.")
             else:
                 logger.info(f"✅ Availability data for {card.card_name} at {store.name} is already cached.")
                 socket_manager.socket_emit.emit_card_availability_data(username, store.name, card.card_name, cached_data)

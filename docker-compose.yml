@@ -3,13 +3,15 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
+    restart: unless-stopped
     environment:
       # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - stock-net
     volumes:
@@ -20,15 +22,40 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Frontend/Dockerfile
+    restart: unless-stopped
     ports:
       - "0.0.0.0:8000:80"
     depends_on:
+      # This doesn't wait for the backend to be "ready", just for the container to start.
       - backend
     networks:
       - stock-net
 
+  worker:
+    build:
+      context: .
+      dockerfile: LGS_Stock_Backend/Dockerfile
+    restart: unless-stopped
+    # This command overrides the Dockerfile's CMD to start the RQ worker.
+    # It tells the worker to connect to your redis service and listen on the 'default' queue.
+    command: ["rq", "worker", "-u", "redis://redis:6379", "default"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - stock-net
+    volumes:
+      - db_data:/app/persistent_data
+
   redis:
     image: "redis:6.2-alpine"
+    restart: unless-stopped
+    healthcheck:
+      # Use the redis-cli PING command to check if the server is responsive.
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - stock-net
 

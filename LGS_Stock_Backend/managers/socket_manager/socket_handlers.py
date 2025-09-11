@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 #internal package imports
 from .socket_manager import socketio
-from .socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema
+from .socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema, UpdateStoreSchema, UpdateStoresSchema
 
 #manager package imports
 import managers.card_manager as card_manager
@@ -156,3 +156,34 @@ def handle_update_user_tracked_cards(data: dict):
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for update_card: {e}"})
+
+
+@socketio.on("user_store_update")
+def handle_user_store_update(data: dict):
+    logger.info("📩 Received 'user_store_update' request from front end.")
+    try:
+        validated_data = UpdateStoreSchema.model_validate(data)
+        username = get_username()
+        database.add_user_store(username, validated_data.store)
+    except ValidationError as e:
+        logger.error(f"❌ Invalid 'user_store_update' data received: {e}")
+        socketio.emit("error", {"message": f"Invalid data for user_store_update: {e}"})
+
+
+@socketio.on("update_stores")
+def handle_update_user_stores(data: dict):
+    """Handles a request to update the user's entire list of preferred stores."""
+    logger.info("📩 Received 'update_stores' request from front end.")
+    username = get_username()
+    if not username:
+        logger.warning("🚨 No username found for 'update_stores' request.")
+        return
+
+    try:
+        validated_data = UpdateStoresSchema.model_validate(data)
+        database.set_user_stores(username, validated_data.stores)
+        socketio.emit("update_stores_success", {"message": "Preferred stores updated successfully!"}, room=username)
+        logger.info(f"✅ Updated preferred stores for user '{username}'.")
+    except ValidationError as e:
+        logger.error(f"❌ Invalid 'update_stores' data received: {e}")
+        socketio.emit("error", {"message": f"Invalid data for update_stores: {e}"})

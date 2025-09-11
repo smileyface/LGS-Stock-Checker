@@ -61,6 +61,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/socket.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('updateUsernameBtn').addEventListener('click', function () {
@@ -84,12 +85,22 @@
         });
 
         document.getElementById('updateStoresBtn').addEventListener('click', function () {
-            const selectedStores = Array.from(document.querySelectorAll(".store-checkbox:checked")).map(o => o.value);
-            fetch("{{ url_for('user_bp.update_stores') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ stores: selectedStores })
-            }).then(response => response.json()).then(data => alert(data.message || data.error));
+            const selectedStores = Array.from(document.querySelectorAll(".store-checkbox:checked")).map(o => o.value)
+            if (socket && socket.connected) {
+                socket.emit('update_stores', { stores: selectedStores });
+            } else {
+                alert('Not connected to the server. Please refresh the page.');
+            }
+        });
+
+        // Listen for the success confirmation from the server
+        socket.on('update_stores_success', function (data) {
+            alert(data.message);
+        });
+
+        // Generic error handler
+        socket.on('error', function (data) {
+            alert('An error occurred: ' + data.message);
         });
     });
 </script>

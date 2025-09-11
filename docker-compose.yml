@@ -83,7 +83,8 @@ services:
     networks:
       - stock-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lgs_user -d lgs_stock_checker"]
+      # Run the check as the 'postgres' superuser, which has passwordless local access.
+      test: [ "CMD-SHELL", "pg_isready -U postgres -h localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5

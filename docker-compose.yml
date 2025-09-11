@@ -78,13 +78,15 @@ services:
       POSTGRES_USER: lgs_user
       POSTGRES_PASSWORD: lgs_password
       POSTGRES_DB: lgs_stock_checker
+      # This variable is used by psql in the healthcheck to provide the password.
+      PGPASSWORD: lgs_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - stock-net
     healthcheck:
-      # Run the check as the 'postgres' superuser, which has passwordless local access.
-      test: [ "CMD-SHELL", "pg_isready -U postgres -h localhost" ]
+      # This is a more robust check that verifies the app's user can connect and run a query.
+      test: ["CMD-SHELL", "psql -U lgs_user -d lgs_stock_checker -c 'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 5

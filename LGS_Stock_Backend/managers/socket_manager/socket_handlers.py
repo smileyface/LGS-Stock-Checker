@@ -180,7 +180,7 @@ def handle_update_user_stores(data: dict):
         return
 
     try:
-        validated_data = UpdateStoresSchema.model_validate(data)
+        validated_data = UpdateStoreSchema.model_validate(data)
         database.set_user_stores(username, validated_data.stores)
         socketio.emit("update_stores_success", {"message": "Preferred stores updated successfully!"}, room=username)
         logger.info(f"✅ Updated preferred stores for user '{username}'.")

@@ -20,8 +20,6 @@ services:
         condition: service_healthy
     networks:
       - stock-net
-    volumes:
-      - db_data:/app/persistent_data
 
   frontend:
     build:
@@ -55,8 +53,6 @@ services:
       - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
     networks:
       - stock-net
-    volumes:
-      - db_data:/app/persistent_data
 
   redis:
     image: "redis:6.2-alpine" # Using a specific version is good practice
@@ -100,5 +96,4 @@ networks:
     driver: bridge
 
 volumes:
-  db_data: # For SQLite, if you switch back
   postgres_data: # For PostgreSQL

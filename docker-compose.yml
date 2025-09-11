@@ -37,8 +37,8 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     restart: unless-stopped
     # This command overrides the Dockerfile's CMD to start the RQ worker.
-    # It tells the worker to connect to your redis service and listen on the 'default' queue.
-    command: ["rq", "worker", "-u", "redis://redis:6379", "default"]
+    # It runs our custom entrypoint which sets up the app context before starting the worker.
+    command: [ "python", "worker_entrypoint.py" ]
     depends_on:
       redis:
         condition: service_healthy
@@ -52,7 +52,7 @@ services:
     restart: unless-stopped
     healthcheck:
       # Use the redis-cli PING command to check if the server is responsive.
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5

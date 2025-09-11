@@ -41,8 +41,10 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('home_bp.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('user_bp.account_settings') }}">Account</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('home_bp.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link"
+                            href="{{ url_for('user_bp.account_settings') }}">Account</a></li>
                 </ul>
 
             </div>
@@ -66,9 +68,8 @@
     {% endif %}
     {% endwith %}
 
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
+    <!-- Page-specific scripts will be injected here -->
+    {% block scripts %}{% endblock %}
 </body>
 
 </html>

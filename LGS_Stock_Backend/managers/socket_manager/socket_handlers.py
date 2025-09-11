@@ -29,25 +29,23 @@ def _send_user_cards(username: str):
     logger.info(f"📜 Fetching and sending tracked cards for user: {username}")
     cards = user_manager.load_card_list(username)
 
-    if cards is None:
-        # Send an empty list so the frontend can clear its state.
-        card_list = []
-        logger.warning(f"🚨 No tracked cards found for {username}, sending empty list.")
-    else:
-        card_list = [
-            {
-                "card_name": card.card_name,
-                "amount": card.amount,
-                "specifications": [
-                    {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
-                    for spec in card.specifications
-                ] if card.specifications else [],
-            }
-            for card in cards
-        ]
+    # user_manager.load_card_list returns an empty list if no cards are found.
+    # The list comprehension will correctly handle an empty list.
+    card_list = [
+        {
+            "card_name": card.card_name,
+            "amount": card.amount,
+            "specifications": [
+                {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
+                for spec in card.specifications
+            ] if card.specifications else [],
+        }
+        for card in cards
+    ]
 
-    socketio.emit("cards_data", {"username": username, "tracked_cards": card_list})
-    logger.info(f"📡 Sent card list for {username} with {len(card_list)} items.")
+    # Emit to the user's room to update all of their connected clients.
+    socketio.emit("cards_data", {"username": username, "tracked_cards": card_list}, room=username)
+    logger.info(f"📡 Sent card list to room '{username}' with {len(card_list)} items.")
 
 
 @socketio.on("get_card_availability")
@@ -57,11 +55,10 @@ def handle_get_card_availability():
     username = get_username()
     if username:
         logger.info(f"🔍 Fetching card availability for user: {username}")
-        """
-        Fetch the latest card availability state and send it to the client.
-        """
+        # This function queues background tasks to check for availability.
+        # Results are sent back asynchronously via 'card_availability_data' events.
         availability_manager.get_card_availability(username)
-        logger.info(f"✅ Card availability data fetched for user {username}")
+        logger.info(f"✅ Card availability check queued for user {username}")
     else:
         logger.warning("🚨 No username found for 'get_card_availability' request.")
 
@@ -95,8 +92,8 @@ def handle_parse_card_list(data: dict):
 @socketio.on("request_card_names")
 def handle_request_card_names():
     logger.info("📩 Received 'request_card_names' request from front end.")
-    """Send cached card names to the frontend via WebSocket."""
-    logger.info("📩 Fetching full cached card list from Redis...")
+    # Send cached card names to the frontend via WebSocket.
+    logger.info("🗂️ Fetching full cached card list from Redis...")
 
     try:
         card_names = fetch_scryfall_card_names()

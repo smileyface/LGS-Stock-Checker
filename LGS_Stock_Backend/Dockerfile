@@ -8,8 +8,9 @@ WORKDIR /app
 # Copy requirements first to leverage Docker layer caching
 COPY ./LGS_Stock_Backend/requirements.txt .
 
-# Install pre-compiled system packages for dependencies that are slow to build from source,
-# then install the rest of the Python packages with pip into the global site-packages.
+# Install system dependencies and Python packages
+# Using --no-install-recommends keeps the layer smaller.
+# Cleaning apt cache is a good practice.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3-lxml && \
     rm -rf /var/lib/apt/lists/* && \
@@ -20,21 +21,34 @@ RUN apt-get update && \
 # Start fresh with the slim image for a small final footprint.
 FROM python:3.9-slim
 
-WORKDIR /app/LGS_Stock_Backend
+# Set a more conventional working directory
+WORKDIR /app
 
-# Copy the installed packages and executables from the builder stage.
+# Create a non-root user and group for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy installed packages from the builder stage
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy the backend source code. The WORKDIR is already set to the package root.
+# Copy the application source code into the container
 COPY ./LGS_Stock_Backend .
 
 # Copy the frontend's templates and static assets into the backend's package
 # directory. This allows Flask's `render_template` and `url_for` to find them.
+# These paths are relative to the WORKDIR (/app)
 COPY ./LGS_Stock_Frontend/templates ./templates
 COPY ./LGS_Stock_Frontend/static ./static
 
+# Change ownership of the app directory to the non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
+
 # Expose the port the app runs on
 EXPOSE 5000
+
 # Run the app using gunicorn. It will find the 'app' object in the 'run.py' file.
+# The WORKDIR is /app, so gunicorn will find run.py there.
 CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "run:app"]

@@ -1,14 +1,26 @@
+import sys
+import os
 import pytest
+
+# Add the package root to the path to resolve module-level imports during test discovery.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
 from werkzeug.security import generate_password_hash
+from sqlalchemy.pool import StaticPool
 
 from LGS_Stock_Backend.run import create_app
 from LGS_Stock_Backend.data.database.models.orm_models import Base, User, Store
  # Use an in-memory SQLite database for fast, isolated tests
 TEST_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    # Use StaticPool to ensure all sessions use the same in-memory database connection.
+    poolclass=StaticPool,
+)
 # Use a scoped_session to mimic the application's session management
 # expire_on_commit=False is crucial for tests where objects created in one
 # transaction need to be accessed after that transaction's session is closed.
@@ -54,7 +66,9 @@ def db_session():
     try:
         yield session
     finally:
-        session.close()
+        # Use .remove() to be consistent with the @db_query decorator's cleanup.
+        # This ensures the session is properly disposed from the scoped_session registry.
+        TestingSessionLocal.remove()
         Base.metadata.drop_all(bind=engine)
 
 
@@ -101,10 +115,12 @@ def seeded_store(seeded_stores):
 @pytest.fixture(autouse=True)
 def override_get_session(monkeypatch):
     """
-    Patch the session factory *where it is used* (in the session_manager).
-    This ensures that the @db_query decorator uses the in-memory test database.
+    Patch the session factory at its source (`db_config`) to ensure that any
+    part of the application that imports it (like the `session_manager`)
+    gets the test session factory. This is the most reliable way to patch,
+    avoiding import-order race conditions.
     """
-    monkeypatch.setattr("LGS_Stock_Backend.data.database.session_manager.SessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("LGS_Stock_Backend.data.database.db_config.SessionLocal", TestingSessionLocal)
 
 
 @pytest.fixture(autouse=True)

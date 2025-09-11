@@ -6,7 +6,7 @@ eventlet.monkey_patch()
 
 import os
 import redis
-from rq import Connection, Worker, Queue
+from rq import Worker, Queue
 
 # Import the app factory to ensure all initializations are done.
 from run import create_app
@@ -25,7 +25,8 @@ if __name__ == '__main__':
     # The 'with app.app_context()' is good practice, ensuring extensions have access
     # to the application configuration during the worker's lifespan.
     with app.app_context():
-        with Connection(conn):
-            queues = [Queue(name, connection=conn) for name in listen]
-            worker = Worker(queues, connection=conn)
-            worker.work()
+        # The Connection context manager is deprecated and removed in RQ v2.0+.
+        # The connection is passed directly to the Worker and Queue objects.
+        queues = [Queue(name, connection=conn) for name in listen]
+        worker = Worker(queues, connection=conn)
+        worker.work()

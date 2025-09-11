@@ -25,6 +25,7 @@ class UpdateCardSchema(BaseModel):
     card: str
     update_data: Dict[str, Any]
 
+
 class UpdateStoreSchema(BaseModel):
     """Schema for validating the payload of the 'user_store_update' event."""
     store: str

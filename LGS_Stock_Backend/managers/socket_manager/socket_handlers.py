@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 #internal package imports
 from .socket_manager import socketio
-from .socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema, UpdateStoreSchema, UpdateStoresSchema
+from .socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema, UpdateStoreSchema
 
 #manager package imports
 import managers.card_manager as card_manager

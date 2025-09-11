@@ -56,9 +56,10 @@ def handle_get_card_availability():
     if username:
         logger.info(f"🔍 Fetching card availability for user: {username}")
         # This function queues background tasks to check for availability.
-        # Results are sent back asynchronously via 'card_availability_data' events.
-        availability_manager.get_card_availability(username)
-        logger.info(f"✅ Card availability check queued for user {username}")
+        # It returns a status message that we can forward to the client.
+        result = availability_manager.get_card_availability(username)
+        socketio.emit("availability_check_status", result, room=username)
+        logger.info(f"✅ Card availability check initiated for user {username}. Status: {result.get('message')}")
     else:
         logger.warning("🚨 No username found for 'get_card_availability' request.")
 

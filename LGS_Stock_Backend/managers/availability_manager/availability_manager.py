@@ -38,4 +38,4 @@ def get_card_availability(username):
             else:
                 logger.info(f"✅ Availability data for {card.card_name} at {store.name} is already cached.")
                 socket_manager.socket_emit.emit_card_availability_data(username, store.name, card.card_name, cached_data)
-    return {"status": "completed", "message": "Availability data has been fetched and sent to the UI."}
+    return {"status": "processing", "message": "Availability check initiated. Cached data sent; new data is being fetched."}

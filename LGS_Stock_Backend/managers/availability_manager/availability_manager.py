@@ -24,6 +24,14 @@ def get_card_availability(username):
     user_stores = database.get_user_stores(username)
     user_cards = user_manager.load_card_list(username)
 
+    if not user_stores:
+        logger.warning(f"User '{username}' has no stores configured. Skipping availability check.")
+        return {"status": "completed", "message": "No stores configured to check."}
+
+    if not user_cards:
+        logger.info(f"User '{username}' has no cards to check. Skipping availability check.")
+        return {"status": "completed", "message": "No cards to check."}
+
     for store in user_stores:
         if not store or not store.slug:
             continue

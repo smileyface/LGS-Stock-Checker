@@ -3,30 +3,35 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
+    container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     environment:
-      # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
+      # Define allowed origins for CORS to enable authenticated WebSockets.
+      # Replace <your_pi_ip> with your device's actual IP address.
+      - CORS_ALLOWED_ORIGINS=http://localhost:8000,http://<your_pi_ip>:8000
     depends_on:
       redis:
         condition: service_healthy
+      db:
+        condition: service_started
     networks:
       - stock-net
     volumes:
-      # Use a named volume called 'db_data'
       - db_data:/app/persistent_data
 
   frontend:
     build:
       context: .
       dockerfile: LGS_Stock_Frontend/Dockerfile
+    container_name: lgs-stock-checker-frontend-1
     restart: unless-stopped
     ports:
       - "0.0.0.0:8000:80"
     depends_on:
-      # This doesn't wait for the backend to be "ready", just for the container to start.
       - backend
     networks:
       - stock-net
@@ -35,28 +40,30 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
+    container_name: lgs-stock-checker-worker-1
     restart: unless-stopped
-    # This command overrides the Dockerfile's CMD to start the RQ worker.
-    # It runs our custom entrypoint which sets up the app context before starting the worker.
-    command: [ "python", "worker_entrypoint.py" ]
+    command: ["python", "worker_entrypoint.py"]
     depends_on:
       redis:
         condition: service_healthy
+      db:
+        condition: service_started
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
     networks:
       - stock-net
     volumes:
       - db_data:/app/persistent_data
 
   redis:
-    image: "redis:6.2-alpine"
+    image: "redis:6.2-alpine" # Using a specific version is good practice
+    container_name: lgs-stock-checker-redis-1
     restart: unless-stopped
     healthcheck:
-      # Use the redis-cli PING command to check if the server is responsive.
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -67,6 +74,20 @@ networks:
   stock-net:
     driver: bridge
 
-# Declare the named volume at the bottom of the file
 volumes:
-  db_data:
+  db_data: # For SQLite, if you switch back
+  postgres_data: # For PostgreSQL
+
+services: # This belongs at the top level, but was misplaced. Defining db here.
+  db:
+    image: postgres:15-alpine
+    container_name: lgs-stock-checker-db-1
+    restart: always
+    environment:
+      POSTGRES_USER: lgs_user
+      POSTGRES_PASSWORD: lgs_password
+      POSTGRES_DB: lgs_stock_checker
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stock-net

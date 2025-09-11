@@ -27,5 +27,11 @@ class UpdateCardSchema(BaseModel):
 
 
 class UpdateStoreSchema(BaseModel):
-    """Schema for validating the payload of the 'user_store_update' event."""
+    """Schema for validating the payload of the 'store_update' event."""
     store: str
+
+    # This schema is needed to validate the list of stores from the frontend.
+# Ideally, this should be moved to the socket_schemas.py file.
+class UpdateStoresSchema(BaseModel):
+    """Schema for validating the payload of the 'user_update_stores' event."""
+    stores: List[str]

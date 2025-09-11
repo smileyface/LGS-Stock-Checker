@@ -9,13 +9,7 @@ const appState = {
 // Debounce timer for UI updates to prevent rapid re-renders.
 let uiUpdateTimeout = null;
 
-var socket = io.connect(window.location.origin, {
-    transports: ["websocket", "polling"], // Ensure WebSockets are prioritized
-    reconnection: true, // Enable automatic reconnection
-    reconnectionAttempts: 10, // Retry up to 10 times
-    reconnectionDelay: 5000, // Wait 5 seconds between retries
-    timeout: 20000 // 20 seconds timeout before failing
-});
+const socket = io({ withCredentials: true });
 
 // Debugging for connection status
 socket.on("connect", function () {

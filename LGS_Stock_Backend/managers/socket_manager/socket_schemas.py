@@ -30,8 +30,7 @@ class UpdateStoreSchema(BaseModel):
     """Schema for validating the payload of the 'store_update' event."""
     store: str
 
-    # This schema is needed to validate the list of stores from the frontend.
-# Ideally, this should be moved to the socket_schemas.py file.
+# This schema is needed to validate the list of stores from the frontend.
 class UpdateStoresSchema(BaseModel):
     """Schema for validating the payload of the 'user_update_stores' event."""
     stores: List[str]

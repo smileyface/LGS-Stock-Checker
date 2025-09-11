@@ -72,6 +72,7 @@ services:
 
   db:
     image: postgres:15-alpine
+    platform: linux/arm64 # Explicitly specify the platform for Raspberry Pi
     container_name: lgs-stock-checker-db-1
     restart: always
     environment:

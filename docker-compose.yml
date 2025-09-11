@@ -90,6 +90,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      # Add a start_period to give the database time to initialize on slow hardware.
+      start_period: 30s
 
 networks:
   stock-net:

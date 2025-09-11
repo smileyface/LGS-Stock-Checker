@@ -17,7 +17,7 @@ services:
       redis:
         condition: service_healthy
       db:
-        condition: service_started
+        condition: service_healthy
     networks:
       - stock-net
     volumes:
@@ -47,7 +47,7 @@ services:
       redis:
         condition: service_healthy
       db:
-        condition: service_started
+        condition: service_healthy
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -82,6 +82,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - stock-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lgs_user -d lgs_stock_checker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   stock-net:

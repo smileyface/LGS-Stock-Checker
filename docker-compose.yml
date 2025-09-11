@@ -71,7 +71,8 @@ services:
       - stock-net
 
   db:
-    image: postgres:15-alpine
+    # Switch to the Debian-based image, which is often more stable on ARM than Alpine.
+    image: postgres:15
     platform: linux/arm64 # Explicitly specify the platform for Raspberry Pi
     container_name: lgs-stock-checker-db-1
     restart: always
@@ -87,7 +88,7 @@ services:
       - stock-net
     healthcheck:
       # This is a more robust check that verifies the app's user can connect and run a query.
-      test: ["CMD-SHELL", "psql -U lgs_user -d lgs_stock_checker -c 'SELECT 1'"]
+      test: [ "CMD-SHELL", "psql -U lgs_user -d lgs_stock_checker -c 'SELECT 1'" ]
       interval: 10s
       timeout: 5s
       retries: 5

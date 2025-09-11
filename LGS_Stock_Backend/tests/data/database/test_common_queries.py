@@ -2,8 +2,8 @@ import pytest
 from data.database.models.orm_models import User, Card, CardSpecification, UserTrackedCards
 from werkzeug.security import generate_password_hash
 from data.database.repositories.card_repository import get_users_cards
-from data.database.repositories.user_repository import get_tracking_users_for_cards, get_users_tracking_card
-import data
+from data.database.repositories.user_repository import get_users_tracking_card, get_tracking_users_for_cards
+
 
 @pytest.fixture
 def seeded_user_with_cards(db_session):

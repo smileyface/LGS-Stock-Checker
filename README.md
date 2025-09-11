@@ -40,6 +40,14 @@ This application uses Docker Compose, which often relies on an environment file 
     ```bash
     nano .env
     ```
+    You will need to set variables like `SECRET_KEY`. For the future email service, you would also add:
+    ```
+    SMTP_SERVER=smtp.gmail.com
+    SMTP_PORT=587
+    EMAIL_SENDER=your-email@gmail.com
+    EMAIL_PASSWORD=your-app-password
+    EMAIL_RECIPIENT=admin-email@example.com
+    ```
 
 ### 3. Running the Application
 
@@ -67,24 +75,11 @@ docker compose logs -f
 
 ### 4. Updating the Application (Deployment)
 
-To update the running application with the latest code from a specific branch, you can follow these manual steps.
+To update the running application with the latest code from a specific branch, use the provided `deploy.sh` script.
 
-1.  **Navigate to the project directory:**
-    ```bash
-    cd ~/LGS-Stock-Checker
-    ```
-
-2.  **Check out the desired branch and pull the latest changes:**
-    ```bash
-    # Replace 'dev' with your desired branch (e.g., 'main', 'production')
-    git checkout dev
-    git pull origin dev
-    ```
-
-3.  **Rebuild and restart the containers:**
-    ```bash
-    docker compose up -d --build
-    ```
+The script supports two types of deployments based on the branch name:
+*   **Release Deployments:** Triggered by deploying the `master` branch. This will build the images, run the full test suite, and then start the services.
+*   **Test Deployments:** Triggered by deploying any other branch (e.g., a feature branch). This will build the images and start the services, but it will *skip* the test suite for a faster deployment cycle.
 
 ### Automated Deployment Script
 
@@ -96,11 +91,11 @@ For convenience, you can use the `deploy.sh` script to automate the update proce
     ```
 
 2.  **Run the script:**
-    To deploy a specific branch, pass its name as an argument. If no branch is specified, it defaults to `dev`.
+    To deploy a specific branch, pass its name as an argument. If no branch is specified, it defaults to `master` for a release deployment.
     ```bash
-    # Deploy the 'main' branch
-    ./deploy.sh main
+    # Deploy the 'master' branch (runs tests)
+    ./deploy.sh master
 
-    # Deploy the 'dev' branch (default)
-    ./deploy.sh
+    # Deploy a feature branch (skips tests)
+    ./deploy.sh my-feature-branch
     ```

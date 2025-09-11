@@ -1,0 +1,11 @@
+# This file is for development-specific overrides.
+# It is automatically used by `docker compose up` in a local environment.
+# It should NOT be checked into version control if it contains secrets.
+
+services:
+  backend:
+    volumes:
+      - ./LGS_Stock_Backend:/app/LGS_Stock_Backend
+  frontend:
+    volumes:
+      - ./LGS_Stock_Frontend:/usr/share/nginx/html

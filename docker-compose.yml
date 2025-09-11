@@ -1,68 +1,72 @@
 services:
-  #test-runner:
-  #  build: .
-  #  container_name: test-runner
-  #  command: python tests/test_for_explosions.py
-  #  depends_on:
-  #    - redis
-  #  environment:
-  #    - REDIS_HOST=redis
-  #  restart: "no"  # Prevents automatic restart on failure
-  #  healthcheck:  # This tells Docker Compose if the service is "healthy"
-  #    test: ["CMD", "test", "-f", "/app/tests_passed"]  # Only passes if the file exists
-  #    interval: 10s
-  #    retries: 3
-  #    start_period: 5s
-
-  web-app:
-    build: .
-    container_name: web-app
-    ports:
-      - "5000:5000"
-    volumes:
-      - .:/app
+  backend:
+    build:
+      context: .
+      dockerfile: LGS_Stock_Backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Use the service name 'redis' to connect to the Redis container
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
     depends_on:
-#      - test-runner
-      - redis
-      - db
+      redis:
+        condition: service_healthy
+    networks:
+      - stock-net
+    volumes:
+      # Use a named volume called 'db_data'
+      - db_data:/app/persistent_data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: LGS_Stock_Frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8000:80"
+    depends_on:
+      # This doesn't wait for the backend to be "ready", just for the container to start.
+      - backend
+    networks:
+      - stock-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: LGS_Stock_Backend/Dockerfile
+    restart: unless-stopped
+    # This command overrides the Dockerfile's CMD to start the RQ worker.
+    # It runs our custom entrypoint which sets up the app context before starting the worker.
+    command: [ "python", "worker_entrypoint.py" ]
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       - REDIS_HOST=redis
-      - RUNNING_IN_DOCKER=true
-      - FLASK_ENV=production
-      - DATABASE_URL=postgresql://postgres:password@db:5432/lgs_stock_checker
-    restart: unless-stopped
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - stock-net
+    volumes:
+      - db_data:/app/persistent_data
 
   redis:
-    image: redis:latest
-    container_name: redis-server
-    ports:
-      - "6379:6379" # Ensure Redis is exposed
+    image: "redis:6.2-alpine"
     restart: unless-stopped
+    healthcheck:
+      # Use the redis-cli PING command to check if the server is responsive.
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stock-net
 
-  rq-worker:
-    build: .
-    container_name: rq-worker
-    command: rq worker default
-    depends_on:
-#      - test-runner
-      - redis
-    environment:
-      - REDIS_HOST=redis
-      - RUNNING_IN_DOCKER=true
-    restart: unless-stopped
+networks:
+  stock-net:
+    driver: bridge
 
-  db:
-    image: postgres:latest
-    container_name: postgres-db
-    restart: always
-    environment:
-      POSTGRES_USER: lgs_user
-      POSTGRES_PASSWORD: lgs_password
-      POSTGRES_DB: lgs_stock_checker
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
+# Declare the named volume at the bottom of the file
 volumes:
-  postgres_data:
+  db_data:

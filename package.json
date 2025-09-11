@@ -1,0 +1,12 @@
+{
+    "name": "lgs-stock-checker",
+    "version": "1.0.0",
+    "description": "Runs frontend and backend servers concurrently.",
+    "scripts": {
+        "dev": "docker compose up --build",
+        "stop": "docker compose down"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}

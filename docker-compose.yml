@@ -70,15 +70,7 @@ services:
     networks:
       - stock-net
 
-networks:
-  stock-net:
-    driver: bridge
-
-volumes:
-  db_data: # For SQLite, if you switch back
-  postgres_data: # For PostgreSQL
   db:
-    # This service was misplaced and is now correctly under the main 'services' block.
     image: postgres:15-alpine
     container_name: lgs-stock-checker-db-1
     restart: always
@@ -90,3 +82,11 @@ volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - stock-net
+
+networks:
+  stock-net:
+    driver: bridge
+
+volumes:
+  db_data: # For SQLite, if you switch back
+  postgres_data: # For PostgreSQL

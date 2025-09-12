@@ -69,7 +69,6 @@ services:
   db:
     # Switch to the Debian-based image, which is often more stable on ARM than Alpine.
     image: postgres:15
-    platform: linux/arm64 # Explicitly specify the platform for Raspberry Pi
     container_name: lgs-stock-checker-db-1
     restart: always
     environment:

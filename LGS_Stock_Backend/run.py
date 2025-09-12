@@ -12,6 +12,7 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.tasks_manager import register_redis_function
+from data.database.db_config import SessionLocal
 
 
 def create_app(config_name=None):
@@ -30,11 +31,16 @@ def create_app(config_name=None):
     register_blueprints(app)
 
     redis_host = os.getenv("REDIS_HOST", "redis")
+    # When running behind a reverse proxy, we must specify the allowed origins
+    # for CORS to allow credentials (session cookies) to be sent.
+    # The "*" wildcard is not allowed by browsers when credentials are used.
+    allowed_origins = ["http://localhost:8000", "http://192.168.1.120:8000"] # 🛑 Hardcoded for now.
+
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(
         app,
         message_queue=f"redis://{redis_host}:6379",
-        cors_allowed_origins="*",
+        cors_allowed_origins=allowed_origins,
         async_mode="eventlet",
         engineio_logger=False  # Set to True for detailed Engine.IO debugging
     )
@@ -43,6 +49,11 @@ def create_app(config_name=None):
 
     # Discover and register all background tasks for the RQ worker
     register_redis_function()
+
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        """Remove the database session after each request to prevent leaks."""
+        SessionLocal.remove()
 
     return app
 

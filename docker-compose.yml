@@ -3,30 +3,31 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
+    container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     environment:
-      # Use the service name 'redis' to connect to the Redis container
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
+      - CORS_ALLOWED_ORIGINS=http://localhost:8000,http://192.168.1.120:8000
     depends_on:
       redis:
         condition: service_healthy
+      db:
+        condition: service_healthy
     networks:
       - stock-net
-    volumes:
-      # Use a named volume called 'db_data'
-      - db_data:/app/persistent_data
 
   frontend:
     build:
       context: .
       dockerfile: LGS_Stock_Frontend/Dockerfile
+    container_name: lgs-stock-checker-frontend-1
     restart: unless-stopped
     ports:
       - "0.0.0.0:8000:80"
     depends_on:
-      # This doesn't wait for the backend to be "ready", just for the container to start.
       - backend
     networks:
       - stock-net
@@ -35,27 +36,27 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
+    container_name: lgs-stock-checker-worker-1
     restart: unless-stopped
-    # This command overrides the Dockerfile's CMD to start the RQ worker.
-    # It runs our custom entrypoint which sets up the app context before starting the worker.
     command: [ "python", "worker_entrypoint.py" ]
     depends_on:
       redis:
+        condition: service_healthy
+      db:
         condition: service_healthy
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
     networks:
       - stock-net
-    volumes:
-      - db_data:/app/persistent_data
 
   redis:
-    image: "redis:6.2-alpine"
+    image: "redis:6.2-alpine" # Using a specific version is good practice
+    container_name: lgs-stock-checker-redis-1
     restart: unless-stopped
     healthcheck:
-      # Use the redis-cli PING command to check if the server is responsive.
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
@@ -63,10 +64,33 @@ services:
     networks:
       - stock-net
 
+  db:
+    image: postgres:15
+    platform: linux/arm/v7 # Add this line back in with the correct value
+    container_name: lgs-stock-checker-db-1
+    restart: always
+    environment:
+      POSTGRES_USER: lgs_user
+      POSTGRES_PASSWORD: lgs_password
+      POSTGRES_DB: lgs_stock_checker
+      # This variable is used by psql in the healthcheck to provide the password.
+      PGPASSWORD: lgs_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stock-net
+    healthcheck:
+      # This is a more robust check that verifies the app's user can connect and run a query.
+      test: [ "CMD-SHELL", "psql -U lgs_user -d lgs_stock_checker -c 'SELECT 1'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # Add a start_period to give the database time to initialize on slow hardware.
+      start_period: 30s
+
 networks:
   stock-net:
     driver: bridge
 
-# Declare the named volume at the bottom of the file
 volumes:
-  db_data:
+  postgres_data: # For PostgreSQL

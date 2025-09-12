@@ -24,6 +24,12 @@ FROM python:3.9-slim
 # Set a more conventional working directory
 WORKDIR /app
 
+# Install runtime dependencies for psycopg2.
+# The psycopg2 library requires the PostgreSQL client library (libpq).
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libpq5 && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create a non-root user and group for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
@@ -40,16 +46,9 @@ COPY ./LGS_Stock_Backend .
 COPY ./LGS_Stock_Frontend/templates ./templates
 COPY ./LGS_Stock_Frontend/static ./static
 
-# Create the directory for the database volume *before* changing ownership.
-RUN mkdir -p /app/persistent_data
-
 # Change ownership of the app directory to the non-root user
 # This includes the persistent_data directory we created for the volume.
 RUN chown -R appuser:appuser /app
-
-# Declare the path as a volume. When docker-compose mounts a named volume
-# here, it will be initialized with the contents (and permissions) of this directory.
-VOLUME /app/persistent_data
 
 # Switch to the non-root user
 USER appuser

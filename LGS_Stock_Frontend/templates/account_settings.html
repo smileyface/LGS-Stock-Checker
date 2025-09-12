@@ -17,7 +17,8 @@
                     <label for="new_username" class="form-label">New Username</label>
                     <input type="text" id="new_username" class="form-control" placeholder="Enter new username">
                 </div>
-                <button type="button" id="updateUsernameBtn" class="btn btn-primary">Update Username</button>
+                <button type="button" id="updateUsernameBtn" class="btn btn-primary"
+                    data-url="{{ url_for('user_bp.change_username') }}">Update Username</button>
             </form>
 
             <h2>Update Password</h2>
@@ -30,7 +31,8 @@
                     <label for="new_password" class="form-label">New Password</label>
                     <input type="password" id="new_password" class="form-control" placeholder="New Password">
                 </div>
-                <button type="button" id="updatePasswordBtn" class="btn btn-primary">Update Password</button>
+                <button type="button" id="updatePasswordBtn" class="btn btn-primary"
+                    data-url="{{ url_for('user_bp.change_password') }}">Update Password</button>
             </form>
         </div>
 
@@ -62,46 +64,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('updateUsernameBtn').addEventListener('click', function () {
-            const newUsername = document.getElementById("new_username").value;
-            fetch("{{ url_for('user_bp.change_username') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ new_username: newUsername })
-            }).then(response => response.json()).then(data => alert(data.message || data.error));
-        });
-
-        document.getElementById('updatePasswordBtn').addEventListener('click', function () {
-            fetch("{{ url_for('user_bp.change_password') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    current_password: document.getElementById("current_password").value,
-                    new_password: document.getElementById("new_password").value
-                })
-            }).then(response => response.json()).then(data => alert(data.message || data.error));
-        });
-
-        document.getElementById('updateStoresBtn').addEventListener('click', function () {
-            const selectedStores = Array.from(document.querySelectorAll(".store-checkbox:checked")).map(o => o.value)
-            if (socket && socket.connected) {
-                socket.emit('update_stores', { stores: selectedStores });
-            } else {
-                alert('Not connected to the server. Please refresh the page.');
-            }
-        });
-
-        // Listen for the success confirmation from the server
-        socket.on('update_stores_success', function (data) {
-            alert(data.message);
-        });
-
-        // Generic error handler
-        socket.on('error', function (data) {
-            alert('An error occurred: ' + data.message);
-        });
-    });
-</script>
+<script src="{{ url_for('static', filename='js/account.js') }}"></script>
 {% endblock %}

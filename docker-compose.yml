@@ -67,8 +67,8 @@ services:
       - stock-net
 
   db:
-    # Switch to the Debian-based image, which is often more stable on ARM than Alpine.
     image: postgres:15
+    platform: linux/arm/v7 # Add this line back in with the correct value
     container_name: lgs-stock-checker-db-1
     restart: always
     environment:

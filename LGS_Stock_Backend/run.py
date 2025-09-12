@@ -12,6 +12,7 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.tasks_manager import register_redis_function
+from data.database.db_config import SessionLocal
 
 
 def create_app(config_name=None):
@@ -49,6 +50,11 @@ def create_app(config_name=None):
 
     # Discover and register all background tasks for the RQ worker
     register_redis_function()
+
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        """Remove the database session after each request to prevent leaks."""
+        SessionLocal.remove()
 
     return app
 

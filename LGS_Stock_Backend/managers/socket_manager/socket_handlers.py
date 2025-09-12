@@ -169,7 +169,7 @@ def handle_update_user_stores(data: dict):
 
     try:
         validated_data = UpdateStoresSchema.model_validate(data)
-        database.add_user_store(username, validated_data.stores)
+        database.set_user_stores(username, validated_data.stores)
         socketio.emit("update_stores_success", {"message": "Preferred stores updated successfully!"}, room=username)
         logger.info(f"✅ Updated preferred stores for user '{username}'.")
     except ValidationError as e:

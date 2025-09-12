@@ -21,7 +21,7 @@ from .repositories.card_repository import (
 )
 from .repositories.user_repository import (
     get_user_by_username, update_username, update_password, add_user, add_user_store,
-    remove_user_store, get_user_stores, get_user_for_display, get_all_users,
+    remove_user_store, get_user_stores, set_user_stores, get_user_for_display, get_all_users,
     get_users_tracking_card, get_tracking_users_for_cards
 )
 from .repositories.store_repository import get_store_metadata, get_all_stores
@@ -37,7 +37,7 @@ __all__ = [
 
     # User Repository
     "get_user_by_username", "update_username", "update_password", "add_user",
-    "add_user_store", "remove_user_store", "get_user_stores",
+    "add_user_store", "remove_user_store", "get_user_stores", "set_user_stores",
     "get_user_for_display", "get_all_users", "get_users_tracking_card",
     "get_tracking_users_for_cards",
 

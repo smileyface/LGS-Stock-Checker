@@ -194,6 +194,31 @@ def remove_user_store(username: str, store_slug: str, session) -> None:
         logger.warning(f"User '{username}' does not have preference for store '{store_slug}'. Cannot remove.")
 
 
+@db_query
+def set_user_stores(username: str, store_slugs: List[str], session) -> None:
+    """
+    Sets the user's selected stores to the exact list provided,
+    adding new ones and removing old ones.
+    """
+    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    if not user:
+        logger.warning(f"User '{username}' not found. Cannot set store preferences.")
+        return
+
+    # Fetch all valid store objects from the database that are in the provided list.
+    # This prevents trying to add stores that don't exist.
+    if store_slugs:
+        valid_stores = session.query(Store).filter(Store.slug.in_(store_slugs)).all()
+    else:
+        valid_stores = []
+
+    # The user's selected_stores relationship will now point to this new list.
+    # SQLAlchemy's ORM is smart enough to figure out which entries to add and
+    # remove from the user_store_preferences association table.
+    user.selected_stores = valid_stores
+
+    logger.info(f"✅ Set preferred stores for user '{username}' to: {[s.slug for s in valid_stores]}")
+
 
 @db_query
 def get_user_for_display(username: str, session) -> Optional[schema.UserPublicSchema]:

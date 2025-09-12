@@ -34,7 +34,7 @@ def create_app(config_name=None):
     # When running behind a reverse proxy, we must specify the allowed origins
     # for CORS to allow credentials (session cookies) to be sent.
     # The "*" wildcard is not allowed by browsers when credentials are used.
-    allowed_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:8000")
+    allowed_origins = ["http://localhost:8000", "http://192.168.1.120:8000"] # 🛑 Hardcoded for now.
     allowed_origins = [origin.strip() for origin in allowed_origins_str.split(',')]
 
     # Initialize SocketIO with the app and specific configurations

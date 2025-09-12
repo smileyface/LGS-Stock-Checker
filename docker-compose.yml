@@ -10,9 +10,6 @@ services:
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
-      # Define allowed origins for CORS to enable authenticated WebSockets.
-      # Replace <your_pi_ip> with your device's actual IP address.
-      - CORS_ALLOWED_ORIGINS=http://localhost:8000,http://<your_pi_ip>:8000
     depends_on:
       redis:
         condition: service_healthy

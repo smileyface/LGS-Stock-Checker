@@ -35,7 +35,6 @@ def create_app(config_name=None):
     # for CORS to allow credentials (session cookies) to be sent.
     # The "*" wildcard is not allowed by browsers when credentials are used.
     allowed_origins = ["http://localhost:8000", "http://192.168.1.120:8000"] # 🛑 Hardcoded for now.
-    allowed_origins = [origin.strip() for origin in allowed_origins_str.split(',')]
 
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(

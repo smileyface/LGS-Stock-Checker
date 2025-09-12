@@ -13,8 +13,8 @@ class Authority_Games_Mesa_Arizona(Store):
         super().__init__(
             name="Authority Games (Mesa, AZ)",
             slug="authority_games_mesa_az",
-            homepage="https://www.authoritygamestore.com/",
-            search_url="https://www.authoritygamestore.com/search",
+            homepage="https://authoritygames.crystalcommerce.com/",
+            search_url="https://authoritygames.crystalcommerce.com/products/search?",
             fetch_strategy="default"
         )
 

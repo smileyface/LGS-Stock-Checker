@@ -2,19 +2,26 @@ from flask import session
 from pydantic import BaseModel, ValidationError
 from typing import List
 
-#internal package imports
+# internal package imports
 from .socket_manager import socketio
-from .socket_schemas import AddCardSchema, DeleteCardSchema, ParseCardListSchema, UpdateCardSchema, UpdateStoresSchema
+from .socket_schemas import (
+    AddCardSchema,
+    DeleteCardSchema,
+    ParseCardListSchema,
+    UpdateCardSchema,
+    UpdateStoresSchema,
+)
 
-#manager package imports
+# manager package imports
 import managers.card_manager as card_manager
 import managers.user_manager as user_manager
 import managers.availability_manager as availability_manager
 
-#project package imports
+# project package imports
 from externals import fetch_scryfall_card_names
 from data import database
 from utility import logger
+
 
 def get_username():
     """Helper function to get the username from the session."""
@@ -36,16 +43,26 @@ def _send_user_cards(username: str):
         {
             "card_name": card.card_name,
             "amount": card.amount,
-            "specifications": [
-                {"set_code": spec.set_code, "collector_number": spec.collector_number, "finish": spec.finish}
-                for spec in card.specifications
-            ] if card.specifications else [],
+            "specifications": (
+                [
+                    {
+                        "set_code": spec.set_code,
+                        "collector_number": spec.collector_number,
+                        "finish": spec.finish,
+                    }
+                    for spec in card.specifications
+                ]
+                if card.specifications
+                else []
+            ),
         }
         for card in cards
     ]
 
     # Emit to the user's room to update all of their connected clients.
-    socketio.emit("cards_data", {"username": username, "tracked_cards": card_list}, room=username)
+    socketio.emit(
+        "cards_data", {"username": username, "tracked_cards": card_list}, room=username
+    )
     logger.info(f"📡 Sent card list to room '{username}' with {len(card_list)} items.")
 
 
@@ -60,7 +77,9 @@ def handle_get_card_availability():
         # It returns a status message that we can forward to the client.
         result = availability_manager.get_card_availability(username)
         socketio.emit("availability_check_status", result, room=username)
-        logger.info(f"✅ Card availability check initiated for user {username}. Status: {result.get('message')}")
+        logger.info(
+            f"✅ Card availability check initiated for user {username}. Status: {result.get('message')}"
+        )
     else:
         logger.warning("🚨 No username found for 'get_card_availability' request.")
 
@@ -109,7 +128,9 @@ def handle_request_card_names():
 
     except Exception as e:
         logger.error(f"❌ Failed to retrieve card names from Redis: {e}")
-        socketio.emit("card_names_response", {"card_names": []})  # Send empty list on failure
+        socketio.emit(
+            "card_names_response", {"card_names": []}
+        )  # Send empty list on failure
 
 
 @socketio.on("add_card")
@@ -123,7 +144,7 @@ def handle_add_user_tracked_card(data: dict):
             username,
             validated_data.card,
             validated_data.amount,
-            validated_data.card_specs
+            validated_data.card_specs,
         )
         _send_user_cards(username)
     except ValidationError as e:
@@ -158,10 +179,11 @@ def handle_update_user_tracked_cards(data: dict):
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for update_card: {e}"})
 
+
 @socketio.on("update_stores")
 def handle_update_user_stores(data: dict):
     """Handles a request to update the user's entire list of preferred stores."""
-    logger.info("📩 Received 'update_stores' request from front end.")
+    logger.info(f"📩 Received 'update_stores' request from front end. Data: {data}")
     username = get_username()
     if not username:
         logger.warning("🚨 No username found for 'update_stores' request.")
@@ -170,7 +192,11 @@ def handle_update_user_stores(data: dict):
     try:
         validated_data = UpdateStoresSchema.model_validate(data)
         database.set_user_stores(username, validated_data.stores)
-        socketio.emit("update_stores_success", {"message": "Preferred stores updated successfully!"}, room=username)
+        socketio.emit(
+            "update_stores_success",
+            {"message": "Preferred stores updated successfully!"},
+            room=username,
+        )
         logger.info(f"✅ Updated preferred stores for user '{username}'.")
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_stores' data received: {e}")

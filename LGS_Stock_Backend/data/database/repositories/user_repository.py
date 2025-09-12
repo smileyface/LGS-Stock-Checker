@@ -211,6 +211,7 @@ def set_user_stores(username: str, store_slugs: List[str], session) -> None:
         valid_stores = session.query(Store).filter(Store.slug.in_(store_slugs)).all()
     else:
         valid_stores = []
+        logger.info(f"Empty store list provided for user '{username}'. All store preferences will be cleared.")
 
     # The user's selected_stores relationship will now point to this new list.
     # SQLAlchemy's ORM is smart enough to figure out which entries to add and

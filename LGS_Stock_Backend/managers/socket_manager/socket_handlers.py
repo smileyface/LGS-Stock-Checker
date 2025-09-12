@@ -66,6 +66,21 @@ def _send_user_cards(username: str):
     logger.info(f"📡 Sent card list to room '{username}' with {len(card_list)} items.")
 
 
+def _send_user_stores(username: str):
+    """Fetches a user's store list and emits it over Socket.IO."""
+    if not username:
+        logger.error("❌ Attempted to send store list for an empty username.")
+        return
+
+    logger.info(f"🏬 Fetching and sending tracked stores for user: {username}")
+    stores = database.get_user_stores(username)
+    # The stores from the DB are Pydantic models, so we can dump them to dicts.
+    store_list = [store.model_dump() for store in stores]
+
+    socketio.emit("user_stores_data", {"stores": store_list}, room=username)
+    logger.info(f"📡 Sent store list to room '{username}' with {len(store_list)} items.")
+
+
 @socketio.on("get_card_availability")
 def handle_get_card_availability():
     """Handles a front-end request for updated card availability data."""
@@ -192,11 +207,7 @@ def handle_update_user_stores(data: dict):
     try:
         validated_data = UpdateStoresSchema.model_validate(data)
         database.set_user_stores(username, validated_data.stores)
-        socketio.emit(
-            "update_stores_success",
-            {"message": "Preferred stores updated successfully!"},
-            room=username,
-        )
+        _send_user_stores(username)
         logger.info(f"✅ Updated preferred stores for user '{username}'.")
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_stores' data received: {e}")

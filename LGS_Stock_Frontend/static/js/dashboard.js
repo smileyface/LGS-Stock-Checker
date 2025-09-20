@@ -70,57 +70,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 { "targets": [0], "width": "80px" } // Give action buttons a fixed width
             ]
         });
-        $("#cardTable tbody").on("click", ".delete-btn", function () {
-            const row = $(this).closest("tr");
-            const cardName = row.find(".action-buttons").data("card-name");
-
-            if (!cardName) {
-                console.error("❌ Could not find card name to delete.");
-                return;
-            }
-
-            console.log(`🗑️ Deleting card: ${cardName}`);
-            socket.emit("delete_card", { card: cardName });
-
-            // Optional: remove the row from the table immediately
-            $("#cardTable").DataTable().row(row).remove().draw();
-        });
-
-        $("#cardTable tbody").on("click", ".edit-btn", function () {
-            const row = $(this).closest("tr");
-            const amountCell = row.find(".amount-cell");
-            const currentAmount = amountCell.text().trim();
-
-            // Replace cell content with input field
-            amountCell.html(`<input type="number" class="form-control form-control-sm amount-input" value="${currentAmount}" min="1" style="max-width: 60px;" />`);
-
-            // Change button to Save
-            const btn = $(this);
-            btn.removeClass("edit-btn").addClass("save-btn").html("💾");
-        });
-
-        $("#cardTable tbody").on("click", ".save-btn", function () {
-            const row = $(this).closest("tr");
-            const amountInput = row.find(".amount-input");
-            const newAmount = amountInput.val();
-            const cardName = row.find(".action-buttons").data("card-name");
-
-            // Send update to backend
-            socket.emit("update_card", {
-                card: cardName,
-                update_data: {
-                    amount: parseInt(newAmount, 10)
-                }
-            });
-
-            // Revert input to plain text
-            row.find(".amount-cell").text(newAmount);
-
-            // Change button back to Edit
-            const btn = $(this);
-            btn.removeClass("save-btn").addClass("edit-btn").html("✏️");
-
-        });
     }
 
     function initializeAvailabilityTable() {
@@ -172,6 +121,87 @@ document.addEventListener("DOMContentLoaded", function () {
         cardNameCache = e.detail.cardNameCache || []; // Update local cache
         updateCardTable(e.detail);
     });
+
+    // --- Event Delegation for Table Actions ---
+    const tableBody = $("#cardTable tbody");
+
+    // Handle Delete button clicks
+    tableBody.on("click", ".delete-btn", function () {
+        const row = $(this).closest("tr");
+        const cardName = row.find(".action-buttons").data("card-name");
+        if (cardName) {
+            console.log(`🗑️ Deleting card: ${cardName}`);
+            socket.emit("delete_card", { card: cardName });
+            // The table will be redrawn when the server sends back the updated card list.
+        }
+    });
+
+    // Handle entering edit mode
+    tableBody.on("click", ".edit-btn", function () {
+        const row = $(this).closest("tr");
+        enterEditMode(row);
+    });
+
+    // Handle saving changes
+    tableBody.on("click", ".save-btn", function () {
+        const row = $(this).closest("tr");
+        exitEditMode(row, true); // true = save changes
+    });
+
+    // Handle keyboard events for inline editing
+    tableBody.on("keydown", ".amount-input", function (e) {
+        const row = $(this).closest("tr");
+        if (e.key === "Enter") {
+            exitEditMode(row, true); // Save on Enter
+        } else if (e.key === "Escape") {
+            exitEditMode(row, false); // Cancel on Escape
+        }
+    });
+
+    /** Enters edit mode for a specific table row. */
+    function enterEditMode(row) {
+        // If another row is already in edit mode, save it first.
+        const currentlyEditing = tableBody.find(".save-btn").closest("tr");
+        if (currentlyEditing.length > 0 && !currentlyEditing.is(row)) {
+            exitEditMode(currentlyEditing, true);
+        }
+
+        const amountCell = row.find(".amount-cell");
+        const currentAmount = amountCell.text().trim();
+        amountCell.html(`<input type="number" class="form-control form-control-sm amount-input" value="${currentAmount}" min="1" style="max-width: 70px;" />`);
+        amountCell.find("input").focus().select();
+
+        const btn = row.find(".edit-btn");
+        btn.removeClass("edit-btn").addClass("save-btn").html("💾").attr("title", "Save");
+    }
+
+    /** Exits edit mode for a row, optionally saving changes. */
+    function exitEditMode(row, saveChanges) {
+        const amountCell = row.find(".amount-cell");
+        const amountInput = amountCell.find(".amount-input");
+        if (amountInput.length === 0) return; // Not in edit mode
+
+        const originalAmount = amountInput.attr("value");
+        const newAmount = amountInput.val();
+        const cardName = row.find(".action-buttons").data("card-name");
+
+        if (saveChanges && newAmount !== originalAmount) {
+            console.log(`💾 Saving new amount for ${cardName}: ${newAmount}`);
+            socket.emit("update_card", {
+                card: cardName,
+                update_data: {
+                    amount: parseInt(newAmount, 10)
+                }
+            });
+            amountCell.text(newAmount);
+        } else {
+            // Revert to original value if cancelling or no change
+            amountCell.text(originalAmount);
+        }
+
+        const btn = row.find(".save-btn");
+        btn.removeClass("save-btn").addClass("edit-btn").html("✏️").attr("title", "Edit");
+    }
 });
 
 function selectCard(cardName) {

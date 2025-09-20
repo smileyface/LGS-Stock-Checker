@@ -3,8 +3,10 @@ from unittest.mock import MagicMock, patch
 
 from data.database.session_manager import db_query
 
-# The path to SessionLocal where it's *used*, which is in the session_manager module.
-SESSION_LOCAL_PATH = "data.database.session_manager.SessionLocal"
+# The path to SessionLocal where it's looked up. The db_query decorator in
+# session_manager imports `db_config` and then calls `db_config.get_session()`
+# and `db_config.SessionLocal`, so we must patch it there.
+SESSION_LOCAL_PATH = "data.database.session_manager.db_config.SessionLocal"
 
 
 def test_db_query_success():

@@ -3,6 +3,8 @@ from werkzeug.security import check_password_hash
 
 from managers.user_manager import add_user, authenticate_user, get_user, update_username
 from data.database.models.orm_models import User
+from LGS_Stock_Backend.managers.user_manager import add_user, authenticate_user, get_user, update_username
+from LGS_Stock_Backend.data.database.models.orm_models import User
 
 # Note: We are NOT mocking the data layer here.
 # These tests use the `db_session` fixture from conftest.py

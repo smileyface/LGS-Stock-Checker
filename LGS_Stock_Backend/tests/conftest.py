@@ -8,6 +8,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # This prevents the ImportError during test discovery.
 from data.database import db_config
 from data.database.models.orm_models import Base, User, Store
+# Use absolute imports from the package root to ensure consistency.
+from LGS_Stock_Backend.data.database import db_config
+from LGS_Stock_Backend.data.database.models.orm_models import Base, User, Store
 from flask import session
 from unittest.mock import patch
 
@@ -15,6 +18,7 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 
 from werkzeug.security import generate_password_hash
 from run import create_app
+from LGS_Stock_Backend.run import create_app
 
 
 @pytest.fixture(scope="session")

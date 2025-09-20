@@ -13,6 +13,7 @@ def update_availability_single_card(username, store_name, card):
         return False
 
     card_name = card.get("card_name")
+    logger.debug(f"🔍 Filtering for '{card_name}' at {store_name}")
     if not card_name:
         logger.error(f"❌ Task received card data without a 'card_name'. Aborting. Data: {card}")
         return False

@@ -1,5 +1,6 @@
 import os
 import eventlet
+import logging
 
 # Crucial for SocketIO performance with Gunicorn and event-based workers
 eventlet.monkey_patch()
@@ -24,8 +25,20 @@ def create_app(config_name=None):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
-
-
+    # --- Configure application-wide logging ---
+    # Set the log level from an environment variable, defaulting to INFO.
+    # If the app is in debug mode (via FLASK_CONFIG=development), force DEBUG level.
+    log_level_name = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    if app.debug:
+        log_level_name = 'DEBUG'
+    
+    # Based on your log files, the custom logger is named 'LGS_Stock_Checker'.
+    # We get this specific logger and set its level. The handlers are assumed
+    # to be configured in the `utility.logger` module.
+    lgs_logger = logging.getLogger('LGS_Stock_Checker')
+    lgs_logger.setLevel(log_level_name)
+    lgs_logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
+    
 
     # Initialize session management
     Session(app)

@@ -104,63 +104,64 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
 @db_query
 def delete_user_card(username: str, card_name: str, session) -> None:
     """
-    Deletes a tracked card for a user in a single, efficient operation.
+    Deletes a tracked card for a user, ensuring related specifications are also deleted via ORM cascades.
     """
     logger.info(f"🗑️ Attempting to delete tracked card '{card_name}' for user '{username}'.")
 
-    # Create a subquery to find the user's ID
-    user_subquery = session.query(User.id).filter(User.username == username).scalar_subquery()
+    # Find the specific card tracked by the user.
+    # We must load the object into the session to trigger cascade deletes for its specifications.
+    # A bulk delete (`.delete()`) bypasses this ORM-level logic.
+    tracked_card = (
+        session.query(UserTrackedCards)
+        .join(User)
+        .filter(User.username == username, UserTrackedCards.card_name == card_name)
+        .first()
+    )
 
-    # Perform the delete using the subquery
-    # synchronize_session=False is recommended for bulk deletes for performance.
-    deleted_count = session.query(UserTrackedCards).filter(
-        UserTrackedCards.user_id == user_subquery,
-        UserTrackedCards.card_name == card_name
-    ).delete(synchronize_session=False)
-
-    if deleted_count == 0:
+    if tracked_card:
+        session.delete(tracked_card)
+        logger.info(f"✅ Successfully deleted tracked card '{card_name}' for user '{username}'.")
+    else:
         # This could be because the user doesn't exist or they aren't tracking the card.
         logger.warning(f"⚠️ No tracked card named '{card_name}' found for user '{username}'. No action taken.")
-    else:
-        logger.info(f"✅ Successfully deleted {deleted_count} tracked card record for '{username}'.")
 
 
 @db_query
 def update_user_tracked_cards_list(username: str, card_list: List[Dict[str, Any]], session) -> None:
     """
     Replaces a user's entire tracked card list with a new one.
-    This performs a "delete-all-then-insert-all" operation for the given user.
+    This uses an idiomatic "set" operation, letting the ORM handle deletes and inserts.
     """
     logger.info(f"🔄 Replacing entire tracked card list for user '{username}'.")
-    user = session.query(User).filter(User.username == username).first()
+    user = session.query(User).options(joinedload(User.cards)).filter(User.username == username).first()
     if not user:
         logger.warning(f"🚨 User '{username}' not found. Cannot update card list.")
         return
 
-    # Bulk delete existing tracked cards for this user.
-    # This will also cascade delete all associated CardSpecification records.
-    session.query(UserTrackedCards).filter(UserTrackedCards.user_id == user.id).delete(synchronize_session=False)
-    logger.debug(f"🗑️ Cleared existing tracked cards for '{username}'.")
+    # By assigning a new list to the 'cards' relationship, SQLAlchemy's ORM
+    # will handle the cascade delete for the old UserTrackedCards and their associated
+    # CardSpecification records, respecting foreign key constraints.
 
     if not card_list:
+        user.cards = []
         logger.info(f"✅ Cleared all card preferences for user '{username}' as the provided list was empty.")
         return
 
-    # Bulk insert new card preferences
+    # Create new card preference objects
     new_tracked_cards = []
     for card_data in card_list:
         # Note: This assumes card_name is valid and doesn't re-verify against the `cards` table
         # for performance. The `add_user_card` flow is better for single additions.
         new_tracked_cards.append(
             UserTrackedCards(
-                user_id=user.id,
+                # user_id is set via the relationship back-reference
                 card_name=card_data["card_name"],
                 amount=card_data.get("amount", 1)
             )
         )
 
-    session.bulk_save_objects(new_tracked_cards)
-    logger.info(f"✅ Successfully saved {len(card_list)} new tracked cards for user '{username}'.")
+    user.cards = new_tracked_cards
+    logger.info(f"✅ Successfully set {len(card_list)} new tracked cards for user '{username}'.")
 
 
 @db_query

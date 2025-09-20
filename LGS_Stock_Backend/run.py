@@ -60,7 +60,10 @@ def create_app(config_name=None):
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         """Remove the database session after each request to prevent leaks."""
-        SessionLocal.remove()
+        # This check prevents an error if the app is run without a DATABASE_URL,
+        # in which case SessionLocal would be None.
+        if SessionLocal:
+            SessionLocal.remove()
 
     return app
 

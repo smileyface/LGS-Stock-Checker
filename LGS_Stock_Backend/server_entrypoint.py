@@ -1,3 +1,3 @@
 from run import create_app
 
-app = create_app('release')
+app = create_app('development')

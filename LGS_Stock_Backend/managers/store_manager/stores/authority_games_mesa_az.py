@@ -69,8 +69,20 @@ class Authority_Games_Mesa_Arizona(Store):
         return price_element.get_text(strip=True) if price_element else "N/A"
 
     def _get_stock(self, row: BeautifulSoup) -> str:
+    def _get_stock(self, row: BeautifulSoup) -> int:
+        """Extracts the stock quantity as an integer."""
         stock_element = row.find('span', class_='variant-short-info variant-qty')
         return stock_element.get_text(strip=True) if stock_element else '0 In Stock'
+        if not stock_element:
+            return 0
+        
+        stock_text = stock_element.get_text(strip=True)  # e.g., "5 In Stock"
+        try:
+            # Extract the number from the string.
+            return int(stock_text.split()[0])
+        except (ValueError, IndexError):
+            logger.warning(f"Could not parse stock quantity from '{stock_text}' for {self.name}. Assuming 0.")
+            return 0
 
     def _get_condition(self, row: BeautifulSoup) -> str:
         condition_element = row.find('span', class_='variant-short-info variant-description')
@@ -82,6 +94,12 @@ class Authority_Games_Mesa_Arizona(Store):
         if " - " in product_name:
             return product_name.split(" - ")[1].lower()
         return "normal"
+        """Extracts the finish from the variant description text."""
+        condition_element = row.find('span', class_='variant-short-info variant-description')
+        condition_text = condition_element.get_text(strip=True).lower() if condition_element else ''
+        if 'foil' in condition_text:
+            return 'foil'
+        return "non-foil"
 
     def _get_set(self, row: BeautifulSoup) -> str:
         set_element = row.find('span', class_='category')

@@ -43,10 +43,23 @@ def filter_listings(
             filter_collector_id = spec.get("collector_number")
             filter_finish = spec.get("finish")
 
-            # Assume it matches until a condition fails for this specific spec.
-            set_match = not filter_set_code or filter_set_code.upper() == listing.get("set", "").upper()
-            collector_match = not filter_collector_id or str(filter_collector_id) == str(listing.get("collector_number"))
-            finish_match = not filter_finish or filter_finish.lower() == "any" or filter_finish.lower() == listing.get("finish", "").lower()
+            # A match occurs if the filter is not set, if it's a wildcard ('Unknown', 'N/A', 'any'),
+            # or if it matches the listing's value.
+            set_match = (
+                not filter_set_code
+                or filter_set_code.lower() == "unknown"
+                or filter_set_code.upper() == listing.get("set", "").upper()
+            )
+            collector_match = (
+                not filter_collector_id
+                or str(filter_collector_id).lower() == "n/a"
+                or str(filter_collector_id) == str(listing.get("collector_number"))
+            )
+            finish_match = (
+                not filter_finish
+                or filter_finish.lower() == "any"
+                or filter_finish.lower() == listing.get("finish", "").lower()
+            )
 
             if set_match and collector_match and finish_match:
                 filtered_listings.append(listing)

@@ -6,38 +6,65 @@ from utility import logger
 def filter_listings(
     card_name: str,
     listings: List[Dict[str, Any]],
-    specifications: Dict[str, Any] = None,
+    specifications: List[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Filters a list of scraped card listings based on a card name and specific criteria.
+    Filters a list of scraped card listings based on a card name and a list of specific criteria.
 
     Args:
         card_name: The name of the card to filter for (case-insensitive).
         listings: A list of listing dictionaries scraped from a store.
-        specifications: An optional dictionary with filter criteria like
-                        'set_code', 'collector_number', and 'finish'.
+        specifications: An optional list of dictionaries with filter criteria like
+                        'set_code', 'collector_number', and 'finish'. A listing
+                        will be included if it matches the card name and *any* of
+                        the provided specifications. If no specifications are given,
+                        only name is matched.
 
     Returns:
         A new list containing only the listings that match the criteria.
     """
-    if specifications is None:
-        specifications = {}
-
-    filter_set_code = specifications.get("set_code")
-    filter_collector_id = specifications.get("collector_number")
-    filter_finish = specifications.get("finish")
+    
 
     filtered_listings = []
     for listing in listings:
+        logger.debug(f"🔍 Filtering for '{card_name}' from {listing.get('name')} with specifications: {specifications}")
+        # Basic requirement: card name must match (case-insensitive).
         if card_name.lower() != listing.get("name", "").lower():
             continue
-        if filter_set_code and filter_set_code.upper() != listing.get("set", "").upper():
-            continue
-        if filter_collector_id and filter_collector_id != listing.get("collector_number"):
-            continue
-        if filter_finish and filter_finish.lower() != "any" and filter_finish.lower() != listing.get("finish", "").lower():
-            continue
-        filtered_listings.append(listing)
 
-    logger.debug(f"Filtered {len(listings)} listings for '{card_name}' down to {len(filtered_listings)}")
+        # If no specifications are provided, a name match is sufficient.
+        if not specifications:
+            filtered_listings.append(listing)
+            continue
+
+        # If specifications are provided, check if the listing matches ANY of them.
+        for spec in specifications:
+            filter_set_code = spec.get("set_code")
+            filter_collector_id = spec.get("collector_number")
+            filter_finish = spec.get("finish")
+
+            # A match occurs if the filter is not set, if it's a wildcard ('Unknown', 'N/A', 'any'),
+            # or if it matches the listing's value.
+            set_match = (
+                not filter_set_code
+                or filter_set_code.lower() == "unknown"
+                or filter_set_code.upper() == listing.get("set", "").upper()
+            )
+            collector_match = (
+                not filter_collector_id
+                or str(filter_collector_id).lower() == "n/a"
+                or str(filter_collector_id) == str(listing.get("collector_number"))
+            )
+            finish_match = (
+                not filter_finish
+                or filter_finish.lower() == "any"
+                or filter_finish.lower() == listing.get("finish", "").lower()
+            )
+
+            if set_match and collector_match and finish_match:
+                filtered_listings.append(listing)
+                # This listing matched one spec, so we add it and move to the next listing.
+                break
+
+    logger.debug(f"Filtered {len(listings)} raw listings for '{card_name}' down to {len(filtered_listings)} matching listings.")
     return filtered_listings

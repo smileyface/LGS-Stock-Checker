@@ -91,11 +91,16 @@ For convenience, you can use the `deploy.sh` script to automate the update proce
     ```
 
 2.  **Run the script:**
-    To deploy a specific branch, pass its name as an argument. If no branch is specified, it defaults to `master` for a release deployment.
+    To deploy, pass the branch name as the first argument and an optional log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) as the second argument.
+    - If no branch is specified, it defaults to `master`.
+    - If no log level is specified, it defaults to `INFO`.
     ```bash
-    # Deploy the 'master' branch (runs tests)
+    # Deploy the 'master' branch (runs tests) with default INFO logging
     ./deploy.sh master
 
-    # Deploy a feature branch (skips tests)
-    ./deploy.sh my-feature-branch
+    # Deploy a feature branch (skips tests) with DEBUG logging
+    ./deploy.sh my-feature-branch DEBUG
+
+    # Deploy master with DEBUG logging
+    ./deploy.sh master DEBUG
     ```

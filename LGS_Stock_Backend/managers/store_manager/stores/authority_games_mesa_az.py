@@ -25,47 +25,62 @@ class Authority_Games_Mesa_Arizona(Store):
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        product_rows = self._get_product_rows(soup)
+        product_listings = self._get_product_listings(soup)
         available_products = []
 
-        for product_row in product_rows:
-            try:
-                name = self._get_name(product_row)
-                price = self._get_price(product_row)
-                stock = self._get_stock(product_row)
-                condition = self._get_condition(product_row)
-                finish = self._get_finish(product_row)
-                set_name = self._get_set(product_row)
+        for listing in product_listings:
+            name = self._get_name(listing)
+            set_name = self._get_set(listing)
+            
+            variant_rows = listing.find_all('div', class_='variant-row')
+            for variant in variant_rows:
+                try:
+                    price = self._get_price(variant)
+                    stock = self._get_stock(variant)
+                    condition = self._get_condition(variant)
+                    finish = self._get_finish(variant)
 
-                available_products.append({
-                    "name": name,
-                    "price": price,
-                    "stock": stock,
-                    "condition": condition,
-                    "finish": finish,
-                    "set": set_name,
-                })
-            except Exception as e:
-                logger.error(f"Error processing product row for {self.name}: {e}")
+
+                    available_products.append({
+                        "name": name,
+                        "price": price,
+                        "stock": stock,
+                        "condition": condition,
+                        "finish": finish,
+                        "set": set_name,
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing variant row for {self.name}: {e}")
+
 
         return available_products
 
-    def _get_product_rows(self, soup: BeautifulSoup) -> List[Any]:
-        """Find all product rows matching the search query."""
-        products_container = soup.find('ul', class_=['products', 'detailed'])
-        return products_container.find_all('li', class_='product') if products_container else []
+    def _get_product_listings(self, soup: BeautifulSoup) -> List[Any]:
+        """Find all product listings from the search results fragment."""
+        # The search_results endpoint returns a list of <li>s directly.
+        return soup.find_all('li', class_='product')
 
-    def _get_name(self, row: BeautifulSoup) -> str:
-        name_element = row.find('h4', class_='name')
+    def _get_name(self, listing: BeautifulSoup) -> str:
+        name_element = listing.find('h4', class_='name')
         return name_element.get_text(strip=True) if name_element else "Unknown"
 
     def _get_price(self, row: BeautifulSoup) -> str:
         price_element = row.find('div', class_='product-price')
         return price_element.get_text(strip=True) if price_element else "N/A"
 
-    def _get_stock(self, row: BeautifulSoup) -> str:
+    def _get_stock(self, row: BeautifulSoup) -> int:
+        """Extracts the stock quantity as an integer."""
         stock_element = row.find('span', class_='variant-short-info variant-qty')
-        return stock_element.get_text(strip=True) if stock_element else '0 In Stock'
+        if not stock_element:
+            return 0
+        
+        stock_text = stock_element.get_text(strip=True)  # e.g., "5 In Stock"
+        try:
+            # Extract the number from the string.
+            return int(stock_text.split()[0])
+        except (ValueError, IndexError):
+            logger.warning(f"Could not parse stock quantity from '{stock_text}' for {self.name}. Assuming 0.")
+            return 0
 
     def _get_condition(self, row: BeautifulSoup) -> str:
         condition_element = row.find('span', class_='variant-short-info variant-description')
@@ -73,10 +88,12 @@ class Authority_Games_Mesa_Arizona(Store):
         return condition_text.split(", ")[0]
 
     def _get_finish(self, row: BeautifulSoup) -> str:
-        product_name = self._get_name(row)
-        if " - " in product_name:
-            return product_name.split(" - ")[1].lower()
-        return "normal"
+        """Extracts the finish from the variant description text."""
+        condition_element = row.find('span', class_='variant-short-info variant-description')
+        condition_text = condition_element.get_text(strip=True).lower() if condition_element else ''
+        if 'foil' in condition_text:
+            return 'foil'
+        return "non-foil"
 
     def _get_set(self, row: BeautifulSoup) -> str:
         set_element = row.find('span', class_='category')

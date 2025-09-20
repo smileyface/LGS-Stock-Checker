@@ -12,7 +12,7 @@ The import order here is critical to avoid circular dependencies.
 # depend on *before* we import the repositories themselves.
 # The repositories depend on `schema`, so we import it first.
 from . import schema
-from .db_config import init_db
+from .db_config import initialize_database
 
 # Now that `data.database.schema` is available, we can safely import the repositories.
 from .repositories.card_repository import (
@@ -29,7 +29,7 @@ from .repositories.store_repository import get_store_metadata, get_all_stores
 # Define the public API of the `data.database` package.
 __all__ = [
     # Setup
-    "init_db", "schema",
+    "initialize_database", "schema",
 
     # Card Repository
     "get_users_cards", "add_user_card", "delete_user_card",
@@ -44,49 +44,3 @@ __all__ = [
     # Store Repository
     "get_store_metadata", "get_all_stores",
 ]
-
-# Initialize the database by creating tables when this package is first imported.
-# This is idempotent and safe to run on every application startup.
-init_db()
-
-
-def _sync_stores_on_startup():
-    """
-    Ensures that all stores defined in the code's STORE_REGISTRY exist in the database.
-    This is run once on application startup when this package is imported.
-    It uses local imports to avoid circular dependencies between the data layer
-    and the manager layer.
-    """
-    # Local imports to prevent circular dependency: data -> manager -> data
-    from utility import logger
-    from .models.orm_models import Store
-    from .session_manager import db_query
-    from managers.store_manager.stores import STORE_REGISTRY
-
-    @db_query
-    def _sync(session):
-        logger.info("🔄 Synchronizing stores from code registry to database...")
-        db_store_slugs = {s[0] for s in session.query(Store.slug).all()}
-
-        new_stores_added = 0
-        for slug, store_instance in STORE_REGISTRY.items():
-            if slug not in db_store_slugs:
-                logger.info(f"➕ Adding new store to database: {store_instance.name} (slug: {slug})")
-                new_store = Store(
-                    name=store_instance.name,
-                    slug=store_instance.slug,
-                    homepage=store_instance.homepage,
-                    search_url=store_instance.search_url,
-                    fetch_strategy=store_instance.fetch_strategy,
-                )
-                session.add(new_store)
-                new_stores_added += 1
-
-        if new_stores_added > 0:
-            logger.info(f"✅ Added {new_stores_added} new stores to the database.")
-        else:
-            logger.info("✅ Database stores are already up-to-date with the code registry.")
-    _sync()
-
-# Synchronize stores with the database after initializing tables.
-_sync_stores_on_startup()

@@ -1,6 +1,5 @@
 from functools import wraps
 
-from data.database.db_config import SessionLocal
 from utility import logger
 
 
@@ -9,6 +8,8 @@ def db_query(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
+        # Import SessionLocal here to prevent circular import issues during app startup.
+        from data.database.db_config import SessionLocal
         session = SessionLocal()  # Open a new session
         try:
             result = func(*args, **kwargs, session=session)  # Pass session to function

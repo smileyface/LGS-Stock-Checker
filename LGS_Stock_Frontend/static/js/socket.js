@@ -9,6 +9,19 @@ const appState = {
 // Debounce timer for UI updates to prevent rapid re-renders.
 let uiUpdateTimeout = null;
 
+/**
+ * Dispatches a debounced custom event to trigger a UI update.
+ * This prevents the UI from re-rendering too frequently when data arrives in bursts.
+ */
+function dispatchUiUpdate() {
+    clearTimeout(uiUpdateTimeout);
+    uiUpdateTimeout = setTimeout(() => {
+        console.log("🚀 Dispatching debounced UI update.");
+        const event = new CustomEvent('app:dataUpdated', { detail: appState });
+        document.dispatchEvent(event);
+    }, 200); // Wait 200ms after the last event to update the UI.
+}
+
 const socket = io({ withCredentials: true });
 
 // Debugging for connection status
@@ -38,15 +51,17 @@ socket.on("server_log", function (data) {
 socket.on("cards_data", function (data) {
     console.log("🛠️ Received cards_data:", data);
 
-    if (!data || !data.tracked_cards) {
-        console.warn("⚠️ No tracked cards available in received data.");
-        appState.trackedCards = [];
-        return;
+    // Update the tracked cards list, defaulting to an empty array if none are provided.
+    appState.trackedCards = data?.tracked_cards || [];
+    if (appState.trackedCards.length === 0) {
+        console.warn("⚠️ No tracked cards available. Table will be cleared.");
     }
-    appState.trackedCards = data.tracked_cards; // Store state locally
+
+    // Trigger a UI update immediately to render the card list.
+    // Availability will be filled in as it arrives.
+    dispatchUiUpdate();
 
     // Now that we have the latest card list, request their availability.
-    // This prevents the table from rendering twice in quick succession on initial load.
     socket.emit("get_card_availability");
     console.log("📡 Sent 'get_card_availability' event to backend");
 });
@@ -80,14 +95,8 @@ socket.on("card_availability_data", function (data) {
         return; // Do not proceed with malformed data.
     }
 
-    // Debounce the UI update to prevent the table from re-rendering on every single event.
-    // This batches updates that arrive in quick succession.
-    clearTimeout(uiUpdateTimeout);
-    uiUpdateTimeout = setTimeout(() => {
-        console.log("🚀 Dispatching debounced UI update.");
-        const event = new CustomEvent('app:dataUpdated', { detail: appState });
-        document.dispatchEvent(event);
-    }, 200); // Wait 200ms after the last event to update the UI.
+    // Trigger a debounced UI update to show the new availability status.
+    dispatchUiUpdate();
 });
 
 socket.on("card_names_response", function (data) {

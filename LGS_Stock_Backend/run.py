@@ -1,5 +1,6 @@
 import os
 import eventlet
+import logging
 
 # Crucial for SocketIO performance with Gunicorn and event-based workers
 eventlet.monkey_patch()
@@ -12,7 +13,7 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.tasks_manager import register_redis_function
-from data.database.db_config import SessionLocal
+from data.database.db_config import SessionLocal, initialize_database
 
 
 def create_app(config_name=None):
@@ -23,6 +24,21 @@ def create_app(config_name=None):
     
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
+
+    # --- Configure application-wide logging ---
+    # Set the log level from an environment variable, defaulting to INFO.
+    # If the app is in debug mode (via FLASK_CONFIG=development), force DEBUG level.
+    log_level_name = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    if app.debug:
+        log_level_name = 'DEBUG'
+    
+    # Based on your log files, the custom logger is named 'LGS_Stock_Checker'.
+    # We get this specific logger and set its level. The handlers are assumed
+    # to be configured in the `utility.logger` module.
+    lgs_logger = logging.getLogger('LGS_Stock_Checker')
+    lgs_logger.setLevel(log_level_name)
+    lgs_logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
+    
 
     # Initialize session management
     Session(app)
@@ -49,11 +65,18 @@ def create_app(config_name=None):
 
     # Discover and register all background tasks for the RQ worker
     register_redis_function()
+    
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        initialize_database(database_url)
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         """Remove the database session after each request to prevent leaks."""
-        SessionLocal.remove()
+        # This check prevents an error if the app is run without a DATABASE_URL,
+        # in which case SessionLocal would be None.
+        if SessionLocal:
+            SessionLocal.remove()
 
     return app
 

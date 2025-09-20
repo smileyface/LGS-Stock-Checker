@@ -25,38 +25,43 @@ class Authority_Games_Mesa_Arizona(Store):
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        product_rows = self._get_product_rows(soup)
+        product_listings = self._get_product_listings(soup)
         available_products = []
 
-        for product_row in product_rows:
-            try:
-                name = self._get_name(product_row)
-                price = self._get_price(product_row)
-                stock = self._get_stock(product_row)
-                condition = self._get_condition(product_row)
-                finish = self._get_finish(product_row)
-                set_name = self._get_set(product_row)
+        for listing in product_listings:
+            name = self._get_name(listing)
+            set_name = self._get_set(listing)
+            
+            variant_rows = listing.find_all('div', class_='variant-row')
+            for variant in variant_rows:
+                try:
+                    price = self._get_price(variant)
+                    stock = self._get_stock(variant)
+                    condition = self._get_condition(variant)
+                    finish = self._get_finish(variant)
 
-                available_products.append({
-                    "name": name,
-                    "price": price,
-                    "stock": stock,
-                    "condition": condition,
-                    "finish": finish,
-                    "set": set_name,
-                })
-            except Exception as e:
-                logger.error(f"Error processing product row for {self.name}: {e}")
+
+                    available_products.append({
+                        "name": name,
+                        "price": price,
+                        "stock": stock,
+                        "condition": condition,
+                        "finish": finish,
+                        "set": set_name,
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing variant row for {self.name}: {e}")
+
 
         return available_products
 
-    def _get_product_rows(self, soup: BeautifulSoup) -> List[Any]:
-        """Find all product rows matching the search query."""
-        products_container = soup.find('ul', class_=['products', 'detailed'])
-        return products_container.find_all('li', class_='product') if products_container else []
+    def _get_product_listings(self, soup: BeautifulSoup) -> List[Any]:
+        """Find all product listings from the search results fragment."""
+        # The search_results endpoint returns a list of <li>s directly.
+        return soup.find_all('li', class_='product')
 
-    def _get_name(self, row: BeautifulSoup) -> str:
-        name_element = row.find('h4', class_='name')
+    def _get_name(self, listing: BeautifulSoup) -> str:
+        name_element = listing.find('h4', class_='name')
         return name_element.get_text(strip=True) if name_element else "Unknown"
 
     def _get_price(self, row: BeautifulSoup) -> str:

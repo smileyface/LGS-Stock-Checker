@@ -64,8 +64,8 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
     ).first()
 
     if tracked_card:
-        logger.info(f"🔄 User '{username}' is already tracking '{card_name}'. Updating amount and specifications.")
-        tracked_card.amount = amount  # Update amount if card is already tracked
+        logger.info(f"🔄 User '{username}' is already tracking '{card_name}'. Adding new specifications if any.")
+        # Amount is not updated here; use `update_user_tracked_card_preferences` for that.
     else:
         logger.info(f"➕ User '{username}' is now tracking '{card_name}'.")
         tracked_card = UserTrackedCards(user_id=user.id, amount=amount, card_name=card_name)

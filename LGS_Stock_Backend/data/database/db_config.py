@@ -3,7 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import StaticPool
 
-from data.database.models.orm_models import Base
+from utility import logger
+from .models.orm_models import Store, Base
+from .session_manager import db_query
+from managers.store_manager.stores import STORE_REGISTRY
 
 # These will be initialized by the app factory or test setup.
 engine = None
@@ -14,6 +17,8 @@ def initialize_database(database_url: str, for_testing: bool = False):
     Initializes the database engine and session factory.
     In testing, uses a StaticPool to ensure a single connection for in-memory DB.
     """
+
+    logger.info(f"Initalizing database with URL: {database_url}")
     global engine, SessionLocal
 
     if engine:
@@ -32,7 +37,7 @@ def initialize_database(database_url: str, for_testing: bool = False):
         engine = create_engine(database_url)
         SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
-    init_db()
+    Base.metadata.create_all(bind=get_engine())
 
 
 def get_session():
@@ -41,29 +46,20 @@ def get_session():
         raise RuntimeError("Database not initialized. Call initialize_database() first.")
     return SessionLocal()
 
-def init_db():
-    """
-    Initializes the database by creating all tables defined in the ORM models.
-    This function is idempotent and can be safely called on every application startup.
-    """
+def get_engine():
+    """Provides the database engine."""
     if not engine:
         raise RuntimeError("Database not initialized. Call initialize_database() first.")
-    Base.metadata.create_all(bind=engine)
-    _sync_stores_on_startup()
+    return engine
 
-
-def _sync_stores_on_startup():
+def startup_database():
     """
     Ensures that all stores defined in the code's STORE_REGISTRY exist in the database.
     This is run once on application startup when this package is imported.
     It uses local imports to avoid circular dependencies between the data layer
     and the manager layer.
     """
-    # Local imports to prevent circular dependency: data -> manager -> data
-    from utility import logger
-    from .models.orm_models import Store
-    from .session_manager import db_query
-    from managers.store_manager.stores import STORE_REGISTRY
+
 
     @db_query
     def _sync(session):

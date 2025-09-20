@@ -13,7 +13,7 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.tasks_manager import register_redis_function
-from data.database.db_config import SessionLocal, initialize_database
+from data.database.db_config import SessionLocal, initialize_database, startup_database
 
 
 def create_app(config_name=None):
@@ -69,7 +69,8 @@ def create_app(config_name=None):
     database_url = os.environ.get("DATABASE_URL")
     if database_url:
         initialize_database(database_url)
-
+        startup_database()
+        
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         """Remove the database session after each request to prevent leaks."""
@@ -79,10 +80,6 @@ def create_app(config_name=None):
             SessionLocal.remove()
 
     return app
-
-# This object is what Gunicorn will look for.
-# It's created by calling the factory function.
-app = create_app()
 
 # This block is only for running the local development server directly
 if __name__ == "__main__":

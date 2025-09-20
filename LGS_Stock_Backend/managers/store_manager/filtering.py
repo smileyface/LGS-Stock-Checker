@@ -23,8 +23,11 @@ def filter_listings(
     Returns:
         A new list containing only the listings that match the criteria.
     """
+    
+
     filtered_listings = []
     for listing in listings:
+        logger.debug(f"🔍 Filtering for '{card_name}' from {listing.get('name')}")
         # Basic requirement: card name must match (case-insensitive).
         if card_name.lower() != listing.get("name", "").lower():
             continue

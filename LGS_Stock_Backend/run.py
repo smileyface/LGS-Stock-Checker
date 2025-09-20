@@ -24,6 +24,9 @@ def create_app(config_name=None):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
+
+
+
     # Initialize session management
     Session(app)
 
@@ -49,7 +52,7 @@ def create_app(config_name=None):
 
     # Discover and register all background tasks for the RQ worker
     register_redis_function()
-
+    
     database_url = os.environ.get("DATABASE_URL")
     if database_url:
         initialize_database(database_url)

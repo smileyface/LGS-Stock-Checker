@@ -68,11 +68,9 @@ class Authority_Games_Mesa_Arizona(Store):
         price_element = row.find('div', class_='product-price')
         return price_element.get_text(strip=True) if price_element else "N/A"
 
-    def _get_stock(self, row: BeautifulSoup) -> str:
     def _get_stock(self, row: BeautifulSoup) -> int:
         """Extracts the stock quantity as an integer."""
         stock_element = row.find('span', class_='variant-short-info variant-qty')
-        return stock_element.get_text(strip=True) if stock_element else '0 In Stock'
         if not stock_element:
             return 0
         
@@ -90,10 +88,6 @@ class Authority_Games_Mesa_Arizona(Store):
         return condition_text.split(", ")[0]
 
     def _get_finish(self, row: BeautifulSoup) -> str:
-        product_name = self._get_name(row)
-        if " - " in product_name:
-            return product_name.split(" - ")[1].lower()
-        return "normal"
         """Extracts the finish from the variant description text."""
         condition_element = row.find('span', class_='variant-short-info variant-description')
         condition_text = condition_element.get_text(strip=True).lower() if condition_element else ''

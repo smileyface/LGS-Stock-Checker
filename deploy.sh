@@ -12,10 +12,15 @@ else
     exit 1
 fi
 
-# Set default branch to 'dev' if no argument is provided
+# --- Deployment Arguments ---
+# Set default branch to 'master' if no first argument is provided.
 BRANCH=${1:-master}
+# Set default log level to 'INFO' if no second argument is provided.
+LOG_LEVEL=${2:-INFO}
+# Export LOG_LEVEL so docker-compose can access it.
+export LOG_LEVEL
 
-echo "🚀 Deploying branch: $BRANCH"
+echo "🚀 Deploying branch: '$BRANCH' with log level: $LOG_LEVEL"
 
 # Navigate to the repo
 cd ~/LGS-Stock-Checker || exit 1
@@ -43,7 +48,6 @@ if [ "$BRANCH" = "master" ]; then
     echo "🔬 This is a release deployment to 'master'. Running tests..."
     # Install test dependencies and run tests against the newly built image.
     # The '--rm' flag removes the container after the test run.
-    if ! $COMPOSER -f docker-compose.yml run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements.txt -r LGS_Stock_Backend/requirements-dev.txt && pytest -m 'not smoke'"; then
     if ! $COMPOSER -f docker-compose.yml run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements.txt -r LGS_Stock_Backend/requirements-dev.txt && pytest"; then
         echo "❌ Tests failed. Aborting release deployment."
         exit 1

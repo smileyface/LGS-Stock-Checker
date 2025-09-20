@@ -12,7 +12,7 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.tasks_manager import register_redis_function
-from data.database.db_config import SessionLocal
+from data.database.db_config import SessionLocal, initialize_database
 
 
 def create_app(config_name=None):
@@ -49,6 +49,10 @@ def create_app(config_name=None):
 
     # Discover and register all background tasks for the RQ worker
     register_redis_function()
+
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        initialize_database(database_url)
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):

@@ -43,7 +43,8 @@ if [ "$BRANCH" = "master" ]; then
     echo "🔬 This is a release deployment to 'master'. Running tests..."
     # Install test dependencies and run tests against the newly built image.
     # The '--rm' flag removes the container after the test run.
-    if ! $COMPOSER -f docker-compose.yml run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements-dev.txt && pytest -m 'not smoke'"; then
+    if ! $COMPOSER -f docker-compose.yml run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements.txt -r LGS_Stock_Backend/requirements-dev.txt && pytest -m 'not smoke'"; then
+    if ! $COMPOSER -f docker-compose.yml run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements.txt -r LGS_Stock_Backend/requirements-dev.txt && pytest"; then
         echo "❌ Tests failed. Aborting release deployment."
         exit 1
     fi

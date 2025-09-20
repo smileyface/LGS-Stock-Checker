@@ -23,7 +23,7 @@ class Store(ABC):
         Scrapes the store's website for raw card listings.
         This method must be implemented by each subclass.
         """
-        pass
+        pass  # pragma: no cover
 
     def fetch_card_availability(self, card_name: str, specifications: List[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Fetches and filters card availability from the store."""

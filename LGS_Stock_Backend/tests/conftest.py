@@ -1,30 +1,21 @@
 import sys
 import os
 import pytest
-
 # Add the package root to the path to resolve module-level imports during test discovery.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import scoped_session
+# Initialize the database with the test URL *before* any application modules are imported.
+# This prevents the ImportError during test discovery.
+from LGS_Stock_Backend.data.database.db_config import initialize_database, SessionLocal, engine
+from LGS_Stock_Backend.data.database.models.orm_models import Base
+
+TEST_DATABASE_URL = "sqlite:///:memory:"
+initialize_database(TEST_DATABASE_URL, for_testing=True)
+
 from werkzeug.security import generate_password_hash
-from sqlalchemy.pool import StaticPool
 
 from LGS_Stock_Backend.run import create_app
-from LGS_Stock_Backend.data.database.models.orm_models import Base, User, Store
- # Use an in-memory SQLite database for fast, isolated tests
-TEST_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    # Use StaticPool to ensure all sessions use the same in-memory database connection.
-    poolclass=StaticPool,
-)
-# Use a scoped_session to mimic the application's session management
-# expire_on_commit=False is crucial for tests where objects created in one
-# transaction need to be accessed after that transaction's session is closed.
-TestingSessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False))
+from LGS_Stock_Backend.data.database.models.orm_models import User, Store
 
 
 @pytest.fixture(scope="session")
@@ -61,14 +52,14 @@ def db_session():
     Pytest fixture to provide a clean database session for each test function.
     Creates all tables, yields a session, and then drops all tables.
     """
-    Base.metadata.create_all(bind=engine)
-    session = TestingSessionLocal()
+    Base.metadata.create_all(bind=engine)  # Use the globally initialized test engine
+    session = SessionLocal()
     try:
         yield session
     finally:
         # Use .remove() to be consistent with the @db_query decorator's cleanup.
         # This ensures the session is properly disposed from the scoped_session registry.
-        TestingSessionLocal.remove()
+        SessionLocal.remove()
         Base.metadata.drop_all(bind=engine)
 
 
@@ -109,18 +100,6 @@ def seeded_stores(db_session):
 def seeded_store(seeded_stores):
     """Fixture to provide a single test store from the list of seeded stores."""
     return next(s for s in seeded_stores if s.slug == "test_store")
-
-# This fixture is crucial for tests that call application code
-# which in turn tries to get a database session.
-@pytest.fixture(autouse=True)
-def override_get_session(monkeypatch):
-    """
-    Patch the session factory at its source (`db_config`) to ensure that any
-    part of the application that imports it (like the `session_manager`)
-    gets the test session factory. This is the most reliable way to patch,
-    avoiding import-order race conditions.
-    """
-    monkeypatch.setattr("LGS_Stock_Backend.data.database.db_config.SessionLocal", TestingSessionLocal)
 
 
 @pytest.fixture(autouse=True)

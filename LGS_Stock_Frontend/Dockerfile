@@ -1,17 +1,28 @@
-FROM nginx:1.25-alpine
+# Base image for both dev and build
+FROM node:18-alpine AS base
+WORKDIR /app
+COPY package*.json ./
 
-# Remove the default Nginx configuration file to ensure ours is used.
-RUN rm /etc/nginx/conf.d/default.conf
+# Development stage: Installs all dependencies and runs the dev server
+FROM base AS development-stage
+RUN npm install
+COPY . .
+EXPOSE 5173
+CMD ["npm", "run", "dev"] # The --host flag is now managed by vite.config.js
 
-# Copy ONLY the static assets (JS, CSS, images) to the Nginx public directory.
-# Nginx will serve these directly. The 'static' folder is created inside the target.
-COPY ./LGS_Stock_Frontend/static /usr/share/nginx/html/static
+# Build stage: Installs only production dependencies and builds the app
+FROM base AS build-stage
+RUN npm install
+COPY . .
+RUN npm run build
+# Production stage: Serves the built static files with Nginx
+FROM nginx:stable-alpine AS production-stage
 
-# Copy our custom reverse proxy configuration.
+# Copy the built Vue app from the build-stage
+COPY --from=build-stage /app/dist /usr/share/nginx/html
+
+# Copy our custom Nginx configuration that includes the reverse proxy
 COPY ./LGS_Stock_Frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
 EXPOSE 80
-
-# The default Nginx command will start the server
 CMD ["nginx", "-g", "daemon off;"]

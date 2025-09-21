@@ -7,5 +7,14 @@ services:
     volumes:
       - ./LGS_Stock_Backend:/app/LGS_Stock_Backend
   frontend:
+    # Override for development to use Vite's dev server
+    build:
+      target: development-stage # Use the dev stage from LGS_Stock_Frontend/Dockerfile
+    ports:
+      - "5173:5173" # Expose Vite's port instead of Nginx's
     volumes:
-      - ./LGS_Stock_Frontend:/usr/share/nginx/html
+      # Mount source code for hot-reloading.
+      # The node_modules directory is a separate, anonymous volume
+      # to prevent the host's node_modules from overwriting the container's.
+      - ./LGS_Stock_Frontend:/app
+      - /app/node_modules

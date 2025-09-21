@@ -46,11 +46,15 @@ def create_app(config_name=None):
     # Register blueprints
     register_blueprints(app)
 
+    # --- Configure CORS and SocketIO ---
     redis_host = os.getenv("REDIS_HOST", "redis")
-    # When running behind a reverse proxy, we must specify the allowed origins
-    # for CORS to allow credentials (session cookies) to be sent.
-    # The "*" wildcard is not allowed by browsers when credentials are used.
-    allowed_origins = ["http://localhost:8000", "http://192.168.1.120:8000"] # 🛑 Hardcoded for now.
+
+    # Read allowed origins from the environment variable. This allows flexible
+    # configuration for different environments (dev, prod) without code changes.
+    # The variable should be a comma-separated string.
+    cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
+    allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+    lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(

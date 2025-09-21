@@ -9,7 +9,9 @@ services:
   frontend:
     # Override for development to use Vite's dev server
     build:
-      target: development-stage # Use the dev stage from LGS_Stock_Frontend/Dockerfile
+      context: ./LGS_Stock_Frontend
+      dockerfile: Dockerfile
+      target: development-stage
     ports:
       - "5173:5173" # Expose Vite's port instead of Nginx's
     volumes:

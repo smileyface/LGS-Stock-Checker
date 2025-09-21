@@ -5,15 +5,6 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
     plugins: [vue()],
     server: {
-        // This is needed for the Docker container to be accessible
-        host: true,
-        port: 5173,
-        // Proxy API requests to the backend
-        proxy: {
-            '/api': {
-                target: 'http://backend:8000',
-                changeOrigin: true,
-            },
-        },
-    },
+        host: '0.0.0.0' // This makes the dev server accessible on the network
+    }
 })

@@ -22,7 +22,7 @@ FROM nginx:stable-alpine AS production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
 # Copy our custom Nginx configuration that includes the reverse proxy
-COPY ./LGS_Stock_Frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

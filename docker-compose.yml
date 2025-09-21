@@ -24,8 +24,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: LGS_Stock_Frontend/Dockerfile
+      context: ./LGS_Stock_Frontend
+      dockerfile: Dockerfile
     container_name: lgs-stock-checker-frontend-1
     restart: unless-stopped
     ports:

@@ -43,7 +43,6 @@ COPY ./LGS_Stock_Backend .
 # Copy the frontend's templates and static assets into the backend's package
 # directory. This allows Flask's `render_template` and `url_for` to find them.
 # These paths are relative to the WORKDIR (/app)
-COPY ./frontend/templates ./templates
 COPY ./frontend/src ./frontend_static
 COPY ./frontend/public ./public
 

@@ -10,6 +10,7 @@ services:
       # The deploy.sh script sets and exports this variable.
       - LOG_LEVEL
       - REDIS_HOST=redis
+      - FLASK_CONFIG=production
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
@@ -52,6 +53,7 @@ services:
       # The deploy.sh script sets and exports this variable.
       - LOG_LEVEL
       - REDIS_HOST=redis
+      - FLASK_CONFIG=production
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker

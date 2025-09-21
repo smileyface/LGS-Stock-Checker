@@ -44,7 +44,8 @@ COPY ./LGS_Stock_Backend .
 # directory. This allows Flask's `render_template` and `url_for` to find them.
 # These paths are relative to the WORKDIR (/app)
 COPY ./frontend/templates ./templates
-COPY ./frontend/static ./static
+COPY ./frontend/src ./frontend_static
+COPY ./frontend/public ./public
 
 # Change ownership of the app directory to the non-root user
 # This includes the persistent_data directory we created for the volume.

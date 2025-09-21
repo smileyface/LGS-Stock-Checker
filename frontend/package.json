@@ -1,12 +1,15 @@
 {
-    "name": "lgs-stock-checker",
+    "name": "lgs-stock-checker-frontend",
+    "private": true,
     "version": "1.0.0",
-    "description": "Runs frontend and backend servers concurrently.",
+    "type": "module",
     "scripts": {
-        "dev": "docker compose up --build",
-        "stop": "docker compose down"
+        "dev": "vite --host",
+        "build": "vite build",
+        "preview": "vite preview"
     },
     "devDependencies": {
-        "concurrently": "^8.2.2"
-    }
+        "vite": "^5.0.0"
+    },
+    "dependencies": {}
 }

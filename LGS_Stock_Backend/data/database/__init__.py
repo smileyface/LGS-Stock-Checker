@@ -12,7 +12,7 @@ The import order here is critical to avoid circular dependencies.
 # depend on *before* we import the repositories themselves.
 # The repositories depend on `schema`, so we import it first.
 from . import schema
-from .db_config import initialize_database
+from .db_config import initialize_database, startup_database
 
 # Now that `data.database.schema` is available, we can safely import the repositories.
 from .repositories.card_repository import (
@@ -29,7 +29,7 @@ from .repositories.store_repository import get_store_metadata, get_all_stores
 # Define the public API of the `data.database` package.
 __all__ = [
     # Setup
-    "initialize_database", "schema",
+    "initialize_database", "schema", "startup_database"
 
     # Card Repository
     "get_users_cards", "add_user_card", "delete_user_card",

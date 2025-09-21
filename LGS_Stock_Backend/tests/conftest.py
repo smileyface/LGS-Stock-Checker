@@ -6,16 +6,19 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 # Initialize the database with the test URL *before* any application modules are imported.
 # This prevents the ImportError during test discovery.
-from LGS_Stock_Backend.data.database.db_config import initialize_database, SessionLocal, engine
-from LGS_Stock_Backend.data.database.models.orm_models import Base
+from data.database import db_config
+from data.database.models.orm_models import Base, User, Store
+# Use absolute imports from the package root to ensure consistency.
+from LGS_Stock_Backend.data.database import db_config
+from LGS_Stock_Backend.data.database.models.orm_models import Base, User, Store
+from flask import session
+from unittest.mock import patch
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
-initialize_database(TEST_DATABASE_URL, for_testing=True)
 
 from werkzeug.security import generate_password_hash
-
+from run import create_app
 from LGS_Stock_Backend.run import create_app
-from LGS_Stock_Backend.data.database.models.orm_models import User, Store
 
 
 @pytest.fixture(scope="session")
@@ -29,38 +32,41 @@ def app():
 def app_context(app):
     """
     Pushes a Flask application and request context for each test.
-    This makes 'app', 'g', 'request', and 'session' available.
-    It also pre-populates the request and session with test data needed
-    by the SocketIO handlers.
+    This makes 'app', 'g', 'request', and 'session' available and mocks
+    request attributes needed by SocketIO handlers.
     """
     with app.test_request_context():
         # Add 'sid' to the request object for SocketIO handlers
         from flask import request
         request.sid = "test_sid_12345"
         request.namespace = "/"  # Add the default namespace for SocketIO handlers
-
-        # Populate the session with a test user
-        from flask import session
-        session['username'] = 'testuser'
-
         yield
 
 
 @pytest.fixture(scope="function")
 def db_session():
     """
-    Pytest fixture to provide a clean database session for each test function.
-    Creates all tables, yields a session, and then drops all tables.
+    Pytest fixture that provides a clean, isolated database session for each test function.
+    It handles the full lifecycle: initializing the test database, creating tables,
+    yielding a session, and tearing everything down.
     """
-    Base.metadata.create_all(bind=engine)  # Use the globally initialized test engine
-    session = SessionLocal()
+    # Initialize the database for testing. The `initialize_database` function
+    # is idempotent (it checks if the engine is already set), so this is safe
+    # to call for every test. This also ensures that tests which do not use
+    # the database do not incur the overhead of initializing it.
+    db_config.initialize_database(TEST_DATABASE_URL, for_testing=True)
+
+    # Create tables before the test runs
+    Base.metadata.create_all(bind=db_config.engine)
+    session_instance = db_config.SessionLocal()
     try:
-        yield session
+        # Yield the actual SQLAlchemy session instance to the tests.
+        yield session_instance
     finally:
         # Use .remove() to be consistent with the @db_query decorator's cleanup.
         # This ensures the session is properly disposed from the scoped_session registry.
-        SessionLocal.remove()
-        Base.metadata.drop_all(bind=engine)
+        db_config.SessionLocal.remove()
+        Base.metadata.drop_all(bind=db_config.engine)  # Drop tables after the test
 
 
 @pytest.fixture

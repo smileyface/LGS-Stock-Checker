@@ -45,9 +45,9 @@ def test_check_availability(mock_redis_manager):
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.redis_manager")
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.availability_storage")
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.user_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.data")
+@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.database")
 def test_get_card_availability_with_cached_data(
-    mock_data, mock_user_manager, mock_storage, mock_redis, mock_socket
+    mock_database, mock_user_manager, mock_storage, mock_redis, mock_socket
 ):
     """
     Verifies get_card_availability uses and emits cached data if available.
@@ -57,7 +57,7 @@ def test_get_card_availability_with_cached_data(
     mock_store = MagicMock()
     mock_store.slug = "test-store"
     mock_store.name = "Test Store"
-    mock_data.get_user_stores.return_value = [mock_store]
+    mock_database.get_user_stores.return_value = [mock_store]
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
     cached_data = [{"price": "1.00"}]
     mock_storage.get_availability_data.return_value = cached_data
@@ -71,16 +71,16 @@ def test_get_card_availability_with_cached_data(
         username, "Test Store", "Test Card", cached_data
     )
     mock_redis.queue_task.assert_not_called()
-    assert result["status"] == "completed"
+    assert result["status"] == "processing"
 
 
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.socket_manager")
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.redis_manager")
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.availability_storage")
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.user_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.data")
+@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.database")
 def test_get_card_availability_with_no_cached_data(
-    mock_data, mock_user_manager, mock_storage, mock_redis, mock_socket
+    mock_database, mock_user_manager, mock_storage, mock_redis, mock_socket
 ):
     """
     Verifies get_card_availability queues a fetch task if data is not cached.
@@ -90,7 +90,7 @@ def test_get_card_availability_with_no_cached_data(
     mock_store = MagicMock()
     mock_store.slug = "test-store"
     mock_store.name = "Test Store"
-    mock_data.get_user_stores.return_value = [mock_store]
+    mock_database.get_user_stores.return_value = [mock_store]
     mock_card = MockCard("Test Card")
     mock_user_manager.load_card_list.return_value = [mock_card]
     mock_storage.get_availability_data.return_value = None
@@ -107,14 +107,14 @@ def test_get_card_availability_with_no_cached_data(
         "test-store",
         mock_card.model_dump(),
     )
-    assert result["status"] == "completed"
+    assert result["status"] == "processing"
 
 
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.availability_storage")
 @patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.user_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.data")
+@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.database")
 def test_get_card_availability_handles_invalid_store(
-    mock_data, mock_user_manager, mock_storage
+    mock_database, mock_user_manager, mock_storage
 ):
     """
     Verifies that stores with no slug are skipped gracefully.
@@ -129,7 +129,7 @@ def test_get_card_availability_handles_invalid_store(
     mock_store_invalid_slug.name = "Invalid Store"
     mock_store_invalid_obj = None
 
-    mock_data.get_user_stores.return_value = [
+    mock_database.get_user_stores.return_value = [
         mock_store_invalid_slug,
         mock_store_invalid_obj,
         mock_store_valid,
@@ -140,7 +140,7 @@ def test_get_card_availability_handles_invalid_store(
     get_card_availability(username)
 
     # Assert
-    mock_data.get_user_stores.assert_called_once_with(username)
+    mock_database.get_user_stores.assert_called_once_with(username)
     mock_user_manager.load_card_list.assert_called_once_with(username)
 
     # Verify that get_availability_data was only called for the one valid store

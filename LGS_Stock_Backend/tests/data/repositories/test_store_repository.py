@@ -1,4 +1,8 @@
-import data
+import data.database as data
+
+
+
+
 
 
 def test_get_store_metadata(seeded_store):

@@ -1,8 +1,7 @@
 import pytest
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
-
-import data
+import data.database as data
 from data.database.models.orm_models import User
 
 

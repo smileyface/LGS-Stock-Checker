@@ -1,7 +1,7 @@
 import pytest
 
-import data
-from data.database.models.orm_models import UserTrackedCards
+import data.database as data
+from data.database.models.orm_models import CardSpecification, UserTrackedCards
 
 
 def test_add_and_get_user_card(seeded_user):
@@ -9,7 +9,7 @@ def test_add_and_get_user_card(seeded_user):
     assert data.get_users_cards("testuser") == []
 
     # Add a card with specifications
-    specs = [{"set_code": "ONE", "finish": "foil"}]
+    specs = {"set_code": "ONE", "finish": "foil"}
     data.add_user_card("testuser", "Sol Ring", 4, specs)
 
     cards = data.get_users_cards("testuser")
@@ -23,7 +23,7 @@ def test_add_and_get_user_card(seeded_user):
 
 def test_add_user_card_user_not_found(db_session):
     """Test that adding a card for a non-existent user does nothing."""
-    data.add_user_card("nonexistent_user", "Some Card", 1, [])
+    data.add_user_card("nonexistent_user", "Some Card", 1, {})
     # Verify no UserTrackedCards were created
     assert db_session.query(UserTrackedCards).count() == 0
 
@@ -36,11 +36,11 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(seeded_us
     3. Does NOT update the amount of the existing card.
     """
     # Arrange: Add the card initially with one spec and an amount of 1
-    initial_specs = [{"set_code": "MH2", "finish": "etched"}]
+    initial_specs = {"set_code": "MH2", "finish": "etched"}
     data.add_user_card("testuser", "Thoughtseize", 1, initial_specs)
 
     # Act: Call add_user_card again with a new spec and a DIFFERENT amount
-    new_specs = [{"set_code": "2XM", "finish": "nonfoil"}]
+    new_specs = {"set_code": "2XM", "finish": "nonfoil"}
     data.add_user_card("testuser", "Thoughtseize", 10, new_specs)
 
     # Assert
@@ -60,12 +60,38 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(seeded_us
 
 
 def test_delete_user_card(seeded_user):
-    data.add_user_card("testuser", "Lightning Bolt", 1, [])
-    assert len(data.get_users_cards("testuser")) == 1
+    # Arrange: Use the username from the fixture object to add a card.
+    username = seeded_user.username
+    data.add_user_card(username, "Lightning Bolt", 1, {})
+    assert len(data.get_users_cards(username)) == 1
 
-    data.delete_user_card("testuser", "Lightning Bolt")
-    assert len(data.get_users_cards("testuser")) == 0
+    # Act: Delete the card.
+    data.delete_user_card(username, "Lightning Bolt")
 
+    # Assert: The user should have no cards left.
+    assert len(data.get_users_cards(username)) == 0
+
+
+def test_delete_user_card_cascades_specifications(seeded_user, db_session):
+    """
+    Tests that deleting a UserTrackedCards object also deletes its child
+    CardSpecification objects due to the cascade="all, delete-orphan" setting.
+    """
+    # Arrange: Add a card with specifications
+    specs = {"set_code": "M21", "finish": "foil"}
+    data.add_user_card("testuser", "Ugin, the Spirit Dragon", 1, specs)
+
+    # Verify everything was created correctly
+    tracked_card = db_session.query(UserTrackedCards).one()
+    assert tracked_card is not None
+    assert db_session.query(CardSpecification).filter_by(user_card_id=tracked_card.id).count() == 1
+
+    # Act: Delete the card
+    data.delete_user_card("testuser", "Ugin, the Spirit Dragon")
+
+    # Assert: Verify both the card and its specifications are gone
+    assert db_session.query(UserTrackedCards).count() == 0
+    assert db_session.query(CardSpecification).count() == 0
 
 def test_delete_user_card_for_nonexistent_user(db_session):
     """Test that attempting to delete a card for a non-existent user does nothing."""
@@ -77,7 +103,7 @@ def test_delete_user_card_for_nonexistent_user(db_session):
 
 def test_delete_user_card_not_found(seeded_user):
     """Test that attempting to delete a card not tracked by the user does nothing."""
-    data.add_user_card("testuser", "Lightning Bolt", 1, [])
+    data.add_user_card("testuser", "Lightning Bolt", 1, {})
     initial_card_count = len(data.get_users_cards("testuser"))
 
     data.delete_user_card("testuser", "Fireball")  # This card is not tracked
@@ -120,7 +146,7 @@ def test_update_user_tracked_cards_list_for_nonexistent_user(db_session):
 
 
 def test_update_user_tracked_card_preferences(seeded_user):
-    data.add_user_card("testuser", "Swords to Plowshares", 1, [])
+    data.add_user_card("testuser", "Swords to Plowshares", 1, {})
     data.update_user_tracked_card_preferences("testuser", "Swords to Plowshares", {"amount": 4})
 
     card = data.get_users_cards("testuser")[0]
@@ -137,7 +163,7 @@ def test_update_user_tracked_card_preferences_user_not_found(db_session):
 
 def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
     """Test updating preferences for a card the user is not tracking."""
-    data.add_user_card("testuser", "Lightning Bolt", 1, [])
+    data.add_user_card("testuser", "Lightning Bolt", 1, {})
     data.update_user_tracked_card_preferences("testuser", "Fireball", {"amount": 10})
     card = data.get_users_cards("testuser")[0]
     assert card.card_name == "Lightning Bolt"

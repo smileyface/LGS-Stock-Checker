@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { authStore } from '../stores/auth';
+import { authStore } from '../stores/auth.js';
 
 defineProps({
     title: {
@@ -37,6 +37,10 @@ defineProps({
         default: 'LGS Stock Checker'
     }
 });
+
+function handleLogout() {
+    authStore.logout();
+}
 </script>
 
 <style scoped></style>

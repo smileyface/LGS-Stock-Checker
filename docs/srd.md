@@ -69,14 +69,27 @@ These requirements define how users manage the list of cards they want to track.
 -   **[3.1.5]** A user shall be able to update the amount and specifications of a card they are tracking.
 -   **[3.1.6]** The system shall provide a complete list of a user's tracked cards, including all associated specifications.
 
-## 4. Card Catalog & Search
+## 4. Cataloging & Search
+
+### 4.1 Card Catalog
 
 These requirements define the global card catalog used for searching and validation.
-
--   **[4.1.1]** The system shall maintain a global catalog of unique card names to ensure data integrity.
+-   **[4.1.0]** A duplicate card shall be defined as a card with the same name.
+-   **[4.1.1]** The system shall maintain a database table of unique card names (referred to as the "card catalog") to ensure data integrity and consistency across the application.
 -   **[4.1.2]** The system shall provide a search endpoint that returns a list of card names matching a partial query string.
 -   **[4.1.3]** The card name search shall be case-insensitive.
 -   **[4.1.4]** The system shall have a mechanism (e.g., a background task) to populate the global card catalog from an external source.
+-   **[4.1.5]** The card catalogue shall contain a list of every unique card in the game.
+-   **[4.1.6]** The system shall include a scheduled background task that periodically fetches a list of all known card names from an external source (e.g., Scryfall) and updates the card catalog.
+-   **[4.1.7]** The background task shall add any new card names to the catalog that are not already present.
+-   **[4.1.8]** The background task shall not remove any card names from the catalog, even if they are no longer present in the external source.
+
+### 4.2 Set Catalog
+
+-   **[4.2.1]** The system shall maintain a database table of unique card sets (referred to as the "set catalog"), storing at least the set code, name, and release date.
+-   **[4.2.2]** The system shall include a scheduled background task that periodically fetches a list of all known sets from an external source (e.g., Scryfall).
+-   **[4.2.3]** The background task shall add any new sets to the catalog that are not already present, using the set code as the unique identifier.
+-   **[4.2.4]** The background task shall not remove any sets from the catalog.
 
 ## 5. Availability Checking & Notifications
 

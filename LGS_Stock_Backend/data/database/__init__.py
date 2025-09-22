@@ -17,7 +17,7 @@ from .db_config import initialize_database, startup_database
 # Now that `data.database.schema` is available, we can safely import the repositories.
 from .repositories.card_repository import (
     get_users_cards, add_user_card, delete_user_card, update_user_tracked_cards_list,
-    update_user_tracked_card_preferences
+    update_user_tracked_card_preferences, search_card_names
 )
 from .repositories.user_repository import (
     get_user_by_username, update_username, update_password, add_user, add_user_store,
@@ -33,7 +33,7 @@ __all__ = [
 
     # Card Repository
     "get_users_cards", "add_user_card", "delete_user_card",
-    "update_user_tracked_cards_list", "update_user_tracked_card_preferences",
+    "update_user_tracked_cards_list", "update_user_tracked_card_preferences", "search_card_names",
 
     # User Repository
     "get_user_by_username", "update_username", "update_password", "add_user",

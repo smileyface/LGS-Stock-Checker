@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import MagicMock, call
 
 from managers.user_manager import (
-    get_user,
     get_public_user_profile,
     add_user,
     update_username,
@@ -20,13 +19,11 @@ USER_PREFS_MODULE_PATH = "managers.user_manager.user_preferences"
 
 # Paths for werkzeug security functions
 GENERATE_HASH_PATH = f"{USER_MANAGER_MODULE_PATH}.generate_password_hash"
-CHECK_HASH_PATH = f"{USER_AUTH_MODULE_PATH}.check_password_hash"
 
-def test_get_user(mocker):
+
 def test_get_public_user_profile(mocker):
     """
     GIVEN a username
-    WHEN get_user is called
     WHEN get_public_user_profile is called
     THEN it calls the data layer's get_user_for_display and returns the result.
     """
@@ -38,7 +35,6 @@ def test_get_public_user_profile(mocker):
     username = "testuser"
 
     # Act
-    result = get_user(username)
     result = get_public_user_profile(username)
 
     # Assert
@@ -197,10 +193,6 @@ def test_save_card_list(mocker):
 
     # Act
     save_card_list("testuser", card_list)
-
-    # Assert
-    mock_database.get_user_by_username.assert_called_once_with("testuser")
-    mock_database.update_user_tracked_cards_list.assert_called_once_with("testuser", card_list)
 
     # Assert
     mock_database.get_user_by_username.assert_called_once_with("testuser")

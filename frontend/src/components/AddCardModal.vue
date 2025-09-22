@@ -112,28 +112,3 @@ defineExpose({
   show: () => modalInstance.show()
 });
 </script>
-    allCardNames.value = []; // Clear suggestions if input is short
-  }
-});
-
-function submitCard() {
-  const payload = {
-    card: card.value.name,
-    amount: card.value.amount,
-    card_specs: card.value.specs
-  };
-  emit('save-card', payload);
-  modalInstance.hide();
-  // Reset form after submission
-  card.value = {
-    name: '',
-    amount: 1,
-    specs: { set_code: '', collector_number: '', finish: 'non-foil' }
-  };
-  allCardNames.value = [];
-}
-
-defineExpose({
-  show: () => modalInstance.show()
-});
-</script>

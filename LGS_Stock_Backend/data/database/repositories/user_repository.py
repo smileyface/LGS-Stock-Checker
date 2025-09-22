@@ -29,7 +29,11 @@ def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema
         UserDBSchema or None: The user data as a UserDBSchema if found, otherwise None.
     """
     logger.debug(f"📖 Querying for user '{username}' with full DB schema.")
-    user_orm = session.query(User).filter(User.username == username).first()
+    # Eagerly load the 'selected_stores' relationship to ensure the Pydantic
+    # schema can be created without causing a DetachedInstanceError.
+    user_orm = (
+        session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    )
     if user_orm:
         logger.debug(f"✅ Found user '{username}'.")
         # Use UserDBSchema.model_validate to convert the ORM object
@@ -70,7 +74,12 @@ def get_user_orm_by_id(user_id: int, session) -> Optional[User]:
         User or None: The SQLAlchemy User ORM object if found, otherwise None.
     """
     logger.debug(f"📖 Querying for user ORM object with ID '{user_id}'.")
-    user_orm = session.query(User).get(user_id)
+    # Use joinedload to eagerly fetch the selected_stores relationship.
+    # This prevents a DetachedInstanceError when current_user.to_dict() is called
+    # later, as the stores will already be loaded and won't require a lazy load.
+    user_orm = (
+        session.query(User).options(joinedload(User.selected_stores)).filter(User.id == user_id).first()
+    )
     logger.debug(f"✅ Found user ORM object for ID '{user_id}'." if user_orm else f"❌ User ORM object for ID '{user_id}' not found.")
     return user_orm
 
@@ -271,7 +280,11 @@ def get_user_for_display(username: str, session) -> Optional[schema.UserPublicSc
     Logs:
         Success or failure of the user retrieval operation.
     """
-    user_orm = session.query(User).filter(User.username == username).first()
+    # Eagerly load the 'selected_stores' relationship to ensure the Pydantic
+    # schema can be created without causing a DetachedInstanceError.
+    user_orm = (
+        session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    )
     if user_orm:
         logger.info(f"✅ User '{username}' retrieved successfully.")
         return schema.UserPublicSchema.model_validate(user_orm)
@@ -288,7 +301,7 @@ def get_all_users(session) -> List[schema.UserPublicSchema]:
         List[UserPublicSchema]: A list of all users as UserPublicSchema instances.
     """
     logger.debug("📖 Querying for all users.")
-    users_orm = session.query(User).all()
+    users_orm = session.query(User).options(joinedload(User.selected_stores)).all()
     logger.info(f"✅ Retrieved {len(users_orm)} users from the database.")
     return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
 
@@ -305,7 +318,13 @@ def get_users_tracking_card(card_name: str, session) -> list[schema.UserPublicSc
         list[schema.UserPublicSchema]: A list of User objects who are tracking the specified card.
     """
     logger.debug(f"📖 Querying for users tracking card '{card_name}'.")
-    users_orm = session.query(User).join(User.cards).filter(UserTrackedCards.card_name == card_name).all()
+    users_orm = (
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .join(User.cards)
+        .filter(UserTrackedCards.card_name == card_name)
+        .all()
+    )
     logger.debug(f"✅ Found {len(users_orm)} users tracking '{card_name}'.")
     return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
 
@@ -328,7 +347,7 @@ def get_tracking_users_for_cards(card_names: list[str], session) -> dict[str, li
     tracked_cards_with_users = (
         session.query(UserTrackedCards)
         .filter(UserTrackedCards.card_name.in_(card_names))
-        .options(joinedload(UserTrackedCards.user))
+        .options(joinedload(UserTrackedCards.user).joinedload(User.selected_stores))
         .all()
     )
 

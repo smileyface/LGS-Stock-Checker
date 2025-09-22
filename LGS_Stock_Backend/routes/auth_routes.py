@@ -36,4 +36,11 @@ def user_data():
     If the user is not logged in, Flask-Login will automatically
     return a 401 Unauthorized error, which the frontend handles.
     """
-    return jsonify(current_user.to_dict())
+    # By using the manager, we adhere to the separation of concerns.
+    # The manager returns a Pydantic schema (DTO), which is safe to use.
+    user_dto = user_manager.get_public_user_profile(current_user.username)
+    if not user_dto:
+        return jsonify({"error": "User not found"}), 404
+
+    # Pydantic's .model_dump() is the modern equivalent of .dict()
+    return jsonify(user_dto.model_dump())

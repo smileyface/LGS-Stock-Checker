@@ -6,9 +6,9 @@ from data import database
 from utility import logger
 
 
-def get_user(username: str) -> Optional[database.schema.UserPublicSchema]:
+def get_public_user_profile(username: str) -> Optional[database.schema.UserPublicSchema]:
     """
-    Retrieve a user by username from the database, excluding sensitive fields, and return as a UserPublicSchema instance.
+    Retrieve a user's public profile by username, excluding sensitive fields, and return as a UserPublicSchema instance.
     Args:
         username (str): The unique username of the user to fetch.
 

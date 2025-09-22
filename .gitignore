@@ -1,26 +1,46 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# Node.js / Vue.js
+####################
+# Ignore node_modules at the root and in any subdirectory
+node_modules/
 
-# C extensions
-*.so
+# Ignore build output directory from Vite/Vue
+/LGS_Stock_Frontend/dist/
+.vite/
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-sdist/
-*.egg-info/
+# Log files
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Pytest & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
 
-# PyCharm project files
-.idea/
-*.iml
+# Python
+##########
+# Ignore virtual environments
 .venv/
-LGS_Stock_Backend/set_lookup.json
+venv/
+env/
+
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+
+# IDE, Editor, and OS files
+############################
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+
+# Environment variables
+#######################
+# Never commit .env files with secrets
+.env
+.env.*
+!/.env.example
+.coverage

@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, call
 
 from managers.user_manager import (
-    get_user,
+    get_public_user_profile,
     add_user,
     update_username,
     authenticate_user,
@@ -19,12 +19,12 @@ USER_PREFS_MODULE_PATH = "managers.user_manager.user_preferences"
 
 # Paths for werkzeug security functions
 GENERATE_HASH_PATH = f"{USER_MANAGER_MODULE_PATH}.generate_password_hash"
-CHECK_HASH_PATH = f"{USER_AUTH_MODULE_PATH}.check_password_hash"
 
-def test_get_user(mocker):
+
+def test_get_public_user_profile(mocker):
     """
     GIVEN a username
-    WHEN get_user is called
+    WHEN get_public_user_profile is called
     THEN it calls the data layer's get_user_for_display and returns the result.
     """
     # Arrange
@@ -35,7 +35,7 @@ def test_get_user(mocker):
     username = "testuser"
 
     # Act
-    result = get_user(username)
+    result = get_public_user_profile(username)
 
     # Assert
     mock_database.get_user_for_display.assert_called_once_with(username)
@@ -90,62 +90,57 @@ def test_authenticate_user_success(mocker):
     """
     GIVEN a user with a correct password
     WHEN authenticate_user is called
-    THEN it retrieves the user, verifies the password hash, and returns True.
+    THEN it retrieves the user ORM object and returns it after successful password check.
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
     mock_user = MagicMock()
-    mock_user.password_hash = "correct_hash"
-    mock_database.get_user_by_username.return_value = mock_user
-    mock_check_hash = mocker.patch(CHECK_HASH_PATH, return_value=True)
+    mock_user.check_password.return_value = True
+    mock_database.get_user_orm_by_username.return_value = mock_user
 
     # Act
     result = authenticate_user("testuser", "password123")
 
     # Assert
-    mock_database.get_user_by_username.assert_called_once_with("testuser")
-    mock_check_hash.assert_called_once_with("correct_hash", "password123")
-    assert result is True
+    mock_database.get_user_orm_by_username.assert_called_once_with("testuser")
+    mock_user.check_password.assert_called_once_with("password123")
+    assert result is mock_user
 
 def test_authenticate_user_wrong_password(mocker):
     """
     GIVEN a user with an incorrect password
     WHEN authenticate_user is called
-    THEN it retrieves the user, fails to verify the password hash, and returns False.
+    THEN it retrieves the user, fails to verify the password, and returns None.
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
     mock_user = MagicMock()
-    mock_user.password_hash = "correct_hash"
-    mock_database.get_user_by_username.return_value = mock_user
-    mock_check_hash = mocker.patch(CHECK_HASH_PATH, return_value=False)
+    mock_user.check_password.return_value = False
+    mock_database.get_user_orm_by_username.return_value = mock_user
 
     # Act
     result = authenticate_user("testuser", "wrong_password")
 
     # Assert
-    mock_database.get_user_by_username.assert_called_once_with("testuser")
-    mock_check_hash.assert_called_once_with("correct_hash", "wrong_password")
-    assert result is False
+    mock_database.get_user_orm_by_username.assert_called_once_with("testuser")
+    mock_user.check_password.assert_called_once_with("wrong_password")
+    assert result is None
 
 def test_authenticate_user_no_user(mocker):
     """
     GIVEN a username that does not exist
     WHEN authenticate_user is called
-    THEN it fails to retrieve a user and returns False without checking a password.
+    THEN it fails to retrieve a user and returns None without checking a password.
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
-    mock_database.get_user_by_username.return_value = None
-    mock_check_hash = mocker.patch(CHECK_HASH_PATH)
+    mock_database.get_user_orm_by_username.return_value = None
 
     # Act
     result = authenticate_user("nonexistent", "password")
 
     # Assert
-    mock_database.get_user_by_username.assert_called_once_with("nonexistent")
-    mock_check_hash.assert_not_called()
-    assert result is False
+    mock_database.get_user_orm_by_username.assert_called_once_with("nonexistent")
 
 def test_get_selected_stores(mocker):
     """

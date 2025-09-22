@@ -1,6 +1,6 @@
-from flask import session
 from pydantic import BaseModel, ValidationError
 from typing import List
+from flask_login import current_user
 
 # internal package imports
 from .socket_manager import socketio
@@ -24,8 +24,10 @@ from utility import logger
 
 
 def get_username():
-    """Helper function to get the username from the session."""
-    return session.get("username")
+    """Helper function to get the username from the current_user proxy."""
+    if current_user.is_authenticated:
+        return current_user.username
+    return None
 
 
 def _send_user_cards(username: str):
@@ -125,27 +127,24 @@ def handle_parse_card_list(data: dict):
         socketio.emit("error", {"message": f"Invalid request: {e}"})
 
 
-@socketio.on("request_card_names")
-def handle_request_card_names():
-    logger.info("📩 Received 'request_card_names' request from front end.")
-    # Send cached card names to the frontend via WebSocket.
-    logger.info("🗂️ Fetching full cached card list from Redis...")
+@socketio.on("search_card_names")
+def handle_search_card_names(data: dict):
+    """Handles a request to search for card names based on a query string."""
+    logger.info("📩 Received 'search_card_names' request from front end.")
+    query = data.get("query", "").strip()
+    if not query or len(query) < 3:
+        socketio.emit("card_name_search_results", {"card_names": []})
+        return
 
+    logger.info(f"🗂️ Searching for card names matching '{query}'...")
     try:
-        card_names = fetch_scryfall_card_names()
-
-        if not card_names:
-            logger.warning("⚠️ Cached card list is empty or unavailable.")
-            card_names = []  # Ensure frontend gets an empty list instead of None
-
-        socketio.emit("card_names_response", {"card_names": card_names})
-        logger.info(f"📡 Sent {len(card_names)} card names to frontend.")
-
+        # This assumes a new, efficient database function exists
+        card_names = database.search_card_names(query, limit=10)
+        socketio.emit("card_name_search_results", {"card_names": card_names})
+        logger.info(f"📡 Sent {len(card_names)} search results for '{query}'.")
     except Exception as e:
-        logger.error(f"❌ Failed to retrieve card names from Redis: {e}")
-        socketio.emit(
-            "card_names_response", {"card_names": []}
-        )  # Send empty list on failure
+        logger.error(f"❌ Failed to search for card names: {e}")
+        socketio.emit("card_name_search_results", {"card_names": []})
 
 
 @socketio.on("add_card")
@@ -155,7 +154,12 @@ def handle_add_user_tracked_card(data: dict):
     try:
         validated_data = AddCardSchema.model_validate(data)
         username = get_username()
-        database.add_user_card(
+        if not username:
+            logger.warning("🚨 Unauthenticated user tried to add a card.")
+            socketio.emit("error", {"message": "Authentication required to add cards."})
+            return
+
+        user_manager.add_user_card(
             username,
             validated_data.card,
             validated_data.amount,
@@ -173,6 +177,11 @@ def handle_delete_user_tracked_card(data: dict):
     try:
         validated_data = DeleteCardSchema.model_validate(data)
         username = get_username()
+        if not username:
+            logger.warning("🚨 Unauthenticated user tried to delete a card.")
+            socketio.emit("error", {"message": "Authentication required to delete cards."})
+            return
+
         database.delete_user_card(username, validated_data.card)
         _send_user_cards(username)
     except ValidationError as e:
@@ -186,6 +195,11 @@ def handle_update_user_tracked_cards(data: dict):
     try:
         validated_data = UpdateCardSchema.model_validate(data)
         username = get_username()
+        if not username:
+            logger.warning("🚨 Unauthenticated user tried to update a card.")
+            socketio.emit("error", {"message": "Authentication required to update cards."})
+            return
+
         database.update_user_tracked_card_preferences(
             username, validated_data.card, validated_data.update_data
         )

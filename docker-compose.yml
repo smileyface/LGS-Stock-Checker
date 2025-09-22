@@ -10,10 +10,11 @@ services:
       # The deploy.sh script sets and exports this variable.
       - LOG_LEVEL
       - REDIS_HOST=redis
+      - FLASK_CONFIG=production
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
-      - CORS_ALLOWED_ORIGINS=http://localhost:8000,http://192.168.1.120:8000
+      - CORS_ALLOWED_ORIGINS=http://localhost:8000,http://192.168.1.120:8000,http://localhost:5173
     depends_on:
       redis:
         condition: service_healthy
@@ -24,8 +25,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: LGS_Stock_Frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: lgs-stock-checker-frontend-1
     restart: unless-stopped
     ports:
@@ -52,6 +53,7 @@ services:
       # The deploy.sh script sets and exports this variable.
       - LOG_LEVEL
       - REDIS_HOST=redis
+      - FLASK_CONFIG=production
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
@@ -82,6 +84,8 @@ services:
       PGPASSWORD: lgs_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Expose PostgreSQL port to the host machine
     networks:
       - stock-net
     healthcheck:

@@ -158,6 +158,40 @@ def test_remove_user_store_preference(seeded_user, seeded_store):
     assert len(data.get_user_stores("testuser")) == 0
 
 
+def test_set_user_stores(seeded_user, seeded_stores):
+    """
+    GIVEN a user and several stores exist
+    WHEN set_user_stores is called with a list of store slugs
+    THEN the user's preferences should exactly match the provided list.
+    """
+    # Arrange: User starts with no stores
+    assert len(data.get_user_stores("testuser")) == 0
+
+    # Act 1: Set initial preferences
+    slugs_to_set = ["test_store", "another_store"]
+    data.set_user_stores("testuser", slugs_to_set)
+
+    # Assert 1: Preferences should match
+    stores = data.get_user_stores("testuser")
+    assert len(stores) == 2
+    assert {s.slug for s in stores} == set(slugs_to_set)
+
+    # Act 2: Update preferences to a new list (should remove 'another_store')
+    new_slugs = ["test_store"]
+    data.set_user_stores("testuser", new_slugs)
+
+    # Assert 2: Preferences should be updated
+    stores = data.get_user_stores("testuser")
+    assert len(stores) == 1
+    assert stores[0].slug == "test_store"
+
+    # Act 3: Update with an empty list
+    data.set_user_stores("testuser", [])
+
+    # Assert 3: All preferences should be cleared
+    assert len(data.get_user_stores("testuser")) == 0
+
+
 def test_get_user_stores_user_not_found(db_session):
     """
     GIVEN no user exists in the database

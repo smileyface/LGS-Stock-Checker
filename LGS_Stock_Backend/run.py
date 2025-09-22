@@ -1,11 +1,8 @@
 import os
-import eventlet
 import logging
 
-# Crucial for SocketIO performance with Gunicorn and event-based workers
-eventlet.monkey_patch()
-
 from flask import Flask
+from flask_login import LoginManager
 from flask_session import Session
 
 # Use imports relative to the LGS_Stock_Backend package root
@@ -13,16 +10,21 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.tasks_manager import register_redis_function
+from managers.user_manager import load_user_by_id
 from data.database.db_config import SessionLocal, initialize_database, startup_database
 
+login_manager = LoginManager()
 
-def create_app(config_name=None):
+def create_app(config_name=None, override_config=None):
     app = Flask(__name__)
 
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'default')
     
     app.config.from_object(config[config_name])
+    if override_config:
+        app.config.update(override_config)
+
     config[config_name].init_app(app)
 
     # --- Configure application-wide logging ---
@@ -43,14 +45,22 @@ def create_app(config_name=None):
     # Initialize session management
     Session(app)
 
+    # --- Initialize Flask-Login ---
+    login_manager.init_app(app)
+    login_manager.user_loader(load_user_by_id)
+
     # Register blueprints
     register_blueprints(app)
 
+    # --- Configure CORS and SocketIO ---
     redis_host = os.getenv("REDIS_HOST", "redis")
-    # When running behind a reverse proxy, we must specify the allowed origins
-    # for CORS to allow credentials (session cookies) to be sent.
-    # The "*" wildcard is not allowed by browsers when credentials are used.
-    allowed_origins = ["http://localhost:8000", "http://192.168.1.120:8000"] # 🛑 Hardcoded for now.
+
+    # Read allowed origins from the environment variable. This allows flexible
+    # configuration for different environments (dev, prod) without code changes.
+    # The variable should be a comma-separated string.
+    cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
+    allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+    lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(
@@ -83,6 +93,11 @@ def create_app(config_name=None):
 
 # This block is only for running the local development server directly
 if __name__ == "__main__":
+    # Monkey patch for the development server when run directly.
+    # This must be done before other imports that might initialize sockets.
+    import eventlet
+    eventlet.monkey_patch()
+
     app = create_app('development')
     # The host and port are passed here for the dev server run
     socketio.run(app, debug=True, host="0.0.0.0", port=5000)

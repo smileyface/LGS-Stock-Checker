@@ -1,106 +1,49 @@
-from flask import session, request, Blueprint, redirect, render_template, url_for
+from flask import request, Blueprint, jsonify
+from flask_login import login_required, current_user
 
 from managers import store_manager
 from managers import user_manager
-from managers import socket_manager
-from .decorators import login_required
 
 user_bp = Blueprint("user_bp", __name__)
 
 
-@user_bp.route("/account")
+@user_bp.route("/api/stores", methods=["GET"])
 @login_required
-def account_settings():
-    user = user_manager.get_user(session["username"])
-    # The user object is a Pydantic model, so we use attribute access.
-    # Provide a default empty list if the user is not found for any reason.
-    stores = user.selected_stores if user else []
-    return render_template("account_settings.html",
-                           username=session["username"],
-                           stores=stores,
-                           all_stores=list(store_manager.STORE_REGISTRY.keys()))
+def get_all_stores():
+    """Returns a list of all available store slugs from the registry."""
+    return jsonify(list(store_manager.STORE_REGISTRY.keys()))
 
 
-@user_bp.route("/account/update_stores", methods=["POST"])
+@user_bp.route("/api/account/update_stores", methods=["POST"])
 @login_required
 def update_stores():
-    username = session.get("username")
     selected_stores = request.json.get("stores", [])
-    user_manager.update_selected_stores(username, selected_stores)
-    return {"message": "Stores updated successfully"}
+    user_manager.update_selected_stores(current_user.username, selected_stores)
+    return jsonify({"message": "Stores updated successfully"})
 
 
-@user_bp.route("/account/update_username", methods=["POST"])
+@user_bp.route("/api/account/update_username", methods=["POST"])
 @login_required
 def change_username():
-    username = session.get("username")
     new_username = request.json.get("new_username")
     if not new_username:
-        return {"error": "New username is required"}, 400
-    user_manager.update_username(username, new_username)
-    session["username"] = new_username
-    return {"message": "Username updated successfully"}
+        return jsonify({"error": "New username is required"}), 400
+    # Note: Changing username with Flask-Login requires re-logging in the user
+    # for the session to reflect the change immediately. This is a simplified version.
+    status = user_manager.update_username(current_user.username, new_username)
+    if not status:
+        return jsonify({"error": "Username already exists"}), 400
+
+    return jsonify({"message": "Username updated successfully"})
 
 
-@user_bp.route("/account/update_password", methods=["POST"])
+@user_bp.route("/api/account/update_password", methods=["POST"])
 @login_required
 def change_password():
-    username = session.get("username")
     current_password = request.json.get("current_password")
     new_password = request.json.get("new_password")
     if not (current_password and new_password):
-        return {"error": "Both current and new passwords are required"}, 400
-    if user_manager.update_password(username, current_password, new_password):
-        return {"message": "Password updated successfully"}
-    return {"error": "Incorrect current password"}, 400
-
-
-@user_bp.route("/login", methods=["GET", "POST"])
-def login():
-    """Handles user login."""
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        user = user_manager.authenticate_user(username, password)
-        if user:
-            session["username"] = username
-            socket_manager.log_and_emit("info", f"✅ User '{username}' logged in successfully.")
-            return redirect(url_for("home_bp.dashboard"))
-
-        socket_manager.log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
-        return render_template("landing.html", error="Invalid credentials")
-
-    return render_template("landing.html")
-
-
-@user_bp.route("/logout")
-def logout():
-    """Logs the user out and redirects to the landing page."""
-    username = session.get("username", "unknown")
-    session.clear()
-    socket_manager.log_and_emit("info", f"👋 User '{username}' logged out.")
-    return redirect(url_for("home_bp.landing_page"))
-
-
-@user_bp.route("/create_account", methods=["GET", "POST"])
-def create_account():
-    """Handles user registration."""
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        if not username or not password:
-            socket_manager.log_and_emit("warning", "⚠️ Account creation failed: Username or password missing.")
-            return render_template("create_account.html", error="Username and password are required")
-
-        if user_manager.get_user(username):
-            socket_manager.log_and_emit("warning", f"⚠️ Account creation failed: Username '{username}' already exists.")
-            return render_template("create_account.html", error="Username already exists")
-
-        user_manager.add_user(username, password)
-        session["username"] = username
-        socket_manager.log_and_emit("info", f"🎉 New account created for user '{username}'.")
-        return redirect(url_for("home_bp.dashboard"))
-
-    return render_template("create_account.html")
+        return jsonify({"error": "Both current and new passwords are required"}), 400
+    if user_manager.update_password(current_user.username, current_password, new_password):
+        return jsonify({"message": "Password updated successfully"})
+    return jsonify({"error": "Incorrect current password"}), 400

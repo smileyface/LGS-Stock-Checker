@@ -1,106 +1,118 @@
 # LGS Stock Checker
 
-*Check your local gaming stores for cards you need before you get there!*
+An application to check card availability and pricing at your local gaming stores. Features a modern Vue.js frontend, a robust Flask backend API, and a background worker system for handling intensive tasks like web scraping.
 
-## Server Deployment
+## Features
 
-This guide outlines the steps to deploy and run the LGS Stock Checker application on a server using Docker.
+*   **User Accounts:** Secure user registration and login system.
+*   **Card Tracking:** Users can create and manage a list of cards they want to track.
+*   **Store Preference:** Users can select which local stores they want to monitor.
+*   **Real-time Availability:** Background workers check for card availability and push updates to the user via WebSockets.
+*   **Modern UI:** A responsive and interactive Single Page Application (SPA) built with Vue.js.
+
+## Tech Stack
+
+*   **Frontend:** Vue.js, Vite, Axios, Bootstrap
+*   **Backend:** Flask, Gunicorn, Flask-Login, Flask-SocketIO
+*   **Database:** PostgreSQL
+*   **Caching & Task Queue:** Redis
+*   **Containerization:** Docker, Docker Compose
+
+## Getting Started
 
 ### Prerequisites
 
-Before you begin, ensure you have the following installed on your server:
+Before you begin, ensure you have the following installed on your machine:
 
 *   [Git](https://git-scm.com/)
 *   [Docker](https://docs.docker.com/engine/install/)
 *   [Docker Compose](https://docs.docker.com/compose/install/)
 
-### 1. Initial Setup
+### Local Development
 
-First, clone the repository to your server. It's recommended to place it in the home directory (`~/`) for consistency with the deployment script.
+This project is configured for a seamless local development experience with hot-reloading for both the frontend and backend.
 
-```bash
-git clone <your-repository-url> ~/LGS-Stock-Checker
-cd ~/LGS-Stock-Checker
-```
-*Replace `<your-repository-url>` with the actual URL of your Git repository.*
-
-### 2. Configuration
-
-This application uses Docker Compose, which often relies on an environment file for configuration (e.g., API keys, database credentials, etc.).
-
-1.  **Create an environment file:**
-    If an example environment file (e.g., `.env.example`) exists in the repository, copy it to a new `.env` file.
+1.  **Clone the repository:**
     ```bash
-    cp .env.example .env
+    git clone <your-repository-url> LGS-Stock-Checker
+    cd LGS-Stock-Checker
     ```
-    If no example file exists, you will need to create the `.env` file from scratch based on the variables required by the `docker-compose.yml` file.
 
-2.  **Edit the environment file:**
-    Open the `.env` file with your preferred text editor (like `nano` or `vim`) and fill in the required values.
+2.  **Run the development environment:**
+    The root `package.json` provides a convenience script for this.
     ```bash
-    nano .env
+    npm install # Only needed once to install 'concurrently'
+    npm run dev
     ```
-    You will need to set variables like `SECRET_KEY`. For the future email service, you would also add:
-    ```
-    SMTP_SERVER=smtp.gmail.com
-    SMTP_PORT=587
-    EMAIL_SENDER=your-email@gmail.com
-    EMAIL_PASSWORD=your-app-password
-    EMAIL_RECIPIENT=admin-email@example.com
+    Alternatively, you can use Docker Compose directly:
+    ```bash
+    docker compose up --build
     ```
 
-### 3. Running the Application
+This command will:
+*   Build the necessary Docker images.
+*   Start all services (`frontend`, `backend`, `worker`, `db`, `redis`).
+*   Use the `docker-compose.override.yml` file to enable hot-reloading.
+*   The frontend will be accessible at `http://localhost:5173`.
+*   The backend API (through the frontend proxy) will be available at `http://localhost:5173/api`.
 
-Once the repository is cloned and the `.env` file is configured, you can build and start the application containers.
+### Production Deployment
 
-```bash
-docker compose up -d --build
-```
+The `deploy.sh` script is designed to automate deployments to a production-like server environment.
 
-*   `docker compose up`: This command creates and starts the services defined in your `docker-compose.yml` file.
-*   `-d` (or `--detach`): Runs the containers in the background.
-*   `--build`: Forces Docker to rebuild the images before starting the containers. This is crucial for ensuring your latest code changes are applied.
+1.  **Initial Setup on Server:**
+    Clone the repository onto your server.
+    ```bash
+    git clone <your-repository-url> ~/LGS-Stock-Checker
+    cd ~/LGS-Stock-Checker
+    ```
 
-After running this command, the application should be up and running. You can check the status of your containers with:
-
-```bash
-docker compose ps
-```
-
-To view the application logs, run:
-
-```bash
-docker compose logs -f
-```
-
-### 4. Updating the Application (Deployment)
-
-To update the running application with the latest code from a specific branch, use the provided `deploy.sh` script.
-
-The script supports two types of deployments based on the branch name:
-*   **Release Deployments:** Triggered by deploying the `master` branch. This will build the images, run the full test suite, and then start the services.
-*   **Test Deployments:** Triggered by deploying any other branch (e.g., a feature branch). This will build the images and start the services, but it will *skip* the test suite for a faster deployment cycle.
-
-### Automated Deployment Script
-
-For convenience, you can use the `deploy.sh` script to automate the update process.
-
-1.  **Make the script executable (only needs to be done once):**
+2.  **Make the script executable (only needs to be done once):**
     ```bash
     chmod +x deploy.sh
     ```
 
-2.  **Run the script:**
-    To deploy, pass the branch name as the first argument and an optional log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) as the second argument.
-    - If no branch is specified, it defaults to `master`.
-    - If no log level is specified, it defaults to `INFO`.
+3.  **Run the Deployment Script:**
+    To deploy, pass the branch name as the first argument and an optional log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) as the second.
+    *   Deploying `master` will run the test suite before deploying.
+    *   Deploying any other branch will skip tests for a faster cycle.
+
     ```bash
     # Deploy the 'master' branch (runs tests) with default INFO logging
     ./deploy.sh master
 
     # Deploy a feature branch (skips tests) with DEBUG logging
     ./deploy.sh my-feature-branch DEBUG
-
-    # Deploy master with DEBUG logging
-    ./deploy.sh master DEBUG
     ```
+
+The script will pull the latest code, build the production images, run tests (if applicable), and restart the services. The application will be available at `http://<your-server-ip>:8000`.
+
+## Configuration
+
+Application configuration is managed via environment variables set in the `docker-compose.yml` file. No `.env` file is required by default.
+
+Key variables include:
+*   `DATABASE_URL`: The connection string for the PostgreSQL database.
+*   `REDIS_URL`: The connection string for the Redis server.
+*   `CORS_ALLOWED_ORIGINS`: A comma-separated list of origins allowed to make requests to the backend API. This is crucial for connecting the frontend to the backend.
+*   `FLASK_CONFIG`: Sets the application environment (e.g., `production` or `development`).
+*   `LOG_LEVEL`: Controls the application's logging verbosity.
+
+For production, you may want to move sensitive values out of the `docker-compose.yml` file and into a `.env` file, which should be excluded from version control.
+
+## API Overview
+
+The backend provides a JSON-based RESTful API. Key endpoints include:
+
+*   `POST /api/login`: Authenticates a user and creates a session.
+    *   **Body:** `{ "username": "...", "password": "..." }`
+*   `POST /api/logout`: Logs out the current user.
+*   `GET /api/user_data`: Retrieves the logged-in user's profile, including their list of preferred stores. (Requires authentication)
+*   `GET /api/stores`: Returns a list of all available store slugs. (Requires authentication)
+*   `POST /api/account/update_username`: Updates the logged-in user's username. (Requires authentication)
+*   `POST /api/account/update_password`: Updates the logged-in user's password. (Requires authentication)
+*   `POST /api/account/update_stores`: Updates the logged-in user's list of preferred stores. (Requires authentication)
+
+Socket.IO is used for real-time communication, such as adding/editing/deleting tracked cards and receiving availability updates.
+
+

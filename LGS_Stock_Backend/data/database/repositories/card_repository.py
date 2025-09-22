@@ -85,20 +85,40 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
         # The frontend sends a single spec object, not a list.
         spec_tuple = (
             card_specs.get("set_code"),
-            card_specs.get("collector_id"),  # The frontend sends 'collector_id'
+            card_specs.get("collector_number"),
             card_specs.get("finish")
         )
         if spec_tuple not in existing_specs_set:
             new_spec = CardSpecification(
                 user_card_id=tracked_card.id,
                 set_code=spec_tuple[0],
-                collector_number=spec_tuple[1],  # The DB model uses 'collector_number'
+                collector_number=spec_tuple[1],
                 finish=spec_tuple[2]
             )
             session.add(new_spec)
             logger.info(f"➕ Added new specification {spec_tuple} for '{card_name}'.")
 
     logger.info(f"✅ Successfully processed '{card_name}' for user '{username}'.")
+
+
+@db_query
+def search_card_names(query: str, session, limit: int = 10) -> List[str]:
+    """
+    Searches for card names in the global 'cards' table that match a given query.
+    Uses a case-insensitive LIKE query for partial matching.
+    """
+    if not query:
+        return []
+
+    search_pattern = f"%{query}%"
+    results = (
+        session.query(Card.name)
+        .filter(Card.name.ilike(search_pattern))
+        .limit(limit)
+        .all()
+    )
+    # The result is a list of tuples, e.g., [('Lightning Bolt',)], so we extract the first element.
+    return [row[0] for row in results]
 
 
 @db_query
@@ -192,9 +212,22 @@ def update_user_tracked_card_preferences(username: str, card_name: str, preferen
         else:
             logger.warning(f"⚠️ Invalid amount '{new_amount}' provided. Must be a positive integer.")
 
-    # This can be extended for other preferences in the future.
-    # For example:
-    # if "notify_on_availability" in preference_updates:
-    #     card.notify_on_availability = preference_updates["notify_on_availability"]
+    # Handle updating specifications. This replaces all existing specs for the card.
+    if "specifications" in preference_updates:
+        logger.debug(f"Updating specifications for '{card_name}'.")
+        # Clear existing specifications
+        tracked_card.specifications.clear()
+        session.flush() # Apply the clear operation
+
+        # Add new specifications
+        new_specs = preference_updates["specifications"]
+        for spec_data in new_specs:
+            new_spec = CardSpecification(
+                set_code=spec_data.get("set_code"),
+                collector_number=spec_data.get("collector_number"),
+                finish=spec_data.get("finish")
+            )
+            tracked_card.specifications.append(new_spec)
+        logger.debug(f"Added {len(new_specs)} new specifications for '{card_name}'.")
 
     logger.info(f"✅ Preferences updated for card '{card_name}' for user '{username}'.")

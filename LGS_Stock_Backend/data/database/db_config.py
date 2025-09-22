@@ -31,11 +31,10 @@ def initialize_database(database_url: str, for_testing: bool = False):
             connect_args={"check_same_thread": False},
             poolclass=StaticPool,
         )
-        # For tests, we often need objects to persist after commit, so expire_on_commit=False
-        SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False))
     else:
         engine = create_engine(database_url)
-        SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+        
+    SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False))
 
     Base.metadata.create_all(bind=get_engine())
 
@@ -65,7 +64,7 @@ def startup_database():
     def _sync(session):
         logger.info("🔄 Synchronizing stores from code registry to database...")
         db_store_slugs = {s[0] for s in session.query(Store.slug).all()}
-
+        
         new_stores_added = 0
         for slug, store_instance in STORE_REGISTRY.items():
             if slug not in db_store_slugs:

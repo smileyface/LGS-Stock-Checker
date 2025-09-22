@@ -1,74 +1,98 @@
 #!/bin/bash
 
-# Auto-detect docker compose command
-if command -v docker-compose &> /dev/null; then
-    # docker-compose (standalone) is available
-    COMPOSER="docker-compose"
-elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
-    # docker compose (plugin) is available
-    COMPOSER="docker compose"
-else
-    echo "❌ Neither 'docker-compose' nor 'docker compose' command found. Aborting deployment."
-    exit 1
-fi
+# Exit immediately if a command exits with a non-zero status.
+# Treat unset variables as an error when substituting.
+# The return value of a pipeline is the status of the last command to exit with a non-zero status.
+set -euo pipefail
 
-# --- Deployment Arguments ---
-# Set default branch to 'master' if no first argument is provided.
-BRANCH=${1:-master}
-# Set default log level to 'INFO' if no second argument is provided.
-LOG_LEVEL=${2:-INFO}
-# Export LOG_LEVEL so docker-compose can access it.
-export LOG_LEVEL
+# --- Main execution function ---
+main() {
+    # Get the directory of this script, which is assumed to be the repository root.
+    # This makes the script portable and not dependent on a hardcoded path.
+    cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-echo "🚀 Deploying branch: '$BRANCH' with log level: $LOG_LEVEL"
+    local composer_cmd
+    composer_cmd=$(detect_composer)
 
-# Navigate to the repo
-cd ~/LGS-Stock-Checker || exit 1
+    # --- Deployment Arguments ---
+    local branch=${1:-master}
+    local log_level=${2:-INFO}
+    export LOG_LEVEL=$log_level # Export for docker-compose
 
-# Fetch latest updates from the remote repository
-echo "📡 Fetching latest updates from origin..."
-git fetch origin
+    echo "🚀 Deploying branch: '$branch' with log level: $LOG_LEVEL"
 
-# Switch to the target branch and reset it to match the remote version exactly.
-# This discards any local changes, ensuring a clean deployment state.
-echo "🔄 Checking out and resetting branch '$BRANCH'..."
-git checkout "$BRANCH"
-git reset --hard "origin/$BRANCH"
+    git_pull "$branch"
+    build_images "$composer_cmd"
+    run_tests_if_needed "$composer_cmd" "$branch"
+    redeploy_services "$composer_cmd"
+    cleanup_docker
 
-# Build the new images first to ensure all dependencies are included.
-echo "🏗️ Building Docker images..."
-if ! $COMPOSER -f docker-compose.yml build; then
-    echo "❌ Docker build failed. Aborting deployment."
-    exit 1
-fi
+    echo "✅ Deployment of '$branch' completed!"
+}
 
-# --- Conditional Test Execution ---
-# Only run tests for the 'master' branch, which is considered a release deployment.
-if [ "$BRANCH" = "master" ]; then
-    echo "🔬 This is a release deployment to 'master'. Running tests..."
-    # Install test dependencies and run tests against the newly built image.
-    # The '--rm' flag removes the container after the test run.
-    if ! $COMPOSER -f docker-compose.yml run --rm backend sh -c "pip install -r LGS_Stock_Backend/requirements.txt -r LGS_Stock_Backend/requirements-dev.txt && pytest"; then
-        echo "❌ Tests failed. Aborting release deployment."
+# --- Helper Functions ---
+
+detect_composer() {
+    if command -v docker-compose &> /dev/null; then
+        echo "docker-compose"
+    elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
+        echo "docker compose"
+    else
+        echo "❌ Neither 'docker-compose' nor 'docker compose' command found. Aborting deployment." >&2
         exit 1
     fi
-else
-    echo "⏩ This is a test deployment to '$BRANCH'. Skipping tests."
-fi
+}
 
-# If we reach here, either tests passed or were skipped.
-# First, tear down any existing services to free up ports and ensure a clean start.
-echo "🛑 Stopping and removing old containers..."
-# The '--remove-orphans' flag cleans up any containers for services that are
-# no longer defined in the docker-compose file.
-$COMPOSER -f docker-compose.yml down --remove-orphans
+git_pull() {
+    local branch=$1
+    echo "📡 Fetching latest updates from origin..."
+    git fetch origin
 
-# Now, bring up the new services in detached mode.
-echo "🚀 Starting services..."
-$COMPOSER -f docker-compose.yml up -d
+    echo "🔄 Checking out and resetting branch '$branch'..."
+    git checkout "$branch"
+    git reset --hard "origin/$branch"
+}
 
-# Clean up old, unused Docker images to save disk space.
-echo "🧹 Cleaning up old Docker images..."
-docker image prune -af
+build_images() {
+    local composer_cmd=$1
+    echo "🏗️ Building Docker images..."
+    if ! $composer_cmd -f docker-compose.yml build; then
+        echo "❌ Docker build failed. Aborting deployment." >&2
+        exit 1
+    fi
+}
 
-echo "✅ Deployment of '$BRANCH' completed!"
+run_tests_if_needed() {
+    local composer_cmd=$1
+    local branch=$2
+    if [ "$branch" = "master" ]; then
+        echo "🔬 This is a release deployment to 'master'. Running tests..."
+        # Note: For better performance, consider creating a dedicated 'test' stage
+        # in your Dockerfile that includes dev dependencies, avoiding runtime installation.
+        local test_command="pip install -r LGS_Stock_Backend/requirements-dev.txt && pytest"
+        if ! $composer_cmd -f docker-compose.yml run --rm backend sh -c "$test_command"; then
+            echo "❌ Tests failed. Aborting release deployment." >&2
+            exit 1
+        fi
+    else
+        echo "⏩ This is a test deployment to '$branch'. Skipping tests."
+    fi
+}
+
+redeploy_services() {
+    local composer_cmd=$1
+    echo "🛑 Stopping and removing old containers..."
+    $composer_cmd -f docker-compose.yml down --remove-orphans
+
+    echo "🚀 Starting services..."
+    $composer_cmd -f docker-compose.yml up -d
+}
+
+cleanup_docker() {
+    echo "🧹 Cleaning up old Docker images..."
+    docker image prune -af
+}
+
+# --- Script Entrypoint ---
+# Call the main function with all script arguments
+main "$@"

@@ -1,10 +1,8 @@
 import pytest
 from werkzeug.security import check_password_hash
 
-from managers.user_manager import add_user, authenticate_user, get_user, update_username
+from managers.user_manager import add_user, authenticate_user, get_public_user_profile, update_username
 from data.database.models.orm_models import User
-from LGS_Stock_Backend.managers.user_manager import add_user, authenticate_user, get_user, update_username
-from LGS_Stock_Backend.data.database.models.orm_models import User
 
 # Note: We are NOT mocking the data layer here.
 # These tests use the `db_session` fixture from conftest.py
@@ -57,7 +55,7 @@ def test_authenticate_user_integration(db_session):
     """
     GIVEN a user created in the database
     WHEN the authenticate_user manager function is called
-    THEN it should return True for correct credentials and False for incorrect ones.
+    THEN it should return the user object for correct credentials and None for incorrect ones.
     """
     # Arrange
     username = "auth_user"
@@ -65,15 +63,19 @@ def test_authenticate_user_integration(db_session):
     add_user(username, password)
 
     # Act & Assert
-    assert authenticate_user(username, password) is True
-    assert authenticate_user(username, "wrong_password") is False
-    assert authenticate_user("non_existent_user", password) is False
+    # Correct credentials should return the user object
+    user = authenticate_user(username, password)
+    assert user is not None
+    assert user.username == username
+    # Incorrect credentials or user should return None
+    assert authenticate_user(username, "wrong_password") is None
+    assert authenticate_user("non_existent_user", password) is None
 
 
-def test_get_user_integration(db_session):
+def test_get_public_user_profile_integration(db_session):
     """
     GIVEN a user created in the database
-    WHEN the get_user manager function is called
+    WHEN the get_public_user_profile manager function is called
     THEN it should return the correct user object or None.
     """
     # Arrange
@@ -82,11 +84,11 @@ def test_get_user_integration(db_session):
     add_user(username, password)
 
     # Act & Assert
-    user = get_user(username)
+    user = get_public_user_profile(username)
     assert user is not None
     assert user.username == username
 
-    non_existent_user = get_user("non_existent_user")
+    non_existent_user = get_public_user_profile("non_existent_user")
     assert non_existent_user is None
 
 

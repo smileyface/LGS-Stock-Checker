@@ -8,6 +8,7 @@ from managers.availability_manager.availability_manager import (
 
 # Base path for patching dependencies as they are seen by the availability_manager module.
 AVAILABILITY_MANAGER_MODULE_PATH = "managers.availability_manager.availability_manager"
+AVAILABILITY_MANAGER_MODULE_PATH = "LGS_Stock_Backend.managers.availability_manager.availability_manager"
 
 
 # Mock Card class to simulate the structure of card objects from user_manager

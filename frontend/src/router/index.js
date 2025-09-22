@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../views/Dashboard.vue';
-import Cards from '../views/Cards.vue';
+import Account from '../views/Account.vue';
 import Login from '../views/Login.vue';
 import { authStore } from '../stores/auth';
 
@@ -18,7 +18,7 @@ const routes = [
     {
         path: '/account', // Matches the link in BaseLayout
         name: 'Account',
-        component: Cards,
+        component: Account,
         meta: { requiresAuth: true } // This route also requires authentication
     },
     {

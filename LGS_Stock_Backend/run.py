@@ -9,7 +9,6 @@ from flask_session import Session
 from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
-from managers.tasks_manager import register_redis_function
 from managers.user_manager import load_user_by_id
 from data.database.db_config import SessionLocal, initialize_database, startup_database
 
@@ -72,9 +71,6 @@ def create_app(config_name=None, override_config=None):
     )
     # Discover and register all socket event handlers
     initialize_socket_handlers()
-
-    # Discover and register all background tasks for the RQ worker
-    register_redis_function()
     
     database_url = os.environ.get("DATABASE_URL")
     if database_url:

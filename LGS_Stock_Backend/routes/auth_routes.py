@@ -1,0 +1,41 @@
+from flask import Blueprint, request, jsonify
+from flask_login import login_user, logout_user, login_required, current_user
+from data.database.models import User
+from data.database.db_config import SessionLocal
+
+auth_bp = Blueprint('auth_bp', __name__)
+
+@auth_bp.route('/api/login', methods=['POST'])
+def login():
+    """Handles user login."""
+    data = request.get_json()
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({"error": "Username and password are required"}), 400
+
+    db_session = SessionLocal()
+    user = db_session.query(User).filter_by(username=data['username']).first()
+
+    if user and user.check_password(data['password']):
+        login_user(user, remember=True) # 'remember=True' creates a persistent session
+        return jsonify({"message": "Login successful"}), 200
+    
+    return jsonify({"error": "Invalid username or password"}), 401
+
+@auth_bp.route('/api/logout', methods=['POST'])
+@login_required
+def logout():
+    """Handles user logout."""
+    logout_user()
+    return jsonify({"message": "Logout successful"}), 200
+
+@auth_bp.route('/api/user_data', methods=['GET'])
+@login_required
+def user_data():
+    """
+    Provides data for the currently authenticated user.
+    The @login_required decorator ensures this route is protected.
+    If the user is not logged in, Flask-Login will automatically
+    return a 401 Unauthorized error, which the frontend handles.
+    """
+    return jsonify(current_user.to_dict())
+

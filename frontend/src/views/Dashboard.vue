@@ -49,27 +49,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
-import axios from 'axios';
 import { io } from 'socket.io-client';
+import { authStore } from '../stores/auth';
 
-const username = ref('');
+const username = computed(() => authStore.user?.username || '');
 const trackedCards = ref([]);
 const availabilityMap = ref({});
 const pageTitle = ref('Dashboard');
-const allStores = ref([]);
+const allStores = computed(() => authStore.user?.stores || []);
 const socket = io({ withCredentials: true });
 
 onMounted(async () => {
-    try {
-        // Fetch initial user data from the backend. Nginx proxies /api/* requests.
-        const response = await axios.get('/api/user_data');
-        username.value = response.data.username;
-        allStores.value = response.data.stores;
-    } catch (error) {
-        console.error("Failed to fetch user data:", error);
-    }
+    // User and store data are now retrieved from the authStore,
+    // which is populated when the application first loads.
 
     socket.on('cards_data', (data) => {
         trackedCards.value = data.tracked_cards || [];

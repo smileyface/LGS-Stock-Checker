@@ -7,12 +7,17 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
                         <router-link class="nav-link" to="/dashboard">Dashboard</router-link>
                     </li>
                     <li class="nav-item">
                         <router-link class="nav-link" to="/account">Account</router-link>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link" @click="handleLogout">Logout</button>
                     </li>
                 </ul>
             </div>
@@ -24,6 +29,8 @@
 </template>
 
 <script setup>
+import { authStore } from '../stores/auth';
+
 defineProps({
     title: {
         type: String,

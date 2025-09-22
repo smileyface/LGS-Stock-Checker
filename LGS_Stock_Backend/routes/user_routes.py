@@ -1,4 +1,4 @@
-from flask import session, request, Blueprint, redirect, render_template, url_for
+from flask import session, request, Blueprint, render_template
 
 from managers import store_manager
 from managers import user_manager
@@ -53,54 +53,3 @@ def change_password():
     if user_manager.update_password(username, current_password, new_password):
         return {"message": "Password updated successfully"}
     return {"error": "Incorrect current password"}, 400
-
-
-@user_bp.route("/login", methods=["GET", "POST"])
-def login():
-    """Handles user login."""
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        user = user_manager.authenticate_user(username, password)
-        if user:
-            session["username"] = username
-            socket_manager.log_and_emit("info", f"✅ User '{username}' logged in successfully.")
-            return redirect(url_for("home_bp.dashboard"))
-
-        socket_manager.log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
-        return render_template("landing.html", error="Invalid credentials")
-
-    return render_template("landing.html")
-
-
-@user_bp.route("/logout")
-def logout():
-    """Logs the user out and redirects to the landing page."""
-    username = session.get("username", "unknown")
-    session.clear()
-    socket_manager.log_and_emit("info", f"👋 User '{username}' logged out.")
-    return redirect(url_for("home_bp.landing_page"))
-
-
-@user_bp.route("/create_account", methods=["GET", "POST"])
-def create_account():
-    """Handles user registration."""
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        if not username or not password:
-            socket_manager.log_and_emit("warning", "⚠️ Account creation failed: Username or password missing.")
-            return render_template("create_account.html", error="Username and password are required")
-
-        if user_manager.get_user(username):
-            socket_manager.log_and_emit("warning", f"⚠️ Account creation failed: Username '{username}' already exists.")
-            return render_template("create_account.html", error="Username already exists")
-
-        user_manager.add_user(username, password)
-        session["username"] = username
-        socket_manager.log_and_emit("info", f"🎉 New account created for user '{username}'.")
-        return redirect(url_for("home_bp.dashboard"))
-
-    return render_template("create_account.html")

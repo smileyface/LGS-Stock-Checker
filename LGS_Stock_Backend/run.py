@@ -1,11 +1,8 @@
 import os
-import eventlet
 import logging
 
-# Crucial for SocketIO performance with Gunicorn and event-based workers
-eventlet.monkey_patch()
-
 from flask import Flask
+from flask_login import LoginManager
 from flask_session import Session
 
 # Use imports relative to the LGS_Stock_Backend package root
@@ -13,8 +10,10 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.tasks_manager import register_redis_function
+from managers.user_manager import load_user_by_id
 from data.database.db_config import SessionLocal, initialize_database, startup_database
 
+login_manager = LoginManager()
 
 def create_app(config_name=None):
     app = Flask(__name__)
@@ -42,6 +41,10 @@ def create_app(config_name=None):
 
     # Initialize session management
     Session(app)
+
+    # --- Initialize Flask-Login ---
+    login_manager.init_app(app)
+    login_manager.user_loader(load_user_by_id)
 
     # Register blueprints
     register_blueprints(app)
@@ -87,6 +90,11 @@ def create_app(config_name=None):
 
 # This block is only for running the local development server directly
 if __name__ == "__main__":
+    # Monkey patch for the development server when run directly.
+    # This must be done before other imports that might initialize sockets.
+    import eventlet
+    eventlet.monkey_patch()
+
     app = create_app('development')
     # The host and port are passed here for the dev server run
     socketio.run(app, debug=True, host="0.0.0.0", port=5000)

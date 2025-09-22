@@ -40,6 +40,42 @@ def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema
 
 
 @db_query
+def get_user_orm_by_username(username: str, session) -> Optional[User]:
+    """
+    Retrieve a user ORM object by username from the database.
+    This is intended for internal use where the ORM object's methods are needed (e.g., authentication).
+
+    Args:
+        username (str): The unique username of the user to fetch.
+
+    Returns:
+        User or None: The SQLAlchemy User ORM object if found, otherwise None.
+    """
+    logger.debug(f"📖 Querying for user ORM object '{username}'.")
+    user_orm = session.query(User).filter(User.username == username).first()
+    logger.debug(f"✅ Found user ORM object for '{username}'." if user_orm else f"❌ User ORM object for '{username}' not found.")
+    return user_orm
+
+
+@db_query
+def get_user_orm_by_id(user_id: int, session) -> Optional[User]:
+    """
+    Retrieve a user ORM object by its primary key ID.
+    This is used by Flask-Login's user_loader.
+
+    Args:
+        user_id (int): The primary key ID of the user.
+
+    Returns:
+        User or None: The SQLAlchemy User ORM object if found, otherwise None.
+    """
+    logger.debug(f"📖 Querying for user ORM object with ID '{user_id}'.")
+    user_orm = session.query(User).get(user_id)
+    logger.debug(f"✅ Found user ORM object for ID '{user_id}'." if user_orm else f"❌ User ORM object for ID '{user_id}' not found.")
+    return user_orm
+
+
+@db_query
 def add_user(username: str, password_hash: str, session) -> Optional[schema.UserPublicSchema]:
     """
     Add a new user to the database with the given username and password hash.

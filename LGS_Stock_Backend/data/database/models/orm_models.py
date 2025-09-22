@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 Base = declarative_base()  # Note: The declarative_base() function is now in sqlalchemy.orm
 
@@ -15,7 +17,7 @@ user_store_preferences = Table(
 
 
 # Users Table (Updated)
-class User(Base):
+class User(UserMixin, Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
@@ -26,6 +28,23 @@ class User(Base):
 
     # Relationship to the cards the user is tracking
     cards = relationship("UserTrackedCards", back_populates="user", cascade="all, delete-orphan")
+
+    def set_password(self, password):
+        """Hashes the password and stores it."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Checks if the provided password matches the stored hash."""
+        return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        """Returns user data as a dictionary, suitable for JSON responses."""
+        return {
+            'id': self.id,
+            'username': self.username,
+            # This now correctly uses the relationship to get the store slugs
+            'stores': [store.slug for store in self.selected_stores]
+        }
 
 
 class Card(Base):

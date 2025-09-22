@@ -8,9 +8,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # This prevents the ImportError during test discovery.
 from data.database import db_config
 from data.database.models.orm_models import Base, User, Store
-# Use absolute imports from the package root to ensure consistency.
-from LGS_Stock_Backend.data.database import db_config
-from LGS_Stock_Backend.data.database.models.orm_models import Base, User, Store
 from flask import session
 from unittest.mock import patch
 
@@ -18,7 +15,6 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 
 from werkzeug.security import generate_password_hash
 from run import create_app
-from LGS_Stock_Backend.run import create_app
 
 
 @pytest.fixture(scope="session")
@@ -137,15 +133,3 @@ def mock_socketio_context(mocker):
     mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.socketio.emit")
     # Mock the SocketIO class itself within socket_emit to handle the worker case
     mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.SocketIO")
-
-
-@pytest.fixture(autouse=True)
-def mock_template_rendering(mocker):
-    """
-    Automatically mocks Flask's `render_template` function to prevent
-    TemplateNotFound errors in tests that call route functions.
-    This isolates route tests to their Python logic, not UI rendering.
-    """
-    # Patch where the function is looked up (in each route module that uses it).
-    mocker.patch("LGS_Stock_Backend.routes.home_routes.render_template", return_value="<mocked_template>")
-    mocker.patch("LGS_Stock_Backend.routes.user_routes.render_template", return_value="<mocked_template>")

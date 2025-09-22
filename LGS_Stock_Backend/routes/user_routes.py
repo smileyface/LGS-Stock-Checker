@@ -30,7 +30,10 @@ def change_username():
         return jsonify({"error": "New username is required"}), 400
     # Note: Changing username with Flask-Login requires re-logging in the user
     # for the session to reflect the change immediately. This is a simplified version.
-    user_manager.update_username(current_user.username, new_username)
+    status = user_manager.update_username(current_user.username, new_username)
+    if not status:
+        return jsonify({"error": "Username already exists"}), 400
+
     return jsonify({"message": "Username updated successfully"})
 
 

@@ -64,7 +64,7 @@ def startup_database():
     def _sync(session):
         logger.info("🔄 Synchronizing stores from code registry to database...")
         db_store_slugs = {s[0] for s in session.query(Store.slug).all()}
-
+        
         new_stores_added = 0
         for slug, store_instance in STORE_REGISTRY.items():
             if slug not in db_store_slugs:

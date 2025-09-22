@@ -15,13 +15,16 @@ from data.database.db_config import SessionLocal, initialize_database, startup_d
 
 login_manager = LoginManager()
 
-def create_app(config_name=None):
+def create_app(config_name=None, override_config=None):
     app = Flask(__name__)
 
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'default')
     
     app.config.from_object(config[config_name])
+    if override_config:
+        app.config.update(override_config)
+
     config[config_name].init_app(app)
 
     # --- Configure application-wide logging ---

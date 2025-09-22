@@ -24,8 +24,3 @@ def handle_disconnect():
     """Handle WebSocket disconnections."""
     # Flask-SocketIO automatically handles leaving rooms on disconnect.
     logger.info(f"🔴 Client disconnected: {request.sid}")
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Handle WebSocket disconnections."""
-    # Flask-SocketIO automatically handles leaving rooms on disconnect.
-    logger.info(f"🔴 Client disconnected: {request.sid}")

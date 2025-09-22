@@ -20,8 +20,22 @@ from run import create_app
 @pytest.fixture(scope="session")
 def app():
     """Creates a test Flask application instance for the entire test session."""
-    _app = create_app("testing")
+    # Define test-specific config overrides.
+    # Using 'filesystem' for sessions avoids the need for a live Redis server during tests.
+    test_config = {
+        "SESSION_TYPE": "filesystem",
+        "TESTING": True,
+    }
+    # Pass the overrides to the app factory.
+    _app = create_app("testing", override_config=test_config)
     return _app
+
+
+@pytest.fixture
+def client(app):
+    """A test client for the app."""
+    with app.test_client() as client:
+        yield client
 
 
 @pytest.fixture(autouse=True)
@@ -62,7 +76,8 @@ def db_session():
         # Use .remove() to be consistent with the @db_query decorator's cleanup.
         # This ensures the session is properly disposed from the scoped_session registry.
         db_config.SessionLocal.remove()
-        Base.metadata.drop_all(bind=db_config.engine)  # Drop tables after the test
+        # Drop all tables to ensure a clean state for the next test.
+        Base.metadata.drop_all(bind=db_config.engine)
 
 
 @pytest.fixture
@@ -75,12 +90,25 @@ def seeded_user(db_session):
 
 
 @pytest.fixture
+def seeded_user_with_stores(db_session, seeded_user, seeded_stores):
+    """Fixture to create a user and associate them with some stores."""
+    # Re-fetch the user within the current session to ensure it's attached
+    user = db_session.query(User).filter_by(username=seeded_user.username).one()
+    user.selected_stores.extend(seeded_stores)
+    db_session.commit()
+    return user
+
+
+@pytest.fixture
 def seeded_stores(db_session):
     """Fixture to create and commit multiple test stores to the database."""
     stores_data = [
         Store(
             name="Test Store",
             slug="test_store",
+
+
+
             homepage="https://test.com",
             search_url="https://test.com/search",
             fetch_strategy="default",
@@ -88,6 +116,7 @@ def seeded_stores(db_session):
         Store(
             name="Another Store",
             slug="another_store",
+
             homepage="https://another.com",
             search_url="https://another.com/search",
             fetch_strategy="default",

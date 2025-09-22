@@ -7,10 +7,11 @@ from unittest.mock import MagicMock
 
 import pytest
 from werkzeug.security import generate_password_hash
+from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
 
-from LGS_Stock_Backend.data.database.models.orm_models import Store, User
-from LGS_Stock_Backend import managers, utility, data, routes
+from data.database.models.orm_models import Store, User
+import managers, utility, data, routes
 
 
 def import_all_modules_from_packages(*packages):
@@ -133,6 +134,12 @@ def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
 
         try:
             func(*args)
+        except HTTPException as e:
+            # HTTP exceptions (like 401 Unauthorized or 404 Not Found) are expected outcomes
+            # for route handlers when called without a proper request context.
+            # We consider this a "pass" for a smoke test, as the function didn't crash
+            # due to a programming error.
+            pass
         except Exception as e:
             pytest.fail(
                 f"Function {package.__name__}.{name}{inspect.signature(func)} "

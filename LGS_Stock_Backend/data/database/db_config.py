@@ -31,11 +31,10 @@ def initialize_database(database_url: str, for_testing: bool = False):
             connect_args={"check_same_thread": False},
             poolclass=StaticPool,
         )
-        # For tests, we often need objects to persist after commit, so expire_on_commit=False
-        SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False))
     else:
         engine = create_engine(database_url)
-        SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+        
+    SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False))
 
     Base.metadata.create_all(bind=get_engine())
 

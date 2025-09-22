@@ -85,14 +85,14 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
         # The frontend sends a single spec object, not a list.
         spec_tuple = (
             card_specs.get("set_code"),
-            card_specs.get("collector_id"),  # The frontend sends 'collector_id'
+            card_specs.get("collector_number"),
             card_specs.get("finish")
         )
         if spec_tuple not in existing_specs_set:
             new_spec = CardSpecification(
                 user_card_id=tracked_card.id,
                 set_code=spec_tuple[0],
-                collector_number=spec_tuple[1],  # The DB model uses 'collector_number'
+                collector_number=spec_tuple[1],
                 finish=spec_tuple[2]
             )
             session.add(new_spec)

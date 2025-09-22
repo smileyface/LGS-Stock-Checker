@@ -157,7 +157,7 @@ def handle_add_user_tracked_card(data: dict):
     try:
         validated_data = AddCardSchema.model_validate(data)
         username = get_username()
-        database.add_user_card(
+        user_manager.add_user_card(
             username,
             validated_data.card,
             validated_data.amount,

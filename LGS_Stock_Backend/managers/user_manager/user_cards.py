@@ -45,3 +45,13 @@ def save_card_list(username: str, card_list: List[Dict]):
 
     logger.info(f"✅ Successfully saved {len(card_list)} cards for user: '{username}'")
     return True
+
+
+def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[str, any]):
+    """
+    Adds a single tracked card for a user.
+    This acts as a pass-through to the data layer, encapsulating the business logic
+    for adding a card within the user manager.
+    """
+    logger.info(f"➕ Manager adding card '{card_name}' for user '{username}'.")
+    database.add_user_card(username, card_name, amount, card_specs)

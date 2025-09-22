@@ -1,5 +1,6 @@
 <template>
     <BaseLayout :title="pageTitle">
+        <AddCardModal ref="addCardModalRef" @save-card="saveCard" />
         <div class="container mt-4">
             <h1>Dashboard</h1>
             <p>Welcome, <strong>{{ username }}</strong>!</p>
@@ -51,6 +52,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
+import AddCardModal from '../components/AddCardModal.vue';
 import { io } from 'socket.io-client';
 import { authStore } from '../stores/auth';
 
@@ -60,6 +62,7 @@ const availabilityMap = ref({});
 const pageTitle = ref('Dashboard');
 const allStores = computed(() => authStore.user?.stores || []);
 const socket = io({ withCredentials: true });
+const addCardModalRef = ref(null);
 
 onMounted(async () => {
     // User and store data are now retrieved from the authStore,
@@ -110,7 +113,10 @@ function editCard(card) {
 }
 
 function showAddCardModal() {
-    // Show the add card modal here, which would also be a Vue component.
-    console.log('Showing add card modal');
+    addCardModalRef.value?.show();
+}
+
+function saveCard(cardData) {
+    socket.emit('add_card', cardData);
 }
 </script>

@@ -43,6 +43,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
+import axios from 'axios';
 import { io } from 'socket.io-client';
 
 const cards = ref([]);
@@ -60,18 +61,27 @@ function handleFileUpload(event) {
     file.value = event.target.files[0];
 }
 
-function uploadCardFile() {
+async function uploadCardFile() {
     if (!file.value) {
         alert('Please select a file first.');
         return;
     }
-    
-    // In a real Vue app, you would use a library like axios to POST the file
-    // to a backend endpoint. The current Flask endpoint for this form
-    // (`/upload_card_list`, not provided but implied by the form structure)
-    // would need to be updated to handle the new request format.
-    
-    console.log('Uploading file:', file.value.name);
-    alert('File upload logic needs to be implemented on the backend.');
+
+    const formData = new FormData();
+    formData.append('card_file', file.value);
+
+    try {
+        // The request goes to '/api/upload_cards'. Nginx will proxy this to the backend.
+        await axios.post('/api/upload_cards', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        alert('File uploaded successfully!');
+        socket.emit('get_cards'); // Refresh the card list
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        alert('Failed to upload file. Check console for details.');
+    }
 }
 </script>

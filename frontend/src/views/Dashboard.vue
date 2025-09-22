@@ -51,6 +51,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
+import axios from 'axios';
 import { io } from 'socket.io-client';
 
 const username = ref('');
@@ -60,16 +61,15 @@ const pageTitle = ref('Dashboard');
 const allStores = ref([]);
 const socket = io({ withCredentials: true });
 
-onMounted(() => {
-    // We'll need a way to get the username from the session, likely from the backend on initial load.
-    // This is a placeholder for that logic.
-    // For now, we'll assume the Flask backend serves the username as part of a JSON endpoint.
-    fetch('/api/user_data')
-        .then(response => response.json())
-        .then(data => {
-            username.value = data.username;
-            allStores.value = data.stores;
-        });
+onMounted(async () => {
+    try {
+        // Fetch initial user data from the backend. Nginx proxies /api/* requests.
+        const response = await axios.get('/api/user_data');
+        username.value = response.data.username;
+        allStores.value = response.data.stores;
+    } catch (error) {
+        console.error("Failed to fetch user data:", error);
+    }
 
     socket.on('cards_data', (data) => {
         trackedCards.value = data.tracked_cards || [];

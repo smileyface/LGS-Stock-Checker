@@ -11,7 +11,7 @@ RUN npm install
 FROM deps AS development-stage
 COPY . .
 EXPOSE 5173
-CMD ["npm", "run", "dev"] # The --host flag is now managed by vite.config.js
+CMD ["npm", "run", "dev"]
 
 # Stage 3: Build ("build-stage")
 # This stage uses the pre-installed dependencies from 'deps' and builds the static assets.

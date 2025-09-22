@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, Date
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
-Base = declarative_base()  # Note: The declarative_base() function is now in sqlalchemy.orm
+Base = declarative_base()
 
 
 # Define as a Table object, not an ORM class
@@ -50,6 +50,14 @@ class User(UserMixin, Base):
 class Card(Base):
     __tablename__ = "cards"
     name = Column(String, primary_key=True, index=True)
+
+
+class Set(Base):
+    """Represents a card set in the database."""
+    __tablename__ = "sets"
+    code = Column(String(10), primary_key=True)
+    name = Column(String(255), nullable=False)
+    release_date = Column(Date, nullable=True)
 
 
 class UserTrackedCards(Base):

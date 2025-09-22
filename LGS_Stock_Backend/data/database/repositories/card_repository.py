@@ -1,14 +1,13 @@
 from typing import List, Dict, Any
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
-# Internal package imports
+# Internal package imports (relative to the data.database package)
+
 from .. import schema
 from ..session_manager import db_query
-from ..models.orm_models import User, UserTrackedCards, Card, CardSpecification
-
-# Project package imports
+from ..models import Card, CardSpecification, User, UserTrackedCards, Set
 from utility import logger
-
 
 @db_query
 def get_users_cards(username: str, session) -> List[schema.UserTrackedCardSchema]:
@@ -31,7 +30,6 @@ def get_users_cards(username: str, session) -> List[schema.UserTrackedCardSchema
 
     logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
     return [schema.UserTrackedCardSchema.model_validate(card) for card in user.cards]
-
 
 @db_query
 def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[str, Any], session) -> None:
@@ -231,3 +229,51 @@ def update_user_tracked_card_preferences(username: str, card_name: str, preferen
         logger.debug(f"Added {len(new_specs)} new specifications for '{card_name}'.")
 
     logger.info(f"✅ Preferences updated for card '{card_name}' for user '{username}'.")
+
+@db_query
+def add_card_names_to_catalog(session, card_names: List[str]):
+    """
+    Adds a list of card names to the cards table, ignoring any duplicates.
+    This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for high performance.
+
+    Args:
+        session: The SQLAlchemy session.
+        card_names: A list of card names to add.
+    """
+    if not card_names:
+        logger.info("No new card names provided to add to catalog. Skipping.")
+        return
+
+    # Prepare the data for bulk insert. Each item is a dictionary.
+    stmt = insert(Card).values([{"name": name} for name in card_names])
+
+    # Use on_conflict_do_nothing to ignore duplicates based on the primary key ('name')
+    # This is highly efficient for bulk inserts of potentially existing data.
+    stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+
+    session.execute(stmt)
+    logger.info(f"Attempted to bulk insert {len(card_names)} names into the card catalog.")
+
+@db_query
+def add_set_data_to_catalog(session, set_data: List[Dict[str, Any]]):
+    """
+    Adds a list of set data to the sets table, ignoring any duplicates.
+    This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for high performance.
+
+    Args:
+        session: The SQLAlchemy session.
+        set_data: A list of set data dictionaries to add.
+    """
+    if not set_data:
+        logger.info("No new set data provided to add to catalog. Skipping.")
+        return
+
+    # Prepare the data for bulk insert.
+    stmt = insert(Set).values(set_data)
+
+    # Use on_conflict_do_nothing to ignore duplicates based on the primary key ('code').
+    # This is highly efficient for bulk inserts of potentially existing data.
+    stmt = stmt.on_conflict_do_nothing(index_elements=['code'])
+
+    session.execute(stmt)
+    logger.info(f"Attempted to bulk insert {len(set_data)} sets into the set catalog.")

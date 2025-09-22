@@ -1,32 +1,20 @@
-import eventlet
+import time
+from redis import Redis
+from rq import Worker, Queue, Connection
 
-# Monkey patch at the very beginning, before any other modules are imported.
-# This is crucial for compatibility with RQ's forking model.
-eventlet.monkey_patch()
-
-import os
-import redis
-from rq import Worker, Queue
-
-# Import the app factory to ensure all initializations are done.
-from run import create_app
-
-# Create the Flask app. This will run all the setup code inside create_app(),
-# including the registration of our Redis tasks, ensuring the worker knows about them.
-app = create_app()
+from tasks.scheduler_setup import schedule_tasks
+from utility import logger
 
 listen = ['default']
-redis_host = os.getenv("REDIS_HOST", "redis")
-redis_url = f"redis://{redis_host}:6379"
-
-conn = redis.from_url(redis_url)
+redis_conn = Redis(host='redis', port=6379)
 
 if __name__ == '__main__':
-    # The 'with app.app_context()' is good practice, ensuring extensions have access
-    # to the application configuration during the worker's lifespan.
-    with app.app_context():
-        # The Connection context manager is deprecated and removed in RQ v2.0+.
-        # The connection is passed directly to the Worker and Queue objects.
-        queues = [Queue(name, connection=conn) for name in listen]
-        worker = Worker(queues, connection=conn)
+    # Give Redis and the scheduler a moment to be ready
+    time.sleep(15)
+
+    schedule_tasks()
+
+    logger.info("🎧 Worker is starting...")
+    with Connection(redis_conn):
+        worker = Worker(map(Queue, listen))
         worker.work()

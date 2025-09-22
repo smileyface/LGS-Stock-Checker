@@ -84,6 +84,8 @@ services:
       PGPASSWORD: lgs_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Expose PostgreSQL port to the host machine
     networks:
       - stock-net
     healthcheck:

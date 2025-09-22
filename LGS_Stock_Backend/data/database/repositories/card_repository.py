@@ -102,6 +102,26 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
 
 
 @db_query
+def search_card_names(query: str, session, limit: int = 10) -> List[str]:
+    """
+    Searches for card names in the global 'cards' table that match a given query.
+    Uses a case-insensitive LIKE query for partial matching.
+    """
+    if not query:
+        return []
+
+    search_pattern = f"%{query}%"
+    results = (
+        session.query(Card.name)
+        .filter(Card.name.ilike(search_pattern))
+        .limit(limit)
+        .all()
+    )
+    # The result is a list of tuples, e.g., [('Lightning Bolt',)], so we extract the first element.
+    return [row[0] for row in results]
+
+
+@db_query
 def delete_user_card(username: str, card_name: str, session) -> None:
     """
     Deletes a tracked card for a user, ensuring related specifications are also deleted via ORM cascades.

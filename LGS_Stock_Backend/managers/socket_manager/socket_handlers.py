@@ -1,6 +1,6 @@
-from flask import session
 from pydantic import BaseModel, ValidationError
 from typing import List
+from flask_login import current_user
 
 # internal package imports
 from .socket_manager import socketio
@@ -24,8 +24,10 @@ from utility import logger
 
 
 def get_username():
-    """Helper function to get the username from the session."""
-    return session.get("username")
+    """Helper function to get the username from the current_user proxy."""
+    if current_user.is_authenticated:
+        return current_user.username
+    return None
 
 
 def _send_user_cards(username: str):

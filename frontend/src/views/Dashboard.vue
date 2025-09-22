@@ -1,6 +1,7 @@
 <template>
     <BaseLayout :title="pageTitle">
         <AddCardModal ref="addCardModalRef" @save-card="saveCard" />
+        <EditCardModal v-if="cardToEdit" :card-to-edit="cardToEdit" ref="editCardModalRef" @update-card="updateCard" />
         <div class="container mt-4">
             <h1>Dashboard</h1>
             <p>Welcome, <strong>{{ username }}</strong>!</p>
@@ -50,9 +51,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
 import AddCardModal from '../components/AddCardModal.vue';
+import EditCardModal from '../components/EditCardModal.vue';
 import { io } from 'socket.io-client';
 import { authStore } from '../stores/auth';
 
@@ -63,6 +65,8 @@ const pageTitle = ref('Dashboard');
 const allStores = computed(() => authStore.user?.stores || []);
 const socket = io({ withCredentials: true });
 const addCardModalRef = ref(null);
+const editCardModalRef = ref(null);
+const cardToEdit = ref(null);
 
 onMounted(async () => {
     // User and store data are now retrieved from the authStore,
@@ -107,9 +111,11 @@ function deleteCard(cardName) {
 }
 
 function editCard(card) {
-    // You would typically navigate to a new route here, e.g., using Vue Router
-    // router.push({ name: 'EditCard', params: { cardName: card.card_name } });
-    console.log(`Editing card: ${card.card_name}`);
+    cardToEdit.value = card;
+    // Use nextTick to ensure the modal component is rendered before we try to show it
+    nextTick(() => {
+        editCardModalRef.value?.show();
+    });
 }
 
 function showAddCardModal() {
@@ -118,5 +124,9 @@ function showAddCardModal() {
 
 function saveCard(cardData) {
     socket.emit('add_card', cardData);
+}
+
+function updateCard(cardData) {
+    socket.emit('update_card', cardData);
 }
 </script>

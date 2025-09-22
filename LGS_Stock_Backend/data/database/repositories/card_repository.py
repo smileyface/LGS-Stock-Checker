@@ -212,9 +212,22 @@ def update_user_tracked_card_preferences(username: str, card_name: str, preferen
         else:
             logger.warning(f"⚠️ Invalid amount '{new_amount}' provided. Must be a positive integer.")
 
-    # This can be extended for other preferences in the future.
-    # For example:
-    # if "notify_on_availability" in preference_updates:
-    #     card.notify_on_availability = preference_updates["notify_on_availability"]
+    # Handle updating specifications. This replaces all existing specs for the card.
+    if "specifications" in preference_updates:
+        logger.debug(f"Updating specifications for '{card_name}'.")
+        # Clear existing specifications
+        tracked_card.specifications.clear()
+        session.flush() # Apply the clear operation
+
+        # Add new specifications
+        new_specs = preference_updates["specifications"]
+        for spec_data in new_specs:
+            new_spec = CardSpecification(
+                set_code=spec_data.get("set_code"),
+                collector_number=spec_data.get("collector_number"),
+                finish=spec_data.get("finish")
+            )
+            tracked_card.specifications.append(new_spec)
+        logger.debug(f"Added {len(new_specs)} new specifications for '{card_name}'.")
 
     logger.info(f"✅ Preferences updated for card '{card_name}' for user '{username}'.")

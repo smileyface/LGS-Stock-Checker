@@ -14,7 +14,7 @@ def get_all_stores():
     return jsonify(list(store_manager.STORE_REGISTRY.keys()))
 
 
-@user_bp.route("/account/update_stores", methods=["POST"])
+@user_bp.route("/api/account/update_stores", methods=["POST"])
 @login_required
 def update_stores():
     selected_stores = request.json.get("stores", [])
@@ -22,7 +22,7 @@ def update_stores():
     return jsonify({"message": "Stores updated successfully"})
 
 
-@user_bp.route("/account/update_username", methods=["POST"])
+@user_bp.route("/api/account/update_username", methods=["POST"])
 @login_required
 def change_username():
     new_username = request.json.get("new_username")
@@ -34,7 +34,7 @@ def change_username():
     return jsonify({"message": "Username updated successfully"})
 
 
-@user_bp.route("/account/update_password", methods=["POST"])
+@user_bp.route("/api/account/update_password", methods=["POST"])
 @login_required
 def change_password():
     current_password = request.json.get("current_password")

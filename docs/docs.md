@@ -198,6 +198,60 @@ sequenceDiagram
 
 ```
 
+#### Background Card Catalog Update 
+
+This diagram illustrates the scheduled background task for populating the global card catalog from an external source, fulfilling requirements `[4.1.6]` and `[4.1.7]`. 
+```mermaid 
+sequenceDiagram
+
+    participant Scheduler
+    participant Redis as Redis Queue
+    participant Worker as RQ Worker
+    participant ExternalAPI as External Card API (e.g., Scryfall)
+    participant DB as Database
+
+    Scheduler->>Redis: Enqueues "update_card_catalog" task
+    note over Redis, Worker: Worker polls the queue for jobs
+    Redis->>Worker: Delivers "update_card_catalog" task
+    activate Worker
+    Worker->>ExternalAPI: Request for all card names
+    activate ExternalAPI
+    ExternalAPI-->>Worker: Returns list of all card names
+    deactivate ExternalAPI
+    loop For each card name in list
+        Worker->>DB: Add card name to catalog
+    end
+    note right of DB: The database's unique constraint on the name column prevents duplicates.
+    deactivate Worker
+```
+
+#### Background Set Catalog Update
+
+This diagram illustrates the scheduled background task for populating the set catalog from an external source.
+
+```mermaid 
+sequenceDiagram
+
+participant Scheduler
+participant Redis as Redis Queue
+participant Worker as RQ Worker
+participant ExternalAPI as External Set API (e.g., Scryfall)
+participant DB as Database
+Scheduler->>Redis: Enqueues "update_set_catalog" task
+note over Redis, Worker: Worker polls the queue for jobs
+Redis->>Worker: Delivers "update_set_catalog" task
+activate Worker
+Worker->>ExternalAPI: Request for all set data
+activate ExternalAPI
+ExternalAPI-->>Worker: Returns list of all set data
+deactivate ExternalAPI
+loop For each set in list
+   Worker->>DB: Add set to catalog
+end
+note right of DB: The database's unique constraint on the code column prevents duplicates.
+deactivate Worker
+```
+
 #### Delete a Tracked Card
 ```mermaid
 sequenceDiagram

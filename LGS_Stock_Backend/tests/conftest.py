@@ -161,4 +161,40 @@ def mock_socketio_context(mocker):
     # Mock the main socketio object's emit function to prevent network calls
     mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.socketio.emit")
     # Mock the SocketIO class itself within socket_emit to handle the worker case
-    mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.SocketIO")
+
+
+@pytest.fixture(autouse=True)
+def mock_fetch_scryfall_card_names(mocker):
+    """Mocks the fetch_scryfall_card_names function."""
+    # Patch the function where it is looked up (in the tasks module), not where it is defined.
+    mock = mocker.patch("tasks.catalog_tasks.fetch_scryfall_card_names")
+    mock.return_value = []  # Provide a safe, empty list as a default
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def mock_fetch_sets(mocker):
+    """Mocks the fetch_all_sets function."""
+    # Patch the function where it is looked up (in the tasks module).
+    mock = mocker.patch("tasks.catalog_tasks.fetch_all_sets")
+    mock.return_value = []  # Provide a safe, empty list as a default
+    return mock
+
+@pytest.fixture
+def mock_store():
+    """Mocks the store_manager.store_list function."""
+    with patch("tasks.card_availability_tasks.store_manager.store_list") as mock:
+        yield mock
+
+@pytest.fixture
+def mock_cache_availability():
+    """Mocks the availability_manager.cache_availability_data function."""
+    with patch("tasks.card_availability_tasks.availability_manager.cache_availability_data") as mock:
+        yield mock
+
+
+@pytest.fixture
+def mock_socket_emit():
+    """Mocks the socket_emit.emit_from_worker function."""
+    with patch("tasks.card_availability_tasks.socket_emit.emit_from_worker") as mock:
+        yield mock

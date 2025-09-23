@@ -17,7 +17,8 @@ from .db_config import initialize_database, startup_database
 # Now that `data.database.schema` is available, we can safely import the repositories.
 from .repositories.card_repository import (
     get_users_cards, add_user_card, delete_user_card, update_user_tracked_cards_list,
-    update_user_tracked_card_preferences, search_card_names
+    update_user_tracked_card_preferences, search_card_names, add_card_names_to_catalog,
+    add_set_data_to_catalog
 )
 from .repositories.user_repository import (
     get_user_by_username, update_username, update_password, add_user, add_user_store,
@@ -33,9 +34,8 @@ __all__ = [
 
     # Card Repository
     "get_users_cards", "add_user_card", "delete_user_card",
-    "update_user_tracked_cards_list", "update_user_tracked_card_preferences", "search_card_names",
-
-    # User Repository
+    "update_user_tracked_cards_list", "update_user_tracked_card_preferences",
+    "search_card_names", "add_card_names_to_catalog", "add_set_data_to_catalog",
     "get_user_by_username", "update_username", "update_password", "add_user",
     "add_user_store", "remove_user_store", "get_user_stores", "set_user_stores",
     "get_user_for_display", "get_all_users", "get_users_tracking_card",
@@ -44,3 +44,4 @@ __all__ = [
     # Store Repository
     "get_store_metadata", "get_all_stores",
 ]
+# This file makes the 'tasks' directory a Python package.

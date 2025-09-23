@@ -29,7 +29,6 @@ def fetch_scryfall_card_names() -> Optional[List[str]]:
         response.raise_for_status()  # Raises an exception for 4xx/5xx status codes
 
         card_names = response.json().get("data", [])
-        cache.save_data(SCRYFALL_CARD_CACHE_KEY, json.dumps(card_names), ex=SCRYFALL_CARD_CACHE_EXPIRY)
         logger.info(f"✅ Cached {len(card_names)} card names for 24 hours.")
         return card_names
     except requests.exceptions.RequestException as e:

@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import insert
 from sqlalchemy.orm import joinedload
 
 # Internal package imports (relative to the data.database package)
@@ -231,7 +231,7 @@ def update_user_tracked_card_preferences(username: str, card_name: str, preferen
     logger.info(f"✅ Preferences updated for card '{card_name}' for user '{username}'.")
 
 @db_query
-def add_card_names_to_catalog(session, card_names: List[str]):
+def add_card_names_to_catalog(card_names: List[str], session):
     """
     Adds a list of card names to the cards table, ignoring any duplicates.
     This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for high performance.
@@ -255,7 +255,7 @@ def add_card_names_to_catalog(session, card_names: List[str]):
     logger.info(f"Attempted to bulk insert {len(card_names)} names into the card catalog.")
 
 @db_query
-def add_set_data_to_catalog(session, set_data: List[Dict[str, Any]]):
+def add_set_data_to_catalog(set_data: List[Dict[str, Any]], session):
     """
     Adds a list of set data to the sets table, ignoring any duplicates.
     This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for high performance.

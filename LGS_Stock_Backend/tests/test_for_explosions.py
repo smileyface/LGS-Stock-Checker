@@ -11,7 +11,7 @@ from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
 
 from data.database.models.orm_models import Store, User
-import managers, utility, data, routes
+import managers, utility, data, routes, tasks
 
 
 def import_all_modules_from_packages(*packages):
@@ -28,7 +28,7 @@ def import_all_modules_from_packages(*packages):
     return modules
 
 
-PACKAGES_TO_TEST = import_all_modules_from_packages(managers, data, utility, routes)
+PACKAGES_TO_TEST = import_all_modules_from_packages(managers, data, utility, routes, tasks)
 
 
 @pytest.fixture

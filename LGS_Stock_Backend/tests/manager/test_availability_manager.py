@@ -1,5 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
+from tasks.card_availability_tasks import (
+    update_wanted_cards_availability,
+    update_availability_single_card,
+)
 
 from managers.availability_manager.availability_manager import (
     check_availability,
@@ -33,7 +37,7 @@ def test_check_availability(mock_redis_manager):
 
     # Assert
     mock_redis_manager.queue_task.assert_called_once_with(
-        "update_wanted_cards_availability", username
+        update_wanted_cards_availability, username
     )
     assert result == {
         "status": "queued",
@@ -102,7 +106,7 @@ def test_get_card_availability_with_no_cached_data(
     mock_storage.get_availability_data.assert_called_once_with("test-store", "Test Card")
     mock_socket.socket_emit.emit_card_availability_data.assert_not_called()
     mock_redis.queue_task.assert_called_once_with(
-        "managers.tasks_manager.availability_tasks.update_availability_single_card",
+        update_availability_single_card,
         username,
         "test-store",
         mock_card.model_dump(),

@@ -1,6 +1,7 @@
 from externals import fetch_scryfall_card_names, fetch_all_sets
 from data import database
 from utility import logger
+from datetime import datetime
 
 def update_card_catalog():
 
@@ -33,11 +34,16 @@ def update_set_catalog():
 
     if raw_set_data:
         # Transform the data to match the database schema ('released_at' -> 'release_date')
+        # and convert date strings to Python date objects for SQLite compatibility.
         set_data_to_add = [
             {
                 "code": s.get("code"),
                 "name": s.get("name"),
-                "release_date": s.get("released_at"),
+                "release_date": (
+                    datetime.strptime(s.get("released_at"), "%Y-%m-%d").date()
+                    if s.get("released_at")
+                    else None
+                ),
             }
             for s in raw_set_data
             if s.get("code") and s.get("name") # Ensure essential fields are present

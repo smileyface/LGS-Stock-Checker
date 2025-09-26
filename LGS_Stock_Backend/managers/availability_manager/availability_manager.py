@@ -66,9 +66,15 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
     cached_results = {}
     for card in user_cards:
         for store in user_stores:
-            # This logic is now encapsulated in the new function
-            cached_data = get_cached_availability_or_trigger_check(username)
-            if cached_data:
-                cached_results.update(cached_data)
+            if not store or not store.slug or not card or not card.card_name:
+                continue
+            
+            cached_data = availability_storage.get_availability_data(store.slug, card.card_name)
+            if cached_data is not None:
+                logger.debug(f"✅ Cache hit for {card.card_name} at {store.name}.")
+                cached_results.setdefault(store.slug, {})[card.card_name] = cached_data
+            else:
+                logger.info(f"⏳ Cache miss for {card.card_name} at {store.name}. Queueing check.")
+                trigger_availability_check_for_card(username, card.model_dump())
 
     return cached_results

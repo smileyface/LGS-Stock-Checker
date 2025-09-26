@@ -56,19 +56,19 @@ def test_schedule_tasks_all_new(mock_scheduler):
         availability_interval = timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds()
 
         # Verify catalog update task
-        assert any(c.kwargs['job_id'] == task_definitions.CATALOG_TASK_ID and 
+        assert any(c.kwargs['id'] == task_definitions.CATALOG_TASK_ID and 
                    c.kwargs['func'] == mock_update_card and 
                    c.kwargs['interval'] == catalog_interval for c in calls)
         # Verify set catalog update task
-        assert any(c.kwargs['job_id'] == task_definitions.SET_CATALOG_TASK_ID and 
+        assert any(c.kwargs['id'] == task_definitions.SET_CATALOG_TASK_ID and 
                    c.kwargs['func'] == mock_update_set and 
                    c.kwargs['interval'] == catalog_interval for c in calls)
         # Verify full catalog update task
-        assert any(c.kwargs['job_id'] == task_definitions.FULL_CATALOG_TASK_ID and 
+        assert any(c.kwargs['id'] == task_definitions.FULL_CATALOG_TASK_ID and 
                    c.kwargs['func'] == mock_update_full and 
                    c.kwargs['interval'] == catalog_interval for c in calls)
         # Verify availability update task
-        assert any(c.kwargs['job_id'] == task_definitions.AVAILABILITY_TASK_ID and 
+        assert any(c.kwargs['id'] == task_definitions.AVAILABILITY_TASK_ID and 
                    c.kwargs['func'] == mock_update_avail and 
                    c.kwargs['interval'] == availability_interval for c in calls)
 
@@ -112,7 +112,7 @@ def test_schedule_tasks_mixed_state(mock_scheduler):
         # Only the availability task should have been scheduled.
         mock_scheduler.schedule.assert_called_once()
         call_args = mock_scheduler.schedule.call_args
-        assert call_args.kwargs['job_id'] == task_definitions.AVAILABILITY_TASK_ID
+        assert call_args.kwargs['id'] == task_definitions.AVAILABILITY_TASK_ID
         assert call_args.kwargs['func'] == mock_update_avail
 
 

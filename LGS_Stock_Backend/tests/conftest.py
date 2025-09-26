@@ -149,7 +149,11 @@ def mock_redis(mocker):
 
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.redis_job_conn", mocker.MagicMock())
     # Mock the objects that capture the connection at import time
-    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mocker.MagicMock())
+    # The mock for the queue needs a 'task' attribute to handle the @task decorator during test discovery.
+    # This mock ensures that decorating a function with @queue.task just returns the original function.
+    mock_queue = mocker.MagicMock()
+    mock_queue.task.side_effect = lambda func: func
+    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mock_queue)
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.scheduler", mocker.MagicMock())
 
 

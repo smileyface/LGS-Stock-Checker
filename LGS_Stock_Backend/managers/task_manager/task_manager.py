@@ -25,8 +25,8 @@ def task(task_id: str = None):
         _task_id = task_id or func.__name__
         # 1. Register with our internal registry for queuing by ID
         register_task(_task_id, func)
-        # 2. Decorate with RQ's task decorator so workers can execute it
-        return queue.task(func)
+        # 2. Return the original function, as RQ does not require pre-decoration.
+        return func
     return decorator
 
 def register_task(task_id: str, func: callable):

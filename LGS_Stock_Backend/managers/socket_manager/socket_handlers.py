@@ -92,7 +92,7 @@ def handle_get_card_availability():
         logger.info(f"🔍 Fetching card availability for user: {username}")
         # 1. Trigger the availability check. This function queues tasks for any non-cached
         #    items and returns any data that was already in the cache.
-        cached_data = availability_manager.get_card_availability(username)
+        cached_data = availability_manager.get_cached_availability_or_trigger_check(username)
 
         # 2. Immediately send any cached data back to the client.
         if cached_data:

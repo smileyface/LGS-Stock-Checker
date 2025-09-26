@@ -40,8 +40,6 @@ def trigger_availability_check_for_card(username: str, card_data: dict, on_compl
         if not store or not store.slug:
             continue
         logger.debug(f"Queueing availability check for '{card_name}' at '{store.slug}'.")
-        # Notify client that a check is starting
-        socket_manager.socketio.emit("availability_check_started", {"store": store.slug, "card": card_name}, room=username)
         # Queue the background task using the task manager
         task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card_data)
     
@@ -76,7 +74,6 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
             else:
                 logger.info(f"⏳ Cache miss for {card.card_name} at {store.name}. Queueing check.")
                 # Queue a task for only the specific card/store that missed the cache.
-                socket_manager.socketio.emit("availability_check_started", {"store": store.slug, "card": card.card_name}, room=username)
                 task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card.model_dump())
 
     return cached_results

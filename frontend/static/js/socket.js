@@ -66,35 +66,54 @@ socket.on("cards_data", function (data) {
     console.log("📡 Sent 'get_card_availability' event to backend");
 });
 
+socket.on("availability_check_started", function (data) {
+    console.log("⏳ Received availability_check_started:", data);
+    if (!data || !data.card) {
+        return;
+    }
+
+    const cardName = data.card;
+
+    // If we get a "started" event, we should ensure the state is 'searching'.
+    // This handles cases where a manual refresh is triggered for an already-loaded card.
+    if (!appState.availabilityMap[cardName] || appState.availabilityMap[cardName].status !== 'searching') {
+        appState.availabilityMap[cardName] = { status: 'searching', stores: [] };
+        // We dispatch an update here to immediately show the spinner on manual refreshes.
+        // The debounce will handle batching if many checks start at once.
+        dispatchUiUpdate();
+    }
+});
+
 socket.on("card_availability_data", function (data) {
     console.log("📥 Received availability data:", data);
 
     // The backend sends incremental updates for each card/store combination.
     // We need to build the availability map piece by piece.
-    if (data && data.card && data.store) {
-        const cardName = data.card;
-        const storeName = data.store;
-        const isAvailable = data.items && data.items.length > 0;
-
-        // Ensure the card has an entry in the map.
-        if (!appState.availabilityMap[cardName]) {
-            appState.availabilityMap[cardName] = [];
-        }
-
-        const storeIndex = appState.availabilityMap[cardName].indexOf(storeName);
-
-        if (isAvailable && storeIndex === -1) {
-            // Add the store to the list if it's available and not already present.
-            appState.availabilityMap[cardName].push(storeName);
-        } else if (!isAvailable && storeIndex !== -1) {
-            // Remove the store if it's no longer available.
-            appState.availabilityMap[cardName].splice(storeIndex, 1);
-        }
-    } else {
+    if (!data || !data.card || !data.store) {
         console.warn("⚠️ Received malformed availability data:", data);
         return; // Do not proceed with malformed data.
     }
 
+    const cardName = data.card;
+    const storeName = data.store;
+    const isAvailable = data.items && data.items.length > 0;
+
+    // Ensure the card has an entry in the map with the new, robust structure.
+    if (!appState.availabilityMap[cardName]) {
+        appState.availabilityMap[cardName] = { status: 'searching', stores: [] };
+    }
+
+    // Mark the status as completed since we have received data.
+    appState.availabilityMap[cardName].status = 'completed';
+    const storeIndex = appState.availabilityMap[cardName].stores.indexOf(storeName);
+
+    if (isAvailable && storeIndex === -1) {
+        // Add the store to the list if it's available and not already present.
+        appState.availabilityMap[cardName].stores.push(storeName);
+    } else if (!isAvailable && storeIndex !== -1) {
+        // Remove the store if it's no longer available.
+        appState.availabilityMap[cardName].stores.splice(storeIndex, 1);
+    }
     // Trigger a debounced UI update to show the new availability status.
     dispatchUiUpdate();
 });

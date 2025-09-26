@@ -88,6 +88,10 @@ def update_availability_single_card(username, store_name, card):
         logger.error(f"❌ Task received card data without a 'card_name'. Aborting. Data: {card}")
         return False
 
+    # Emit an event to notify the client that the check is actively starting now.
+    # This is more accurate than emitting from the manager before the task is picked up.
+    socket_emit.emit_from_worker("availability_check_started", {"store": store_name, "card": card_name}, room=username)
+
     logger.info(f"📌 Task started: Updating availability for {card_name} at {store_name} (User: {username})")
 
     # Ensure store_name is in the correct format

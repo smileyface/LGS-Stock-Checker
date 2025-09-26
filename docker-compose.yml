@@ -64,7 +64,7 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1
     restart: unless-stopped
-    command: [ "rq-scheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
+    command: /bin/sh -c "rq-scheduler --host redis --port 6379 --interval 60"
     depends_on:
       redis:
         condition: service_healthy

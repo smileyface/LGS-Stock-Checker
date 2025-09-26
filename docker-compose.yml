@@ -72,6 +72,8 @@ services:
       redis:
         condition: service_healthy
     environment:
+      # Add the path where pip installs executables to the container's PATH
+      - PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379

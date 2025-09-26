@@ -1,6 +1,6 @@
 import time
 from redis import Redis
-from rq import Worker, Queue, Connection
+from rq import Worker, Queue
 
 from tasks.scheduler_setup import schedule_tasks
 from utility import logger
@@ -15,6 +15,7 @@ if __name__ == '__main__':
     schedule_tasks()
 
     logger.info("🎧 Worker is starting...")
-    with Connection(redis_conn):
-        worker = Worker(map(Queue, listen))
-        worker.work()
+    # The 'with Connection(...)' block is deprecated.
+    # Pass the connection directly to the Worker.
+    worker = Worker(map(Queue, listen), connection=redis_conn)
+    worker.work()

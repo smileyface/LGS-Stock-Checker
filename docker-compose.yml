@@ -3,8 +3,9 @@ x-common-backend-env:
   # LOG_LEVEL is inherited from the shell environment where docker-compose is run.
   # The deploy.sh script sets and exports this variable.
   # Add the path where pip installs executables to the container's PATH
+  # This is a YAML anchor
   &common-backend-env
-  - PATH=PATH:"/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  - PATH=/usr/local/bin:${PATH}
   - LOG_LEVEL
   - REDIS_HOST=redis
   - FLASK_CONFIG=production
@@ -62,8 +63,7 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1
     restart: unless-stopped
-    # 💡 FIX: Use 'python -m rq_scheduler' to reliably find the executable.
-    command: [ "python", "-m", "rq_scheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
+    command: [ "rq-scheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
     depends_on:
       redis:
         condition: service_healthy

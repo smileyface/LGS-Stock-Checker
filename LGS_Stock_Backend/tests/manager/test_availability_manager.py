@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from managers import task_manager
 from managers.availability_manager.availability_manager import (
     check_availability,
-    get_card_availability,
+    get_cached_availability_or_trigger_check,
 )
 
 
@@ -42,10 +42,10 @@ def test_check_availability(mock_queue_task):
 @patch("managers.availability_manager.availability_manager.user_manager")
 @patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_with_cached_data(
-    mock_database, mock_user_manager, mock_storage
+    mock_database, mock_user_manager, mock_storage, mocker
 ):
     """
-    Verifies get_card_availability returns cached data and does not queue a task.
+    Verifies get_cached_availability_or_trigger_check returns cached data and does not queue a task.
     """
     # Arrange
     username = "testuser"
@@ -55,13 +55,14 @@ def test_get_card_availability_with_cached_data(
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
     cached_data = [{"price": "1.00"}]
     mock_storage.get_availability_data.return_value = cached_data
+    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
-    cached_results = get_card_availability(username)
+    cached_results = get_cached_availability_or_trigger_check(username)
 
     # Assert
     mock_storage.get_availability_data.assert_called_once_with("test-store", "Test Card")
-    assert cached_results == {"test-store": {"Test Card": cached_data}}
+    assert cached_results == {"test-store": {"Test Card": cached_data}} # noqa
 
 
 @patch("managers.availability_manager.availability_manager.task_manager.queue_task")
@@ -69,10 +70,10 @@ def test_get_card_availability_with_cached_data(
 @patch("managers.availability_manager.availability_manager.user_manager")
 @patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_with_no_cached_data(
-    mock_database, mock_user_manager, mock_storage, mock_queue_task
+    mock_database, mock_user_manager, mock_storage, mock_queue_task, mocker
 ):
     """
-    Verifies get_card_availability queues a fetch task if data is not cached.
+    Verifies get_cached_availability_or_trigger_check queues a fetch task if data is not cached.
     """
     # Arrange
     username = "testuser"
@@ -82,9 +83,10 @@ def test_get_card_availability_with_no_cached_data(
     mock_card = MockCard("Test Card")
     mock_user_manager.load_card_list.return_value = [mock_card]
     mock_storage.get_availability_data.return_value = None
+    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
-    cached_results = get_card_availability(username)
+    cached_results = get_cached_availability_or_trigger_check(username)
 
     # Assert
     mock_storage.get_availability_data.assert_called_once_with("test-store", "Test Card")
@@ -101,7 +103,7 @@ def test_get_card_availability_with_no_cached_data(
 @patch("managers.availability_manager.availability_manager.user_manager")
 @patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_handles_invalid_store(
-    mock_database, mock_user_manager, mock_storage
+    mock_database, mock_user_manager, mock_storage, mocker
 ):
     """
     Verifies that stores with no slug are skipped gracefully.
@@ -122,9 +124,10 @@ def test_get_card_availability_handles_invalid_store(
         mock_store_valid,
     ]
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
+    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
-    get_card_availability(username)
+    get_cached_availability_or_trigger_check(username)
 
     # Assert
     mock_database.get_user_stores.assert_called_once_with(username)

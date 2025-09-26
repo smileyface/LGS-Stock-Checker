@@ -32,36 +32,46 @@ def get_wanted_cards(users: list):
     return list(wanted_cards)
 
 
-@task_manager.task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY)
-def update_wanted_cards_availability(username=None):
+@task_manager.task()
+def update_all_tracked_cards_availability():
     """
-    Fetches and caches availability for wanted cards.
-    If a username is provided, it checks only for that user's cards and detects changes against their last known state.
-    If no username is provided, it runs a system-wide update for all wanted cards, updating the global 'system' state.
+    System-wide task to re-check availability for all tracked cards for all users.
+    This acts as a fan-out task, enqueuing specific checks for each user/card/store combo.
+    This fulfills requirement [5.1.7].
     """
-    if username:
-        user_obj = database.get_user_by_username(username)  # Use data layer to get the full ORM object
-        if not user_obj:
-            logger.error(f"Cannot update availability, user '{username}' not found.")
+    logger.info("🚀 Starting system-wide availability check for all tracked cards.")
+    try:
+        all_users = database.get_all_users()
+        if not all_users:
+            logger.info("No users found. Skipping system-wide availability check.")
             return
-        users = [user_obj]
-        state_key = username
-    else:
-        users = database.get_all_users()
-        state_key = "system"
 
-    wanted_cards = get_wanted_cards(users)
-    if not wanted_cards:
-        logger.info(f"✅ No wanted cards to update for context '{state_key}'. Task complete.")
+        for user in all_users:
+            logger.debug(f"Queueing availability checks for user: {user.username}")
+            # This re-uses the existing on-demand logic for a specific user.
+            update_availability_for_user(user.username)
+
+    except Exception as e:
+        logger.error(f"❌ An error occurred during system-wide availability check: {e}", exc_info=True)
+
+
+@task_manager.task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY)
+def update_availability_for_user(username: str):
+    """
+    Checks availability for all tracked cards for a *specific user* against their
+    preferred stores. This is triggered on-demand (e.g., after login).
+    """
+    logger.info(f"🔄 Starting availability check for user: {username}")
+    user_cards = user_manager.load_card_list(username)
+    user_stores = database.get_user_stores(username)
+
+    if not user_cards or not user_stores:
+        logger.warning(f"User '{username}' has no cards or stores to check. Skipping.")
         return
 
-    logger.info(f"🔄 Updating availability for {len(wanted_cards)} wanted cards.")
-
-    availability_update = {}
-    for card in wanted_cards:
-        # This function is smart and uses a global cache, so we are not re-scraping unnecessarily.
-        availability_update[card] = store_manager.load_store_availability(card)
-        availability_update[card]["last_updated"] = time.time()
+    for card in user_cards:
+        for store in user_stores:
+            update_availability_single_card(username, store.slug, card.model_dump())
 
 
 @task_manager.task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD)
@@ -72,6 +82,40 @@ def update_availability_single_card(username, store_name, card):
     if not store_name:
         logger.warning(f"🚨 Invalid store name: {store_name}. Task aborted.")
         return False
+
+    card_name = card.get("card_name")
+    if not card_name:
+        logger.error(f"❌ Task received card data without a 'card_name'. Aborting. Data: {card}")
+        return False
+
+    logger.info(f"📌 Task started: Updating availability for {card_name} at {store_name} (User: {username})")
+
+    # Ensure store_name is in the correct format
+    store = store_manager.store_list(store_name)
+    if not store:
+        logger.warning(f"🚨 Store '{store_name}' is not configured or missing from STORE_REGISTRY. Task aborted.")
+        return False
+
+    logger.info(f"🔍 Checking availability for {card_name} at {store_name}")
+
+    # Fetch availability using the specific store's implementation
+    card_specs = card.get("specifications")
+    available_items = store.fetch_card_availability(card_name, card_specs)
+
+    if available_items:
+        logger.info(f"✅ Found {len(available_items)} listings for {card_name} at {store_name}. Caching and emitting.")
+        
+        # 1. Cache the results first for data integrity.
+        availability_manager.cache_availability_data(store_name, card_name, available_items)
+        logger.info(f"✅ Cached availability results for {card_name} at {store_name}.")
+
+        # 2. Use the dedicated worker-safe emit function from socket_emit.
+        event_data = {"username": username, "store": store_name, "card": card_name, "items": available_items}
+        socket_emit.emit_from_worker("card_availability_data", event_data, room=username)
+    else:
+        logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}. Moving on.")
+
+    return True
 
     card_name = card.get("card_name")
     if not card_name:

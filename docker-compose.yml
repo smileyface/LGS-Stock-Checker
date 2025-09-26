@@ -8,6 +8,8 @@ services:
     environment:
       # LOG_LEVEL is inherited from the shell environment where docker-compose is run.
       # The deploy.sh script sets and exports this variable.
+      # Add the path where pip installs executables to the container's PATH
+      - PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - LOG_LEVEL
       - REDIS_HOST=redis
       - FLASK_CONFIG=production

@@ -51,12 +51,6 @@ These requirements define how store information is managed and retrieved.
 -   **[2.1.2]** The system shall return no data when queried with a non-existent store slug.
 -   **[2.1.3]** The system shall be able to retrieve a list of all available stores.
 -   **[2.1.4]** The system shall return an empty list when retrieving all stores if none exist.
-    
-### 2.2 Store Data Modification
--   **[2.2.1]** The system shall allow a store's name to be updated.
--   **[2.2.2]** An attempt to update the name for a non-existent store shall not create a new store or raise an error.
--   **[2.2.3]** The system shall allow a store's homepage URL to be updated.
--   **[2.2.4]** The system shall allow a store's fetch strategy to be updated.User modification of other users info
 
 ## 3. Card Tracking Management
 
@@ -64,10 +58,16 @@ These requirements define how users manage the list of cards they want to track.
 
 -   **[3.1.1]** A user shall be able to add a new card to their tracked list, specifying an amount and optional specifications (set, finish, etc.).
 -   **[3.1.2]** A duplicate card shall be defined as a card with the same name and specifications.
--   **[3.1.3]** The system shall prevent adding a duplicate card specification for the same user.
+-   **[3.1.3]** The system shall prevent adding a duplicate card *specification* for the same user. Adding a card name that is already tracked will add new specifications to the existing entry.
 -   **[3.1.4]** A user shall be able to remove a card from their tracked list.
 -   **[3.1.5]** A user shall be able to update the amount and specifications of a card they are tracking.
 -   **[3.1.6]** The system shall provide a complete list of a user's tracked cards, including all associated specifications.
+
+### 3.2 Card Specifications
+
+-   **[3.2.1]** The system shall maintain a list of valid specifications, including set codes, collector numbers,and finishes.
+-   **[3.2.2]** The system shall allow users to select from valid specifications when adding or editing a card.
+-   **[3.2.3]** If a specification is not valid, the system should alert the user
 
 ## 4. Cataloging & Search
 
@@ -99,7 +99,6 @@ These requirements define the core functionality of checking for card availabili
 -   **[5.1.2]** Availability checks shall be performed by background workers to avoid blocking the main application and user interface.
 -   **[5.1.3]** The system shall cache availability results (e.g., in Redis) to minimize redundant web scraping and improve performance.
 -   **[5.1.4]** The system shall notify the user in real-time via WebSockets when new availability data is found for a card they are tracking.
--   **[5.1.5]** The system shall notify the user when an availability check is initiated for a specific card/store pair, allowing the UI to show a "checking..." state.
 -   **[5.1.6]** The system shall recheck card availability at regular intervals.
 
 

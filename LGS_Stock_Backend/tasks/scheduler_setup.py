@@ -30,7 +30,7 @@ def schedule_tasks():
                 scheduled_time=time.time(),
                 func=update_card_catalog,
                 interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
-                job_id=task_definitions.CATALOG_TASK_ID,
+                id=task_definitions.CATALOG_TASK_ID,
                 description="Periodically updates the card catalog from Scryfall."
             )
 
@@ -41,7 +41,7 @@ def schedule_tasks():
                 scheduled_time=time.time(),
                 func=update_set_catalog,
                 interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
-                job_id=task_definitions.SET_CATALOG_TASK_ID,
+                id=task_definitions.SET_CATALOG_TASK_ID,
                 description="Periodically updates the set catalog from Scryfall."
             )
 
@@ -53,7 +53,7 @@ def schedule_tasks():
                 scheduled_time=time.time(),
                 func=update_full_catalog,
                 interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
-                job_id=task_definitions.FULL_CATALOG_TASK_ID,
+                id=task_definitions.FULL_CATALOG_TASK_ID,
                 description="Periodically updates the full card, set, printing, and finish catalog from Scryfall."
             )
 
@@ -64,7 +64,7 @@ def schedule_tasks():
                 scheduled_time=time.time(),
                 func=update_wanted_cards_availability, # Call with no arguments for a system-wide update
                 interval=timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds(),
-                job_id=task_definitions.AVAILABILITY_TASK_ID,
+                id=task_definitions.AVAILABILITY_TASK_ID,
                 description="Periodically checks for card availability for all users."
             )
     except Exception as e:

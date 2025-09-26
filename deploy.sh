@@ -45,11 +45,11 @@ detect_composer() {
 
 git_pull() {
     local branch=$1
-    echo "📡 Fetching latest updates from origin..."
-    git fetch origin
-
-    echo "🔄 Checking out and resetting branch '$branch'..."
+    echo "� Checking out and resetting branch '$branch'..."
     git checkout "$branch"
+
+    echo "�📡 Fetching latest updates from origin..."
+    git fetch origin
     git reset --hard "origin/$branch"
 }
 

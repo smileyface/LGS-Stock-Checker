@@ -143,7 +143,9 @@ def mock_redis(mocker):
     mock_data_redis = mocker.MagicMock()
     mock_data_redis.get.return_value = None  # Simulate key not found
     mock_data_redis.hgetall.return_value = {}  # Simulate empty hash
-    mocker.patch("LGS_Stock_Backend.data.redis_client.redis_conn", mock_data_redis)
+    # Patch the redis_conn object where it is *used* in the cache_manager module.
+    # This is the most reliable way to ensure the mock is applied.
+    mocker.patch("data.cache.cache_manager.redis_conn", mock_data_redis)
 
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.redis_job_conn", mocker.MagicMock())
     # Mock the objects that capture the connection at import time

@@ -1,5 +1,5 @@
 import time
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from .catalog_tasks import update_card_catalog, update_set_catalog, update_full_catalog
 from .card_availability_tasks import update_wanted_cards_availability
@@ -21,13 +21,14 @@ def schedule_tasks():
     This function is designed to be idempotent; it won't create duplicate scheduled jobs.
     """
     logger.info("🚀 Setting up scheduled tasks...")
+    initial_run_time = datetime.now()
     try:
         # --- Schedule Card Catalog Update ---
         # Check if the job is already scheduled to avoid duplicates on restart
         if task_definitions.CATALOG_TASK_ID not in scheduler:
             logger.info(f"🗓️ Scheduling task '{task_definitions.CATALOG_TASK_ID}' to run every {CATALOG_UPDATE_INTERVAL_HOURS} hours.")
             scheduler.schedule(
-                scheduled_time=time.time(),
+                scheduled_time=initial_run_time,
                 func=update_card_catalog,
                 interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
                 id=task_definitions.CATALOG_TASK_ID,
@@ -38,7 +39,7 @@ def schedule_tasks():
         if task_definitions.SET_CATALOG_TASK_ID not in scheduler:
             logger.info(f"🗓️ Scheduling task '{task_definitions.SET_CATALOG_TASK_ID}' to run every {CATALOG_UPDATE_INTERVAL_HOURS} hours.")
             scheduler.schedule(
-                scheduled_time=time.time(),
+                scheduled_time=initial_run_time,
                 func=update_set_catalog,
                 interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
                 id=task_definitions.SET_CATALOG_TASK_ID,
@@ -50,7 +51,7 @@ def schedule_tasks():
         if task_definitions.FULL_CATALOG_TASK_ID not in scheduler:
             logger.info(f"🗓️ Scheduling task '{task_definitions.FULL_CATALOG_TASK_ID}' to run every {CATALOG_UPDATE_INTERVAL_HOURS} hours.")
             scheduler.schedule(
-                scheduled_time=time.time(),
+                scheduled_time=initial_run_time,
                 func=update_full_catalog,
                 interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
                 id=task_definitions.FULL_CATALOG_TASK_ID,
@@ -61,7 +62,7 @@ def schedule_tasks():
         if task_definitions.AVAILABILITY_TASK_ID not in scheduler:
             logger.info(f"🗓️ Scheduling task '{task_definitions.AVAILABILITY_TASK_ID}' to run every {AVAILABILITY_UPDATE_INTERVAL_MINUTES} minutes.")
             scheduler.schedule(
-                scheduled_time=time.time(),
+                scheduled_time=initial_run_time,
                 func=update_wanted_cards_availability, # Call with no arguments for a system-wide update
                 interval=timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds(),
                 id=task_definitions.AVAILABILITY_TASK_ID,

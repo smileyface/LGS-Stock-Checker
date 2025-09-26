@@ -1,55 +1,89 @@
-import json
-from typing import List, Dict, Any, Optional, Union
-
 import requests
-from data import cache
 from utility import logger
+import json
+import gzip
+from typing import List, Dict, Any
 
-SCRYFALL_CARD_CACHE_KEY = "scryfall_card_names"
-SCRYFALL_CARD_CACHE_EXPIRY = 86400
-SCRYFALL_SETS_API_URL = "https://api.scryfall.com/sets"
+from data.cache import cache_manager
 
 
-def fetch_scryfall_card_names() -> Optional[List[str]]:
-    """
-    Fetch all Magic: The Gathering card names from Scryfall and cache them.
+def fetch_scryfall_card_names() -> List[str]:
+    """Fetches a list of all unique card names from Scryfall."""
+    cache_key = "scryfall_card_names"
+    cached_names = cache_manager.load_data(cache_key)
+    if cached_names:
+        logger.info(f"✅ Found {len(cached_names)} card names in cache.")
+        return cached_names
 
-    Returns:
-        A list of card names, or None on failure.
-    """
-    cached_data = cache.load_data(SCRYFALL_CARD_CACHE_KEY)
-    if cached_data:
-        logger.info("✅ Loaded card names from cache.")
-        return json.loads(cached_data)
-
-    logger.info("🔄 Fetching card names from Scryfall...")
-    url = "https://api.scryfall.com/catalog/card-names"
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raises an exception for 4xx/5xx status codes
-
-        card_names = response.json().get("data", [])
-        logger.info(f"✅ Cached {len(card_names)} card names for 24 hours.")
+        logger.info("🔄 Fetching card names from Scryfall...")
+        response = requests.get("https://api.scryfall.com/catalog/card-names")
+        response.raise_for_status()
+        data = response.json()
+        card_names = data.get("data", [])
+        if card_names:
+            cache_manager.save_data(cache_key, card_names, expiration_hours=24)
+            logger.info(f"✅ Cached {len(card_names)} card names for 24 hours.")
         return card_names
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Failed to fetch Scryfall card names: {e}")
-        return None
+        logger.error(f"Failed to fetch card names from Scryfall: {e}")
+        return []
 
 
-def fetch_all_sets() -> Optional[List[Dict[str, Any]]]:
+def fetch_all_sets() -> List[Dict[str, Any]]:
+    """Fetches all set data from Scryfall."""
+    try:
+        logger.info("Fetching card set information from Scryfall...")
+        response = requests.get("https://api.scryfall.com/sets")
+        response.raise_for_status()
+        data = response.json()
+        return data.get("data", [])
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request to Scryfall for set data failed: {e}")
+        return []
+
+
+def fetch_all_card_data() -> List[Dict[str, Any]]:
     """
-    Fetches all set data from the Scryfall API.
-
-    Returns:
-        A list of set data dictionaries, or None on failure.
-
-    Logs:
-        Logs any errors encountered during the request.
+    Fetches the 'All Cards' bulk data file from Scryfall, which contains
+    an object for every printing of every card.
     """
     try:
-        response = requests.get(SCRYFALL_SETS_API_URL)
+        logger.info("Fetching Scryfall bulk data catalog URL...")
+        # First, get the list of bulk data files
+        bulk_data_info_res = requests.get("https://api.scryfall.com/bulk-data")
+        bulk_data_info_res.raise_for_status()
+        bulk_data_info = bulk_data_info_res.json()
+
+        # Find the 'All Cards' data file URL
+        all_cards_url = None
+        for data_file in bulk_data_info.get("data", []):
+            if data_file.get("type") == "all_cards":
+                all_cards_url = data_file.get("download_uri")
+                break
+
+        if not all_cards_url:
+            logger.error("Could not find 'all_cards' download URI in Scryfall bulk data response.")
+            return []
+
+        logger.info(f"Downloading bulk data file from: {all_cards_url}")
+        # Download the gzipped JSON file
+        response = requests.get(all_cards_url, stream=True)
         response.raise_for_status()
-        return response.json().get("data")
+
+        # Decompress and parse the JSON data
+        card_data = []
+        # The 'with' statement ensures the file handle is closed properly.
+        # We decompress on the fly and load the JSON.
+        with gzip.open(response.raw, 'rt', encoding='utf-8') as f:
+            card_data = json.load(f)
+
+        logger.info(f"Successfully downloaded and parsed {len(card_data)} card printings.")
+        return card_data
+
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Error fetching set data from Scryfall: {e}")
-        return None
+        logger.error(f"Request to Scryfall for bulk data failed: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"An unexpected error occurred during bulk data fetch: {e}")
+        return []

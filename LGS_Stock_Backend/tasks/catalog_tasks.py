@@ -1,10 +1,11 @@
 from externals import fetch_scryfall_card_names, fetch_all_sets, fetch_all_card_data
 from data import database
+from managers import task_manager
 from utility import logger
 from datetime import datetime
 
+@task_manager.task()
 def update_card_catalog():
-
     """
     Task to fetch all card names from Scryfall and update the local database catalog.
     This is intended to be run as a background job.
@@ -23,6 +24,7 @@ def update_card_catalog():
     logger.info("🏁 Finished background task: update_card_catalog")
 
 
+@task_manager.task()
 def update_set_catalog():
     """
     Task to fetch all set data from Scryfall and update the local database catalog.
@@ -57,6 +59,7 @@ def update_set_catalog():
     logger.info("🏁 Finished background task: update_set_catalog")
 
 
+@task_manager.task()
 def update_full_catalog():
     """
     Task to fetch all card printings from Scryfall and populate the

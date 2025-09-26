@@ -32,6 +32,7 @@ def get_wanted_cards(users: list):
     return list(wanted_cards)
 
 
+@task_manager.task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY)
 def update_wanted_cards_availability(username=None):
     """
     Fetches and caches availability for wanted cards.
@@ -63,6 +64,7 @@ def update_wanted_cards_availability(username=None):
         availability_update[card]["last_updated"] = time.time()
 
 
+@task_manager.task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD)
 def update_availability_single_card(username, store_name, card):
     """Background task to update the availability for a single card at a store.
     """
@@ -104,9 +106,3 @@ def update_availability_single_card(username, store_name, card):
         logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}. Moving on.")
 
     return True
-
-# --- Task Registration ---
-# Register these functions with the task manager so they can be queued by ID.
-# This is done at the end of the module to ensure the functions are defined.
-task_manager.register_task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY, update_wanted_cards_availability)
-task_manager.register_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, update_availability_single_card)

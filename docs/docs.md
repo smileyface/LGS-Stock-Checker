@@ -341,6 +341,11 @@ sequenceDiagram
     DB-->>Backend: Returns updated list of tracked cards
     deactivate DB
 
+    note over Backend: Requirement [5.1.6] - Trigger availability check for the new card
+    loop For each preferred store
+        Backend->>Redis as Redis Queue: Enqueue "update_availability_single_card" task
+    end
+
     Backend-->>Client: Emits "cards_data" {tracked_cards}
     deactivate Backend
     Note right of Client: Dashboard table updates automatically

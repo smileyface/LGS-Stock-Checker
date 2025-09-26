@@ -17,5 +17,5 @@ class CardPrintingSchema(BaseModel):
     id: int
     card_name: str
     set_code: str
-    collector_number: str
+    collector_number: int
     available_finishes: List[FinishSchema]

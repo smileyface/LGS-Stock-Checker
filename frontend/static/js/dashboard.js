@@ -1,14 +1,20 @@
 /**
  * Renders the availability data as a series of Bootstrap badges.
- * @param {string[] | undefined} stores - An array of store names where the card is available.
+ * @param {object | undefined} availability - The availability object for a card.
  * @returns {string} - HTML string of badges.
  */
-function renderAvailability(stores) {
-    if (!stores || stores.length === 0) {
+function renderAvailability(availability) {
+    if (!availability || availability.status === 'searching') {
+        // If no data exists or the status is explicitly 'searching'.
+        return `<span class="badge bg-info text-dark d-inline-flex align-items-center">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Searching...</span>`;
+    }
+    if (!availability.stores || availability.stores.length === 0) {
         return '<span class="badge bg-secondary">Not Available</span>';
     }
     // Creates a green badge for each store the card is available in.
-    return stores.map(store => `<span class="badge bg-success me-1">${store}</span>`).join(' ');
+    return availability.stores.map(store => `<span class="badge bg-success me-1">${store}</span>`).join(' ');
 }
 
 /**
@@ -27,7 +33,7 @@ function updateCardTable(appState) {
 
     const tableData = appState.trackedCards.map(card => {
         // For each card, look up its availability in the map using its name.
-        const availableStores = appState.availabilityMap[card.card_name] || [];
+        const availability = appState.availabilityMap[card.card_name];
         const actionButtons = `
             <div class="action-buttons" data-card-name="${card.card_name}">
                 <button class="btn btn-sm btn-light edit-btn" title="Edit">✏️</button>
@@ -42,7 +48,7 @@ function updateCardTable(appState) {
             card.specifications?.[0]?.set_code || "N/A",
             card.specifications?.[0]?.collector_number || "N/A",
             card.specifications?.[0]?.finish || "Non-Foil",
-            renderAvailability(availableStores)
+            renderAvailability(availability)
         ];
     });
 

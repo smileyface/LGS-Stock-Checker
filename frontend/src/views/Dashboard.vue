@@ -76,21 +76,33 @@ onMounted(async () => {
         trackedCards.value = data.tracked_cards || [];
     });
 
+    socket.on('availability_check_started', (data) => {
+        if (!data || !data.card) return;
+        const cardName = data.card;
+        // Set the status to 'searching' to trigger the spinner in the UI.
+        availabilityMap.value[cardName] = { status: 'searching', stores: [] };
+    });
+
     socket.on('card_availability_data', (data) => {
-        // Logic to update availability map
+        if (!data || !data.card || !data.store) return;
+
         const cardName = data.card;
         const storeName = data.store;
         const isAvailable = data.items && data.items.length > 0;
         
+        // Ensure the card has an entry in the map.
         if (!availabilityMap.value[cardName]) {
-            availabilityMap.value[cardName] = [];
+            availabilityMap.value[cardName] = { status: 'searching', stores: [] };
         }
 
-        const storeIndex = availabilityMap.value[cardName].indexOf(storeName);
+        // Mark as completed since we've received data.
+        availabilityMap.value[cardName].status = 'completed';
+
+        const storeIndex = availabilityMap.value[cardName].stores.indexOf(storeName);
         if (isAvailable && storeIndex === -1) {
-            availabilityMap.value[cardName].push(storeName);
+            availabilityMap.value[cardName].stores.push(storeName);
         } else if (!isAvailable && storeIndex !== -1) {
-            availabilityMap.value[cardName].splice(storeIndex, 1);
+            availabilityMap.value[cardName].stores.splice(storeIndex, 1);
         }
     });
 
@@ -99,11 +111,21 @@ onMounted(async () => {
 });
 
 function renderAvailability(cardName) {
-    const stores = availabilityMap.value[cardName];
-    if (!stores || stores.length === 0) {
-        return '<span class="badge bg-secondary">Not Available</span>';
+    const availability = availabilityMap.value[cardName];
+
+    if (!availability || availability.status === 'searching') {
+        return `<span class="badge bg-info text-dark d-inline-flex align-items-center">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Searching</span>`;
     }
-    return stores.map(store => `<span class="badge bg-success me-1">${store}</span>`).join(' ');
+
+    // If the check is complete and the stores array has items, it's available.
+    if (availability.stores && availability.stores.length > 0) {
+        return '<span class="badge bg-success">Available</span>';
+    }
+
+    // Otherwise, it's not available.
+        return '<span class="badge bg-secondary">Not Available</span>';
 }
 
 function deleteCard(cardName) {

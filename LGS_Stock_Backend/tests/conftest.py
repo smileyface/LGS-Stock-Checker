@@ -180,6 +180,15 @@ def mock_fetch_sets(mocker):
     mock.return_value = []  # Provide a safe, empty list as a default
     return mock
 
+
+@pytest.fixture(autouse=True)
+def mock_fetch_all_card_data(mocker):
+    """Mocks the fetch_all_card_data function to prevent large network calls."""
+    # Patch the function where it is looked up (in the tasks module).
+    mock = mocker.patch("tasks.catalog_tasks.fetch_all_card_data")
+    mock.return_value = []  # Provide a safe, empty list as a default
+    return mock
+
 @pytest.fixture
 def mock_store():
     """Mocks the store_manager.store_list function."""

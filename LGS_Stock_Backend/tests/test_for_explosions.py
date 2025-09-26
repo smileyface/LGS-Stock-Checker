@@ -77,63 +77,67 @@ def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
         params = inspect.signature(func).parameters
 
         # Generate safe test inputs
-        args = []
+        pos_args = []
+        kw_args = {}
+
         for param_name, param in params.items():
+            arg_value = None
+            is_kw_only = param.kind == inspect.Parameter.KEYWORD_ONLY
+
             # Use seeded data for common parameter names
             # Add a special case for `add_user` to avoid UNIQUE constraint violation
             if func.__name__ == 'add_user' and 'username' in param_name:
-                args.append("new_smoke_test_user")
-                continue
-
-            if "user" in param_name and ("name" in param_name or "username" in param_name):
-                args.append(live_user.username)
-                continue
+                arg_value = "new_smoke_test_user"
+            elif "user" in param_name and ("name" in param_name or "username" in param_name):
+                arg_value = live_user.username
             elif "user" in param_name and "id" in param_name:
-                args.append(live_user.id)
-                continue
+                arg_value = live_user.id
             elif "store" in param_name and "id" in param_name:
-                args.append(live_store.id)
-                continue
+                arg_value = live_store.id
+            # Add a special case for the `set_user_stores` function, which expects a list of slugs.
+            elif param_name == "store_slugs":
+                arg_value = [live_store.slug]
             elif "slug" in param_name:
-                args.append(live_store.slug)
-                continue
+                arg_value = live_store.slug
             elif "password" in param_name and "hash" not in param_name:
-                args.append("a_valid_password")
-                continue
+                arg_value = "a_valid_password"
             elif "password_hash" in param_name:
-                args.append("a_valid_test_hash")  # Provide a non-null hash
-                continue
+                arg_value = "a_valid_test_hash"  # Provide a non-null hash
             elif "session" in param_name:  # The @db_query decorator injects the session
                 # The test should not provide one, so we skip it.
                 continue
             # Add specific handlers for common non-trivial types
             elif param.annotation is callable:
-                args.append(lambda: "dummy function")  # Provide a dummy callable
-                continue
+                arg_value = lambda: "dummy function"  # Provide a dummy callable
             elif param.annotation is SocketIO:
-                args.append(MagicMock())  # Provide a mock SocketIO object
-                continue
+                arg_value = MagicMock()  # Provide a mock SocketIO object
             # Fallback to generic types
-            origin = typing.get_origin(param.annotation)
-            if param.default is not inspect.Parameter.empty:
-                args.append(param.default)
-            elif hasattr(param.annotation, '__total__'):  # Heuristic for TypedDict
-                args.append({})
-            elif param.annotation is dict or origin is dict:
-                args.append({})
-            elif param.annotation is list or origin is list:
-                args.append([])
-            elif param.annotation == str:
-                args.append("test_string")
-            elif param.annotation == int:
-                args.append(1)  # Use a valid ID; 0 can be invalid
-            elif param.annotation == bool:
-                args.append(False)
             else:
-                args.append(None)  # Safe fallback
+                origin = typing.get_origin(param.annotation)
+                if param.default is not inspect.Parameter.empty:
+                    arg_value = param.default
+                elif hasattr(param.annotation, '__total__'):  # Heuristic for TypedDict
+                    arg_value = {}
+                elif param.annotation is dict or origin is dict:
+                    arg_value = {}
+                elif param.annotation is list or origin is list:
+                    arg_value = []
+                elif param.annotation == str:
+                    arg_value = "test_string"
+                elif param.annotation == int:
+                    arg_value = 1  # Use a valid ID; 0 can be invalid
+                elif param.annotation == bool:
+                    arg_value = False
+                else:
+                    arg_value = None  # Safe fallback
+
+            if is_kw_only:
+                kw_args[param_name] = arg_value
+            else:
+                pos_args.append(arg_value)
 
         try:
-            func(*args)
+            func(*pos_args, **kw_args)
         except HTTPException as e:
             # HTTP exceptions (like 401 Unauthorized or 404 Not Found) are expected outcomes
             # for route handlers when called without a proper request context.
@@ -143,5 +147,5 @@ def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
         except Exception as e:
             pytest.fail(
                 f"Function {package.__name__}.{name}{inspect.signature(func)} "
-                f"raised an exception with args {args}: {e}"
+                f"raised an exception with args {pos_args} and kwargs {kw_args}: {e}"
             )

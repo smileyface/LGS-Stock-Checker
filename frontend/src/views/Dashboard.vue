@@ -55,69 +55,24 @@ import { ref, onMounted, computed, nextTick } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
 import AddCardModal from '../components/AddCardModal.vue';
 import EditCardModal from '../components/EditCardModal.vue';
-import { io } from 'socket.io-client';
 import { authStore } from '../stores/auth';
+import { useSocket } from '../composables/useSocket';
 
 const username = computed(() => authStore.user?.username || '');
-const trackedCards = ref([]);
-const availabilityMap = ref({});
 const pageTitle = ref('Dashboard');
 const allStores = computed(() => authStore.user?.stores || []);
-const socket = io({ withCredentials: true });
 const addCardModalRef = ref(null);
 const editCardModalRef = ref(null);
 const cardToEdit = ref(null);
 
-onMounted(async () => {
-    // User and store data are now retrieved from the authStore,
-    // which is populated when the application first loads.
-
-    socket.on('connect', () => {
-        console.log("🔗 Connected to WebSocket Server!");
-        // Now that we are connected, request initial data.
-        console.log("📡 Emitting 'get_cards' to fetch user's tracked cards.");
-        socket.emit("get_cards");
-        console.log("📡 Emitting 'get_card_availability' to fetch initial availability.");
-        socket.emit("get_card_availability");
-    });
-
-    socket.on('cards_data', (data) => {
-        console.log("🛠️ Received 'cards_data':", data);
-        trackedCards.value = data.tracked_cards || [];
-    });
-
-    socket.on('availability_check_started', (data) => {
-        if (!data || !data.card) return;
-        const cardName = data.card;
-        console.log(`⏳ Received 'availability_check_started' for: ${cardName}`);
-        // Set the status to 'searching' to trigger the spinner in the UI.
-        availabilityMap.value[cardName] = { status: 'searching', stores: [] };
-    });
-
-    socket.on('card_availability_data', (data) => {
-        if (!data || !data.card || !data.store) return;
-
-        const cardName = data.card;
-        const storeName = data.store;
-        const isAvailable = data.items && data.items.length > 0;
-        console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${storeName}'. Available: ${isAvailable}`);
-        
-        // Ensure the card has an entry in the map.
-        if (!availabilityMap.value[cardName]) {
-            availabilityMap.value[cardName] = { status: 'searching', stores: [] };
-        }
-
-        // Mark as completed since we've received data.
-        availabilityMap.value[cardName].status = 'completed';
-
-        const storeIndex = availabilityMap.value[cardName].stores.indexOf(storeName);
-        if (isAvailable && storeIndex === -1) {
-            availabilityMap.value[cardName].stores.push(storeName);
-        } else if (!isAvailable && storeIndex !== -1) {
-            availabilityMap.value[cardName].stores.splice(storeIndex, 1);
-        }
-    });
-});
+// Use the composable to get reactive state and methods
+const { 
+    trackedCards, 
+    availabilityMap, 
+    deleteCard, 
+    saveCard, 
+    updateCard 
+} = useSocket();
 
 function renderAvailability(cardName) {
     const availability = availabilityMap.value[cardName];
@@ -137,11 +92,6 @@ function renderAvailability(cardName) {
         return '<span class="badge bg-secondary">Not Available</span>';
 }
 
-function deleteCard(cardName) {
-    console.log(`🗑️ Emitting 'delete_card' for: ${cardName}`);
-    socket.emit('delete_card', { card: cardName });
-}
-
 function editCard(card) {
     console.log(`✏️ Opening edit modal for: ${card.card_name}`);
     cardToEdit.value = card;
@@ -154,15 +104,5 @@ function editCard(card) {
 function showAddCardModal() {
     console.log('➕ Opening add card modal.');
     addCardModalRef.value?.show();
-}
-
-function saveCard(cardData) {
-    console.log("💾 Emitting 'add_card' with data:", cardData);
-    socket.emit('add_card', cardData);
-}
-
-function updateCard(cardData) {
-    console.log("🔄 Emitting 'update_card' with data:", cardData);
-    socket.emit('update_card', cardData);
 }
 </script>

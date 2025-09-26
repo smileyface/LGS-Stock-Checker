@@ -1,3 +1,3 @@
-from .redis_manager import register_function, queue_task, schedule_task, get_redis_url
+from .redis_manager import get_redis_url, scheduler, queue
 
-__all__ = ["register_function", "queue_task", "schedule_task", "get_redis_url"]
+__all__ = ["get_redis_url", "scheduler", "queue"]

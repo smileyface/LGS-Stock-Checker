@@ -1,7 +1,7 @@
 import time
 
 from data import database, cache
-from managers import store_manager, user_manager, availability_manager
+from managers import store_manager, user_manager, availability_manager, task_manager
 from managers.socket_manager import socket_emit
 from utility import logger
 
@@ -104,3 +104,9 @@ def update_availability_single_card(username, store_name, card):
         logger.warning(f"⚠️ No available listings found for {card_name} at {store_name}. Moving on.")
 
     return True
+
+# --- Task Registration ---
+# Register these functions with the task manager so they can be queued by ID.
+# This is done at the end of the module to ensure the functions are defined.
+task_manager.register_task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY, update_wanted_cards_availability)
+task_manager.register_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, update_availability_single_card)

@@ -10,6 +10,10 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, initialize_socket_handlers
 from managers.user_manager import load_user_by_id
+# Import task modules to ensure they register themselves with the task manager on startup.
+import tasks.card_availability_tasks
+import tasks.catalog_tasks
+
 from data.database.db_config import SessionLocal, initialize_database, startup_database
 
 login_manager = LoginManager()

@@ -1,3 +1,20 @@
+# Define a reusable environment block for all backend services
+x-common-backend-env:
+  # LOG_LEVEL is inherited from the shell environment where docker-compose is run.
+  # The deploy.sh script sets and exports this variable.
+  # Add the path where pip installs executables to the container's PATH
+  # The default PATH in the python:3.9-slim image already includes /usr/local/bin,
+  # so we don't need to modify it. We'll keep the anchor for other variables.
+  &common-backend-env
+  LOG_LEVEL: ${LOG_LEVEL}
+  REDIS_HOST: redis
+  FLASK_CONFIG: production
+  REDIS_PORT: 6379
+  REDIS_URL: redis://redis:6379
+  DATABASE_URL: postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
+  CORS_ALLOWED_ORIGINS: http://localhost:8000,http://192.168.1.120:8000,http://localhost:5173 # ADD THIS LINE:
+  PATH: /usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 services:
   backend:
     build:
@@ -5,16 +22,7 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
-    environment:
-      # LOG_LEVEL is inherited from the shell environment where docker-compose is run.
-      # The deploy.sh script sets and exports this variable.
-      - LOG_LEVEL
-      - REDIS_HOST=redis
-      - FLASK_CONFIG=production
-      - REDIS_PORT=6379
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
-      - CORS_ALLOWED_ORIGINS=http://localhost:8000,http://192.168.1.120:8000,http://localhost:5173
+    environment: *common-backend-env
     depends_on:
       redis:
         condition: service_healthy
@@ -46,17 +54,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      db:
-        condition: service_healthy
-    environment:
-      # LOG_LEVEL is inherited from the shell environment where docker-compose is run.
-      # The deploy.sh script sets and exports this variable.
-      - LOG_LEVEL
-      - REDIS_HOST=redis
-      - FLASK_CONFIG=production
-      - REDIS_PORT=6379
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
+    environment: *common-backend-env
     networks:
       - stock-net
 
@@ -66,15 +64,11 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1
     restart: unless-stopped
-    # The command to start the rq-scheduler daemon, polling every 60 seconds.
-    command: [ "rq-scheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
+    command: [ "rqscheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
     depends_on:
       redis:
         condition: service_healthy
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_URL=redis://redis:6379
+    environment: *common-backend-env
     networks:
       - stock-net
 

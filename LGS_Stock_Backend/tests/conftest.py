@@ -143,7 +143,9 @@ def mock_redis(mocker):
     mock_data_redis = mocker.MagicMock()
     mock_data_redis.get.return_value = None  # Simulate key not found
     mock_data_redis.hgetall.return_value = {}  # Simulate empty hash
-    mocker.patch("LGS_Stock_Backend.data.redis_client.redis_conn", mock_data_redis)
+    # Patch the redis_conn object where it is *used* in the cache_manager module.
+    # This is the most reliable way to ensure the mock is applied.
+    mocker.patch("data.cache.cache_manager.redis_conn", mock_data_redis)
 
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.redis_job_conn", mocker.MagicMock())
     # Mock the objects that capture the connection at import time
@@ -177,6 +179,15 @@ def mock_fetch_sets(mocker):
     """Mocks the fetch_all_sets function."""
     # Patch the function where it is looked up (in the tasks module).
     mock = mocker.patch("tasks.catalog_tasks.fetch_all_sets")
+    mock.return_value = []  # Provide a safe, empty list as a default
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def mock_fetch_all_card_data(mocker):
+    """Mocks the fetch_all_card_data function to prevent large network calls."""
+    # Patch the function where it is looked up (in the tasks module).
+    mock = mocker.patch("tasks.catalog_tasks.fetch_all_card_data")
     mock.return_value = []  # Provide a safe, empty list as a default
     return mock
 

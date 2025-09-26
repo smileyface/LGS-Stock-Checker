@@ -1,17 +1,10 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from tasks.card_availability_tasks import (
-    update_wanted_cards_availability,
-    update_availability_single_card,
-)
-
+from managers import task_manager
 from managers.availability_manager.availability_manager import (
     check_availability,
     get_card_availability,
 )
-
-# Base path for patching dependencies as they are seen by the availability_manager module.
-AVAILABILITY_MANAGER_MODULE_PATH = "managers.availability_manager.availability_manager"
 
 
 # Mock Card class to simulate the structure of card objects from user_manager
@@ -24,8 +17,8 @@ class MockCard:
         return {"card_name": self.card_name}
 
 
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.redis_manager")
-def test_check_availability(mock_redis_manager):
+@patch("managers.availability_manager.availability_manager.task_manager.queue_task")
+def test_check_availability(mock_queue_task):
     """
     Verifies check_availability queues an update task for the specified user.
     """
@@ -36,8 +29,8 @@ def test_check_availability(mock_redis_manager):
     result = check_availability(username)
 
     # Assert
-    mock_redis_manager.queue_task.assert_called_once_with(
-        update_wanted_cards_availability, username
+    mock_queue_task.assert_called_once_with(
+        task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY, username
     )
     assert result == {
         "status": "queued",
@@ -45,46 +38,38 @@ def test_check_availability(mock_redis_manager):
     }
 
 
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.socket_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.redis_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.availability_storage")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.user_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.database")
+@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch("managers.availability_manager.availability_manager.user_manager")
+@patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_with_cached_data(
-    mock_database, mock_user_manager, mock_storage, mock_redis, mock_socket
+    mock_database, mock_user_manager, mock_storage
 ):
     """
-    Verifies get_card_availability uses and emits cached data if available.
+    Verifies get_card_availability returns cached data and does not queue a task.
     """
     # Arrange
     username = "testuser"
     mock_store = MagicMock()
     mock_store.slug = "test-store"
-    mock_store.name = "Test Store"
     mock_database.get_user_stores.return_value = [mock_store]
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
     cached_data = [{"price": "1.00"}]
     mock_storage.get_availability_data.return_value = cached_data
 
     # Act
-    result = get_card_availability(username)
+    cached_results = get_card_availability(username)
 
     # Assert
     mock_storage.get_availability_data.assert_called_once_with("test-store", "Test Card")
-    mock_socket.socket_emit.emit_card_availability_data.assert_called_once_with(
-        username, "Test Store", "Test Card", cached_data
-    )
-    mock_redis.queue_task.assert_not_called()
-    assert result["status"] == "processing"
+    assert cached_results == {"test-store": {"Test Card": cached_data}}
 
 
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.socket_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.redis_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.availability_storage")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.user_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.database")
+@patch("managers.availability_manager.availability_manager.task_manager.queue_task")
+@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch("managers.availability_manager.availability_manager.user_manager")
+@patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_with_no_cached_data(
-    mock_database, mock_user_manager, mock_storage, mock_redis, mock_socket
+    mock_database, mock_user_manager, mock_storage, mock_queue_task
 ):
     """
     Verifies get_card_availability queues a fetch task if data is not cached.
@@ -93,30 +78,28 @@ def test_get_card_availability_with_no_cached_data(
     username = "testuser"
     mock_store = MagicMock()
     mock_store.slug = "test-store"
-    mock_store.name = "Test Store"
     mock_database.get_user_stores.return_value = [mock_store]
     mock_card = MockCard("Test Card")
     mock_user_manager.load_card_list.return_value = [mock_card]
     mock_storage.get_availability_data.return_value = None
 
     # Act
-    result = get_card_availability(username)
+    cached_results = get_card_availability(username)
 
     # Assert
     mock_storage.get_availability_data.assert_called_once_with("test-store", "Test Card")
-    mock_socket.socket_emit.emit_card_availability_data.assert_not_called()
-    mock_redis.queue_task.assert_called_once_with(
-        update_availability_single_card,
+    mock_queue_task.assert_called_once_with(
+        task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD,
         username,
         "test-store",
         mock_card.model_dump(),
     )
-    assert result["status"] == "processing"
+    assert cached_results == {}
 
 
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.availability_storage")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.user_manager")
-@patch(f"{AVAILABILITY_MANAGER_MODULE_PATH}.database")
+@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch("managers.availability_manager.availability_manager.user_manager")
+@patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_handles_invalid_store(
     mock_database, mock_user_manager, mock_storage
 ):

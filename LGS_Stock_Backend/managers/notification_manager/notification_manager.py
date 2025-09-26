@@ -1,4 +1,4 @@
-from . import email_service
+from . import email_handler
 from utility import logger
 
 
@@ -16,4 +16,4 @@ def send_email_notification(subject: str, body: str, recipient: str) -> bool:
         True if the email was sent successfully, False otherwise.
     """
     logger.info(f"📧 Preparing to send email notification to {recipient} with subject: '{subject}'")
-    return email_service.send_email(subject=subject, body=body, recipient=recipient)
+    return email_handler.send_email(subject=subject, body=body)

@@ -1,16 +1,16 @@
 from typing import List, Dict, Any
-from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
 # Internal package imports (relative to the data.database package)
 
 from .. import schema
 from ..session_manager import db_query
-from ..models import Card, CardSpecification, User, UserTrackedCards, Set
+from ..models import Card, CardSpecification, User, UserTrackedCards, Set, Finish, CardPrinting, printing_finish_association
 from utility import logger
 
 @db_query
-def get_users_cards(username: str, session) -> List[schema.UserTrackedCardSchema]:
+def get_users_cards(username: str, *, session) -> List[schema.UserTrackedCardSchema]:
     """
     Retrieves all tracked cards for a given user using an efficient single query.
     """
@@ -32,7 +32,7 @@ def get_users_cards(username: str, session) -> List[schema.UserTrackedCardSchema
     return [schema.UserTrackedCardSchema.model_validate(card) for card in user.cards]
 
 @db_query
-def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[str, Any], session) -> None:
+def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[str, Any], *, session) -> None:
     """
     Adds or updates a tracked card for a user, including its specifications.
     This function handles finding the user, finding/creating the card in the global
@@ -100,7 +100,7 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
 
 
 @db_query
-def search_card_names(query: str, session, limit: int = 10) -> List[str]:
+def search_card_names(query: str, *, session, limit: int = 10) -> List[str]:
     """
     Searches for card names in the global 'cards' table that match a given query.
     Uses a case-insensitive LIKE query for partial matching.
@@ -120,7 +120,7 @@ def search_card_names(query: str, session, limit: int = 10) -> List[str]:
 
 
 @db_query
-def delete_user_card(username: str, card_name: str, session) -> None:
+def delete_user_card(username: str, card_name: str, *, session) -> None:
     """
     Deletes a tracked card for a user, ensuring related specifications are also deleted via ORM cascades.
     """
@@ -145,7 +145,7 @@ def delete_user_card(username: str, card_name: str, session) -> None:
 
 
 @db_query
-def update_user_tracked_cards_list(username: str, card_list: List[Dict[str, Any]], session) -> None:
+def update_user_tracked_cards_list(username: str, card_list: List[Dict[str, Any]], *, session) -> None:
     """
     Replaces a user's entire tracked card list with a new one.
     This uses an idiomatic "set" operation, letting the ORM handle deletes and inserts.
@@ -183,7 +183,7 @@ def update_user_tracked_cards_list(username: str, card_list: List[Dict[str, Any]
 
 
 @db_query
-def update_user_tracked_card_preferences(username: str, card_name: str, preference_updates: Dict[str, Any], session) -> None:
+def update_user_tracked_card_preferences(username: str, card_name: str, preference_updates: Dict[str, Any], *, session) -> None:
     """
     Updates specific preferences (e.g., amount) for a single tracked card.
     """
@@ -231,7 +231,7 @@ def update_user_tracked_card_preferences(username: str, card_name: str, preferen
     logger.info(f"✅ Preferences updated for card '{card_name}' for user '{username}'.")
 
 @db_query
-def add_card_names_to_catalog(card_names: List[str], session):
+def add_card_names_to_catalog(card_names: List[str], *, session):
     """
     Adds a list of card names to the cards table, ignoring any duplicates.
     This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for high performance.
@@ -248,17 +248,17 @@ def add_card_names_to_catalog(card_names: List[str], session):
     stmt = insert(Card).values([{"name": name} for name in card_names])
 
     # Use on_conflict_do_nothing to ignore duplicates based on the primary key ('name')
-    # This is highly efficient for bulk inserts of potentially existing data.
-    stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+    # This compiles to `INSERT OR IGNORE` on SQLite and is compatible with PostgreSQL's
+    # `ON CONFLICT DO NOTHING` when the conflict target is the primary key.
+    stmt = stmt.on_conflict_do_nothing()
 
     session.execute(stmt)
     logger.info(f"Attempted to bulk insert {len(card_names)} names into the card catalog.")
 
 @db_query
-def add_set_data_to_catalog(set_data: List[Dict[str, Any]], session):
+def add_set_data_to_catalog(set_data: List[Dict[str, Any]], *, session):
     """
     Adds a list of set data to the sets table, ignoring any duplicates.
-    This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for high performance.
 
     Args:
         session: The SQLAlchemy session.
@@ -271,9 +271,56 @@ def add_set_data_to_catalog(set_data: List[Dict[str, Any]], session):
     # Prepare the data for bulk insert.
     stmt = insert(Set).values(set_data)
 
-    # Use on_conflict_do_nothing to ignore duplicates based on the primary key ('code').
-    # This is highly efficient for bulk inserts of potentially existing data.
-    stmt = stmt.on_conflict_do_nothing(index_elements=['code'])
+    # Use a dialect-agnostic `on_conflict_do_nothing` for compatibility.
+    stmt = stmt.on_conflict_do_nothing()
 
     session.execute(stmt)
     logger.info(f"Attempted to bulk insert {len(set_data)} sets into the set catalog.")
+
+@db_query
+def bulk_add_finishes(finish_names: List[str], *, session):
+    if not finish_names:
+        return
+    stmt = insert(Finish).values([{"name": name} for name in finish_names])
+    stmt = stmt.on_conflict_do_nothing()
+    session.execute(stmt)
+    logger.info(f"Attempted to bulk insert {len(finish_names)} finishes.")
+
+@db_query
+def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
+    if not printings:
+        return
+    stmt = insert(CardPrinting).values(printings)
+    stmt = stmt.on_conflict_do_nothing()
+    session.execute(stmt)
+    logger.info(f"Attempted to bulk insert {len(printings)} card printings.")
+
+@db_query
+def get_all_printings_map(*, session) -> Dict[tuple, int]:
+    results = session.query(CardPrinting.id, CardPrinting.card_name, CardPrinting.set_code, CardPrinting.collector_number).all()
+    return {(r.card_name, r.set_code, r.collector_number): r.id for r in results}
+
+@db_query
+def get_all_finishes_map(*, session) -> Dict[str, int]:
+    results = session.query(Finish.id, Finish.name).all()
+    return {r.name: r.id for r in results}
+
+@db_query
+def bulk_add_printing_finish_associations(associations: List[Dict[str, int]], *, session):
+    """
+    Bulk inserts printing-to-finish associations.
+    Uses a dialect-specific approach for conflict handling to support both
+    PostgreSQL and SQLite (for testing).
+    """
+    if not associations:
+        return
+
+    stmt = insert(printing_finish_association).values(associations)
+
+    # The `on_conflict_do_nothing()` method is compatible with both PostgreSQL
+    # and modern versions of SQLite, where it compiles to `INSERT OR IGNORE`.
+    # This handles cases where an association might already exist.
+    stmt = stmt.on_conflict_do_nothing()
+
+    session.execute(stmt)
+    logger.info(f"Attempted to bulk insert {len(associations)} printing-finish associations.")

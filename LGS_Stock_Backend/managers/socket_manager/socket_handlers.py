@@ -90,13 +90,23 @@ def handle_get_card_availability():
     username = get_username()
     if username:
         logger.info(f"🔍 Fetching card availability for user: {username}")
-        # This function queues background tasks to check for availability.
-        # It returns a status message that we can forward to the client.
-        result = availability_manager.get_card_availability(username)
-        socketio.emit("availability_check_status", result, room=username)
-        logger.info(
-            f"✅ Card availability check initiated for user {username}. Status: {result.get('message')}"
-        )
+        # 1. Trigger the availability check. This function queues tasks for any non-cached
+        #    items and returns any data that was already in the cache.
+        cached_data = availability_manager.get_card_availability(username)
+
+        # 2. Immediately send any cached data back to the client.
+        if cached_data:
+            logger.info(f"📡 Sending {sum(len(cards) for cards in cached_data.values())} cached availability items to user '{username}'.")
+            # The data is structured as {store_slug: {card_name: items}}. We need to emit it
+            # in the format the frontend expects: one event per item.
+            for store_slug, cards in cached_data.items():
+                for card_name, items in cards.items():
+                    event_data = {"store": store_slug, "card": card_name, "items": items}
+                    socketio.emit("card_availability_data", event_data, room=username)
+        else:
+            logger.info(f"No cached availability data found for user '{username}'.")
+
+        logger.info(f"✅ Card availability check process initiated for user '{username}'.")
     else:
         logger.warning("🚨 No username found for 'get_card_availability' request.")
 

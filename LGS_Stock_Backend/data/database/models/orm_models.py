@@ -1,10 +1,19 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, Date
+from sqlalchemy import (
+    Column, Integer, String, ForeignKey, Table, Date, UniqueConstraint
+)
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 Base = declarative_base()
+
+printing_finish_association = Table(
+    "printing_finish_association",
+    Base.metadata,
+    Column("printing_id", Integer, ForeignKey("card_printings.id"), primary_key=True),
+    Column("finish_id", Integer, ForeignKey("finishes.id"), primary_key=True),
+)
 
 
 # Define as a Table object, not an ORM class
@@ -59,6 +68,32 @@ class Set(Base):
     name = Column(String(255), nullable=False)
     release_date = Column(Date, nullable=True)
 
+class Finish(Base):
+    """Represents a card finish type (e.g., Foil, Non-Foil)."""
+    __tablename__ = "finishes"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=False)
+
+    def __repr__(self):
+        return f"<Finish(name={self.name})>"
+
+
+class CardPrinting(Base):
+    """Represents a unique physical printing of a card."""
+    __tablename__ = "card_printings"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    card_name = Column(String, ForeignKey("cards.name"), nullable=False)
+    set_code = Column(String, ForeignKey("sets.code"), nullable=False)
+    collector_number = Column(String, nullable=False)
+
+    # Relationships
+    card = relationship("Card")
+    set = relationship("Set")
+    available_finishes = relationship("Finish", secondary=printing_finish_association)
+
+    __table_args__ = (
+        UniqueConstraint('card_name', 'set_code', 'collector_number', name='_card_printing_uc'),
+    )
 
 class UserTrackedCards(Base):
     __tablename__ = "user_tracked_cards"

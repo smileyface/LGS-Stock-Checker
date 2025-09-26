@@ -72,13 +72,24 @@ onMounted(async () => {
     // User and store data are now retrieved from the authStore,
     // which is populated when the application first loads.
 
+    socket.on('connect', () => {
+        console.log("🔗 Connected to WebSocket Server!");
+        // Now that we are connected, request initial data.
+        console.log("📡 Emitting 'get_cards' to fetch user's tracked cards.");
+        socket.emit("get_cards");
+        console.log("📡 Emitting 'get_card_availability' to fetch initial availability.");
+        socket.emit("get_card_availability");
+    });
+
     socket.on('cards_data', (data) => {
+        console.log("🛠️ Received 'cards_data':", data);
         trackedCards.value = data.tracked_cards || [];
     });
 
     socket.on('availability_check_started', (data) => {
         if (!data || !data.card) return;
         const cardName = data.card;
+        console.log(`⏳ Received 'availability_check_started' for: ${cardName}`);
         // Set the status to 'searching' to trigger the spinner in the UI.
         availabilityMap.value[cardName] = { status: 'searching', stores: [] };
     });
@@ -89,6 +100,7 @@ onMounted(async () => {
         const cardName = data.card;
         const storeName = data.store;
         const isAvailable = data.items && data.items.length > 0;
+        console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${storeName}'. Available: ${isAvailable}`);
         
         // Ensure the card has an entry in the map.
         if (!availabilityMap.value[cardName]) {
@@ -105,9 +117,6 @@ onMounted(async () => {
             availabilityMap.value[cardName].stores.splice(storeIndex, 1);
         }
     });
-
-    socket.emit("get_cards");
-    socket.emit("get_card_availability");
 });
 
 function renderAvailability(cardName) {
@@ -129,10 +138,12 @@ function renderAvailability(cardName) {
 }
 
 function deleteCard(cardName) {
+    console.log(`🗑️ Emitting 'delete_card' for: ${cardName}`);
     socket.emit('delete_card', { card: cardName });
 }
 
 function editCard(card) {
+    console.log(`✏️ Opening edit modal for: ${card.card_name}`);
     cardToEdit.value = card;
     // Use nextTick to ensure the modal component is rendered before we try to show it
     nextTick(() => {
@@ -141,14 +152,17 @@ function editCard(card) {
 }
 
 function showAddCardModal() {
+    console.log('➕ Opening add card modal.');
     addCardModalRef.value?.show();
 }
 
 function saveCard(cardData) {
+    console.log("💾 Emitting 'add_card' with data:", cardData);
     socket.emit('add_card', cardData);
 }
 
 function updateCard(cardData) {
+    console.log("🔄 Emitting 'update_card' with data:", cardData);
     socket.emit('update_card', cardData);
 }
 </script>

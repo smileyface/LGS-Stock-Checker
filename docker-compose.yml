@@ -62,8 +62,8 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1
     restart: unless-stopped
-    # The command to start the rq-scheduler daemon, polling every 60 seconds.
-    command: [ "rq-scheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
+    # 💡 FIX: Use 'python -m rq_scheduler' to reliably find the executable.
+    command: [ "python", "-m", "rq_scheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
     depends_on:
       redis:
         condition: service_healthy

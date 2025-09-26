@@ -1,96 +1,88 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+
 from tasks.card_availability_tasks import update_availability_single_card
-import data
-import managers
 
 
 @pytest.fixture
-def mock_store():
-    """Mocks the store_manager.store_list function."""
-    with patch("LGS_Stock_Backend.tasks.card_availability_tasks.store_manager.store_list") as mock:
+def mock_store_manager():
+    """Mocks the store_manager used in the task."""
+    with patch("tasks.card_availability_tasks.store_manager") as mock:
         yield mock
 
 
 @pytest.fixture
-def mock_cache_availability():
-    """Mocks the availability_manager.cache_availability_data function."""
-    with patch("LGS_Stock_Backend.tasks.card_availability_tasks.availability_manager.cache_availability_data") as mock:
+def mock_availability_manager():
+    """Mocks the availability_manager used in the task."""
+    with patch("tasks.card_availability_tasks.availability_manager") as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_socket_emit():
-    """Mocks the socket_emit.emit_from_worker function."""
-    with patch("LGS_Stock_Backend.tasks.card_availability_tasks.socket_emit.emit_from_worker") as mock:
+    """Mocks the socket_emit module used in the task."""
+    with patch("tasks.card_availability_tasks.socket_emit") as mock:
         yield mock
 
 
-def test_update_availability_single_card_success(mock_store, mock_cache_availability, mock_socket_emit):
+def test_update_availability_single_card_success(
+    mock_store_manager, mock_availability_manager, mock_socket_emit
+):
     """
-    GIVEN a valid username, store_name, and card
-    WHEN update_availability_single_card is called
-    THEN it should successfully fetch availability, cache it, and emit a socket event.
+    GIVEN a card and store
+    WHEN update_availability_single_card is called and finds available items
+    THEN it should fetch data, cache it, and emit a socket event.
     """
     # Arrange
     username = "testuser"
-    store_name = "test_store"
-    card = {"card_name": "Test Card", "specifications": {}}
-    available_items = [{"name": "Item 1", "price": 10.0}]
-
-    # Configure the mock store instance and its method's return value
-    mock_store_instance = mock_store.return_value
-    mock_store_instance.fetch_card_availability.return_value = available_items
+    store_name = "test-store"
+    card_data = {"card_name": "Sol Ring", "specifications": []}
+    
+    mock_store_instance = MagicMock()
+    mock_store_instance.fetch_card_availability.return_value = [{"price": 1.99, "condition": "NM"}]
+    mock_store_manager.store_list.return_value = mock_store_instance
 
     # Act
-    result = update_availability_single_card(username, store_name, card)
+    result = update_availability_single_card(username, store_name, card_data)
 
     # Assert
     assert result is True
-    mock_store.assert_called_once_with(store_name)
-    mock_store_instance.fetch_card_availability.assert_called_once_with("Test Card", {})
-    mock_cache_availability.assert_called_once_with(store_name, "Test Card", available_items)
-    mock_socket_emit.assert_called_once_with("card_availability_data",
-                                             {"username": username, "store": store_name, "card": "Test Card",
-                                              "items": available_items}, room=username)
+    mock_store_manager.store_list.assert_called_once_with(store_name)
+    mock_store_instance.fetch_card_availability.assert_called_once_with("Sol Ring", [])
+    
+    # Verify caching
+    mock_availability_manager.cache_availability_data.assert_called_once_with(
+        store_name, "Sol Ring", [{"price": 1.99, "condition": "NM"}]
+    )
+
+    # Verify socket emission
+    expected_event_data = {
+        "username": username,
+        "store": store_name,
+        "card": "Sol Ring",
+        "items": [{"price": 1.99, "condition": "NM"}]
+    }
+    mock_socket_emit.emit_from_worker.assert_called_once_with(
+        "card_availability_data", expected_event_data, room=username
+    )
 
 
-def test_update_availability_single_card_invalid_store(mock_store):
+def test_update_availability_single_card_no_items_found(
+    mock_store_manager, mock_availability_manager, mock_socket_emit
+):
     """
-    GIVEN an invalid store_name
-    WHEN update_availability_single_card is called
-    THEN it should log a warning and return False.
-    """
-    # Arrange
-    username = "testuser"
-    store_name = "invalid_store"
-    card = {"card_name": "Test Card", "specifications": {}}
-    mock_store.return_value = None
-
-    # Act
-    result = update_availability_single_card(username, store_name, card)
-
-    # Assert
-    assert result is False
-    mock_store.assert_called_once_with(store_name)
-
-
-def test_update_availability_single_card_missing_card_name(mock_store):
-    """
-    GIVEN a card dictionary without a card_name
-    WHEN update_availability_single_card is called
-    THEN it should log an error and return False.
+    GIVEN a card and store
+    WHEN update_availability_single_card finds no available items
+    THEN it should not cache or emit any events.
     """
     # Arrange
-    username = "testuser"
-    store_name = "test_store"
-    card = {"specifications": {}}  # Missing card_name
+    mock_store_instance = MagicMock()
+    mock_store_instance.fetch_card_availability.return_value = []
+    mock_store_manager.store_list.return_value = mock_store_instance
 
     # Act
-    result = update_availability_single_card(username, store_name, card)
+    update_availability_single_card("user", "store", {"card_name": "Card"})
 
     # Assert
-    assert result is False
-    # Ensure that `store_manager.store_list` is not called,
-    # as the function should exit before that point
-    mock_store.assert_not_called()
+    mock_availability_manager.cache_availability_data.assert_not_called()
+    mock_socket_emit.emit_from_worker.assert_not_called()

@@ -148,17 +148,21 @@ sequenceDiagram
         Redis-->>Backend: Cached Listings (if found)
         deactivate Redis
         
-        alt If data is cached
-            Note over Backend, Client: 3a. Backend immediately sends cached data
+        alt Data is cached
+            Note over Backend, Client: 3a. Backend immediately sends cached data to client
             Backend-->>Client: Emits "card_availability_data" {store, card, items}
-        else If data is not cached
-            Note over Backend, Redis: 3b. Backend queues a task to fetch the data
+        else Data is not cached
+            Note over Backend, Client: 3b. Backend notifies client that a check has started
+            Backend-->>Client: Emits "availability_check_started" {store, card}
+            Note over Backend, Redis: 3c. Backend queues a task to fetch the data
             Backend->>Redis: Enqueue Task "update_availability_single_card" {user, store_slug, card_data}
+            
         end
     end
     deactivate Backend
     
     Note over Redis, Worker: 4. Worker picks up a queued task
+    Note over Redis, Worker: 4. Worker picks up the queued task
     Redis->>Worker: Pick up Task "update_availability_single_card"
     activate Worker
     Note over Worker, Redis: 5. Worker checks cache for specific (store, card) availability
@@ -171,20 +175,25 @@ sequenceDiagram
         Note over Worker, ExternalStore: 6a. Worker scrapes external store
     
     Note over Worker, ExternalStore: 5. Worker scrapes the external store
+    Note over Worker, ExternalStore: 5. Worker scrapes the external store website
         Worker->>ExternalStore: store_instance.fetch_card_availability(card_data)
         activate ExternalStore
         ExternalStore-->>Worker: Scraped Listings
         deactivate ExternalStore
     
     Note over Worker, Redis: 6. Worker caches the newly scraped data
+    Note over Worker, Redis: 6. Worker caches the new data
         Worker->>Redis: availability_storage.cache_availability_data(...)
         activate Redis
         Redis-->>Worker: Data Stored with TTL
         deactivate Redis
     end
     Note over Worker, Backend: 7. RQ Worker emits real-time update for specific card/store
+    
+    Note over Worker, Backend: 7. Worker publishes result to a Redis Pub/Sub channel
     Worker->>Backend: Publishes "card_availability_data" to Redis Pub/Sub
     activate Backend
+    Note over Backend, Client: Backend (listening to Pub/Sub) forwards the data to the client
     Backend-->>Client: Emits "card_availability_data" {username, card_name, store_slug, items}
     deactivate Backend
     
@@ -236,6 +245,26 @@ sequenceDiagram
     Client->>Client: Updates autocomplete suggestions
     deactivate Client
 
+```
+
+#### Scheduled Card Availability Check 
+This diagram illustrates the scheduled background task for periodically re-checking all tracked cards, fulfilling requirement [5.1.7]. 
+```mermaid 
+sequenceDiagram
+
+participant Scheduler
+participant Redis as Redis Queue
+participant Worker as RQ Worker
+participant DB as Database
+Scheduler->>Redis: Enqueues "update_all_tracked_cards_availability" task
+note over Redis, Worker: Worker polls the queue for jobs
+Redis->>Worker: Delivers task
+activate Worker
+Worker->>DB: Get all users and their tracked cards
+DB-->>Worker: List of (user, card, store) combinations
+note over Worker: For each combination, the worker enqueues a specific "update_availability_single_card" task. This distributes the load and re-uses the existing logic shown in the "Checking Card Availability" diagram.
+Worker->>Redis: Enqueue many "update_availability_single_card" tasks
+deactivate Worker 
 ```
 
 #### Background Card Catalog Update 

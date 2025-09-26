@@ -17,5 +17,7 @@ if __name__ == '__main__':
     logger.info("🎧 Worker is starting...")
     # The 'with Connection(...)' block is deprecated.
     # Pass the connection directly to the Worker.
-    worker = Worker(map(Queue, listen), connection=redis_conn)
+    # Each Queue must also be initialized with a connection.
+    queues = [Queue(q, connection=redis_conn) for q in listen]
+    worker = Worker(queues, connection=redis_conn)
     worker.work()

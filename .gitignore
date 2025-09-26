@@ -25,6 +25,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+flask_session/
 
 
 # IDE, Editor, and OS files

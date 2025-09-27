@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
 from tasks.card_availability_tasks import update_availability_single_card
 
@@ -56,15 +56,22 @@ def test_update_availability_single_card_success(
     )
 
     # Verify socket emission
-    expected_event_data = {
-        "username": username,
-        "store": store_name,
-        "card": "Sol Ring",
-        "items": [{"price": 1.99, "condition": "NM"}]
-    }
-    mock_socket_emit.emit_from_worker.assert_called_once_with(
-        "card_availability_data", expected_event_data, room=username
-    )
+    # The task should emit two events: one when it starts, one when it finishes.
+    expected_calls = [
+        call("availability_check_started", {"store": store_name, "card": "Sol Ring"}, room=username),
+        call(
+            "card_availability_data",
+            {
+                "username": username,
+                "store": store_name,
+                "card": "Sol Ring",
+                "items": [{"price": 1.99, "condition": "NM"}],
+            },
+            room=username,
+        ),
+    ]
+    assert mock_socket_emit.emit_from_worker.call_count == 2
+    mock_socket_emit.emit_from_worker.assert_has_calls(expected_calls, any_order=False)
 
 
 def test_update_availability_single_card_no_items_found(
@@ -73,16 +80,34 @@ def test_update_availability_single_card_no_items_found(
     """
     GIVEN a card and store
     WHEN update_availability_single_card finds no available items
-    THEN it should not cache or emit any events.
+    THEN it should cache an empty list and emit both start and result events.
     """
     # Arrange
+    username = "testuser"
+    store_name = "test-store"
+    card_data = {"card_name": "Obscure Card", "specifications": []}
+
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = []
     mock_store_manager.store_list.return_value = mock_store_instance
 
     # Act
-    update_availability_single_card("user", "store", {"card_name": "Card"})
+    result = update_availability_single_card(username, store_name, card_data)
 
     # Assert
-    mock_availability_manager.cache_availability_data.assert_not_called()
-    mock_socket_emit.emit_from_worker.assert_not_called()
+    assert result is True
+    mock_availability_manager.cache_availability_data.assert_called_once_with(
+        store_name, "Obscure Card", []
+    )
+
+    # Verify socket emission still happens, but with an empty items list
+    expected_calls = [
+        call("availability_check_started", {"store": store_name, "card": "Obscure Card"}, room=username),
+        call(
+            "card_availability_data",
+            {"username": username, "store": store_name, "card": "Obscure Card", "items": []},
+            room=username,
+        ),
+    ]
+    assert mock_socket_emit.emit_from_worker.call_count == 2
+    mock_socket_emit.emit_from_worker.assert_has_calls(expected_calls, any_order=False)

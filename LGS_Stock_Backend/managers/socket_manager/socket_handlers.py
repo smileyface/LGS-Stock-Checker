@@ -92,7 +92,7 @@ def handle_get_card_availability():
         logger.info(f"🔍 Fetching card availability for user: {username}")
         # 1. Trigger the availability check. This function queues tasks for any non-cached
         #    items and returns any data that was already in the cache.
-        cached_data = availability_manager.get_card_availability(username)
+        cached_data = availability_manager.get_cached_availability_or_trigger_check(username)
 
         # 2. Immediately send any cached data back to the client.
         if cached_data:
@@ -175,7 +175,14 @@ def handle_add_user_tracked_card(data: dict):
             validated_data.amount,
             validated_data.card_specs,
         )
-        _send_user_cards(username)
+
+        # Delegate to the availability manager to trigger the check, adhering to data flow rules.
+        card_data_for_task = {"card_name": validated_data.card, "specifications": [validated_data.card_specs]}
+        # Pass _send_user_cards as a callback to be executed *after* the availability checks
+        # have been queued. This ensures the frontend receives events in the correct order.
+        availability_manager.trigger_availability_check_for_card(
+            username, card_data_for_task, on_complete_callback=lambda: _send_user_cards(username)
+        )
     except ValidationError as e:
         logger.error(f"❌ Invalid 'add_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})

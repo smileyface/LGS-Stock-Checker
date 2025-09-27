@@ -2,7 +2,7 @@ import time
 from datetime import timedelta, datetime
 
 from .catalog_tasks import update_card_catalog, update_set_catalog, update_full_catalog
-from .card_availability_tasks import update_wanted_cards_availability
+from .card_availability_tasks import update_all_tracked_cards_availability
 from managers.redis_manager import scheduler
 from managers.task_manager import task_definitions
 from utility import logger
@@ -63,7 +63,7 @@ def schedule_tasks():
             logger.info(f"🗓️ Scheduling task '{task_definitions.AVAILABILITY_TASK_ID}' to run every {AVAILABILITY_UPDATE_INTERVAL_MINUTES} minutes.")
             scheduler.schedule(
                 scheduled_time=initial_run_time,
-                func=update_wanted_cards_availability, # Call with no arguments for a system-wide update
+                func=update_all_tracked_cards_availability, # Call with no arguments for a system-wide update
                 interval=timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds(),
                 id=task_definitions.AVAILABILITY_TASK_ID,
                 description="Periodically checks for card availability for all users."

@@ -55,62 +55,45 @@ import { ref, onMounted, computed, nextTick } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
 import AddCardModal from '../components/AddCardModal.vue';
 import EditCardModal from '../components/EditCardModal.vue';
-import { io } from 'socket.io-client';
 import { authStore } from '../stores/auth';
+import { useSocket } from '../composables/useSocket';
 
 const username = computed(() => authStore.user?.username || '');
-const trackedCards = ref([]);
-const availabilityMap = ref({});
 const pageTitle = ref('Dashboard');
 const allStores = computed(() => authStore.user?.stores || []);
-const socket = io({ withCredentials: true });
 const addCardModalRef = ref(null);
 const editCardModalRef = ref(null);
 const cardToEdit = ref(null);
 
-onMounted(async () => {
-    // User and store data are now retrieved from the authStore,
-    // which is populated when the application first loads.
-
-    socket.on('cards_data', (data) => {
-        trackedCards.value = data.tracked_cards || [];
-    });
-
-    socket.on('card_availability_data', (data) => {
-        // Logic to update availability map
-        const cardName = data.card;
-        const storeName = data.store;
-        const isAvailable = data.items && data.items.length > 0;
-        
-        if (!availabilityMap.value[cardName]) {
-            availabilityMap.value[cardName] = [];
-        }
-
-        const storeIndex = availabilityMap.value[cardName].indexOf(storeName);
-        if (isAvailable && storeIndex === -1) {
-            availabilityMap.value[cardName].push(storeName);
-        } else if (!isAvailable && storeIndex !== -1) {
-            availabilityMap.value[cardName].splice(storeIndex, 1);
-        }
-    });
-
-    socket.emit("get_cards");
-    socket.emit("get_card_availability");
-});
+// Use the composable to get reactive state and methods
+const { 
+    trackedCards, 
+    availabilityMap, 
+    deleteCard, 
+    saveCard, 
+    updateCard 
+} = useSocket();
 
 function renderAvailability(cardName) {
-    const stores = availabilityMap.value[cardName];
-    if (!stores || stores.length === 0) {
-        return '<span class="badge bg-secondary">Not Available</span>';
-    }
-    return stores.map(store => `<span class="badge bg-success me-1">${store}</span>`).join(' ');
-}
+    const availability = availabilityMap.value[cardName];
 
-function deleteCard(cardName) {
-    socket.emit('delete_card', { card: cardName });
+    if (!availability || availability.status === 'searching') {
+        return `<span class="badge bg-info text-dark d-inline-flex align-items-center">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Searching</span>`;
+    }
+
+    // If the check is complete and the stores array has items, it's available.
+    if (availability.stores && availability.stores.length > 0) {
+        return '<span class="badge bg-success">Available</span>';
+    }
+
+    // Otherwise, it's not available.
+        return '<span class="badge bg-secondary">Not Available</span>';
 }
 
 function editCard(card) {
+    console.log(`✏️ Opening edit modal for: ${card.card_name}`);
     cardToEdit.value = card;
     // Use nextTick to ensure the modal component is rendered before we try to show it
     nextTick(() => {
@@ -119,14 +102,7 @@ function editCard(card) {
 }
 
 function showAddCardModal() {
+    console.log('➕ Opening add card modal.');
     addCardModalRef.value?.show();
-}
-
-function saveCard(cardData) {
-    socket.emit('add_card', cardData);
-}
-
-function updateCard(cardData) {
-    socket.emit('update_card', cardData);
 }
 </script>

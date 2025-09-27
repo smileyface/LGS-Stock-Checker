@@ -7,6 +7,28 @@ from utility import logger
 # This avoids circular imports by allowing tasks to register themselves.
 TASK_REGISTRY = {}
 
+def task(task_id: str = None):
+    """
+    A decorator that registers a function as a background task with both RQ and our internal task manager.
+    This replaces the need for separate `register_task` calls.
+
+    Usage:
+        @task_manager.task
+        def my_task_function(arg1, arg2):
+            # ...
+
+    Args:
+        task_id (str, optional): The ID to register the task with. If None, the function's name is used.
+    """
+    def decorator(func):
+        # Use the provided task_id or default to the function's name
+        _task_id = task_id or func.__name__
+        # 1. Register with our internal registry for queuing by ID
+        register_task(_task_id, func)
+        # 2. Return the original function, as RQ does not require pre-decoration.
+        return func
+    return decorator
+
 def register_task(task_id: str, func: callable):
     """Allows task modules to register their functions with the task manager."""
     if task_id in TASK_REGISTRY:

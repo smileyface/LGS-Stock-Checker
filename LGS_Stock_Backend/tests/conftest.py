@@ -149,7 +149,11 @@ def mock_redis(mocker):
 
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.redis_job_conn", mocker.MagicMock())
     # Mock the objects that capture the connection at import time
-    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mocker.MagicMock())
+    # The mock for the queue needs a 'task' attribute to handle the @task decorator during test discovery.
+    # This mock ensures that decorating a function with @queue.task just returns the original function.
+    mock_queue = mocker.MagicMock()
+    mock_queue.task.side_effect = lambda func: func
+    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mock_queue)
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.scheduler", mocker.MagicMock())
 
 
@@ -209,3 +213,44 @@ def mock_socket_emit():
     """Mocks the socket_emit.emit_from_worker function."""
     with patch("tasks.card_availability_tasks.socket_emit.emit_from_worker") as mock:
         yield mock
+
+
+# --- Fixtures for Socket Handlers ---
+
+@pytest.fixture
+def mock_sh_user_manager(mocker):
+    """Mocks the user_manager used in the socket handlers."""
+    return mocker.patch("managers.socket_manager.socket_handlers.user_manager")
+
+
+@pytest.fixture
+def mock_sh_database(mocker):
+    """Mocks the database module used in the socket handlers."""
+    return mocker.patch("managers.socket_manager.socket_handlers.database")
+
+
+@pytest.fixture
+def mock_sh_queue_task(mocker):
+    """
+    Mocks the queue_task function used in the socket handlers.
+    The target is where the function is *looked up*.
+    """
+    return mocker.patch("managers.task_manager.queue_task")
+
+
+@pytest.fixture
+def mock_sh_get_current_user(mocker):
+    """Mocks get_username and provides a default test user for socket handlers."""
+    return mocker.patch("managers.socket_manager.socket_handlers.get_username", return_value="testuser")
+
+
+@pytest.fixture
+def mock_sh_emit(mocker):
+    """Mocks the socketio.emit function used in the socket handlers."""
+    return mocker.patch("managers.socket_manager.socket_handlers.socketio.emit")
+
+
+@pytest.fixture
+def mock_sh_trigger_availability_check(mocker):
+    """Mocks the trigger_availability_check_for_card function used in socket handlers."""
+    return mocker.patch("managers.socket_manager.socket_handlers.availability_manager.trigger_availability_check_for_card")

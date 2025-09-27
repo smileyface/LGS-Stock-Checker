@@ -99,8 +99,10 @@ These requirements define the core functionality of checking for card availabili
 -   **[5.1.2]** Availability checks shall be performed by background workers to avoid blocking the main application and user interface.
 -   **[5.1.3]** The system shall cache availability results (e.g., in Redis) to minimize redundant web scraping and improve performance.
 -   **[5.1.4]** The system shall notify the user in real-time via WebSockets when new availability data is found for a card they are tracking.
--   **[5.1.6]** The system shall recheck card availability at regular intervals.
-
+-   **[5.1.5]** The system shall notify the user in real-time via WebSockets when an availability check for a specific card and store has been initiated.
+-   **[5.1.6]** The system shall automatically trigger an availability check for a newly added card against the user's preferred stores.
+-   **[5.1.7]** The system shall recheck card availability at regular intervals.
+ 
 
 
 

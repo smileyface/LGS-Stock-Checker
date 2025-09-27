@@ -15,7 +15,7 @@ LOGGER_ERROR_PATH = "tasks.scheduler_setup.logger.error"
 UPDATE_CARD_CATALOG_PATH = "tasks.scheduler_setup.update_card_catalog"
 UPDATE_SET_CATALOG_PATH = "tasks.scheduler_setup.update_set_catalog"
 UPDATE_FULL_CATALOG_PATH = "tasks.scheduler_setup.update_full_catalog"
-UPDATE_WANTED_CARDS_AVAILABILITY_PATH = "tasks.scheduler_setup.update_wanted_cards_availability"
+UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH = "tasks.scheduler_setup.update_all_tracked_cards_availability"
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_schedule_tasks_all_new(mock_scheduler):
     with patch(UPDATE_CARD_CATALOG_PATH) as mock_update_card, \
          patch(UPDATE_SET_CATALOG_PATH) as mock_update_set, \
          patch(UPDATE_FULL_CATALOG_PATH) as mock_update_full, \
-         patch(UPDATE_WANTED_CARDS_AVAILABILITY_PATH) as mock_update_avail:
+         patch(UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH) as mock_update_all_avail:
 
         # Act
         schedule_tasks()
@@ -56,20 +56,20 @@ def test_schedule_tasks_all_new(mock_scheduler):
         availability_interval = timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds()
 
         # Verify catalog update task
-        assert any(c.kwargs['job_id'] == task_definitions.CATALOG_TASK_ID and 
+        assert any(c.kwargs['id'] == task_definitions.CATALOG_TASK_ID and 
                    c.kwargs['func'] == mock_update_card and 
                    c.kwargs['interval'] == catalog_interval for c in calls)
         # Verify set catalog update task
-        assert any(c.kwargs['job_id'] == task_definitions.SET_CATALOG_TASK_ID and 
+        assert any(c.kwargs['id'] == task_definitions.SET_CATALOG_TASK_ID and 
                    c.kwargs['func'] == mock_update_set and 
                    c.kwargs['interval'] == catalog_interval for c in calls)
         # Verify full catalog update task
-        assert any(c.kwargs['job_id'] == task_definitions.FULL_CATALOG_TASK_ID and 
+        assert any(c.kwargs['id'] == task_definitions.FULL_CATALOG_TASK_ID and 
                    c.kwargs['func'] == mock_update_full and 
                    c.kwargs['interval'] == catalog_interval for c in calls)
         # Verify availability update task
-        assert any(c.kwargs['job_id'] == task_definitions.AVAILABILITY_TASK_ID and 
-                   c.kwargs['func'] == mock_update_avail and 
+        assert any(c.kwargs['id'] == task_definitions.AVAILABILITY_TASK_ID and
+                   c.kwargs['func'] == mock_update_all_avail and
                    c.kwargs['interval'] == availability_interval for c in calls)
 
 def test_schedule_tasks_are_idempotent(mock_scheduler):
@@ -104,7 +104,7 @@ def test_schedule_tasks_mixed_state(mock_scheduler):
     ]
     mock_scheduler.__contains__.side_effect = lambda task_id: task_id in existing_tasks
 
-    with patch(UPDATE_WANTED_CARDS_AVAILABILITY_PATH) as mock_update_avail:
+    with patch(UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH) as mock_update_all_avail:
         # Act
         schedule_tasks()
 
@@ -112,8 +112,8 @@ def test_schedule_tasks_mixed_state(mock_scheduler):
         # Only the availability task should have been scheduled.
         mock_scheduler.schedule.assert_called_once()
         call_args = mock_scheduler.schedule.call_args
-        assert call_args.kwargs['job_id'] == task_definitions.AVAILABILITY_TASK_ID
-        assert call_args.kwargs['func'] == mock_update_avail
+        assert call_args.kwargs['id'] == task_definitions.AVAILABILITY_TASK_ID
+        assert call_args.kwargs['func'] == mock_update_all_avail
 
 
 @patch(LOGGER_ERROR_PATH)

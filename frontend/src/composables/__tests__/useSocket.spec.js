@@ -1,42 +1,62 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useSocket } from '../useSocket';
+import { useSocket, _socket as socket, _internal } from '../useSocket';
 import { io } from 'socket.io-client';
-import SocketMock from 'socket.io-client-mock';
 
 // Mock the 'socket.io-client' library
-vi.mock('socket.io-client', () => {
-    // The default export of the library is the `io` function.
-    // We are replacing it with a constructor that returns a mock socket.
+vi.mock('socket.io-client', async (importOriginal) => {
+    // Dynamically import the mock to avoid hoisting issues with vi.mock
+    const { default: SocketMock } = await import('socket.io-mock');
+    const originalModule = await importOriginal();
     return {
-        io: vi.fn(() => new SocketMock()),
+        ...originalModule,
+        // Replace the `io` function with a factory that returns an enhanced mock instance
+        io: vi.fn(() => {
+            const mockSocket = new SocketMock();
+            // Add the missing `connect` method and `connected` property to the mock
+            mockSocket.connected = false;
+            mockSocket.connect = vi.fn(() => { mockSocket.connected = true; });
+
+            // Add a `disconnect` method to allow for proper test cleanup
+            mockSocket.disconnect = vi.fn(() => {
+                mockSocket.connected = false;
+            });
+            return mockSocket;
+        }),
     };
 });
 
 describe('useSocket Composable', () => {
-    let socket;
-
     beforeEach(() => {
-        // Before each test, get a fresh instance of the mock socket
-        // This is the same instance the composable will use because of the singleton pattern.
-        socket = io();
-        // Reset the composable's internal state if needed (though mocks handle this well)
+        // Reset the internal state before each test.
+        _internal.trackedCards.value = [];
+        _internal.availabilityMap.value = {};
+
+        // Disconnect the socket to reset its `connected` flag.
+        socket.disconnect();
+
+        // Clear mock history to ensure assertions are clean.
+        vi.clearAllMocks();
     });
 
-    it('should connect and request initial data on first use', () => {
+    it('should connect and request initial data on first use', async () => {
+        // Wait for the event loop to ensure the mock factory is complete.
+        await new Promise(resolve => setTimeout(resolve, 0));
+
         // The 'connect' event should be handled by the composable,
-        // which then emits requests for data.
+        // which then emits requests for data
         const emitSpy = vi.spyOn(socket, 'emit');
 
-        // First time calling useSocket will trigger the connection
+        // Initialize the composable inside the test.
         useSocket();
-        socket.socket.emit('connect'); // Manually trigger the connect event on the mock
+        socket.socket.emit('connect'); // Manually trigger the 'connect' event from the mock server
 
         expect(socket.connected).toBe(true);
         expect(emitSpy).toHaveBeenCalledWith('get_cards');
         expect(emitSpy).toHaveBeenCalledWith('get_card_availability');
     });
 
-    it('should update trackedCards when receiving cards_data', () => {
+    it('should update trackedCards when receiving cards_data', async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
         const { trackedCards } = useSocket();
         const mockCardData = { tracked_cards: [{ card_name: 'Sol Ring', amount: 1 }] };
 
@@ -46,7 +66,8 @@ describe('useSocket Composable', () => {
         expect(trackedCards.value).toEqual(mockCardData.tracked_cards);
     });
 
-    it('should set availability status to "searching" on availability_check_started', () => {
+    it('should set availability status to "searching" on availability_check_started', async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
         const { availabilityMap } = useSocket();
         const eventData = { card: 'Lightning Bolt' };
 
@@ -58,7 +79,8 @@ describe('useSocket Composable', () => {
         });
     });
 
-    it('should update availabilityMap to "completed" on card_availability_data', () => {
+    it('should update availabilityMap to "completed" on card_availability_data', async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
         const { availabilityMap } = useSocket();
         const eventData = {
             card: 'Brainstorm',
@@ -74,7 +96,8 @@ describe('useSocket Composable', () => {
         });
     });
 
-    it('should call socket.emit when emitter functions are used', () => {
+    it('should call socket.emit when emitter functions are used', async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
         const { deleteCard, saveCard, updateCard } = useSocket();
         const emitSpy = vi.spyOn(socket, 'emit');
 
@@ -90,4 +113,3 @@ describe('useSocket Composable', () => {
         expect(emitSpy).toHaveBeenCalledWith('update_card', updatedCard);
     });
 });
-

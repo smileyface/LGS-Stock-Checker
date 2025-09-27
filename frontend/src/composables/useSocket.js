@@ -90,3 +90,13 @@ export function useSocket() {
         updateCard,
     };
 }
+
+// Export the socket instance for testing purposes
+export const _socket = import.meta.env.TEST
+    ? socket
+    : null;
+
+// Export internal state for testing purposes ONLY
+export const _internal = import.meta.env.TEST
+    ? { trackedCards, availabilityMap }
+    : null;

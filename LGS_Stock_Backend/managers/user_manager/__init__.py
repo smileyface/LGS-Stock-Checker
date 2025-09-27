@@ -1,3 +1,12 @@
+"""
+    
+User management module.
+This module aggregates all user-related functionalities,
+including authentication, profile management, preferences, and card tracking.
+
+
+"""
+
 from .user_manager import user_exists, get_public_user_profile, add_user, update_username
 from .user_auth import authenticate_user, update_password, load_user_by_id
 from .user_preferences import update_selected_stores, get_selected_stores

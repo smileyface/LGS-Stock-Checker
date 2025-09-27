@@ -40,6 +40,7 @@ def test_update_availability_single_card_success(
     # Verify socket emission
     # The task should emit two events: one when it starts, one when it finishes.
     expected_calls = [
+        call("availability_check_started", {"store": store_name, "card": "Sol Ring"}, room=username),
         call(
             "card_availability_data",
             {

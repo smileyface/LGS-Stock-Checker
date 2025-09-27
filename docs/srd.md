@@ -91,6 +91,20 @@ These requirements define the global card catalog used for searching and validat
 -   **[4.2.3]** The background task shall add any new sets to the catalog that are not already present, using the set code as the unique identifier.
 -   **[4.2.4]** The background task shall not remove any sets from the catalog.
 
+### 4.3 Card Printing Catalog & Specification Validation
+
+These requirements define the system for storing detailed card printing data and using it to validate user input.
+
+-   **[4.3.1]** The system shall maintain a detailed catalog of all individual card printings. Each printing must be associated with a card name, a set code, and a collector number.
+-   **[4.3.2]** The system shall maintain a catalog of all possible card finishes (e.g., "foil", "nonfoil", "etched").
+-   **[4.3.3]** The system shall associate each card printing with its available finishes.
+-   **[4.3.4]** The system shall include a scheduled background task (e.g., `update_full_catalog`) to populate the card printing, finish, and association catalogs from an external source.
+-   **[4.3.5]** The system shall provide an API endpoint to retrieve all valid printings (i.e., all valid combinations of set, collector number, and finish) for a given card name. This will be used to populate dropdown menus in the UI.
+-   **[4.3.6]** When a user adds or updates a tracked card with specifications, the system must validate that the provided `set_code`, `collector_number`, and `finish` combination is a valid, existing printing for that card name according to the catalog.
+-   **[4.3.7]** When a user tracks a card without providing any specifications (set, collector number, or finish), it signifies that they are interested in any available printing of that card.
+-   **[4.3.8]** When a user provides a partial set of specifications (e.g., only a `set_code`), any omitted fields (e.g., `collector_number`, `finish`) shall be treated as wildcards, matching any valid value for that field.
+-   **[4.3.9]** If a user submits a request with an invalid specification combination, the system shall reject the request and return an informative error.
+
 ## 5. Availability Checking & Notifications
 
 These requirements define the core functionality of checking for card availability at various stores.

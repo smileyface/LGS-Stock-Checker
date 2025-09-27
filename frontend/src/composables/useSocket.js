@@ -8,7 +8,7 @@ const availabilityMap = ref({});
 
 // --- Socket Connection (Singleton pattern) ---
 // Create the socket instance once. It will be shared across the application.
-const socket = io({ 
+const socket = io({
     withCredentials: true,
     autoConnect: false // We will connect manually when the composable is first used.
 });
@@ -43,7 +43,7 @@ socket.on('card_availability_data', (data) => {
     const storeName = data.store;
     const isAvailable = data.items && data.items.length > 0;
     console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${storeName}'. Available: ${isAvailable}`);
-    
+
     if (!availabilityMap.value[cardName]) {
         availabilityMap.value[cardName] = { status: 'searching', stores: [] };
     }

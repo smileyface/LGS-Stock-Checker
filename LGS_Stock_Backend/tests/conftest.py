@@ -155,6 +155,10 @@ def mock_redis(mocker):
     mock_queue.task.side_effect = lambda func: func
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mock_queue)
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.scheduler", mocker.MagicMock())
+    # Also patch the scheduler where it's imported directly in the tasks module to prevent
+    # connection errors during smoke tests.
+    mocker.patch("tasks.scheduler_setup.scheduler", mocker.MagicMock())
+
 
 
 @pytest.fixture(autouse=True)

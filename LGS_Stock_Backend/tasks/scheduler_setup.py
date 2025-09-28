@@ -1,4 +1,4 @@
-import time
+from typing import Callable
 from datetime import timedelta, datetime
 
 from .catalog_tasks import update_card_catalog, update_set_catalog, update_full_catalog
@@ -15,58 +15,57 @@ CATALOG_UPDATE_INTERVAL_HOURS = 24
 AVAILABILITY_UPDATE_INTERVAL_MINUTES = 15
 
 
+def _schedule_if_not_exists(
+    task_id: str,
+    func: Callable,
+    interval_seconds: float,
+    description: str,
+    initial_run_time: datetime,
+):
+    """
+    Checks if a task is already scheduled and schedules it if not.
+
+    Args:
+        task_id: The unique ID for the task.
+        func: The task function to execute.
+        interval_seconds: The execution interval in seconds.
+        description: A description of the task.
+        initial_run_time: The time for the first run.
+    """
+    if task_id not in scheduler:
+        logger.info(f"🗓️ Scheduling task '{task_id}' to run every {interval_seconds / 60:.0f} minutes.")
+        scheduler.schedule(
+            scheduled_time=initial_run_time,
+            func=func,
+            interval=interval_seconds,
+            id=task_id,
+            description=description,
+        )
+
+
 def schedule_tasks():
     """
     Connects to rq-scheduler and schedules all recurring tasks for the application.
     This function is designed to be idempotent; it won't create duplicate scheduled jobs.
     """
     logger.info("🚀 Setting up scheduled tasks...")
-    initial_run_time = datetime.now()
     try:
-        # --- Schedule Card Catalog Update ---
-        # Check if the job is already scheduled to avoid duplicates on restart
-        if task_definitions.CATALOG_TASK_ID not in scheduler:
-            logger.info(f"🗓️ Scheduling task '{task_definitions.CATALOG_TASK_ID}' to run every {CATALOG_UPDATE_INTERVAL_HOURS} hours.")
-            scheduler.schedule(
-                scheduled_time=initial_run_time,
-                func=update_card_catalog,
-                interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
-                id=task_definitions.CATALOG_TASK_ID,
-                description="Periodically updates the card catalog from Scryfall."
-            )
+        initial_run_time = datetime.now()
+        catalog_interval = timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds()
+        availability_interval = timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds()
 
-        # --- Schedule Set Catalog Update ---
-        if task_definitions.SET_CATALOG_TASK_ID not in scheduler:
-            logger.info(f"🗓️ Scheduling task '{task_definitions.SET_CATALOG_TASK_ID}' to run every {CATALOG_UPDATE_INTERVAL_HOURS} hours.")
-            scheduler.schedule(
-                scheduled_time=initial_run_time,
-                func=update_set_catalog,
-                interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
-                id=task_definitions.SET_CATALOG_TASK_ID,
-                description="Periodically updates the set catalog from Scryfall."
-            )
-
-        # --- Schedule Full Catalog Update ---
-        # This is a more comprehensive update that includes printings and finishes.
-        if task_definitions.FULL_CATALOG_TASK_ID not in scheduler:
-            logger.info(f"🗓️ Scheduling task '{task_definitions.FULL_CATALOG_TASK_ID}' to run every {CATALOG_UPDATE_INTERVAL_HOURS} hours.")
-            scheduler.schedule(
-                scheduled_time=initial_run_time,
-                func=update_full_catalog,
-                interval=timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds(),
-                id=task_definitions.FULL_CATALOG_TASK_ID,
-                description="Periodically updates the full card, set, printing, and finish catalog from Scryfall."
-            )
+        # --- Schedule Catalog Updates ---
+        _schedule_if_not_exists(task_definitions.CATALOG_TASK_ID, update_card_catalog, catalog_interval, "Periodically updates the card catalog from Scryfall.", initial_run_time)
+        _schedule_if_not_exists(task_definitions.SET_CATALOG_TASK_ID, update_set_catalog, catalog_interval, "Periodically updates the set catalog from Scryfall.", initial_run_time)
+        _schedule_if_not_exists(task_definitions.FULL_CATALOG_TASK_ID, update_full_catalog, catalog_interval, "Periodically updates the full card, set, printing, and finish catalog from Scryfall.", initial_run_time)
 
         # --- Schedule Availability Check ---
-        if task_definitions.AVAILABILITY_TASK_ID not in scheduler:
-            logger.info(f"🗓️ Scheduling task '{task_definitions.AVAILABILITY_TASK_ID}' to run every {AVAILABILITY_UPDATE_INTERVAL_MINUTES} minutes.")
-            scheduler.schedule(
-                scheduled_time=initial_run_time,
-                func=update_all_tracked_cards_availability, # Call with no arguments for a system-wide update
-                interval=timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds(),
-                id=task_definitions.AVAILABILITY_TASK_ID,
-                description="Periodically checks for card availability for all users."
-            )
+        _schedule_if_not_exists(
+            task_id=task_definitions.AVAILABILITY_TASK_ID,
+            func=update_all_tracked_cards_availability,
+            interval_seconds=availability_interval,
+            description="Periodically checks for card availability for all users.",
+            initial_run_time=initial_run_time,
+        )
     except Exception as e:
         logger.error(f"❌ Failed to schedule tasks: {e}")

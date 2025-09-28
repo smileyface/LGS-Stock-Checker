@@ -324,3 +324,31 @@ def bulk_add_printing_finish_associations(associations: List[Dict[str, int]], *,
 
     session.execute(stmt)
     logger.info(f"Attempted to bulk insert {len(associations)} printing-finish associations.")
+
+@db_query
+def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
+    """
+    Retrieves all printings for a given card name, including their available finishes.
+    This is used to populate the UI with valid specification options.
+    Implements requirement [4.3.5].
+    """
+    logger.debug(f"📖 Querying for all printings of card '{card_name}'.")
+    printings = (
+        session.query(CardPrinting)
+        .filter(CardPrinting.card_name == card_name)
+        .options(joinedload(CardPrinting.available_finishes))  # Eagerly load finishes
+        .order_by(CardPrinting.set_code, CardPrinting.collector_number)
+        .all()
+    )
+
+    if not printings:
+        return []
+
+    return [
+        {
+            "set_code": p.set_code,
+            "collector_number": p.collector_number,
+            "finishes": [f.name for f in p.available_finishes],
+        }
+        for p in printings
+    ]

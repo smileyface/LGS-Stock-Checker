@@ -18,7 +18,7 @@ from .db_config import initialize_database, startup_database
 from .repositories.card_repository import (
     get_users_cards, add_user_card, delete_user_card, update_user_tracked_cards_list,
     update_user_tracked_card_preferences, search_card_names, add_card_names_to_catalog, add_set_data_to_catalog,
-    bulk_add_finishes, bulk_add_card_printings, get_all_printings_map, get_all_finishes_map,
+    bulk_add_finishes, bulk_add_card_printings, get_all_printings_map, get_all_finishes_map, get_printings_for_card,
     bulk_add_printing_finish_associations
 )
 from .repositories.user_repository import (
@@ -36,7 +36,7 @@ __all__ = [
     # Card Repository
     "get_users_cards", "add_user_card", "delete_user_card",
     "update_user_tracked_cards_list", "update_user_tracked_card_preferences",
-    "search_card_names", "add_card_names_to_catalog", "add_set_data_to_catalog", "bulk_add_finishes",
+    "search_card_names", "add_card_names_to_catalog", "add_set_data_to_catalog", "bulk_add_finishes", "get_printings_for_card",
     "bulk_add_card_printings", "get_all_printings_map", "get_all_finishes_map",
     "bulk_add_printing_finish_associations",
     "get_user_by_username", "update_username", "update_password", "add_user",

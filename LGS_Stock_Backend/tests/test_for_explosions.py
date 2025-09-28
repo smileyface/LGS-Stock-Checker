@@ -5,6 +5,7 @@ import warnings
 import typing
 from unittest.mock import MagicMock
 
+from datetime import datetime
 import pytest
 from werkzeug.security import generate_password_hash
 from werkzeug.exceptions import HTTPException
@@ -51,6 +52,88 @@ def seed_data(db_session):
     return {"user_id": test_user.id, "store_id": test_store.id}
 
 
+def _generate_test_args(func, params, live_user, live_store):
+    """
+    Generates positional and keyword arguments for a function based on its signature,
+    using seeded data and safe defaults.
+    """
+    pos_args = []
+    kw_args = {}
+
+    # A mapping for functions that expect a specific 'data' payload.
+    data_payloads = {
+        "handle_get_card_printings": {"card_name": "test_card"},
+        "handle_add_user_tracked_card": {"card": "test_card", "amount": 1, "card_specs": {}},
+        "handle_delete_user_tracked_card": {"card": "test_card"},
+        "handle_update_user_tracked_cards": {"card": "test_card", "update_data": {"amount": 2}},
+        "handle_update_user_stores": {"stores": ["test_store"]},
+    }
+
+    for param_name, param in params.items():
+        arg_value = None
+        is_kw_only = param.kind == inspect.Parameter.KEYWORD_ONLY
+
+        # --- Argument Generation Logic ---
+        # 1. Handle specific, known parameter names and function contexts.
+        if func.__name__ == 'add_user' and 'username' in param_name:
+            arg_value = "new_smoke_test_user"
+        elif param_name == "data" and func.__name__ in data_payloads:
+            arg_value = data_payloads[func.__name__]
+        elif "user" in param_name and ("name" in param_name or "username" in param_name):
+            arg_value = live_user.username
+        elif "user" in param_name and "id" in param_name:
+            arg_value = live_user.id
+        elif "store" in param_name and "id" in param_name:
+            arg_value = live_store.id
+        elif param_name == "store_slugs":
+            arg_value = [live_store.slug]
+        elif "slug" in param_name:
+            arg_value = live_store.slug
+        elif "password" in param_name and "hash" not in param_name:
+            arg_value = "a_valid_password"
+        elif "password_hash" in param_name:
+            arg_value = "a_valid_test_hash"
+        elif "session" in param_name:
+            continue  # The @db_query decorator injects the session; skip.
+
+        # 2. Handle common non-trivial types.
+        elif param.annotation is callable:
+            arg_value = lambda: "dummy function"
+        elif param.annotation is SocketIO:
+            arg_value = MagicMock()
+
+        # 3. Fallback to generic types based on type hints or defaults.
+        else:
+            origin = typing.get_origin(param.annotation)
+            if param.default is not inspect.Parameter.empty:
+                arg_value = param.default
+            elif hasattr(param.annotation, '__total__'):  # Heuristic for TypedDict
+                arg_value = {}
+            elif param.annotation is dict or origin is dict:
+                arg_value = {}
+            elif param.annotation is list or origin is list:
+                arg_value = []
+            elif param.annotation == str:
+                arg_value = "test_string"
+            elif param.annotation == int:
+                arg_value = 1
+            elif param.annotation == float:
+                arg_value = 1.0
+            elif param.annotation == datetime:
+                arg_value = datetime.now()
+            elif param.annotation == bool:
+                arg_value = False
+            else:
+                arg_value = None  # Safe fallback
+
+        if is_kw_only:
+            kw_args[param_name] = arg_value
+        else:
+            pos_args.append(arg_value)
+
+    return pos_args, kw_args
+
+
 @pytest.mark.smoke
 @pytest.mark.parametrize("package", PACKAGES_TO_TEST, ids=[p.__name__ for p in PACKAGES_TO_TEST])
 def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
@@ -62,79 +145,18 @@ def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
     # that access request.json without the correct Content-Type header.
     mocker.patch("werkzeug.wrappers.request.Request.get_json", return_value={})
 
+    # Fetch seeded objects once per module test, not once per function.
+    # This significantly reduces redundant database queries.
+    live_user = db_session.query(User).filter_by(id=seed_data["user_id"]).one()
+    live_store = db_session.query(Store).filter_by(id=seed_data["store_id"]).one()
+
     for name, func in inspect.getmembers(package, inspect.isfunction):
         # Ensure we only test functions defined in the current package, not imported ones.
         if func.__module__ != package.__name__:
             continue
 
-        # Because repository functions create and destroy their own sessions via the
-        # @db_query decorator, the original `seed_data` objects can become detached.
-        # We re-fetch them inside the loop using the main test session (`db_session`)
-        # to ensure we have "live" objects for generating arguments.
-        live_user = db_session.query(User).filter_by(id=seed_data["user_id"]).one()
-        live_store = db_session.query(Store).filter_by(id=seed_data["store_id"]).one()
-
         params = inspect.signature(func).parameters
-
-        # Generate safe test inputs
-        pos_args = []
-        kw_args = {}
-
-        for param_name, param in params.items():
-            arg_value = None
-            is_kw_only = param.kind == inspect.Parameter.KEYWORD_ONLY
-
-            # Use seeded data for common parameter names
-            # Add a special case for `add_user` to avoid UNIQUE constraint violation
-            if func.__name__ == 'add_user' and 'username' in param_name:
-                arg_value = "new_smoke_test_user"
-            elif "user" in param_name and ("name" in param_name or "username" in param_name):
-                arg_value = live_user.username
-            elif "user" in param_name and "id" in param_name:
-                arg_value = live_user.id
-            elif "store" in param_name and "id" in param_name:
-                arg_value = live_store.id
-            # Add a special case for the `set_user_stores` function, which expects a list of slugs.
-            elif param_name == "store_slugs":
-                arg_value = [live_store.slug]
-            elif "slug" in param_name:
-                arg_value = live_store.slug
-            elif "password" in param_name and "hash" not in param_name:
-                arg_value = "a_valid_password"
-            elif "password_hash" in param_name:
-                arg_value = "a_valid_test_hash"  # Provide a non-null hash
-            elif "session" in param_name:  # The @db_query decorator injects the session
-                # The test should not provide one, so we skip it.
-                continue
-            # Add specific handlers for common non-trivial types
-            elif param.annotation is callable:
-                arg_value = lambda: "dummy function"  # Provide a dummy callable
-            elif param.annotation is SocketIO:
-                arg_value = MagicMock()  # Provide a mock SocketIO object
-            # Fallback to generic types
-            else:
-                origin = typing.get_origin(param.annotation)
-                if param.default is not inspect.Parameter.empty:
-                    arg_value = param.default
-                elif hasattr(param.annotation, '__total__'):  # Heuristic for TypedDict
-                    arg_value = {}
-                elif param.annotation is dict or origin is dict:
-                    arg_value = {}
-                elif param.annotation is list or origin is list:
-                    arg_value = []
-                elif param.annotation == str:
-                    arg_value = "test_string"
-                elif param.annotation == int:
-                    arg_value = 1  # Use a valid ID; 0 can be invalid
-                elif param.annotation == bool:
-                    arg_value = False
-                else:
-                    arg_value = None  # Safe fallback
-
-            if is_kw_only:
-                kw_args[param_name] = arg_value
-            else:
-                pos_args.append(arg_value)
+        pos_args, kw_args = _generate_test_args(func, params, live_user, live_store)
 
         try:
             func(*pos_args, **kw_args)

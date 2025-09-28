@@ -10,7 +10,7 @@
             <table class="table table-striped table-bordered" id="cardTable">
                 <thead>
                     <tr>
-                        <th style="width: 60px;"></th> <th>Amount</th>
+                        <th style="width: 80px;">Actions</th> <th>Amount</th>
                         <th>Card Name</th>
                         <th>Set Code</th>
                         <th>Collector Number</th>
@@ -21,9 +21,9 @@
                 <tbody>
                     <tr v-for="card in trackedCards" :key="card.card_name">
                         <td>
-                            <div class="action-buttons">
-                                <button class="btn btn-sm btn-light" title="Edit" @click="editCard(card)">✏️</button>
-                                <button class="btn btn-sm btn-light" title="Delete" @click="deleteCard(card.card_name)">❌</button>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Card Actions">
+                                <button type="button" class="btn btn-outline-secondary" title="Edit" @click="editCard(card)">✏️</button>
+                                <button type="button" class="btn btn-outline-danger" title="Delete" @click="deleteCard(card.card_name)">❌</button>
                             </div>
                         </td>
                         <td>{{ card.amount }}</td>

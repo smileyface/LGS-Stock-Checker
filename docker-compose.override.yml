@@ -1,24 +1,32 @@
-# This file is for development-specific overrides.
-# It is automatically used by `docker compose up` in a local environment.
-# It should NOT be checked into version control if it contains secrets.
+# This override file is used for local development.
+# It enables hot-reloading for both the frontend and backend services.
 
 services:
   backend:
+    # Mount the backend source code into the container.
+    # Any changes you make locally will be reflected inside the container.
     volumes:
-      # Mount the backend source code to the working directory for hot-reloading.
-      # This allows changes in your local code to be immediately reflected in the container.
       - ./LGS_Stock_Backend:/app
+    # Override the command to run Flask in debug mode for hot-reloading.
+    command: [ "flask", "run", "--host=0.0.0.0", "--port=5000", "--debug" ]
+    # Map the debug port to the host so you can potentially attach a debugger.
+    ports:
+      - "5000:5000"
+
   frontend:
-    # Override for development to use Vite's dev server
+    # Override the build context to use the development Dockerfile.
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-      target: development-stage
-    ports:
-      - "5173:5173" # Expose Vite's port instead of Nginx's
+      dockerfile: Dockerfile.dev
+    # Mount the frontend source code into the container.
     volumes:
-      # Mount source code for hot-reloading.
-      # The node_modules directory is a separate, anonymous volume
-      # to prevent the host's node_modules from overwriting the container's.
       - ./frontend:/app
+      # This is an anonymous volume to prevent node_modules on the host
+      # from overwriting the container's node_modules.
       - /app/node_modules
+    # Map the Vite development server port (5173) to the host.
+    ports:
+      - "5173:5173"
+    # Ensure the container doesn't exit immediately.
+    stdin_open: true
+    tty: true

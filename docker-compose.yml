@@ -109,6 +109,18 @@ services:
       # Add a start_period to give the database time to initialize on slow hardware.
       start_period: 30s
 
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: lgs-stock-checker-dozzle-1
+    restart: unless-stopped
+    volumes:
+      # Mount the Docker socket to allow Dozzle to read container logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9999:8080" # Expose Dozzle's web UI on host port 9999
+    networks:
+      - stock-net
+
 networks:
   stock-net:
     driver: bridge

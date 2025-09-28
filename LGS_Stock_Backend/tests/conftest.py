@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Initialize the database with the test URL *before* any application modules are imported.
 # This prevents the ImportError during test discovery.
 from data.database import db_config
-from data.database.models.orm_models import Base, User, Store
+from data.database.models.orm_models import Base, User, Store, Card, Set, Finish, CardPrinting
 from flask import session
 from unittest.mock import patch
 
@@ -258,3 +258,43 @@ def mock_sh_emit(mocker):
 def mock_sh_trigger_availability_check(mocker):
     """Mocks the trigger_availability_check_for_card function used in socket handlers."""
     return mocker.patch("managers.socket_manager.socket_handlers.availability_manager.trigger_availability_check_for_card")
+
+
+@pytest.fixture
+def seeded_printings(db_session):
+    """Fixture to create a card with multiple printings and finishes."""
+    # Seed lookup tables
+    db_session.add_all([
+        Card(name="Sol Ring"),
+        Card(name="Thoughtseize"),
+        Card(name="Ugin, the Spirit Dragon"),
+        Set(code="C21", name="Commander 2021"),
+        Set(code="LTC", name="The Lord of the Rings: Tales of Middle-earth Commander"),
+        Set(code="ONE", name="Phyrexia: All Will Be One"),
+        Set(code="MH2", name="Modern Horizons 2"),
+        Set(code="2XM", name="Double Masters"),
+        Set(code="M21", name="Core Set 2021"),
+        Finish(name="nonfoil"),
+        Finish(name="foil"),
+        Finish(name="etched")
+    ])
+    db_session.commit()
+
+    # Create printings and associate finishes
+    printings_data = [
+        ("Sol Ring", "C21", "125", ["nonfoil", "foil"]),
+        ("Sol Ring", "LTC", "3", ["nonfoil", "etched"]),
+        ("Sol Ring", "ONE", "254", ["nonfoil", "foil"]),
+        ("Thoughtseize", "MH2", "107", ["etched"]),
+        ("Thoughtseize", "2XM", "107", ["nonfoil"]),
+        ("Ugin, the Spirit Dragon", "M21", "1", ["foil"]),
+    ]
+
+    all_finishes = {f.name: f for f in db_session.query(Finish).all()}
+
+    for card_name, set_code, collector_number, finish_names in printings_data:
+        printing = CardPrinting(card_name=card_name, set_code=set_code, collector_number=collector_number)
+        printing.available_finishes.extend([all_finishes[name] for name in finish_names])
+        db_session.add(printing)
+
+    db_session.commit()

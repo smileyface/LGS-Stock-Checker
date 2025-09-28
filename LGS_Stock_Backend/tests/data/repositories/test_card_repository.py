@@ -2,9 +2,9 @@ import pytest
 
 import data.database as data
 from data.database.models.orm_models import CardSpecification, UserTrackedCards
+from data.database.repositories.card_repository import is_valid_printing_specification
 
-
-def test_add_and_get_user_card(seeded_user):
+def test_add_and_get_user_card(seeded_user, seeded_printings):
     # Initially, no cards
     assert data.get_users_cards("testuser") == []
 
@@ -28,7 +28,7 @@ def test_add_user_card_user_not_found(db_session):
     assert db_session.query(UserTrackedCards).count() == 0
 
 
-def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(seeded_user):
+def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(seeded_user, seeded_printings):
     """
     Test that calling add_user_card for a card that is already tracked:
     1. Adds new specifications.
@@ -72,7 +72,7 @@ def test_delete_user_card(seeded_user):
     assert len(data.get_users_cards(username)) == 0
 
 
-def test_delete_user_card_cascades_specifications(seeded_user, db_session):
+def test_delete_user_card_cascades_specifications(seeded_user, seeded_printings, db_session):
     """
     Tests that deleting a UserTrackedCards object also deletes its child
     CardSpecification objects due to the cascade="all, delete-orphan" setting.
@@ -168,3 +168,71 @@ def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
     card = data.get_users_cards("testuser")[0]
     assert card.card_name == "Lightning Bolt"
     assert card.amount == 1
+
+
+@pytest.mark.parametrize(
+    "card_name, spec, expected",
+    [
+        # --- Full, Valid Specifications ---
+        ("Sol Ring", {"set_code": "C21", "collector_number": "125", "finish": "foil"}, True),
+        ("Sol Ring", {"set_code": "LTC", "collector_number": "3", "finish": "etched"}, True),
+
+        # --- Full, Invalid Specifications ---
+        ("Sol Ring", {"set_code": "C21", "collector_number": "125", "finish": "etched"}, False), # Wrong finish for printing
+        ("Sol Ring", {"set_code": "C21", "collector_number": "999", "finish": "foil"}, False),   # Wrong collector number
+        ("Sol Ring", {"set_code": "XYZ", "collector_number": "125", "finish": "foil"}, False),   # Wrong set
+        ("Nonexistent Card", {"set_code": "C21", "collector_number": "125", "finish": "foil"}, False), # Wrong card name
+
+        # --- Partial, Valid Specifications (Wildcards) ---
+        ("Sol Ring", {"set_code": "C21"}, True),
+        ("Sol Ring", {"collector_number": "3"}, True),
+        ("Sol Ring", {"finish": "foil"}, True),
+        ("Sol Ring", {"set_code": "LTC", "collector_number": "3"}, True),
+        ("Sol Ring", {"set_code": "C21", "finish": "nonfoil"}, True),
+
+        # --- Partial, Invalid Specifications ---
+        ("Sol Ring", {"set_code": "LTC", "finish": "foil"}, False), # This combo doesn't exist
+        ("Sol Ring", {"set_code": "XYZ"}, False),
+        ("Sol Ring", {"finish": "holographic"}, False),
+
+        # --- Empty Specification (Wildcard for everything) ---
+        ("Sol Ring", {}, True),
+        ("Nonexistent Card", {}, True), # Valid because it means "any printing"
+    ],
+    ids=[
+        "full_valid_spec",
+        "full_valid_spec_2",
+        "full_invalid_finish",
+        "full_invalid_collector_number",
+        "full_invalid_set",
+        "full_invalid_card_name",
+        "partial_valid_set",
+        "partial_valid_collector_number",
+        "partial_valid_finish",
+        "partial_valid_set_and_number",
+        "partial_valid_set_and_finish",
+        "partial_invalid_combo",
+        "partial_invalid_set",
+        "partial_invalid_finish",
+        "empty_spec_valid_card",
+        "empty_spec_nonexistent_card",
+    ]
+)
+def test_is_valid_printing_specification(seeded_printings, card_name, spec, expected):
+    """
+    Tests the is_valid_printing_specification function with various valid and invalid inputs.
+    This covers requirements [4.3.6], [4.3.8], and [4.3.9].
+    """
+    is_valid = is_valid_printing_specification(card_name, spec)
+    assert is_valid == expected
+
+
+def test_add_user_card_with_invalid_spec_raises_error(seeded_printings, seeded_user):
+    """
+    Tests that add_user_card raises InvalidSpecificationError for an invalid spec.
+    This directly tests the integration between add_user_card and the validation function.
+    """
+    invalid_spec = {"set_code": "C21", "finish": "etched"} # This combination is invalid
+
+    with pytest.raises(data.exceptions.InvalidSpecificationError):
+        data.add_user_card("testuser", "Sol Ring", 1, invalid_spec)

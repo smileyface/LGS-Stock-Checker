@@ -2,6 +2,7 @@ from flask_login import current_user
 from pydantic import ValidationError
 
 from data import database
+from data.database import exceptions
 from .socket_manager import socketio
 from .. import user_manager, availability_manager, store_manager
 from .socket_schemas import AddCardSchema, UpdateCardSchema, DeleteCardSchema, GetPrintingsSchema, UpdateStoreSchema
@@ -167,6 +168,10 @@ def handle_add_user_tracked_card(data: dict):
     except ValidationError as e:
         logger.error(f"❌ Invalid 'add_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
+    except exceptions.InvalidSpecificationError as e:
+        logger.warning(f"⚠️ User '{username}' submitted an invalid card specification: {e}")
+        # Send a specific, user-friendly error message to the client.
+        socketio.emit("error", {"message": str(e)})
 
 
 @socketio.on("delete_card")

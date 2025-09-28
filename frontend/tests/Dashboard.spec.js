@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { ref, readonly } from 'vue';
-import Dashboard from '../Dashboard.vue';
-import { useSocket } from '../../composables/useSocket';
+import Dashboard from '../src/views/Dashboard.vue';
+import { useSocket } from '../src/composables/useSocket';
 
 // Mock the entire composable
-vi.mock('../../composables/useSocket');
+// Correctly mock the module to return a mock function for useSocket
+vi.mock('../src/composables/useSocket', () => ({
+    useSocket: vi.fn(), // This creates a mock function that can be spied on and have its return value set
+}));
 
 // Mock child components to isolate the Dashboard component
 const AddCardModal = { template: '<div class="add-card-modal-mock"></div>' };
@@ -99,4 +102,3 @@ describe('Dashboard.vue', () => {
         expect(deleteCard).toHaveBeenCalledWith(cardName);
     });
 });
-

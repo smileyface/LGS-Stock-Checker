@@ -2,9 +2,10 @@ from typing import List, Dict, Any
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
-# Internal package imports (relative to the data.database package)
+# Internal package imports
 
 from .. import schema
+from ..exceptions import InvalidSpecificationError
 from ..session_manager import db_query
 from ..models import Card, CardSpecification, User, UserTrackedCards, Set, Finish, CardPrinting, printing_finish_association
 from utility import logger
@@ -68,6 +69,13 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
         logger.info(f"➕ User '{username}' is now tracking '{card_name}'.")
         tracked_card = UserTrackedCards(user_id=user.id, amount=amount, card_name=card_name)
         session.add(tracked_card)
+
+    # Validate specifications before adding them
+    if card_specs and not is_valid_printing_specification(card_name, card_specs):
+        # Raise a specific exception that can be caught by the caller
+        raise InvalidSpecificationError(
+            f"Invalid specification for '{card_name}': {card_specs}"
+        )
 
     # We need the ID for the specifications, so we flush to get it.
     session.flush()
@@ -352,3 +360,44 @@ def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
         }
         for p in printings
     ]
+
+@db_query
+def is_valid_printing_specification(card_name: str, spec: Dict[str, Any], *, session) -> bool:
+    """
+    Validates if a given specification (set, collector #, finish) is valid for a card.
+    Handles partial specifications as wildcards, as per requirement [4.3.8].
+
+    Args:
+        card_name: The name of the card.
+        spec: A dictionary with 'set_code', 'collector_number', and 'finish'.
+
+    Returns:
+        True if the specification is valid, False otherwise.
+    """
+    set_code = spec.get("set_code")
+    collector_number = spec.get("collector_number")
+    finish = spec.get("finish")
+
+    # If no specs are provided at all, it's trivially valid (wildcard for everything).
+    if not set_code and not collector_number and not finish:
+        return True
+
+    # Start a query on CardPrinting
+    query = session.query(CardPrinting).filter(CardPrinting.card_name == card_name)
+
+    # Add filters for the specs that are actually provided
+    if set_code:
+        query = query.filter(CardPrinting.set_code == set_code)
+    if collector_number:
+        query = query.filter(CardPrinting.collector_number == collector_number)
+    if finish:
+        # If a finish is specified, we must join to check it
+        query = query.join(CardPrinting.available_finishes).filter(Finish.name == finish)
+
+    # We just need to know if at least one such printing exists.
+    exists = session.query(query.exists()).scalar()
+
+    if not exists:
+        logger.warning(f"Validation failed for '{card_name}' with spec: {spec}")
+
+    return exists

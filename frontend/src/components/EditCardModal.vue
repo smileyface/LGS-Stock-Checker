@@ -60,17 +60,6 @@ let modalInstance = null;
 const editableCard = ref(null);
 
 // When the modal is shown, populate the form with the prop data
-onMounted(() => {
-  modalInstance = new Modal(editCardModal.value);
-  editCardModal.value.addEventListener('show.bs.modal', () => {
-    // Deep copy to avoid mutating the prop directly
-    editableCard.value = JSON.parse(JSON.stringify(props.cardToEdit));
-    // Ensure specifications is an array with at least one object for the form
-    if (!editableCard.value.specifications || editableCard.value.specifications.length === 0) {
-      editableCard.value.specifications = [{ set_code: '', collector_number: '', finish: 'non-foil' }];
-    }
-  });
-});
 
 function submitUpdate() {
   const payload = {
@@ -84,7 +73,21 @@ function submitUpdate() {
   modalInstance.hide();
 }
 
+function show() {
+  // Deep copy to avoid mutating the prop directly
+  editableCard.value = JSON.parse(JSON.stringify(props.cardToEdit));
+  // Ensure specifications is an array with at least one object for the form
+  if (!editableCard.value.specifications || editableCard.value.specifications.length === 0) {
+    editableCard.value.specifications = [{ set_code: '', collector_number: '', finish: 'non-foil' }];
+  }
+  modalInstance.show();
+}
+
+onMounted(() => {
+  modalInstance = new Modal(editCardModal.value);
+});
+
 defineExpose({
-  show: () => modalInstance.show()
+  show
 });
 </script>

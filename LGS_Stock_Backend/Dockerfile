@@ -52,4 +52,4 @@ EXPOSE 5000
 
 # Run the app using gunicorn. It will find the 'app' object in the 'run.py' file.
 # The WORKDIR is /app, so gunicorn will find run.py there.
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "server_entrypoint:app"]
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "4", "--bind", "0.0.0.0:5000", "server_entrypoint:app"]

@@ -6,7 +6,7 @@ x-common-backend-env:
   # The default PATH in the python:3.9-slim image already includes /usr/local/bin,
   # so we don't need to modify it. We'll keep the anchor for other variables.
   &common-backend-env
-  LOG_LEVEL: ${LOG_LEVEL}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
   REDIS_HOST: redis
   FLASK_CONFIG: production
   REDIS_PORT: 6379

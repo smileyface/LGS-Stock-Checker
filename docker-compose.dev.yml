@@ -13,7 +13,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: development-stage    
+      target: development-stage
     ports:
       - "5173:5173" # Expose Vite's port instead of Nginx's
     volumes:
@@ -21,4 +21,3 @@ services:
       # This is an anonymous volume to prevent node_modules on the host
       # from overwriting the container's node_modules.
       - /app/node_modules
-

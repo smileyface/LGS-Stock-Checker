@@ -40,10 +40,6 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy the application source code into the container
 COPY ./LGS_Stock_Backend .
 
-# Install the application in editable mode so that gunicorn can find the entry point
-# defined in setup.py for the paste.ini configuration.
-RUN pip install -e .
-
 # Change ownership of the app directory to the non-root user
 # This includes the persistent_data directory we created for the volume.
 RUN chown -R appuser:appuser /app

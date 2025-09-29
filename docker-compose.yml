@@ -24,7 +24,7 @@ services:
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     environment: *common-backend-env
-    command: [ "python", "gunicorn_entrypoint.py" ]
+    command: [ "gunicorn", "--paste", "paste.ini" ]
     depends_on:
       redis:
         condition: service_healthy

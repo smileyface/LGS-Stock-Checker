@@ -28,6 +28,8 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+    ports:
+      - "5000:5000" # Expose backend port for direct access/testing
     networks:
       - stock-net
 
@@ -40,7 +42,9 @@ services:
     ports:
       - "0.0.0.0:8000:80"
     depends_on:
-      - backend
+      backend:
+        # Wait for the backend to be fully running before starting the frontend
+        condition: service_started
     networks:
       - stock-net
 

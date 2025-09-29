@@ -72,6 +72,7 @@ def create_app(config_name=None, override_config=None):
         cors_allowed_origins=allowed_origins,
         async_mode="eventlet",
         engineio_logger=False  # Set to True for detailed Engine.IO debugging
+        engineio_logger=True  # Set to True for detailed Engine.IO debugging
     )
     # Discover and register all socket event handlers
     initialize_socket_handlers()

@@ -67,40 +67,47 @@ def update_full_catalog():
     """
     logger.info("🚀 Starting background task: update_full_catalog")
 
-    all_card_data = fetch_all_card_data()
-    if not all_card_data:
-        logger.warning("⚠️ Could not fetch full card data from source. Catalog update skipped.")
-        return
+    # fetch_all_card_data returns a generator to stream data and save memory.
+    card_data_stream = fetch_all_card_data()
 
-    # 1. Extract and add all unique finishes
-    all_finishes = set(finish for card in all_card_data for finish in card.get("finishes", []))
+    # We will build up our lists for bulk insertion as we iterate through the stream.
+    all_finishes = set()
+    printings_to_add = []
+    associations_to_add_temp = [] # Temporary list before we get IDs
+
+    logger.info("Processing card data stream...")
+    for card in card_data_stream:
+        # 1. Extract unique finishes
+        for finish in card.get("finishes", []):
+            all_finishes.add(finish)
+
+        # 2. Extract printings
+        if card.get("name") and card.get("set") and card.get("collector_number"):
+            printings_to_add.append({
+                "card_name": card["name"],
+                "set_code": card["set"],
+                "collector_number": card["collector_number"],
+            })
+            # Store the raw data needed for associations later
+            associations_to_add_temp.append(card)
+
+    logger.info("Finished processing stream. Starting database updates.")
 
     if all_finishes:
         logger.info(f"Found {len(all_finishes)} unique finishes. Updating database...")
         database.bulk_add_finishes(list(all_finishes))
 
-    # 2. Extract and add all unique card printings
-    printings_to_add = [
-        {
-            "card_name": card["name"],
-            "set_code": card["set"],
-            "collector_number": card["collector_number"],
-        }
-        for card in all_card_data
-        if card.get("name") and card.get("set") and card.get("collector_number")
-    ]
-
     if printings_to_add:
         logger.info(f"Found {len(printings_to_add)} unique printings. Updating database...")
         database.bulk_add_card_printings(printings_to_add)
 
-    # 3. Create associations between printings and finishes
+    # 3. Now that printings and finishes are in the DB, create associations
     logger.info("Building printing-to-finish associations...")
     printings_map = database.get_all_printings_map()
     finishes_map = database.get_all_finishes_map()
 
     associations_to_add = []
-    for card in all_card_data:
+    for card in associations_to_add_temp:
         printing_key = (card.get("name"), card.get("set"), card.get("collector_number"))
         printing_id = printings_map.get(printing_key)
 
@@ -113,5 +120,7 @@ def update_full_catalog():
     if associations_to_add:
         logger.info(f"Found {len(associations_to_add)} printing-finish associations. Updating database...")
         database.bulk_add_printing_finish_associations(associations_to_add)
+    else:
+        logger.info("No new printing-finish associations to add.")
 
     logger.info("🏁 Finished background task: update_full_catalog")

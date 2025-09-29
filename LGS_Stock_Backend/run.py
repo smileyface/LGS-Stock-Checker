@@ -2,6 +2,7 @@ import os
 import logging
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager
 from flask_session import Session
 
@@ -24,6 +25,11 @@ def create_app(config_name=None, override_config=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'default')
     
+    # Apply ProxyFix middleware to make the app aware of proxy headers.
+    # This is crucial for correct URL generation and security features when
+    # running behind a reverse proxy like Nginx in Docker.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     app.config.from_object(config[config_name])
     if override_config:
         app.config.update(override_config)
@@ -71,7 +77,6 @@ def create_app(config_name=None, override_config=None):
         message_queue=f"redis://{redis_host}:6379",
         cors_allowed_origins=allowed_origins,
         async_mode="eventlet",
-        engineio_logger=False  # Set to True for detailed Engine.IO debugging
         engineio_logger=True  # Set to True for detailed Engine.IO debugging
     )
     # Discover and register all socket event handlers

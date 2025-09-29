@@ -30,6 +30,14 @@ services:
         condition: service_healthy
     ports:
       - "5000:5000" # Expose backend port for direct access/testing
+    # Add a healthcheck to ensure the Gunicorn server is responsive.
+    healthcheck:
+      # Use curl to ping a non-existent but valid API path. We expect a 404, which proves the server is running.
+      test: [ "CMD-SHELL", "curl -f http://localhost:5000/api/health || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
       - stock-net
 
@@ -43,8 +51,8 @@ services:
       - "0.0.0.0:8000:80"
     depends_on:
       backend:
-        # Wait for the backend to be fully running before starting the frontend
-        condition: service_started
+        # Change this to wait for the backend to be healthy, not just started.
+        condition: service_healthy
     networks:
       - stock-net
 

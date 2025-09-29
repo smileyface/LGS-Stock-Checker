@@ -27,7 +27,7 @@ WORKDIR /app
 # Install runtime dependencies for psycopg2.
 # The psycopg2 library requires the PostgreSQL client library (libpq).
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libpq5 && \
+    apt-get install -y --no-install-recommends libpq5 curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user and group for security

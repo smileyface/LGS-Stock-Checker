@@ -47,6 +47,7 @@ This project is configured for a seamless local development experience with hot-
     Alternatively, you can use Docker Compose directly:
     ```bash
     docker compose up --build
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
     ```
 
 This command will:
@@ -58,13 +59,19 @@ This command will:
 
 ### Production Deployment
 
-The `deploy.sh` script is designed to automate deployments to a production-like server environment.
+The `deploy.sh` script is designed to automate deployments to a **production or test server environment**. It handles building production-ready images and configuring the application for remote access.
 
 1.  **Initial Setup on Server:**
     Clone the repository onto your server.
     ```bash
     git clone <your-repository-url> ~/LGS-Stock-Checker
     cd ~/LGS-Stock-Checker
+    ```
+
+2.  **Firewall Configuration (Important!):**
+    Ensure your server's firewall allows incoming traffic on port `8000`. For example, on Ubuntu with `ufw`:
+    ```bash
+    sudo ufw allow 8000/tcp
     ```
 
 2.  **Make the script executable (only needs to be done once):**
@@ -85,7 +92,10 @@ The `deploy.sh` script is designed to automate deployments to a production-like 
     ./deploy.sh my-feature-branch DEBUG
     ```
 
-The script will pull the latest code, build the production images, run tests (if applicable), and restart the services. The application will be available at `http://<your-server-ip>:8000`.
+The script will automatically detect the server's primary IP address, configure CORS, pull the latest code, build production images, run tests (if applicable), and restart the services.
+
+After deployment, the application will be accessible from any machine on your network at `http://<your-server-ip>:8000`.
+
 
 ## Configuration
 
@@ -114,5 +124,3 @@ The backend provides a JSON-based RESTful API. Key endpoints include:
 *   `POST /api/account/update_stores`: Updates the logged-in user's list of preferred stores. (Requires authentication)
 
 Socket.IO is used for real-time communication, such as adding/editing/deleting tracked cards and receiving availability updates.
-
-

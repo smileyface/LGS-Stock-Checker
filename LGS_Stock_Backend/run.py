@@ -89,6 +89,15 @@ def create_app(config_name=None, override_config=None):
         if SessionLocal:
             SessionLocal.remove()
 
+    @app.route('/api/health')
+    def health_check():
+        """
+        Simple health check endpoint that returns a 200 OK response.
+        Used by Docker's healthcheck to verify the application is running.
+        """
+        # In a more complex app, you might check DB/Redis connections here.
+        return "OK", 200
+
     return app
 
 # This block is only for running the local development server directly

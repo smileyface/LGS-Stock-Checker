@@ -69,6 +69,7 @@ def update_full_catalog():
     logger.info("🚀 Starting background task: update_full_catalog")
     start_time = time.monotonic()
 
+    total_cards_processed = 0
     try:
         card_data_stream = fetch_all_card_data()
         if not card_data_stream:
@@ -80,7 +81,6 @@ def update_full_catalog():
         all_finishes = set()
         printings_chunk = []
         associations_chunk_temp = []
-        total_cards_processed = 0
 
         logger.info(f"Processing card data stream in chunks of {chunk_size}...")
         chunk_start_time = time.monotonic()

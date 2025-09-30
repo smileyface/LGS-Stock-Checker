@@ -7,15 +7,17 @@ services:
     # Any changes you make locally will be reflected inside the container.
     volumes:
       - ./LGS_Stock_Backend:/app
+    # Override the command to run Flask in debug mode for hot-reloading.
+    command: [ "flask", "run", "--host=0.0.0.0", "--port=5000", "--debug" ]
+    # Map the debug port to the host so you can potentially attach a debugger.
+    ports:
+      - "5000:5000"
 
   frontend:
     # Override the build context to use the development Dockerfile.
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-      target: development-stage
-    ports:
-      - "5173:5173" # Expose Vite's port instead of Nginx's
+      dockerfile: Dockerfile.dev
     volumes:
       - ./frontend:/app
       # This is an anonymous volume to prevent node_modules on the host

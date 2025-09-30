@@ -13,7 +13,7 @@ from data.database.schema.user_schema import UserDBSchema
 from data.database.models.orm_models import User
 from utility import logger
 
-def authenticate_user(username: str, password: str) -> Optional[UserDBSchema]:
+def authenticate_user(username: str, password: str) -> Optional[User]:
     """
     Authenticate a user by username and password.
     
@@ -22,22 +22,20 @@ def authenticate_user(username: str, password: str) -> Optional[UserDBSchema]:
         password (str): The password to authenticate the user.
 
     Returns:
-        UserDBSchema or None: The user's database data (including ID) if authenticated, 
-        otherwise None.
+        User or None: The user ORM object if authenticated, otherwise None.
     """
     logger.info(f"🔑 Authenticating user: {username}")
 
-    # database.get_user_by_username already returns a UserDBSchema object (which includes the user.id)
-    user_data = database.get_user_by_username(username)
+    # Fetch the full ORM object, which includes the password hash and methods.
+    user_orm = database.get_user_orm_by_username(username)
 
-    if not user_data:
+    if not user_orm:
         logger.warning(f"❌ User '{username}' not found.")
-        return None  # Return None on user not found
+        return None
 
-    # UserDBSchema contains the password_hash
-    if check_password_hash(user_data.password_hash, password):
+    if check_password_hash(user_orm.password_hash, password):
         logger.info(f"✅ User '{username}' authenticated.")
-        return user_data  # FIX: Return the full UserDBSchema object on success
+        return user_orm
 
     logger.warning(f"❌ Authentication failed for user: {username}")
     return None # Return None on password failure

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, request, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 
 from managers import user_manager
@@ -9,41 +9,44 @@ from flask import jsonify
 
 auth_bp = Blueprint('auth_bp', __name__)
 
-@auth_bp.route('/api/login', methods=['GET', 'POST'])
+@auth_bp.route('/api/login', methods=['POST'])
 def login():
-    """Handles user login."""
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
 
-        # FIX: Call the updated authenticate_user function
-        user_data = user_manager.authenticate_user(username, password)
-        
-        if user_data:
-            # 1. Get the user's ID from the returned schema
-            user_id = user_data.id
-            
-            # 2. Use the implemented loader function to get the FlaskLoginUser object
-            user = user_manager.load_user_by_id(user_id)
-            
-            # 3. Log the user in with Flask-Login
-            login_user(user) 
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
 
-            # Optional cleanup of old session key
-            if "username" in session:
-                 del session["username"] 
+    username = data.get("username")
+    password = data.get("password")
 
-            log_and_emit("info", f"✅ User '{username}' logged in successfully.")
-            return redirect(url_for("home_bp.dashboard")) # Assuming 'home_bp'
-            
-        log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
-        return render_template("landing.html", error="Invalid credentials")
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
 
-    return render_template("landing.html")
+    user = user_manager.authenticate_user(username, password)
+
+    if user:
+        # The user object returned from a successful authentication is the ORM object
+        # that Flask-Login needs.
+        login_user(user)
+
+        # Optional cleanup of old session key
+        if "username" in session:
+             del session["username"]
+
+        log_and_emit("info", f"✅ User '{username}' logged in successfully.")
+        return jsonify({"message": "Login successful"}), 200
+
+    log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
+    return jsonify({"error": "Invalid credentials"}), 401
 
 @auth_bp.route('/api/logout', methods=['POST'])
 @login_required
 def logout():
+        # Optional cleanup of old session key, if it exists
+    if "username" in session:
+        del session["username"]
+
+    log_and_emit("info", f"✅ User '{current_user.username}' logged out successfully.")
     """Handles user logout."""
     logout_user()
     return jsonify({"message": "Logout successful"}), 200

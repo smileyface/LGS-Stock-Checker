@@ -39,16 +39,16 @@ def handle_connect():
             
             # Add the client to a room named after their username for targeted messaging.
             join_room(username)
-            logger.info(f"🟢 Client connected: {request.sid}, User: {username}, Room: {username}")
+            logger.info(f"🟢 Client connected: {session.get('socketio_sid')}, User: {username}, Room: {username}")
         else:
-            logger.warning(f"🔒 Client connected: {request.sid}, but user ID {user_id} is invalid or inactive. Rejecting.")
+            logger.warning(f"🔒 Client connected: {session.get('socketio_sid')}, but user ID {user_id} is invalid or inactive. Rejecting.")
             # Explicitly clear session and reject
             session.clear()
             return False
             
     else:
         # Handle anonymous or unauthenticated connections if necessary.
-        logger.info(f"🟢 Anonymous client connected: {request.sid}")
+        logger.info(f"🟢 Anonymous client connected: {session.get('socketio_sid')}")
         # If your dashboard requires login, you can reject here too:
         # return False
 
@@ -56,4 +56,4 @@ def handle_connect():
 def handle_disconnect():
     """Handle WebSocket disconnections."""
     # Flask-SocketIO automatically handles leaving rooms on disconnect.
-    logger.info(f"🔴 Client disconnected: {request.sid}")
+    logger.info(f"🔴 Client disconnected: {session.get('socketio_sid')}")

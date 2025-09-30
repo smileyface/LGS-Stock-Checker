@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from managers import store_manager
 from managers import user_manager
 
-from utility import logging
+from utility import logger
 
 
 user_bp = Blueprint("user_bp", __name__)
@@ -13,7 +13,7 @@ user_bp = Blueprint("user_bp", __name__)
 @user_bp.route("/api/stores", methods=["GET"])
 def get_all_stores():
     """Returns a list of all available store slugs from the registry."""
-    logging.info(f"Getting list of stores.")
+    logger.info(f"Getting list of stores.")
     return jsonify(list(store_manager.STORE_REGISTRY.keys()))
 
 

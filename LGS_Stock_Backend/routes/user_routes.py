@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from managers import store_manager
 from managers import user_manager
 
-from utilities import logging
+from utility import logging
 
 
 user_bp = Blueprint("user_bp", __name__)

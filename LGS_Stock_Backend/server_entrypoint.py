@@ -3,10 +3,9 @@ import os
 import eventlet
 from flask import Flask, jsonify
 from flask_socketio import SocketIO, join_room
-from LGS_Stock_Backend.settings import LOGGING_LEVEL, LOGGER_NAME, REDIS_HOST, REDIS_PORT
-from LGS_Stock_Backend.routes import auth_routes, user_routes
-from LGS_Stock_Backend.managers.socket_manager.socket_handlers import register_socket_handlers
-
+from settings import LOGGING_LEVEL, LOGGER_NAME, REDIS_HOST, REDIS_PORT
+from routes import auth_routes, user_routes
+from managers.socket_manager.socket_handlers import register_socket_handlers
 # --- Setup ---
 logger = logging.getLogger(LOGGER_NAME)
 app = Flask(__name__)
@@ -39,10 +38,6 @@ def health_check():
 # Register Socket.IO event handlers
 register_socket_handlers(socketio)
 
-# --- Task Scheduler Setup ---
-scheduler = BackgroundScheduler()
-setup_scheduler_jobs(scheduler, socketio)
-scheduler.start()
 
 # --- Main Run Block ---
 if __name__ == '__main__':
@@ -57,6 +52,5 @@ if __name__ == '__main__':
         eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
     except KeyboardInterrupt:
         logger.info("👋 Shutting down scheduler and server.")
-        scheduler.shutdown()
         socketio.stop()
         eventlet.wsgi.server.stop()

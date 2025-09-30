@@ -1,24 +1,45 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from flask_login import login_user, logout_user, login_required, current_user
 
 from managers import user_manager
+from managers.socket_manager import log_and_emit
+
+from flask import jsonify
+
 
 auth_bp = Blueprint('auth_bp', __name__)
 
-@auth_bp.route('/api/login', methods=['POST'])
+@auth_bp.route('/api/login', methods=['GET', 'POST'])
 def login():
     """Handles user login."""
-    data = request.get_json()
-    if not data or not data.get('username') or not data.get('password'):
-        return jsonify({"error": "Username and password are required"}), 400
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
 
-    user = user_manager.authenticate_user(data['username'], data['password'])
+        # FIX: Call the updated authenticate_user function
+        user_data = user_manager.authenticate_user(username, password)
+        
+        if user_data:
+            # 1. Get the user's ID from the returned schema
+            user_id = user_data.id
+            
+            # 2. Use the implemented loader function to get the FlaskLoginUser object
+            user = user_manager.load_user_by_id(user_id)
+            
+            # 3. Log the user in with Flask-Login
+            login_user(user) 
 
-    if user:
-        login_user(user, remember=True) # 'remember=True' creates a persistent session
-        return jsonify({"message": "Login successful"}), 200
-    
-    return jsonify({"error": "Invalid username or password"}), 401
+            # Optional cleanup of old session key
+            if "username" in session:
+                 del session["username"] 
+
+            log_and_emit("info", f"✅ User '{username}' logged in successfully.")
+            return redirect(url_for("home_bp.dashboard")) # Assuming 'home_bp'
+            
+        log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
+        return render_template("landing.html", error="Invalid credentials")
+
+    return render_template("landing.html")
 
 @auth_bp.route('/api/logout', methods=['POST'])
 @login_required

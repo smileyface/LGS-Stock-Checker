@@ -64,11 +64,14 @@ def create_app(config_name=None, override_config=None):
     # --- Configure CORS and SocketIO ---
     redis_host = os.getenv("REDIS_HOST", "redis")
 
-    # Read allowed origins from the environment variable. This allows flexible
-    # configuration for different environments (dev, prod) without code changes.
-    # The variable should be a comma-separated string.
-    cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
-    allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+    origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "*")
+
+    if origins_str == "*":
+        allowed_origins = "*"
+    else:
+        # Split the comma-separated string into a list of origins.
+        allowed_origins = origins_str.split(',')
+
     lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
     # Initialize SocketIO with the app and specific configurations

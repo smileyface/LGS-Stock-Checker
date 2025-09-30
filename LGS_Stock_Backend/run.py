@@ -9,7 +9,7 @@ from flask_session import Session
 # Use imports relative to the LGS_Stock_Backend package root
 from settings import config
 from routes import register_blueprints
-from managers.socket_manager import socketio, initialize_socket_handlers
+from managers.socket_manager import socketio, register_socket_handlers
 from managers.user_manager import load_user_by_id
 # Import task modules to ensure they register themselves with the task manager on startup.
 import tasks.card_availability_tasks
@@ -82,7 +82,7 @@ def create_app(config_name=None, override_config=None):
         engineio_logger=False  # Set to True for detailed Engine.IO debugging
     )
     # Discover and register all socket event handlers
-    initialize_socket_handlers()
+    register_socket_handlers()
     
     database_url = os.environ.get("DATABASE_URL")
     if database_url:

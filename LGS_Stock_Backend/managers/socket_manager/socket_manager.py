@@ -6,7 +6,7 @@ from utility import logger
 # It will be configured and initialized in the application factory.
 socketio = SocketIO()
 
-def initialize_socket_handlers():
+def register_socket_handlers():
     """
     Imports the socket handler modules.
     This is all that's needed to register the handlers with the main `socketio`

@@ -13,7 +13,7 @@ x-common-backend-env:
   REDIS_URL: redis://redis:6379
   DATABASE_URL: postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
   # Default origins for local dev. The SERVER_IP is for remote access and is set by deploy.sh
-  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8000,http://localhost:5173}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://192.168.1.120:8000,http://localhost:8000,http://localhost:5173}
   PATH: /usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 services:

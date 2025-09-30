@@ -64,15 +64,14 @@ def create_app(config_name=None, override_config=None):
     # --- Configure CORS and SocketIO ---
     redis_host = os.getenv("REDIS_HOST", "redis")
 
-    origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "*")
+    cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
 
-    if origins_str == "*":
+    if app.config.get('DEBUG') or os.getenv('FLASK_CONFIG') != 'production':
         allowed_origins = "*"
+        lgs_logger.info(f"🔌 CORS allowed origins FORCED to wildcard (*) in development environment.")
     else:
-        # Split the comma-separated string into a list of origins.
-        allowed_origins = origins_str.split(',')
-
-    lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
+        allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+        lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(

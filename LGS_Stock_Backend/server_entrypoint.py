@@ -1,64 +1,78 @@
+"""
+Application entrypoint for running with Gunicorn in a container.
+This file creates and configures the Flask app and its extensions.
+"""
 import logging
 import os
-import eventlet
 from flask import Flask, jsonify
-from flask_socketio import SocketIO, join_room
 from flask_login import LoginManager
-from settings import LOGGING_LEVEL, LOGGER_NAME
+from flask_session import Session
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+from data.database.db_config import (SessionLocal, initialize_database,
+                                     startup_database)
 from managers.redis_manager.redis_manager import REDIS_URL
-from routes import auth_routes, user_routes
 from managers.socket_manager import register_socket_handlers, socketio
 from managers.user_manager import load_user_by_id
+from routes import register_blueprints
+from settings import config
+from utility import logger
 
-# --- Setup ---
-logger = logging.getLogger(LOGGER_NAME)
+# Import task modules to ensure they register themselves on startup.
+import tasks.card_availability_tasks
+import tasks.catalog_tasks
+
+# --- App Creation and Configuration ---
 app = Flask(__name__)
+
+# Apply ProxyFix middleware for running behind a reverse proxy like Nginx.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# Load configuration from settings.py based on FLASK_CONFIG env var.
+config_name = os.getenv('FLASK_CONFIG', 'default')
+app.config.from_object(config[config_name])
+config[config_name].init_app(app)
+
+# --- Logging Configuration ---
+log_level_name = os.environ.get('LOG_LEVEL', 'INFO').upper()
+if app.debug:
+    log_level_name = 'DEBUG'
+logger.setLevel(log_level_name)
+logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
+
+# --- Initialize Extensions ---
+Session(app)
 login_manager = LoginManager()
-# --- Initialize Flask-Login ---
 login_manager.init_app(app)
 login_manager.user_loader(load_user_by_id)
 
-# --- Configuration (Add CORS Configuration Here) ---
-# Environment variables for CORS setup
-FRONTEND_URL = os.environ.get('FRONTEND_URL', '*')
+# --- Register Blueprints ---
+register_blueprints(app)
 
-# NOTE: The default setting in Flask-SocketIO is restrictive. 
-# Explicitly setting CORS to allow the frontend connection is necessary 
-# to fix the HTTP 400 Bad Request errors seen in the logs.
-socketio = SocketIO(
-    app, 
-    async_mode='eventlet', 
-    message_queue=REDIS_URL,
-    cors_allowed_origins=FRONTEND_URL, # Allow connections from the frontend
-    engineio_logger=True # Enable EngineIO internal logging
-)
+# --- Configure CORS and SocketIO ---
+cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
+allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
-# --- Routes and Handlers ---
-app.register_blueprint(auth_routes.auth_bp)
-app.register_blueprint(user_routes.user_bp)
-
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Simple health check endpoint."""
-    logging.INFO("📢 Sent health check response.")
-    return jsonify({"status": "ok"}), 200
-
-# Register Socket.IO event handlers
+socketio.init_app(app, message_queue=REDIS_URL, cors_allowed_origins=allowed_origins, async_mode="eventlet")
 register_socket_handlers()
 
+# --- Database Initialization ---
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    initialize_database(database_url)
+    startup_database()
+else:
+    logger.error("💥 DATABASE_URL not found. Server cannot run.")
+    exit(1)
 
-# --- Main Run Block ---
-if __name__ == '__main__':
-    # Initialize logger
-    logging.basicConfig(level=LOGGING_LEVEL)
-    logger.info(f"🚀 Starting LGS Stock Checker Backend...")
-    logger.info(f"Using Redis at {REDIS_URL}")
-    logger.info(f"CORS allowed origins: {FRONTEND_URL}")
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Remove the database session after each request to prevent leaks."""
+    if SessionLocal:
+        SessionLocal.remove()
 
-    try:
-        # We need eventlet.wsgi.server to properly handle both Flask requests and SocketIO connections
-        eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
-    except KeyboardInterrupt:
-        logger.info("👋 Shutting down scheduler and server.")
-        socketio.stop()
-        eventlet.wsgi.server.stop()
+@app.route('/api/health')
+def health_check():
+    """Simple health check endpoint for Docker."""
+    return "OK", 200

@@ -39,6 +39,33 @@ def login():
     log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
     return jsonify({"error": "Invalid credentials"}), 401
 
+
+@auth_bp.route('/api/register', methods=['POST'])
+def register():
+    """Handles new user registration."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    # The user_manager.add_user function handles checking for existing users
+    # and returns False if the user already exists.
+    success = user_manager.add_user(username, password)
+
+    if success:
+        log_and_emit("info", f"✅ New user '{username}' registered successfully.")
+        # HTTP 201 Created is the standard response for a successful creation
+        return jsonify({"message": "User registered successfully"}), 201
+    else:
+        log_and_emit("warning", f"⚠️ Failed registration attempt for username '{username}' (already exists).")
+        return jsonify({"error": "Username already exists"}), 409 # HTTP 409 Conflict
+
+
 @auth_bp.route('/api/logout', methods=['POST'])
 @login_required
 def logout():

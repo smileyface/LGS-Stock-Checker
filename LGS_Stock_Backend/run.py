@@ -11,6 +11,8 @@ from settings import config
 from routes import register_blueprints
 from managers.socket_manager import socketio, register_socket_handlers
 from managers.user_manager import load_user_by_id
+from managers.redis_manager.redis_manager import REDIS_URL
+
 # Import task modules to ensure they register themselves with the task manager on startup.
 import tasks.card_availability_tasks
 import tasks.catalog_tasks
@@ -62,21 +64,17 @@ def create_app(config_name=None, override_config=None):
     register_blueprints(app)
 
     # --- Configure CORS and SocketIO ---
-    redis_host = os.getenv("REDIS_HOST", "redis")
-
     cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
 
-    if app.config.get('DEBUG') or os.getenv('FLASK_CONFIG') != 'production':
-        allowed_origins = "*"
-        lgs_logger.info(f"🔌 CORS allowed origins FORCED to wildcard (*) in development environment.")
-    else:
-        allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
-        lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
+    allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+    lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
+
+    message_queue_url = app.config.get("SOCKETIO_MESSAGE_QUEUE", REDIS_URL)
 
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(
         app,
-        message_queue=f"redis://{redis_host}:6379",
+        message_queue=message_queue_url,
         cors_allowed_origins=allowed_origins,
         async_mode="eventlet",
         engineio_logger=False  # Set to True for detailed Engine.IO debugging

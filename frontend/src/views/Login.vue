@@ -18,6 +18,9 @@
                     {{ isLoading ? 'Logging in...' : 'Login' }}
                 </button>
             </form>
+            <div class="text-center mt-3">
+                <small>Don't have an account? <RouterLink to="/register">Create one here</RouterLink></small>
+            </div>
         </div>
     </div>
 </template>
@@ -25,6 +28,7 @@
 <script setup>
 import { ref } from 'vue';
 import { authStore } from '../stores/auth.js';
+import { RouterLink } from 'vue-router';
 
 const username = ref('');
 const password = ref('');

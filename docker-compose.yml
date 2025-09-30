@@ -24,14 +24,15 @@ services:
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     environment: *common-backend-env
-    command: [ "gunicorn", "--worker-class", "eventlet", "-w", "4", "--bind", "0.0.0.0:5000", "server_entrypoint:app" ]
+    # NOTE: Temporarily set to 1 worker to avoid multi-process initialization issues.
+    # The long-term solution is to refactor app initialization using Gunicorn hooks (e.g., post_fork)
+    # to create connections within each worker, rather than in the master process.
+    command: [ "gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "--timeout", "120", "server_entrypoint:app" ]
     depends_on:
       redis:
         condition: service_healthy
       db:
         condition: service_healthy
-    ports:
-      - "5000:5000" # Expose backend port for direct access/testing
     # Add a healthcheck to ensure the Gunicorn server is responsive.
     healthcheck:
       # Use curl to ping a non-existent but valid API path. We expect a 404, which proves the server is running.
@@ -66,7 +67,9 @@ services:
     restart: unless-stopped
     command: [ "python", "worker_entrypoint.py" ]
     depends_on:
-      redis:
+      # The worker should wait for the main backend app to be healthy
+      # to ensure all application components are initialized.
+      backend:
         condition: service_healthy
     environment: *common-backend-env
     networks:
@@ -80,7 +83,8 @@ services:
     restart: unless-stopped
     command: [ "rqscheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
     depends_on:
-      redis:
+      # The scheduler should also wait for the main backend app.
+      backend:
         condition: service_healthy
     environment: *common-backend-env
     networks:

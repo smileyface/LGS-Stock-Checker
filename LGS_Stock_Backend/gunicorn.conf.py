@@ -10,5 +10,5 @@ workers = 4
 bind = '0.0.0.0:5000'
 
 # Enable logging for Gunicorn
-accesslog = '-'
-errorlog = '-'
+#accesslog = '-'
+#errorlog = '-'

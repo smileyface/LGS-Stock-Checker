@@ -1,23 +1,10 @@
 import os
 import logging
-
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager
 from flask_session import Session
-
-# Use imports relative to the LGS_Stock_Backend package root
-from settings import config
-from routes import register_blueprints
-from managers.socket_manager import socketio, register_socket_handlers
-from managers.user_manager import load_user_by_id
-from managers.redis_manager.redis_manager import REDIS_URL
-
-# Import task modules to ensure they register themselves with the task manager on startup.
-import tasks.card_availability_tasks
-import tasks.catalog_tasks
-
-from data.database.db_config import SessionLocal, initialize_database, startup_database
+import redis
 
 login_manager = LoginManager()
 
@@ -27,6 +14,18 @@ def create_app(config_name=None, override_config=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'default')
     
+    # --- Move imports inside the factory to prevent side effects ---
+    from settings import config
+    from routes import register_blueprints
+    from managers.socket_manager import socketio, register_socket_handlers
+    from managers.user_manager import load_user_by_id
+    from managers.redis_manager.redis_manager import REDIS_URL
+    from data.database.db_config import SessionLocal, initialize_database, startup_database
+
+    # Import task modules to ensure they register themselves on startup.
+    import tasks.card_availability_tasks
+    import tasks.catalog_tasks
+
     # Apply ProxyFix middleware to make the app aware of proxy headers.
     # This is crucial for correct URL generation and security features when
     # running behind a reverse proxy like Nginx in Docker.
@@ -53,7 +52,11 @@ def create_app(config_name=None, override_config=None):
     lgs_logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
     
 
-    # Initialize session management
+    # Configure and initialize session management with Redis
+    app.config['SESSION_TYPE'] = 'redis'
+    app.config['SESSION_PERMANENT'] = False
+    app.config['SESSION_USE_SIGNER'] = True
+    app.config['SESSION_REDIS'] = redis.from_url(REDIS_URL)
     Session(app)
 
     # --- Initialize Flask-Login ---

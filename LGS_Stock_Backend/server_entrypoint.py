@@ -3,13 +3,9 @@ import os
 import eventlet
 from flask import Flask, jsonify
 from flask_socketio import SocketIO, join_room
-from apscheduler.schedulers.background import BackgroundScheduler
 from LGS_Stock_Backend.settings import LOGGING_LEVEL, LOGGER_NAME, REDIS_HOST, REDIS_PORT
 from LGS_Stock_Backend.routes import auth_routes, user_routes
 from LGS_Stock_Backend.managers.socket_manager.socket_handlers import register_socket_handlers
-from LGS_Stock_Backend.managers.socket_manager.socket_connections import SocketConnections
-from LGS_Stock_Backend.data.redis_client import redis_client
-from LGS_Stock_Backend.tasks.scheduler_setup import setup_scheduler_jobs
 
 # --- Setup ---
 logger = logging.getLogger(LOGGER_NAME)
@@ -64,4 +60,3 @@ if __name__ == '__main__':
         scheduler.shutdown()
         socketio.stop()
         eventlet.wsgi.server.stop()
-        

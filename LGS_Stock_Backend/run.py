@@ -8,7 +8,7 @@ import redis
 
 login_manager = LoginManager()
 
-def create_app(config_name=None, override_config=None):
+def create_app(config_name=None, override_config=None, skip_scheduler=False):
     app = Flask(__name__)
 
     if config_name is None:
@@ -25,6 +25,7 @@ def create_app(config_name=None, override_config=None):
     # Import task modules to ensure they register themselves on startup.
     import tasks.card_availability_tasks
     import tasks.catalog_tasks
+    from tasks.scheduler_setup import schedule_recurring_tasks
 
     # Apply ProxyFix middleware to make the app aware of proxy headers.
     # This is crucial for correct URL generation and security features when
@@ -89,6 +90,10 @@ def create_app(config_name=None, override_config=None):
     if database_url:
         initialize_database(database_url)
         startup_database()
+
+    # Schedule recurring background jobs, but allow skipping for worker processes.
+    if not skip_scheduler:
+        schedule_recurring_tasks()
         
     @app.teardown_appcontext
     def shutdown_session(exception=None):

@@ -81,10 +81,15 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1
     restart: unless-stopped
-    command: [ "rqscheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
+    # The -v flag enables verbose logging, so we can see the scheduler's activity.
+    # The interval is reduced to 10s for more responsive job queuing.
+    command: [ "rqscheduler", "--host", "redis", "--port", "6379", "--interval", "10", "-v" ]
     depends_on:
-      # The scheduler should also wait for the main backend app.
+      # The scheduler must wait for both the backend (for app context)
+      # and Redis (for its direct connection) to be healthy.
       backend:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment: *common-backend-env
     networks:

@@ -1,36 +1,24 @@
-import time
-from redis import Redis
 from rq import Worker, Queue
-import os
 
-from tasks.scheduler_setup import schedule_tasks
-from utility import logger
-from data.database.db_config import initialize_database, startup_database
+# Import the application factory
+from run import create_app
 from managers.redis_manager.redis_manager import redis_job_conn
 
 
 listen = ["default"]
 
 if __name__ == "__main__":
-    # Give Redis and the scheduler a moment to be ready
-    time.sleep(15)
+    # Create a Flask app instance. This is crucial because the create_app
+    # factory imports all the necessary task modules, which registers them
+    # with the task manager. This makes the tasks "known" to the RQ worker.
+    # We don't need to *run* the app, just create it to load the context.
+    # We pass `skip_scheduler=True` to prevent the worker from trying to schedule tasks.
+    app = create_app(skip_scheduler=True)
 
-    schedule_tasks()
-
-    # 💡 FIX: Initialize Database Connection for the Worker
-    database_url = os.environ.get("DATABASE_URL")
-    if database_url:
-        logger.info("🚀 Initializing database for Worker process...")
-        initialize_database(database_url)
-        startup_database()
-    else:
-        logger.error("💥 DATABASE_URL not found. Worker cannot run tasks.")
-        exit(1)
-
-    logger.info("🎧 Worker is starting...")
-    # The 'with Connection(...)' block is deprecated.
-    # Pass the connection directly to the Worker.
-    # Each Queue must also be initialized with a connection.
-    queues = [Queue(q, connection=redis_job_conn) for q in listen]
-    worker = Worker(queues, connection=redis_job_conn)
-    worker.work()
+    # The app context is needed for tasks that interact with the database
+    # or other Flask extensions.
+    with app.app_context():
+        queues = [Queue(q, connection=redis_job_conn) for q in listen]
+        worker = Worker(queues, connection=redis_job_conn)
+        # worker.work() runs the worker in a continuous loop, listening for jobs.
+        worker.work()

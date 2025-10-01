@@ -68,8 +68,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useSocket } from '@/composables/useSocket';
+import { useCardPrintings } from '@/composables/useCardPrintings';
 import { debounce } from '@/utils/debounce';
 
 const emit = defineEmits(['close', 'save-card']);
@@ -83,13 +84,19 @@ const searchResults = ref([]); // For autocomplete suggestions
 
 // Component State
 const amount = ref(1);
-const printings = ref([]); // To store all printings for the selected card
 const error = ref(null);
 
 // Selected values from dropdowns
 const selectedSet = ref('');
 const selectedCollectorNumber = ref('');
 const selectedFinish = ref('');
+
+// --- Card Printings Logic (from composable) ---
+const { 
+  setOptions, 
+  collectorNumberOptions, 
+  finishOptions 
+} = useCardPrintings(cardName, selectedSet, selectedCollectorNumber);
 
 // --- Autocomplete and Printing Fetch Logic ---
 
@@ -104,24 +111,10 @@ const debouncedSearch = debounce((query) => {
 // 2. Watch the cardName input and trigger the debounced search.
 watch(cardName, (newQuery) => {
   debouncedSearch(newQuery);
-  // When the card name changes, also fetch its printings.
-  printings.value = [];
-  if (newQuery && socketManager.socket) {
-    console.log(`[AddCardModal] 📡 Requesting printings for card: ${newQuery}`);
-    socketManager.socket.emit('get_card_printings', { card_name: newQuery });
-  }
+  // The useCardPrintings composable will automatically handle fetching printings.
 });
 
-// 3. Listen for backend responses for both search and printings.
-const handlePrintingsData = (data) => {
-  console.log(`[AddCardModal] 📩 Received printings data for: ${data.card_name}`, data.printings);
-  if (data.card_name === cardName.value) {
-    printings.value = data.printings;
-  }
-};
-
 onMounted(() => {
-  socketManager.socket?.on('card_printings_data', handlePrintingsData);
   socketManager.socket?.on('card_name_search_results', (data) => {
     console.log(`[AddCardModal] 📩 Received search results:`, data.card_names);
     searchResults.value = data.card_names;
@@ -129,33 +122,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  socketManager.socket?.off('card_printings_data', handlePrintingsData);
   socketManager.socket?.off('card_name_search_results');
-});
-
-// 4. Create computed properties to derive dropdown options from the stored data
-
-// Options for the "Set" dropdown (unique set codes)
-const setOptions = computed(() => {
-  const sets = new Set(printings.value.map(p => p.set_code));
-  return Array.from(sets);
-});
-
-// Options for "Collector Number", filtered by the selected set
-const collectorNumberOptions = computed(() => {
-  if (!selectedSet.value) return [];
-  return printings.value
-    .filter(p => p.set_code === selectedSet.value)
-    .map(p => p.collector_number);
-});
-
-// Options for "Finish", filtered by the selected set and collector number
-const finishOptions = computed(() => {
-  if (!selectedSet.value || !selectedCollectorNumber.value) return [];
-  const printing = printings.value.find(
-    p => p.set_code === selectedSet.value && p.collector_number === selectedCollectorNumber.value
-  );
-  return printing ? printing.finishes : [];
 });
 
 // --- Watchers to reset dependent dropdowns ---

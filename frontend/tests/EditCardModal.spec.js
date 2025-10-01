@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import EditCardModal from '../src/components/EditCardModal.vue';
+import { ref } from 'vue';
 import { Modal } from 'bootstrap';
 
 // --- Mocks ---
@@ -12,6 +13,16 @@ const mockModalInstance = {
 };
 vi.mock('bootstrap', () => ({
     Modal: vi.fn(() => mockModalInstance),
+}));
+
+// Mock the useCardPrintings composable
+vi.mock('../src/composables/useCardPrintings', () => ({
+    useCardPrintings: vi.fn(() => ({
+        setOptions: ref(['C21', 'MOC']), // Provide stable options
+        collectorNumberOptions: ref(['333']),
+        finishOptions: ref(['non-foil', 'foil']),
+        fetchPrintings: vi.fn(),
+    })),
 }));
 
 
@@ -70,10 +81,10 @@ describe('EditCardModal.vue', () => {
         // Assert that default values are provided for the form
         expect(wrapper.find('#edit_set_code').element.value).toBe('');
         expect(wrapper.find('#edit_collector_number').element.value).toBe('');
-        expect(wrapper.find('#edit_finish').element.value).toBe('non-foil');
+        expect(wrapper.find('#edit_finish').element.value).toBe('');
     });
 
-    it('emits "update-card" with the correct payload on submission', async () => {
+    it("emits 'update-card' with the correct payload on submission", async () => {
         // Spy on the hide method to prevent it from being called and potentially unmounting the component
         const hideSpy = vi.spyOn(mockModalInstance, 'hide');
 
@@ -90,6 +101,7 @@ describe('EditCardModal.vue', () => {
         // Simulate user edits
         await wrapper.find('#editCardAmount').setValue(4);
         await wrapper.find('#edit_set_code').setValue('MOC');
+        await wrapper.find('#edit_collector_number').setValue('333'); // Need to re-select to enable finish
         await wrapper.find('#edit_finish').setValue('foil');
 
         // Trigger submission by clicking the save button
@@ -105,7 +117,7 @@ describe('EditCardModal.vue', () => {
                 amount: 4,
                 specifications: [{
                     set_code: 'MOC',
-                    collector_number: '333', // This was not changed
+                    collector_number: '333',
                     finish: 'foil'
                 }]
             }

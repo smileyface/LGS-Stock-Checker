@@ -101,3 +101,11 @@ function editCard(card) {
     });
 }
 </script>
+
+<style scoped>
+.action-buttons {
+  display: flex;
+  gap: 0.25rem; /* Adds a small, consistent space between buttons */
+  white-space: nowrap; /* This is the key: it prevents the buttons from wrapping */
+}
+</style>

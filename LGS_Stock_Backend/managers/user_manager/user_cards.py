@@ -1,57 +1,69 @@
-from typing import List, Dict
-
+"""
+Manages a user's tracked card list, including adding, updating, deleting,
+and sending updates back to the client.
+"""
 from data import database
 from utility import logger
+from managers.socket_manager import socketio
 
 
-def load_card_list(username):
+def _send_updated_card_list(username: str):
     """
-    Loads a user's wanted card list from the database.
-
-    Returns:
-        list: A list of UserCardPreference objects if the user exists, otherwise an empty list.
+    Fetches the user's full card list and emits it to the client.
+    This is the single source of truth for updating the frontend table.
     """
-    if not database.get_user_by_username(username):
-        logger.warning(f"🚨 Attempted to load cards for non-existent user: '{username}'. Returning empty list.")
-        return []
-
-    logger.info(f"📖 Loading card list for user: '{username}'")
+    logger.info(f"📜 Fetching and sending updated tracked cards for user: {username}")
     cards = database.get_users_cards(username)
 
+    # Serialize the list of Pydantic objects into a JSON-serializable format.
+    # This is crucial for the data to be correctly interpreted by the frontend.
+    card_list = [
+        {
+            "card_name": card.card_name,
+            "amount": card.amount,
+            "specifications": [
+                {
+                    "set_code": spec.set_code,
+                    "collector_number": spec.collector_number,
+                    "finish": spec.finish,
+                } for spec in card.specifications
+            ] if card.specifications else [],
+        } for card in cards
+    ]
+
+    socketio.emit("cards_data", {"tracked_cards": card_list}, room=username)
+    logger.info(f"📡 Sent updated card list to room '{username}' with {len(card_list)} items.")
+
+
+def add_user_card(username: str, card_name: str, amount: int, card_specs: dict):
+    """Adds a card to a user's list and sends an update."""
+    logger.info(f"Adding card '{card_name}' for user '{username}'.")
+    # Pass the arguments individually to the data layer function.
+    database.add_user_card(username, card_name, amount, card_specs)
+    _send_updated_card_list(username)
+
+
+def update_user_card(username: str, card_name: str, update_data: dict):
+    """Updates a card in a user's list and sends an update."""
+    logger.info(f"Updating card '{card_name}' for user '{username}'.")
+    database.update_user_card(username, card_name, update_data)
+    _send_updated_card_list(username)
+
+
+def delete_user_card(username: str, card_name: str):
+    """Deletes a card from a user's list and sends an update."""
+    logger.info(f"Deleting card '{card_name}' for user '{username}'.")
+    database.delete_user_card(username, card_name)
+    _send_updated_card_list(username)
+
+
+def load_card_list(username: str):
+    """Loads a user's card list from the database without sending an update."""
+    logger.info(f"📖 Loading card list for user: '{username}'")
+    if not database.get_user_by_username(username):
+        logger.warning(f"User '{username}' not found when trying to load card list.")
+        return []
+    
+    cards = database.get_users_cards(username)
     logger.info(f"✅ Loaded {len(cards)} cards for user: '{username}'")
     return cards
-
-
-def save_card_list(username: str, card_list: List[Dict]):
-    """
-    Saves a user's wanted card list into the database, replacing existing preferences.
-
-    Args:
-        username (str): The username of the user.
-        card_list (list of dict): A list of card specifications to save.
-                                  Each dictionary should have "card_name" and any optional set/finish filters.
-
-    Returns:
-        bool: True if successful, False if the user does not exist.
-    """
-    if not database.get_user_by_username(username):
-        logger.warning(f"🚨 Attempted to save cards for non-existent user: '{username}'")
-        return False
-
-    logger.info(f"💾 Saving card list for user: '{username}'")
-
-    # Clear existing cards and add new ones
-    database.update_user_tracked_cards_list(username, card_list)
-
-    logger.info(f"✅ Successfully saved {len(card_list)} cards for user: '{username}'")
-    return True
-
-
-def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[str, any]):
-    """
-    Adds a single tracked card for a user.
-    This acts as a pass-through to the data layer, encapsulating the business logic
-    for adding a card within the user manager.
-    """
-    logger.info(f"➕ Manager adding card '{card_name}' for user '{username}'.")
-    database.add_user_card(username, card_name, amount, card_specs)

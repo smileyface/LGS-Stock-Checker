@@ -16,14 +16,18 @@ def get_username():
     return None
 
 @socketio.on("get_card_printings")
-def handle_get_card_printings(data: dict, db=database):
+def handle_get_card_printings(data: dict):
     """
     Handles a client's request for all valid printings of a specific card.
     Implements requirement [4.3.5].
     """
     validated_data = GetPrintingsSchema.model_validate(data)
     card_name = validated_data.card_name
-    printings = db.get_printings_for_card(card_name)
+    if(not database.is_card_in_catalog(card_name)):
+        logger.info(f"{card_name} not in catalog")
+        return
+
+    printings = database.get_printings_for_card(card_name)
     payload = {"card_name": card_name, "printings": printings}
     socketio.emit("card_printings_data", payload)
     logger.info(f"📡 Sent {len(printings)} printings for '{card_name}'.")
@@ -121,7 +125,7 @@ def handle_get_cards():
 
 
 @socketio.on("search_card_names")
-def handle_search_card_names(data: dict, db=database):
+def handle_search_card_names(data: dict):
     """Handles a request to search for card names based on a query string."""
     logger.info("📩 Received 'search_card_names' request from front end.")
     query = data.get("query", "").strip()
@@ -131,7 +135,7 @@ def handle_search_card_names(data: dict, db=database):
 
     logger.info(f"🗂️ Searching for card names matching '{query}'...")
     try:
-        card_names = db.search_card_names(query, limit=10)
+        card_names = database.search_card_names(query, limit=10)
         socketio.emit("card_name_search_results", {"query": query, "card_names": card_names})
         logger.info(f"📡 Sent {len(card_names)} search results for '{query}'.")
     except Exception as e:
@@ -175,7 +179,7 @@ def handle_add_user_tracked_card(data: dict):
 
 
 @socketio.on("delete_card")
-def handle_delete_user_tracked_card(data: dict, db=database):
+def handle_delete_user_tracked_card(data: dict):
     logger.info("📩 Received 'delete_card' request from front end.")
     try:
         validated_data = DeleteCardSchema.model_validate(data)
@@ -185,7 +189,7 @@ def handle_delete_user_tracked_card(data: dict, db=database):
             socketio.emit("error", {"message": "Authentication required to delete cards."})
             return
 
-        db.delete_user_card(username, validated_data.card)
+        database.delete_user_card(username, validated_data.card)
         _send_user_cards(username)
     except ValidationError as e:
         logger.error(f"❌ Invalid 'delete_card' data received: {e}")
@@ -193,7 +197,7 @@ def handle_delete_user_tracked_card(data: dict, db=database):
 
 
 @socketio.on("update_card")
-def handle_update_user_tracked_cards(data: dict, db=database):
+def handle_update_user_tracked_cards(data: dict):
     logger.info("📩 Received 'update_card' request from front end.")
     try:
         validated_data = UpdateCardSchema.model_validate(data)
@@ -203,7 +207,7 @@ def handle_update_user_tracked_cards(data: dict, db=database):
             socketio.emit("error", {"message": "Authentication required to update cards."})
             return
 
-        db.update_user_tracked_card_preferences(
+        database.update_user_tracked_card_preferences(
             username, validated_data.card, validated_data.update_data
         )
         _send_user_cards(username)
@@ -213,7 +217,7 @@ def handle_update_user_tracked_cards(data: dict, db=database):
 
 
 @socketio.on("update_stores")
-def handle_update_user_stores(data: dict, db=database):
+def handle_update_user_stores(data: dict):
     """Handles a request to update the user's entire list of preferred stores."""
     logger.info(f"📩 Received 'update_stores' request from front end. Data: {data}")
     username = get_username()
@@ -223,7 +227,7 @@ def handle_update_user_stores(data: dict, db=database):
 
     try:
         validated_data = UpdateStoreSchema.model_validate(data)
-        db.set_user_stores(username, validated_data.stores)
+        database.set_user_stores(username, validated_data.stores)
         _send_user_stores(username)
         logger.info(f"✅ Updated preferred stores for user '{username}'.")
     except ValidationError as e:

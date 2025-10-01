@@ -34,7 +34,13 @@ describe('Login.vue', () => {
     });
 
     it('renders the login form correctly', () => {
-        const wrapper = mount(Login)
+        const wrapper = mount(Login, {
+            global: {
+                stubs: {
+                    RouterLink: true // Stub RouterLink to prevent warnings
+                }
+            }
+        })
 
         // Assert that the form elements exist
         expect(wrapper.find('h2').text()).toContain('LGS Stock Checker')
@@ -44,7 +50,13 @@ describe('Login.vue', () => {
     })
 
     it('allows the user to type into the input fields', async () => {
-        const wrapper = mount(Login)
+        const wrapper = mount(Login, {
+            global: {
+                stubs: {
+                    RouterLink: true
+                }
+            }
+        })
 
         await wrapper.find('input#username').setValue('testuser')
         await wrapper.find('input#password').setValue('password123')
@@ -57,7 +69,13 @@ describe('Login.vue', () => {
         // Spy on the authStore's login method
         const loginSpy = vi.spyOn(authStore, 'login').mockResolvedValue();
 
-        const wrapper = mount(Login)
+        const wrapper = mount(Login, {
+            global: {
+                stubs: {
+                    RouterLink: true
+                }
+            }
+        })
 
         await wrapper.find('input#username').setValue('testuser')
         await wrapper.find('input#password').setValue('password123')
@@ -75,7 +93,13 @@ describe('Login.vue', () => {
         const expectedMessage = 'Login failed. Please check your username and password.';
         vi.spyOn(authStore, 'login').mockRejectedValue(new Error('any error'));
 
-        const wrapper = mount(Login);
+        const wrapper = mount(Login, {
+            global: {
+                stubs: {
+                    RouterLink: true
+                }
+            }
+        });
 
         await wrapper.find('input#username').setValue('wronguser');
         await wrapper.find('input#password').setValue('wrongpass');
@@ -99,7 +123,13 @@ describe('Login.vue', () => {
             authStore.isAuthenticated = true;
         });
 
-        const wrapper = mount(Login);
+        const wrapper = mount(Login, {
+            global: {
+                stubs: {
+                    RouterLink: true
+                }
+            }
+        });
 
         await wrapper.find('input#username').setValue('testuser');
         await wrapper.find('input#password').setValue('password123');

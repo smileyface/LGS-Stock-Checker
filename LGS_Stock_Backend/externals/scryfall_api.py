@@ -12,6 +12,7 @@ CACHE_EXPIRATION_SECONDS = 24 * 60 * 60  # 24 hours
 
 def fetch_scryfall_card_names() -> List[str]:
     """Fetches a list of all unique card names from Scryfall."""
+    logger.info("Fetching card names from Scryfall...")
     cache_key = "scryfall_card_names"
     cached_names = cache_manager.load_data(cache_key)
     if cached_names:

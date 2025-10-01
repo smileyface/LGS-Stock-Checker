@@ -46,25 +46,27 @@ def test_on_add_card_triggers_availability_check(
     mock_sh_emit.assert_called_with("cards_data", {"username": "testuser", "tracked_cards": []}, room="testuser")
 
 
-def test_handle_get_card_printings(mock_sh_emit):
+def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     """
     GIVEN a card name
     WHEN a client emits 'get_card_printings'
     THEN the handler should fetch the printing data and emit it back.
     """
     # Arrange
-    mock_db = MagicMock()
     card_name = "Sol Ring"
     client_data = {"card_name": card_name}
     mock_printings = [
         {"set_code": "C21", "collector_number": "125", "finishes": ["foil", "nonfoil"]}
     ]
-    mock_db.get_printings_for_card.return_value = mock_printings
+    # Configure the mock provided by the fixture
+    mock_sh_database.is_card_in_catalog.return_value = True
+    mock_sh_database.get_printings_for_card.return_value = mock_printings
 
     # Act
-    socket_handlers.handle_get_card_printings(data=client_data, db=mock_db)
+    socket_handlers.handle_get_card_printings(data=client_data)
 
     # Assert
-    mock_db.get_printings_for_card.assert_called_once_with(card_name)
+    mock_sh_database.is_card_in_catalog.assert_called_once_with(card_name)
+    mock_sh_database.get_printings_for_card.assert_called_once_with(card_name)
     expected_payload = {"card_name": card_name, "printings": mock_printings}
     mock_sh_emit.assert_called_once_with("card_printings_data", expected_payload)

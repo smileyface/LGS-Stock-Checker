@@ -46,7 +46,7 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: dict):
 def update_user_card(username: str, card_name: str, update_data: dict):
     """Updates a card in a user's list and sends an update."""
     logger.info(f"Updating card '{card_name}' for user '{username}'.")
-    database.update_user_card(username, card_name, update_data)
+    database.update_user_tracked_card_preferences(username, card_name, update_data)
     _send_updated_card_list(username)
 
 

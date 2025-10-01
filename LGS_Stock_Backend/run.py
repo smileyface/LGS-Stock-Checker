@@ -52,12 +52,8 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     lgs_logger.setLevel(log_level_name)
     lgs_logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
     
-
-    # Configure and initialize session management with Redis
-    app.config['SESSION_TYPE'] = 'redis'
-    app.config['SESSION_PERMANENT'] = False
-    app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_REDIS'] = redis.from_url(REDIS_URL)
+    # Initialize session management. The configuration (e.g., SESSION_TYPE)
+    # is now correctly loaded from the config object.
     Session(app)
 
     # --- Initialize Flask-Login ---

@@ -23,8 +23,13 @@ def app():
     # Define test-specific config overrides.
     # Using 'filesystem' for sessions avoids the need for a live Redis server during tests.
     test_config = {
+        # Use the filesystem for sessions during tests to avoid needing a live Redis server.
+        # This is crucial for isolated and fast unit/integration tests.
         "SESSION_TYPE": "filesystem",
         "TESTING": True,
+        # Disable the message queue for tests to allow the Socket.IO test client to work.
+        # The test client is not compatible with a message queue.
+        "SOCKETIO_MESSAGE_QUEUE": None,
     }
     # Pass the overrides to the app factory.
     _app = create_app("testing", override_config=test_config)
@@ -155,9 +160,6 @@ def mock_redis(mocker):
     mock_queue.task.side_effect = lambda func: func
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mock_queue)
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.scheduler", mocker.MagicMock())
-    # Also patch the scheduler where it's imported directly in the tasks module to prevent
-    # connection errors during smoke tests.
-    mocker.patch("tasks.scheduler_setup.scheduler", mocker.MagicMock())
 
 
 
@@ -172,21 +174,11 @@ def mock_socketio_context(mocker):
     mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.socketio.emit")
     # Mock the SocketIO class itself within socket_emit to handle the worker case
 
-
-@pytest.fixture(autouse=True)
-def mock_fetch_scryfall_card_names(mocker):
-    """Mocks the fetch_scryfall_card_names function."""
-    # Patch the function where it is looked up (in the tasks module), not where it is defined.
-    mock = mocker.patch("tasks.catalog_tasks.fetch_scryfall_card_names")
-    mock.return_value = []  # Provide a safe, empty list as a default
-    return mock
-
-
 @pytest.fixture(autouse=True)
 def mock_fetch_sets(mocker):
     """Mocks the fetch_all_sets function."""
-    # Patch the function where it is looked up (in the tasks module).
-    mock = mocker.patch("tasks.catalog_tasks.fetch_all_sets")
+    # Patch the function where it is defined.
+    mock = mocker.patch("externals.scryfall_api.fetch_all_sets")
     mock.return_value = []  # Provide a safe, empty list as a default
     return mock
 
@@ -194,8 +186,8 @@ def mock_fetch_sets(mocker):
 @pytest.fixture(autouse=True)
 def mock_fetch_all_card_data(mocker):
     """Mocks the fetch_all_card_data function to prevent large network calls."""
-    # Patch the function where it is looked up (in the tasks module).
-    mock = mocker.patch("tasks.catalog_tasks.fetch_all_card_data")
+    # Patch the function where it is defined.
+    mock = mocker.patch("externals.scryfall_api.fetch_all_card_data")
     mock.return_value = []  # Provide a safe, empty list as a default
     return mock
 

@@ -11,6 +11,7 @@ user_bp = Blueprint("user_bp", __name__)
 
 
 @user_bp.route("/api/stores", methods=["GET"])
+@login_required
 def get_all_stores():
     """Returns a list of all available store slugs from the registry."""
     logger.info(f"Getting list of stores.")

@@ -145,6 +145,11 @@ def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
     # that access request.json without the correct Content-Type header.
     mocker.patch("werkzeug.wrappers.request.Request.get_json", return_value={})
 
+    # Explicitly mock the scheduler for the smoke test. This prevents functions
+    # like `_schedule_if_not_exists` from making real Redis calls, which is the
+    # most common source of network-related failures in this test.
+    mocker.patch("managers.redis_manager.scheduler", return_value=MagicMock())
+
     # Fetch seeded objects once per module test, not once per function.
     # This significantly reduces redundant database queries.
     live_user = db_session.query(User).filter_by(id=seed_data["user_id"]).one()

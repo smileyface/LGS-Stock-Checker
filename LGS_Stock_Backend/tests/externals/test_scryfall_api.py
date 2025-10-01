@@ -93,9 +93,9 @@ def test_fetch_scryfall_card_names_api_error(mock_logger_error, mock_requests_ge
 @patch(LOGGER_ERROR_PATH)
 def test_fetch_all_card_data_bulk_uri_missing(mock_logger_error, mock_requests_get, mock_cache_manager):
     """
-    GIVEN the bulk data catalog response is missing the 'all_cards' URI
+    GIVEN the bulk data catalog response is missing the 'default_cards' URI
     WHEN fetch_all_card_data is called
-    THEN it should log an error and return an empty list.
+    THEN it should log an error and return an empty generator.
     """
     # Arrange
     mock_response = MagicMock()
@@ -103,11 +103,12 @@ def test_fetch_all_card_data_bulk_uri_missing(mock_logger_error, mock_requests_g
     mock_requests_get.return_value = mock_response
 
     # Act
-    result = fetch_all_card_data()
+    result_generator = fetch_all_card_data()
 
     # Assert
-    assert result == []
-    mock_logger_error.assert_called_once_with("Could not find 'all_cards' download URI in Scryfall bulk data response.")
+    # Consume the generator and assert that it produces an empty list.
+    assert list(result_generator) == []
+    mock_logger_error.assert_called_once_with("Could not find 'default_cards' download URI in Scryfall bulk data response.")
 
 
 @patch(REQUESTS_GET_PATH)
@@ -120,7 +121,7 @@ def test_fetch_all_card_data_success(mock_requests_get, mock_cache_manager):
     # Arrange
     bulk_uri = "http://fake.scryfall.com/all_cards.json.gz"
     mock_bulk_info_resp = MagicMock()
-    mock_bulk_info_resp.json.return_value = {"data": [{"type": "all_cards", "download_uri": bulk_uri}]}
+    mock_bulk_info_resp.json.return_value = {"data": [{"type": "default_cards", "download_uri": bulk_uri}]}
 
     card_payload = [{"name": "Card A"}, {"name": "Card B"}]
     gzipped_payload = gzip.compress(json.dumps(card_payload).encode('utf-8'))
@@ -129,10 +130,11 @@ def test_fetch_all_card_data_success(mock_requests_get, mock_cache_manager):
     mock_requests_get.side_effect = [mock_bulk_info_resp, mock_card_data_resp]
 
     # Act
-    result = fetch_all_card_data()
+    result_generator = fetch_all_card_data()
 
     # Assert
-    assert result == card_payload
+    # Consume the generator and assert its contents match the payload.
+    assert list(result_generator) == card_payload
     assert mock_requests_get.call_count == 2
     assert mock_requests_get.call_args_list[0].args[0] == "https://api.scryfall.com/bulk-data"
     assert mock_requests_get.call_args_list[1].args[0] == bulk_uri

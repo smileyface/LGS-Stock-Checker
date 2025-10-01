@@ -66,6 +66,11 @@ def update_full_catalog():
     Task to fetch all card printings from Scryfall and populate the
     finishes, card_printings, and their association tables.
     """
+    # --- Enforce Dependency ---
+    # Ensure the main card catalog is populated before processing printings.
+    logger.info("Ensuring main card catalog is up-to-date before processing printings...")
+    update_set_catalog()
+    update_card_catalog()
     logger.info("🚀 Starting background task: update_full_catalog")
     start_time = time.monotonic()
 
@@ -131,15 +136,30 @@ def _process_catalog_chunk(printings_to_add, associations_to_add_temp):
     if not printings_to_add:
         return
 
-    logger.info(f"Adding {len(printings_to_add)} printings to database...")
-    database.bulk_add_card_printings(printings_to_add)
+    # --- Pre-validation Step ---
+    # Extract all unique card names from the chunk to validate them.
+    card_names_in_chunk = {p["card_name"] for p in printings_to_add}
+    
+    # Find which of these names actually exist in our 'cards' table.
+    valid_card_names = database.filter_existing_card_names(list(card_names_in_chunk))
+    
+    # Filter the printing and association lists to only include valid cards.
+    valid_printings = [p for p in printings_to_add if p["card_name"] in valid_card_names]
+    valid_associations_temp = [a for a in associations_to_add_temp if a.get("name") in valid_card_names]
+
+    if not valid_printings:
+        logger.info("No valid printings in this chunk after filtering. Skipping.")
+        return
+
+    logger.info(f"Adding {len(valid_printings)} valid printings to database...")
+    database.bulk_add_card_printings(valid_printings)
 
     # Get maps of all printings and finishes to resolve IDs
     printings_map = database.get_all_printings_map()
     finishes_map = database.get_all_finishes_map()
 
     associations_to_add = []
-    for card in associations_to_add_temp:
+    for card in valid_associations_temp:
         printing_key = (card.get("name"), card.get("set"), card.get("collector_number"))
         printing_id = printings_map.get(printing_key)
 

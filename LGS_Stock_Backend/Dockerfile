@@ -39,6 +39,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy the application source code into the container
 COPY ./LGS_Stock_Backend .
+# Copy the utilities directory into the app's root, keeping its name.
+# This makes it part of the application package.
+COPY utilities utilities
 
 # Change ownership of the app directory to the non-root user
 # This includes the persistent_data directory we created for the volume.

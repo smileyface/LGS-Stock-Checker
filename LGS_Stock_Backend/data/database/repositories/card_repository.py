@@ -286,6 +286,29 @@ def add_set_data_to_catalog(set_data: List[Dict[str, Any]], *, session):
     logger.info(f"Attempted to bulk insert {len(set_data)} sets into the set catalog.")
 
 @db_query
+def is_card_in_catalog(card_name: str, *, session) -> bool:
+    """Checks if a card with the given name exists in the catalog."""
+    # The correct way to check for existence is to create an exists()
+    # subquery and then query for its scalar result.
+    exists_query = session.query(Card.name).filter(Card.name == card_name).exists()
+    return session.query(exists_query).scalar()
+
+@db_query
+def filter_existing_card_names(card_names: List[str], *, session) -> set:
+    """
+    Given a list of card names, returns a set of the names that exist in the 'cards' table.
+    """
+    if not card_names:
+        return set()
+
+    # Query the Card table for names that are in the provided list
+    existing_names_query = session.query(Card.name).filter(Card.name.in_(card_names))
+    
+    # Return the results as a set for efficient `in` checks.
+    return {name for name, in existing_names_query}
+
+
+@db_query
 def bulk_add_finishes(finish_names: List[str], *, session):
     if not finish_names:
         return
@@ -374,27 +397,33 @@ def is_valid_printing_specification(card_name: str, spec: Dict[str, Any], *, ses
     Returns:
         True if the specification is valid, False otherwise.
     """
-    set_code = spec.get("set_code")
-    collector_number = spec.get("collector_number")
-    finish = spec.get("finish")
 
-    # If no specs are provided at all, it's trivially valid (wildcard for everything).
-    if not set_code and not collector_number and not finish:
+
+
+    logger.info(f"🔍 Validating specification for '{card_name}': {spec}")
+    # Create a cleaned specification, ignoring any keys with empty string values.
+    # This treats them as wildcards, as intended.
+    cleaned_spec = {key: value for key, value in spec.items() if value}
+
+    # If the cleaned spec is empty, it's a wildcard for any printing, which is always valid.
+    if not cleaned_spec:
+        logger.debug(f"Validation passed for '{card_name}' with empty spec (wildcard).")
         return True
 
     # Start a query on CardPrinting
     query = session.query(CardPrinting).filter(CardPrinting.card_name == card_name)
 
-    # Add filters for the specs that are actually provided
-    if set_code:
-        query = query.filter(CardPrinting.set_code == set_code)
-    if collector_number:
-        query = query.filter(CardPrinting.collector_number == collector_number)
-    if finish:
+    # Add filters for the specs that are actually provided in the cleaned dictionary
+    if "set_code" in cleaned_spec:
+        query = query.filter(CardPrinting.set_code == cleaned_spec["set_code"])
+    if "collector_number" in cleaned_spec:
+        query = query.filter(CardPrinting.collector_number == cleaned_spec["collector_number"])
+    if "finish" in cleaned_spec:
         # If a finish is specified, we must join to check it
-        query = query.join(CardPrinting.available_finishes).filter(Finish.name == finish)
+        query = query.join(CardPrinting.available_finishes).filter(Finish.name == cleaned_spec["finish"])
 
     # We just need to know if at least one such printing exists.
+    # The .scalar() method returns the first column of the first row, or None.
     exists = session.query(query.exists()).scalar()
 
     if not exists:

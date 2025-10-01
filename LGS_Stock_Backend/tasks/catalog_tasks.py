@@ -3,6 +3,7 @@ from data import database
 from managers import task_manager
 from utility import logger
 from datetime import datetime
+import time
 
 @task_manager.task()
 def update_card_catalog():
@@ -65,42 +66,100 @@ def update_full_catalog():
     Task to fetch all card printings from Scryfall and populate the
     finishes, card_printings, and their association tables.
     """
+    # --- Enforce Dependency ---
+    # Ensure the main card catalog is populated before processing printings.
+    logger.info("Ensuring main card catalog is up-to-date before processing printings...")
+    update_set_catalog()
+    update_card_catalog()
     logger.info("🚀 Starting background task: update_full_catalog")
+    start_time = time.monotonic()
 
-    all_card_data = fetch_all_card_data()
-    if not all_card_data:
-        logger.warning("⚠️ Could not fetch full card data from source. Catalog update skipped.")
+    total_cards_processed = 0
+    try:
+        card_data_stream = fetch_all_card_data()
+        if not card_data_stream:
+            logger.warning("Card data stream is empty. Aborting catalog update.")
+            return
+
+        # Process the stream in chunks to keep memory usage low.
+        chunk_size = 20000
+        all_finishes = set()
+        printings_chunk = []
+        associations_chunk_temp = []
+
+        logger.info(f"Processing card data stream in chunks of {chunk_size}...")
+        chunk_start_time = time.monotonic()
+        for i, card in enumerate(card_data_stream, 1):
+            total_cards_processed = i
+            # 1. Extract unique finishes
+            for finish in card.get("finishes", []):
+                all_finishes.add(finish)
+
+            # 2. Extract printings
+            if card.get("name") and card.get("set") and card.get("collector_number"):
+                printings_chunk.append({
+                    "card_name": card["name"],
+                    "set_code": card["set"],
+                    "collector_number": card["collector_number"],
+                })
+                associations_chunk_temp.append(card)
+
+            # When a chunk is full, process it.
+            if i % chunk_size == 0:
+                chunk_duration = time.monotonic() - chunk_start_time
+                logger.info(f"Processing chunk up to card {i}... (took {chunk_duration:.2f}s)")
+                _process_catalog_chunk(printings_chunk, associations_chunk_temp)
+                # Clear chunks for the next iteration
+                printings_chunk = []
+                associations_chunk_temp = []
+                chunk_start_time = time.monotonic() # Reset timer for next chunk
+
+        # Process any remaining items in the last partial chunk
+        if printings_chunk:
+            logger.info("Processing final chunk...")
+            _process_catalog_chunk(printings_chunk, associations_chunk_temp)
+
+        # Add all unique finishes found across all chunks at the end
+        if all_finishes:
+            logger.info(f"Found {len(all_finishes)} unique finishes. Updating database...")
+            database.bulk_add_finishes(list(all_finishes))
+
+    except Exception as e:
+        logger.error(f"An error occurred during update_full_catalog: {e}", exc_info=True)
+    finally:
+        total_duration = time.monotonic() - start_time
+        logger.info(f"🏁 Finished background task: update_full_catalog. Processed {total_cards_processed} cards in {total_duration:.2f} seconds.")
+
+
+def _process_catalog_chunk(printings_to_add, associations_to_add_temp):
+    """Helper function to process one chunk of card data."""
+    if not printings_to_add:
         return
 
-    # 1. Extract and add all unique finishes
-    all_finishes = set(finish for card in all_card_data for finish in card.get("finishes", []))
+    # --- Pre-validation Step ---
+    # Extract all unique card names from the chunk to validate them.
+    card_names_in_chunk = {p["card_name"] for p in printings_to_add}
+    
+    # Find which of these names actually exist in our 'cards' table.
+    valid_card_names = database.filter_existing_card_names(list(card_names_in_chunk))
+    
+    # Filter the printing and association lists to only include valid cards.
+    valid_printings = [p for p in printings_to_add if p["card_name"] in valid_card_names]
+    valid_associations_temp = [a for a in associations_to_add_temp if a.get("name") in valid_card_names]
 
-    if all_finishes:
-        logger.info(f"Found {len(all_finishes)} unique finishes. Updating database...")
-        database.bulk_add_finishes(list(all_finishes))
+    if not valid_printings:
+        logger.info("No valid printings in this chunk after filtering. Skipping.")
+        return
 
-    # 2. Extract and add all unique card printings
-    printings_to_add = [
-        {
-            "card_name": card["name"],
-            "set_code": card["set"],
-            "collector_number": card["collector_number"],
-        }
-        for card in all_card_data
-        if card.get("name") and card.get("set") and card.get("collector_number")
-    ]
+    logger.info(f"Adding {len(valid_printings)} valid printings to database...")
+    database.bulk_add_card_printings(valid_printings)
 
-    if printings_to_add:
-        logger.info(f"Found {len(printings_to_add)} unique printings. Updating database...")
-        database.bulk_add_card_printings(printings_to_add)
-
-    # 3. Create associations between printings and finishes
-    logger.info("Building printing-to-finish associations...")
+    # Get maps of all printings and finishes to resolve IDs
     printings_map = database.get_all_printings_map()
     finishes_map = database.get_all_finishes_map()
 
     associations_to_add = []
-    for card in all_card_data:
+    for card in valid_associations_temp:
         printing_key = (card.get("name"), card.get("set"), card.get("collector_number"))
         printing_id = printings_map.get(printing_key)
 
@@ -111,7 +170,5 @@ def update_full_catalog():
                     associations_to_add.append({"printing_id": printing_id, "finish_id": finish_id})
 
     if associations_to_add:
-        logger.info(f"Found {len(associations_to_add)} printing-finish associations. Updating database...")
+        logger.info(f"Adding {len(associations_to_add)} printing-finish associations...")
         database.bulk_add_printing_finish_associations(associations_to_add)
-
-    logger.info("🏁 Finished background task: update_full_catalog")

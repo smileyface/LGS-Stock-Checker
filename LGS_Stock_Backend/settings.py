@@ -2,6 +2,8 @@ import os
 import redis
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+LOGGING_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+LOGGER_NAME = 'LGS_Stock_Checker'
 class Config:
     # Use environment variable for security in production
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-very-secret-key'

@@ -16,10 +16,16 @@ main() {
 
     # --- Deployment Arguments ---
     local branch=${1:-master}
-    local log_level=${2:-INFO}
-    export LOG_LEVEL=$log_level # Export for docker-compose
+    export LOG_LEVEL=${2:-INFO} # Export for docker-compose
 
-    echo "🚀 Deploying branch: '$branch' with log level: $LOG_LEVEL"
+    # --- Configure Environment for Deployment ---
+    # Detect server's primary IP address for remote access
+    local server_ip
+    server_ip=$(hostname -I | awk '{print $1}')
+    # Construct the CORS origins string and export it for docker-compose
+    export CORS_ALLOWED_ORIGINS="http://localhost:8000,http://${server_ip}:8000"
+
+    echo "🚀 Deploying branch: '$branch' with log level: $LOG_LEVEL on server IP: $server_ip"
 
     git_pull "$branch"
     build_images "$composer_cmd"
@@ -45,11 +51,10 @@ detect_composer() {
 
 git_pull() {
     local branch=$1
-    echo "� Checking out and resetting branch '$branch'..."
-    git checkout "$branch"
-
     echo "�📡 Fetching latest updates from origin..."
     git fetch origin
+    echo "� Checking out and resetting branch '$branch'..."
+    git checkout "$branch"
     git reset --hard "origin/$branch"
 }
 

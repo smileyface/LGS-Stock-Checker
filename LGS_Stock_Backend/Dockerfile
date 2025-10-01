@@ -27,7 +27,7 @@ WORKDIR /app
 # Install runtime dependencies for psycopg2.
 # The psycopg2 library requires the PostgreSQL client library (libpq).
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libpq5 && \
+    apt-get install -y --no-install-recommends libpq5 curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user and group for security
@@ -39,6 +39,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy the application source code into the container
 COPY ./LGS_Stock_Backend .
+# Copy the utilities directory into the app's root, keeping its name.
+# This makes it part of the application package.
+COPY utilities utilities
 
 # Change ownership of the app directory to the non-root user
 # This includes the persistent_data directory we created for the volume.
@@ -49,7 +52,3 @@ USER appuser
 
 # Expose the port the app runs on
 EXPOSE 5000
-
-# Run the app using gunicorn. It will find the 'app' object in the 'run.py' file.
-# The WORKDIR is /app, so gunicorn will find run.py there.
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "server_entrypoint:app"]

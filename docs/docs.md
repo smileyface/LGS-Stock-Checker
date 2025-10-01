@@ -379,4 +379,6 @@ The frontend and backend communicate via two primary methods: a RESTful API for 
 | card_name_search_results | Server -> Client | { "card_names": [...] } | Returns a list of autocomplete suggestions for the card search. | 
 | get_card_availability | Client -> Server | - | Triggers background tasks to check for card availability. | 
 | availability_check_started | Server -> Client | { "store", "card" } | Notifies the UI that a check has begun for a specific item. | 
+| get_card_printings | Client -> Server | { "card_name": "..." } | Requests all valid printings for a given card name. |
+| card_printings_data | Server -> Client | { "card_name", "printings": [...] } | Returns a list of all valid printings for a card. |
 | card_availability_data | Server -> Client | { "store", "card", "items": [...] } | Sends real-time availability results for a specific card and store. |

@@ -33,6 +33,19 @@ export const authStore = reactive({
         }
     },
 
+    async register(credentials) {
+        try {
+            // Call the new registration endpoint.
+            await axios.post('/api/register', credentials);
+            // For a good user experience, automatically log the user in after they register.
+            await this.login(credentials);
+        } catch (error) {
+            // Re-throw the error so the calling component can display a specific
+            // message to the user (e.g., "Username already exists").
+            throw error;
+        }
+    },
+
     async logout() {
         await axios.post('/api/logout'); // Tell backend to clear the session
         this.isAuthenticated = false;
@@ -40,4 +53,3 @@ export const authStore = reactive({
         router.push({ name: 'Login' }); // Redirect to login page
     }
 });
-

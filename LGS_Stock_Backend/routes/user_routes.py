@@ -4,6 +4,9 @@ from flask_login import login_required, current_user
 from managers import store_manager
 from managers import user_manager
 
+from utility import logger
+
+
 user_bp = Blueprint("user_bp", __name__)
 
 
@@ -11,6 +14,7 @@ user_bp = Blueprint("user_bp", __name__)
 @login_required
 def get_all_stores():
     """Returns a list of all available store slugs from the registry."""
+    logger.info(f"Getting list of stores.")
     return jsonify(list(store_manager.STORE_REGISTRY.keys()))
 
 
@@ -47,3 +51,30 @@ def change_password():
     if user_manager.update_password(current_user.username, current_password, new_password):
         return jsonify({"message": "Password updated successfully"})
     return jsonify({"error": "Incorrect current password"}), 400
+
+
+@user_bp.route("/api/account/get_tracked_cards", methods=["GET"])
+@login_required
+def get_tracked_cards():
+    """
+    Returns the currently authenticated user's list of tracked cards
+    in a JSON-serializable format.
+    """
+    cards = user_manager.load_card_list(current_user.username)
+
+    # Serialize the list of ORM/Pydantic objects into a list of dictionaries
+    # so that it can be properly JSON-ified.
+    card_list = [
+        {
+            "card_name": card.card_name,
+            "amount": card.amount,
+            "specifications": [
+                {
+                    "set_code": spec.set_code,
+                    "collector_number": spec.collector_number,
+                    "finish": spec.finish,
+                } for spec in card.specifications
+            ] if card.specifications else [],
+        } for card in cards
+    ]
+    return jsonify(card_list)

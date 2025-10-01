@@ -1,25 +1,11 @@
-from pydantic import BaseModel, ValidationError
-from typing import List
 from flask_login import current_user
+from pydantic import ValidationError
 
-# internal package imports
-from .socket_manager import socketio
-from .socket_schemas import (
-    AddCardSchema,
-    DeleteCardSchema,
-    ParseCardListSchema,
-    UpdateCardSchema,
-    UpdateStoresSchema,
-)
-
-# manager package imports
-import managers.card_manager as card_manager
-import managers.user_manager as user_manager
-import managers.availability_manager as availability_manager
-
-# project package imports
-from externals import fetch_scryfall_card_names
 from data import database
+from data.database import exceptions
+from .socket_manager import socketio
+from .. import user_manager, availability_manager, store_manager
+from .socket_schemas import AddCardSchema, UpdateCardSchema, DeleteCardSchema, GetPrintingsSchema, UpdateStoreSchema
 from utility import logger
 
 
@@ -29,6 +15,22 @@ def get_username():
         return current_user.username
     return None
 
+@socketio.on("get_card_printings")
+def handle_get_card_printings(data: dict):
+    """
+    Handles a client's request for all valid printings of a specific card.
+    Implements requirement [4.3.5].
+    """
+    validated_data = GetPrintingsSchema.model_validate(data)
+    card_name = validated_data.card_name
+    if(not database.is_card_in_catalog(card_name)):
+        logger.info(f"{card_name} not in catalog")
+        return
+
+    printings = database.get_printings_for_card(card_name)
+    payload = {"card_name": card_name, "printings": printings}
+    socketio.emit("card_printings_data", payload)
+    logger.info(f"📡 Sent {len(printings)} printings for '{card_name}'.")
 
 def _send_user_cards(username: str):
     """Fetches a user's card list, formats it, and emits it over Socket.IO."""
@@ -122,39 +124,23 @@ def handle_get_cards():
         logger.warning("🚨 No username found for 'get_cards' request.")
 
 
-@socketio.on("parse_card_list")
-def handle_parse_card_list(data: dict):
-    """Handles a request to parse a raw card list input."""
-    logger.info("📩 Received 'parse_card_list' request from front end.")
-    try:
-        validated_data = ParseCardListSchema.model_validate(data)
-        logger.info("📝 Parsing raw card list from user input.")
-        parsed_cards = card_manager.parse_card_list(validated_data.raw_list)
-        socketio.emit("parsed_cards", {"cards": parsed_cards})
-        logger.info("✅ Parsed card list sent to front end.")
-    except ValidationError as e:
-        logger.error(f"❌ Invalid 'parse_card_list' data received: {e}")
-        socketio.emit("error", {"message": f"Invalid request: {e}"})
-
-
 @socketio.on("search_card_names")
 def handle_search_card_names(data: dict):
     """Handles a request to search for card names based on a query string."""
     logger.info("📩 Received 'search_card_names' request from front end.")
     query = data.get("query", "").strip()
     if not query or len(query) < 3:
-        socketio.emit("card_name_search_results", {"card_names": []})
+        socketio.emit("card_name_search_results", {"query": query, "card_names": []})
         return
 
     logger.info(f"🗂️ Searching for card names matching '{query}'...")
     try:
-        # This assumes a new, efficient database function exists
         card_names = database.search_card_names(query, limit=10)
-        socketio.emit("card_name_search_results", {"card_names": card_names})
+        socketio.emit("card_name_search_results", {"query": query, "card_names": card_names})
         logger.info(f"📡 Sent {len(card_names)} search results for '{query}'.")
     except Exception as e:
         logger.error(f"❌ Failed to search for card names: {e}")
-        socketio.emit("card_name_search_results", {"card_names": []})
+        socketio.emit("card_name_search_results", {"query": query, "card_names": []})
 
 
 @socketio.on("add_card")
@@ -177,7 +163,7 @@ def handle_add_user_tracked_card(data: dict):
         )
 
         # Delegate to the availability manager to trigger the check, adhering to data flow rules.
-        card_data_for_task = {"card_name": validated_data.card, "specifications": [validated_data.card_specs]}
+        card_data_for_task = {"card_name": validated_data.card, "specifications": validated_data.card_specs}
         # Pass _send_user_cards as a callback to be executed *after* the availability checks
         # have been queued. This ensures the frontend receives events in the correct order.
         availability_manager.trigger_availability_check_for_card(
@@ -186,6 +172,10 @@ def handle_add_user_tracked_card(data: dict):
     except ValidationError as e:
         logger.error(f"❌ Invalid 'add_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
+    except exceptions.InvalidSpecificationError as e:
+        logger.warning(f"⚠️ User '{username}' submitted an invalid card specification: {e}")
+        # Send a specific, user-friendly error message to the client.
+        socketio.emit("error", {"message": str(e)})
 
 
 @socketio.on("delete_card")
@@ -236,7 +226,7 @@ def handle_update_user_stores(data: dict):
         return
 
     try:
-        validated_data = UpdateStoresSchema.model_validate(data)
+        validated_data = UpdateStoreSchema.model_validate(data)
         database.set_user_stores(username, validated_data.stores)
         _send_user_stores(username)
         logger.info(f"✅ Updated preferred stores for user '{username}'.")

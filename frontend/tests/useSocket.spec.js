@@ -61,7 +61,7 @@ describe('useSocket Composable', () => {
 
     beforeAll(async () => {
         // 💡 FIX 3: DYNAMICALLY IMPORT the composable module AFTER the mock is stable.
-        const composableModule = await import('../useSocket');
+        const composableModule = await import('../src/composables/useSocket');
 
         // Assign module exports to our local variables
         useSocket = composableModule.useSocket;

@@ -1,28 +1,79 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 
 from managers import user_manager
+from managers.socket_manager import log_and_emit
+
+from flask import jsonify
+
 
 auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
-    """Handles user login."""
+
     data = request.get_json()
-    if not data or not data.get('username') or not data.get('password'):
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
 
-    user = user_manager.authenticate_user(data['username'], data['password'])
+    user = user_manager.authenticate_user(username, password)
 
     if user:
-        login_user(user, remember=True) # 'remember=True' creates a persistent session
+        # The user object returned from a successful authentication is the ORM object
+        # that Flask-Login needs.
+        login_user(user)
+
+        # Optional cleanup of old session key
+        if "username" in session:
+             del session["username"]
+
+        log_and_emit("info", f"✅ User '{username}' logged in successfully.")
         return jsonify({"message": "Login successful"}), 200
-    
-    return jsonify({"error": "Invalid username or password"}), 401
+
+    log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
+    return jsonify({"error": "Invalid credentials"}), 401
+
+
+@auth_bp.route('/api/register', methods=['POST'])
+def register():
+    """Handles new user registration."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    # The user_manager.add_user function handles checking for existing users
+    # and returns False if the user already exists.
+    success = user_manager.add_user(username, password)
+
+    if success:
+        log_and_emit("info", f"✅ New user '{username}' registered successfully.")
+        # HTTP 201 Created is the standard response for a successful creation
+        return jsonify({"message": "User registered successfully"}), 201
+    else:
+        log_and_emit("warning", f"⚠️ Failed registration attempt for username '{username}' (already exists).")
+        return jsonify({"error": "Username already exists"}), 409 # HTTP 409 Conflict
+
 
 @auth_bp.route('/api/logout', methods=['POST'])
 @login_required
 def logout():
+        # Optional cleanup of old session key, if it exists
+    if "username" in session:
+        del session["username"]
+
+    log_and_emit("info", f"✅ User '{current_user.username}' logged out successfully.")
     """Handles user logout."""
     logout_user()
     return jsonify({"message": "Logout successful"}), 200

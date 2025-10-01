@@ -6,13 +6,14 @@ x-common-backend-env:
   # The default PATH in the python:3.9-slim image already includes /usr/local/bin,
   # so we don't need to modify it. We'll keep the anchor for other variables.
   &common-backend-env
-  LOG_LEVEL: ${LOG_LEVEL}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
   REDIS_HOST: redis
   FLASK_CONFIG: production
   REDIS_PORT: 6379
   REDIS_URL: redis://redis:6379
   DATABASE_URL: postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
-  CORS_ALLOWED_ORIGINS: http://localhost:8000,http://192.168.1.120:8000,http://localhost:5173 # ADD THIS LINE:
+  # Default origins for local dev. The SERVER_IP is for remote access and is set by deploy.sh
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://192.168.1.120:8000,http://localhost:8000,http://localhost:5173}
   PATH: /usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 services:
@@ -23,11 +24,23 @@ services:
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     environment: *common-backend-env
+    # NOTE: Temporarily set to 1 worker to avoid multi-process initialization issues.
+    # The long-term solution is to refactor app initialization using Gunicorn hooks (e.g., post_fork)
+    # to create connections within each worker, rather than in the master process.
+    command: [ "gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "--timeout", "120", "server_entrypoint:app" ]
     depends_on:
       redis:
         condition: service_healthy
       db:
         condition: service_healthy
+    # Add a healthcheck to ensure the Gunicorn server is responsive.
+    healthcheck:
+      # Use curl to ping a non-existent but valid API path. We expect a 404, which proves the server is running.
+      test: [ "CMD-SHELL", "curl -f http://localhost:5000/api/health || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
       - stock-net
 
@@ -40,7 +53,9 @@ services:
     ports:
       - "0.0.0.0:8000:80"
     depends_on:
-      - backend
+      backend:
+        # Change this to wait for the backend to be healthy, not just started.
+        condition: service_healthy
     networks:
       - stock-net
 
@@ -52,7 +67,9 @@ services:
     restart: unless-stopped
     command: [ "python", "worker_entrypoint.py" ]
     depends_on:
-      redis:
+      # The worker should wait for the main backend app to be healthy
+      # to ensure all application components are initialized.
+      backend:
         condition: service_healthy
     environment: *common-backend-env
     networks:
@@ -64,8 +81,14 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1
     restart: unless-stopped
-    command: [ "rqscheduler", "--host", "redis", "--port", "6379", "--interval", "60" ]
+    # The -v flag enables verbose logging, so we can see the scheduler's activity.
+    # The interval is reduced to 10s for more responsive job queuing.
+    command: [ "rqscheduler", "--host", "redis", "--port", "6379", "--interval", "10", "-v" ]
     depends_on:
+      # The scheduler must wait for both the backend (for app context)
+      # and Redis (for its direct connection) to be healthy.
+      backend:
+        condition: service_healthy
       redis:
         condition: service_healthy
     environment: *common-backend-env
@@ -108,6 +131,18 @@ services:
       retries: 5
       # Add a start_period to give the database time to initialize on slow hardware.
       start_period: 30s
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: lgs-stock-checker-dozzle-1
+    restart: unless-stopped
+    volumes:
+      # Mount the Docker socket to allow Dozzle to read container logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9999:8080" # Expose Dozzle's web UI on host port 9999
+    networks:
+      - stock-net
 
 networks:
   stock-net:

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../views/Dashboard.vue';
 import Account from '../views/Account.vue';
 import Login from '../views/Login.vue';
+import Register from '../views/Register.vue';
 import { authStore } from '../stores/auth';
 
 const routes = [
@@ -25,6 +26,12 @@ const routes = [
         path: '/login',
         name: 'Login',
         component: Login,
+        meta: { requiresGuest: true } // Only accessible to unauthenticated users
+    },
+    {
+        path: '/register',
+        name: 'Register',
+        component: Register,
         meta: { requiresGuest: true } // Only accessible to unauthenticated users
     }
 ];

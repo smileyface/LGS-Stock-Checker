@@ -1,46 +1,66 @@
 <template>
-  <div class="modal fade" ref="addCardModal" tabindex="-1" aria-labelledby="addCardModalLabel" aria-hidden="true">
+  <div class="modal-backdrop">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="addCardModalLabel">Add New Card</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Add New Card</h5>
+          <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
         <div class="modal-body">
-          <form id="addCardForm" @submit.prevent="submitCard">
-            <div class="mb-3">
-              <label for="cardName" class="form-label">Card Name</label>
-              <input type="text" class="form-control" id="cardName" v-model="card.name" list="cardNameDatalist" required>
-              <datalist id="cardNameDatalist">
-                <option v-for="name in allCardNames" :key="name" :value="name"></option>
-              </datalist>
-            </div>
-            <div class="mb-3">
-              <label for="cardAmount" class="form-label">Amount</label>
-              <input type="number" class="form-control" id="cardAmount" v-model.number="card.amount" min="1" required>
-            </div>
-            <h6 class="mt-4">Optional Specifications</h6>
-            <div class="mb-3">
-              <label for="set_code" class="form-label">Set Code</label>
-              <input type="text" class="form-control" id="set_code" v-model="card.specs.set_code">
-            </div>
-            <div class="mb-3">
-              <label for="collector_number" class="form-label">Collector Number</label>
-              <input type="text" class="form-control" id="collector_number" v-model="card.specs.collector_number">
-            </div>
-            <div class="mb-3">
-              <label for="finish" class="form-label">Finish</label>
-              <select class="form-select" id="finish" v-model="card.specs.finish">
-                <option value="non-foil">Non-Foil</option>
-                <option value="foil">Foil</option>
-                <option value="etched">Etched</option>
-              </select>
-            </div>
-          </form>
+          <div v-if="error" class="alert alert-danger">{{ error }}</div>
+          
+          <!-- Card Name Input -->
+          <div class="mb-3">
+            <label for="cardName" class="form-label">Card Name</label>
+            <input type="text" class="form-control" id="cardName" v-model="cardName" list="cardNameDatalist" autocomplete="off" />
+            <datalist id="cardNameDatalist">
+              <option v-for="name in searchResults" :key="name" :value="name"></option>
+            </datalist>
+          </div>
+
+          <!-- Amount -->
+          <div class="mb-3">
+            <label for="amount" class="form-label">Amount to Track</label>
+            <input type="number" class="form-control" id="amount" v-model.number="amount" min="1" />
+          </div>
+
+          <!-- Set Dropdown -->
+          <div class="mb-3">
+            <label for="set" class="form-label">Set (Optional)</label>
+            <select id="set" class="form-select" v-model="selectedSet">
+              <option value="">Any Set</option>
+              <option v-for="set in setOptions" :key="set" :value="set">
+                {{ set.toUpperCase() }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Collector Number Dropdown -->
+          <div class="mb-3">
+            <label for="collectorNumber" class="form-label">Collector # (Optional)</label>
+            <select id="collectorNumber" class="form-select" v-model="selectedCollectorNumber" :disabled="!selectedSet">
+              <option value="">Any Number</option>
+              <option v-for="num in collectorNumberOptions" :key="num" :value="num">
+                {{ num }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Finish Dropdown -->
+          <div class="mb-3">
+            <label for="finish" class="form-label">Finish (Optional)</label>
+            <select id="finish" class="form-select" v-model="selectedFinish" :disabled="!selectedCollectorNumber">
+              <option value="">Any Finish</option>
+              <option v-for="finish in finishOptions" :key="finish" :value="finish">
+                {{ finish }}
+              </option>
+            </select>
+          </div>
+
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" @click="submitCard">Add Card</button>
+          <button type="button" class="btn btn-secondary" @click="$emit('close')">Close</button>
+          <button type="button" class="btn btn-primary" @click="handleSave">Save Card</button>
         </div>
       </div>
     </div>
@@ -48,67 +68,126 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineEmits, defineExpose, watch } from 'vue';
-import { Modal } from 'bootstrap';
-import { io } from 'socket.io-client';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useSocket } from '@/composables/useSocket';
+import { useCardPrintings } from '@/composables/useCardPrintings';
+import { debounce } from '@/utils/debounce';
 
-const emit = defineEmits(['save-card']);
-const socket = io({ withCredentials: true });
+const emit = defineEmits(['close', 'save-card']);
 
-let searchTimeout = null;
-const addCardModal = ref(null);
-let modalInstance = null;
+// Get the entire socket manager from the composable.
+const socketManager = useSocket();
 
-const allCardNames = ref([]);
-const card = ref({
-  name: '',
-  amount: 1,
-  specs: {
-    set_code: '',
-    collector_number: '',
-    finish: 'non-foil'
+// --- Local State ---
+const cardName = ref('');
+const searchResults = ref([]); // For autocomplete suggestions
+
+// Component State
+const amount = ref(1);
+const error = ref(null);
+
+// Selected values from dropdowns
+const selectedSet = ref('');
+const selectedCollectorNumber = ref('');
+const selectedFinish = ref('');
+
+// --- Card Printings Logic (from composable) ---
+const { 
+  setOptions, 
+  collectorNumberOptions, 
+  finishOptions 
+} = useCardPrintings(cardName, selectedSet, selectedCollectorNumber);
+
+// --- Autocomplete and Printing Fetch Logic ---
+
+// 1. Debounce the search function to avoid spamming the server while typing.
+const debouncedSearch = debounce((query) => {
+  if (query.length > 2 && socketManager.socket) {
+    console.log(`[AddCardModal] 📡 Searching for card names matching: ${query}`);
+    socketManager.socket.emit('search_card_names', { query });
   }
+}, 300);
+
+// 2. Watch the cardName input and trigger the debounced search.
+watch(cardName, (newQuery) => {
+  debouncedSearch(newQuery);
+  // The useCardPrintings composable will automatically handle fetching printings.
 });
 
 onMounted(() => {
-  modalInstance = new Modal(addCardModal.value);
-
-  // Listen for search results from the backend
-  socket.on('card_name_search_results', (data) => {
-    allCardNames.value = data.card_names || [];
+  socketManager.socket?.on('card_name_search_results', (data) => {
+    console.log(`[AddCardModal] 📩 Received search results:`, data.card_names);
+    searchResults.value = data.card_names;
   });
 });
 
-// Watch for user input in the card name field and emit a search event
-watch(() => card.value.name, (newValue) => {
-  clearTimeout(searchTimeout);
-  if (newValue && newValue.length > 2) { // Only search if input is long enough
-    searchTimeout = setTimeout(() => {
-      socket.emit('search_card_names', { query: newValue });
-    }, 300); // Debounce requests by 300ms to avoid spamming the server
-  } else {
-    allCardNames.value = []; // Clear suggestions if input is short
-  }
+onUnmounted(() => {
+  socketManager.socket?.off('card_name_search_results');
 });
 
-function submitCard() {
-  const payload = {
-    card: card.value.name,
-    amount: card.value.amount,
-    card_specs: card.value.specs
+// --- Watchers to reset dependent dropdowns ---
+
+watch(selectedSet, () => {
+  // When the set changes, reset the collector number and finish
+  selectedCollectorNumber.value = '';
+  selectedFinish.value = '';
+});
+
+watch(selectedCollectorNumber, () => {
+  // When the collector number changes, reset the finish
+  selectedFinish.value = '';
+});
+
+// --- Save Logic ---
+
+const handleSave = () => {
+  error.value = null;
+  if (amount.value < 1) {
+    error.value = 'Amount must be at least 1.';
+    return;
+  }
+
+  const cardData = {
+    card: cardName.value,
+    amount: amount.value,
+    card_specs: {
+      set_code: selectedSet.value,
+      collector_number: selectedCollectorNumber.value,
+      finish: selectedFinish.value,
+    },
   };
-  emit('save-card', payload);
-  modalInstance.hide();
-  // Reset form after submission
-  card.value = {
-    name: '',
-    amount: 1,
-    specs: { set_code: '', collector_number: '', finish: 'non-foil' }
-  };
-  allCardNames.value = [];
+
+  console.log(`[AddCardModal] 💾 Emitting save-card event with data:`, cardData);
+  emit('save-card', cardData);
+  emit('close');
+};
+</script>
+
+<style scoped>
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
 }
 
-defineExpose({
-  show: () => modalInstance.show()
-});
-</script>
+.modal-dialog {
+  width: 100%;
+  max-width: 500px;
+  margin: 1.75rem auto;
+}
+
+.modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-radius: 0.5rem;
+}
+</style>

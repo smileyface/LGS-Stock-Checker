@@ -1,29 +1,37 @@
 import os
 import logging
-
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager
 from flask_session import Session
-
-# Use imports relative to the LGS_Stock_Backend package root
-from settings import config
-from routes import register_blueprints
-from managers.socket_manager import socketio, initialize_socket_handlers
-from managers.user_manager import load_user_by_id
-# Import task modules to ensure they register themselves with the task manager on startup.
-import tasks.card_availability_tasks
-import tasks.catalog_tasks
-
-from data.database.db_config import SessionLocal, initialize_database, startup_database
+import redis
 
 login_manager = LoginManager()
 
-def create_app(config_name=None, override_config=None):
+def create_app(config_name=None, override_config=None, skip_scheduler=False):
     app = Flask(__name__)
 
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'default')
     
+    # --- Move imports inside the factory to prevent side effects ---
+    from settings import config
+    from routes import register_blueprints
+    from managers.socket_manager import socketio, register_socket_handlers
+    from managers.user_manager import load_user_by_id
+    from managers.redis_manager.redis_manager import REDIS_URL
+    from data.database.db_config import SessionLocal, initialize_database, startup_database
+
+    # Import task modules to ensure they register themselves on startup.
+    import tasks.card_availability_tasks
+    import tasks.catalog_tasks
+    from tasks.scheduler_setup import schedule_recurring_tasks
+
+    # Apply ProxyFix middleware to make the app aware of proxy headers.
+    # This is crucial for correct URL generation and security features when
+    # running behind a reverse proxy like Nginx in Docker.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     app.config.from_object(config[config_name])
     if override_config:
         app.config.update(override_config)
@@ -44,8 +52,8 @@ def create_app(config_name=None, override_config=None):
     lgs_logger.setLevel(log_level_name)
     lgs_logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
     
-
-    # Initialize session management
+    # Initialize session management. The configuration (e.g., SESSION_TYPE)
+    # is now correctly loaded from the config object.
     Session(app)
 
     # --- Initialize Flask-Login ---
@@ -56,30 +64,32 @@ def create_app(config_name=None, override_config=None):
     register_blueprints(app)
 
     # --- Configure CORS and SocketIO ---
-    redis_host = os.getenv("REDIS_HOST", "redis")
-
-    # Read allowed origins from the environment variable. This allows flexible
-    # configuration for different environments (dev, prod) without code changes.
-    # The variable should be a comma-separated string.
     cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
+
     allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
     lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
+
+    message_queue_url = app.config.get("SOCKETIO_MESSAGE_QUEUE", REDIS_URL)
 
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(
         app,
-        message_queue=f"redis://{redis_host}:6379",
+        message_queue=message_queue_url,
         cors_allowed_origins=allowed_origins,
         async_mode="eventlet",
         engineio_logger=False  # Set to True for detailed Engine.IO debugging
     )
     # Discover and register all socket event handlers
-    initialize_socket_handlers()
+    register_socket_handlers()
     
     database_url = os.environ.get("DATABASE_URL")
     if database_url:
         initialize_database(database_url)
         startup_database()
+
+    # Schedule recurring background jobs, but allow skipping for worker processes.
+    if not skip_scheduler:
+        schedule_recurring_tasks()
         
     @app.teardown_appcontext
     def shutdown_session(exception=None):
@@ -88,6 +98,15 @@ def create_app(config_name=None, override_config=None):
         # in which case SessionLocal would be None.
         if SessionLocal:
             SessionLocal.remove()
+
+    @app.route('/api/health')
+    def health_check():
+        """
+        Simple health check endpoint that returns a 200 OK response.
+        Used by Docker's healthcheck to verify the application is running.
+        """
+        # In a more complex app, you might check DB/Redis connections here.
+        return "OK", 200
 
     return app
 

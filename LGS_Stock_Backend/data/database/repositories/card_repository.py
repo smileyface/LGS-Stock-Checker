@@ -2,9 +2,10 @@ from typing import List, Dict, Any
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
-# Internal package imports (relative to the data.database package)
+# Internal package imports
 
 from .. import schema
+from ..exceptions import InvalidSpecificationError
 from ..session_manager import db_query
 from ..models import Card, CardSpecification, User, UserTrackedCards, Set, Finish, CardPrinting, printing_finish_association
 from utility import logger
@@ -68,6 +69,13 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
         logger.info(f"➕ User '{username}' is now tracking '{card_name}'.")
         tracked_card = UserTrackedCards(user_id=user.id, amount=amount, card_name=card_name)
         session.add(tracked_card)
+
+    # Validate specifications before adding them
+    if card_specs and not is_valid_printing_specification(card_name, card_specs):
+        # Raise a specific exception that can be caught by the caller
+        raise InvalidSpecificationError(
+            f"Invalid specification for '{card_name}': {card_specs}"
+        )
 
     # We need the ID for the specifications, so we flush to get it.
     session.flush()
@@ -278,6 +286,29 @@ def add_set_data_to_catalog(set_data: List[Dict[str, Any]], *, session):
     logger.info(f"Attempted to bulk insert {len(set_data)} sets into the set catalog.")
 
 @db_query
+def is_card_in_catalog(card_name: str, *, session) -> bool:
+    """Checks if a card with the given name exists in the catalog."""
+    # The correct way to check for existence is to create an exists()
+    # subquery and then query for its scalar result.
+    exists_query = session.query(Card.name).filter(Card.name == card_name).exists()
+    return session.query(exists_query).scalar()
+
+@db_query
+def filter_existing_card_names(card_names: List[str], *, session) -> set:
+    """
+    Given a list of card names, returns a set of the names that exist in the 'cards' table.
+    """
+    if not card_names:
+        return set()
+
+    # Query the Card table for names that are in the provided list
+    existing_names_query = session.query(Card.name).filter(Card.name.in_(card_names))
+    
+    # Return the results as a set for efficient `in` checks.
+    return {name for name, in existing_names_query}
+
+
+@db_query
 def bulk_add_finishes(finish_names: List[str], *, session):
     if not finish_names:
         return
@@ -324,3 +355,78 @@ def bulk_add_printing_finish_associations(associations: List[Dict[str, int]], *,
 
     session.execute(stmt)
     logger.info(f"Attempted to bulk insert {len(associations)} printing-finish associations.")
+
+@db_query
+def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
+    """
+    Retrieves all printings for a given card name, including their available finishes.
+    This is used to populate the UI with valid specification options.
+    Implements requirement [4.3.5].
+    """
+    logger.debug(f"📖 Querying for all printings of card '{card_name}'.")
+    printings = (
+        session.query(CardPrinting)
+        .filter(CardPrinting.card_name == card_name)
+        .options(joinedload(CardPrinting.available_finishes))  # Eagerly load finishes
+        .order_by(CardPrinting.set_code, CardPrinting.collector_number)
+        .all()
+    )
+
+    if not printings:
+        return []
+
+    return [
+        {
+            "set_code": p.set_code,
+            "collector_number": p.collector_number,
+            "finishes": [f.name for f in p.available_finishes],
+        }
+        for p in printings
+    ]
+
+@db_query
+def is_valid_printing_specification(card_name: str, spec: Dict[str, Any], *, session) -> bool:
+    """
+    Validates if a given specification (set, collector #, finish) is valid for a card.
+    Handles partial specifications as wildcards, as per requirement [4.3.8].
+
+    Args:
+        card_name: The name of the card.
+        spec: A dictionary with 'set_code', 'collector_number', and 'finish'.
+
+    Returns:
+        True if the specification is valid, False otherwise.
+    """
+
+
+
+    logger.info(f"🔍 Validating specification for '{card_name}': {spec}")
+    # Create a cleaned specification, ignoring any keys with empty string values.
+    # This treats them as wildcards, as intended.
+    cleaned_spec = {key: value for key, value in spec.items() if value}
+
+    # If the cleaned spec is empty, it's a wildcard for any printing, which is always valid.
+    if not cleaned_spec:
+        logger.debug(f"Validation passed for '{card_name}' with empty spec (wildcard).")
+        return True
+
+    # Start a query on CardPrinting
+    query = session.query(CardPrinting).filter(CardPrinting.card_name == card_name)
+
+    # Add filters for the specs that are actually provided in the cleaned dictionary
+    if "set_code" in cleaned_spec:
+        query = query.filter(CardPrinting.set_code == cleaned_spec["set_code"])
+    if "collector_number" in cleaned_spec:
+        query = query.filter(CardPrinting.collector_number == cleaned_spec["collector_number"])
+    if "finish" in cleaned_spec:
+        # If a finish is specified, we must join to check it
+        query = query.join(CardPrinting.available_finishes).filter(Finish.name == cleaned_spec["finish"])
+
+    # We just need to know if at least one such printing exists.
+    # The .scalar() method returns the first column of the first row, or None.
+    exists = session.query(query.exists()).scalar()
+
+    if not exists:
+        logger.warning(f"Validation failed for '{card_name}' with spec: {spec}")
+
+    return exists

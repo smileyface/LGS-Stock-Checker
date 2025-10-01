@@ -53,11 +53,48 @@ Stores specific criteria for a tracked card (e.g., set, finish).
 | `id`               | Integer | Primary Key, Autoincrement            | Unique identifier for the specification.  |
 | `user_card_id`     | Integer | Foreign Key (user_tracked_cards.id)   | The ID of the tracked card entry this applies to. |
 | `set_code`         | String  | Nullable                              | The 3-4 letter set code (e.g., "M21").    |
-| `collector_number` | String  | Nullable                              | The card's collector number in the set.   |
+| `collector_number` | Integer  | Nullable                              | The card's collector number in the set.   |
 | `finish`           | String  | Nullable                              | The card's finish (e.g., "foil", "etched"). |
 
-## `user_store_preferences`
+## `sets`
 
+A lookup table containing unique card set information.
+
+| Column         | Type    | Constraints        | Description                               |
+|----------------|---------|--------------------|-------------------------------------------|
+| `code`         | String  | Primary Key, Index | The unique 3-4 letter code for the set.   |
+| `name`         | String  | Not Null           | The full name of the set.                 |
+| `release_date` | Date    | Nullable           | The date the set was released.            |
+
+## `card_printings`
+
+Stores each unique physical printing of a card.
+
+| Column             | Type    | Constraints                           | Description                               |
+|--------------------|---------|---------------------------------------|-------------------------------------------|
+| `id`               | Integer | Primary Key, Autoincrement            | Unique identifier for the printing.       |
+| `card_name`        | String  | Foreign Key (cards.name)              | The name of the card.                     |
+| `set_code`         | String  | Foreign Key (sets.code)               | The set this printing belongs to.         |
+| `collector_number` | String  | Not Null                              | The card's collector number in the set.   |
+
+## `finishes`
+
+A lookup table for all possible card finishes.
+
+| Column | Type   | Constraints        | Description                               |
+|--------|--------|--------------------|-------------------------------------------|
+| `name` | String | Primary Key, Index | The unique name of the finish (e.g., "foil"). |
+
+## `printing_finish_association`
+
+A many-to-many association table linking card printings to their available finishes.
+
+| Column        | Type    | Constraints                         | Description                               |
+|---------------|---------|-------------------------------------|-------------------------------------------|
+| `printing_id` | Integer | Primary Key, Foreign Key (card_printings.id) | The ID of the card printing.             |
+| `finish_id`   | Integer | Primary Key, Foreign Key (finishes.id) | The ID of the available finish.           |
+
+## `user_store_preferences`
 A many-to-many association table linking users to their selected stores.
 
 | Column     | Type    | Constraints              | Description                               |

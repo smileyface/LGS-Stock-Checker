@@ -9,35 +9,36 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from data import database
 from data.database.db_config import SessionLocal
-from data.database.models import User
+from data.database.schema.user_schema import UserDBSchema
+from data.database.models.orm_models import User
 from utility import logger
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
     """
     Authenticate a user by username and password.
+    
     Args:
         username (str): The username of the user to authenticate.
         password (str): The password to authenticate the user.
 
     Returns:
-        User or None: The authenticated user ORM object if credentials are valid, otherwise None.
-
-    Logs:
-        Success or failure of the authentication operation.
+        User or None: The user ORM object if authenticated, otherwise None.
     """
     logger.info(f"🔑 Authenticating user: {username}")
 
-    # Use the repository to get the ORM object, respecting the data access layer.
-    # This is more efficient than getting a schema and then re-querying for the ORM object.
-    user = database.get_user_orm_by_username(username)
+    # Fetch the full ORM object, which includes the password hash and methods.
+    user_orm = database.get_user_orm_by_username(username)
 
-    if user and user.check_password(password):
+    if not user_orm:
+        logger.warning(f"❌ User '{username}' not found.")
+        return None
+
+    if check_password_hash(user_orm.password_hash, password):
         logger.info(f"✅ User '{username}' authenticated.")
-        return user
+        return user_orm
 
     logger.warning(f"❌ Authentication failed for user: {username}")
-    return None
-
+    return None # Return None on password failure
 
 def update_password(username: str, old_password: str, new_password: str) -> bool:
     """

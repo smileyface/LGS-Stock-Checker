@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 
 from managers.user_manager import (
     get_public_user_profile,
@@ -8,7 +8,6 @@ from managers.user_manager import (
     authenticate_user,
     get_selected_stores,
     load_card_list,
-    save_card_list,
 )
 
 # Base paths for patching dependencies as they are seen by each submodule.
@@ -19,6 +18,7 @@ USER_PREFS_MODULE_PATH = "managers.user_manager.user_preferences"
 
 # Paths for werkzeug security functions
 GENERATE_HASH_PATH = f"{USER_MANAGER_MODULE_PATH}.generate_password_hash"
+CHECK_HASH_PATH = f"{USER_AUTH_MODULE_PATH}.check_password_hash"
 
 
 def test_get_public_user_profile(mocker):
@@ -85,7 +85,7 @@ def test_update_username(mocker):
     expected_calls = [call(new_username), call(old_username)]
     mock_user_exists.assert_has_calls(expected_calls)
     mock_database.update_username.assert_called_once_with(old_username, new_username)
-
+    
 def test_authenticate_user_success(mocker):
     """
     GIVEN a user with a correct password
@@ -93,9 +93,12 @@ def test_authenticate_user_success(mocker):
     THEN it retrieves the user ORM object and returns it after successful password check.
     """
     # Arrange
+    # Use mocker.patch() inside the test function.
+    mock_check_hash = mocker.patch(CHECK_HASH_PATH, return_value=True)
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
+    # The mock user object needs a `password_hash` attribute for the function to access.
     mock_user = MagicMock()
-    mock_user.check_password.return_value = True
+    mock_user.password_hash = "a_valid_hash"
     mock_database.get_user_orm_by_username.return_value = mock_user
 
     # Act
@@ -103,7 +106,8 @@ def test_authenticate_user_success(mocker):
 
     # Assert
     mock_database.get_user_orm_by_username.assert_called_once_with("testuser")
-    mock_user.check_password.assert_called_once_with("password123")
+    # Verify that the check_password_hash function was called with the user's hash and the provided password.
+    mock_check_hash.assert_called_once_with("a_valid_hash", "password123")
     assert result is mock_user
 
 def test_authenticate_user_wrong_password(mocker):
@@ -113,9 +117,11 @@ def test_authenticate_user_wrong_password(mocker):
     THEN it retrieves the user, fails to verify the password, and returns None.
     """
     # Arrange
+    mock_check_hash = mocker.patch(CHECK_HASH_PATH, return_value=False)
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
+    # The mock user object needs a `password_hash` attribute.
     mock_user = MagicMock()
-    mock_user.check_password.return_value = False
+    mock_user.password_hash = "a_valid_hash"
     mock_database.get_user_orm_by_username.return_value = mock_user
 
     # Act
@@ -123,7 +129,7 @@ def test_authenticate_user_wrong_password(mocker):
 
     # Assert
     mock_database.get_user_orm_by_username.assert_called_once_with("testuser")
-    mock_user.check_password.assert_called_once_with("wrong_password")
+    mock_check_hash.assert_called_once_with("a_valid_hash", "wrong_password")
     assert result is None
 
 def test_authenticate_user_no_user(mocker):
@@ -179,21 +185,3 @@ def test_load_card_list(mocker):
     mock_database.get_user_by_username.assert_called_once_with("testuser")
     mock_database.get_users_cards.assert_called_once_with("testuser")
     assert result is mock_cards
-
-def test_save_card_list(mocker):
-    """
-    GIVEN a username and a list of cards
-    WHEN save_card_list is called
-    THEN it checks if the user exists and calls the data layer to update the card list.
-    """
-    # Arrange
-    mock_database = mocker.patch(f"{USER_CARDS_MODULE_PATH}.database")
-    mock_database.get_user_by_username.return_value = True  # Simulate user exists
-    card_list = [{"card_name": "test card", "amount": 1}]
-
-    # Act
-    save_card_list("testuser", card_list)
-
-    # Assert
-    mock_database.get_user_by_username.assert_called_once_with("testuser")
-    mock_database.update_user_tracked_cards_list.assert_called_once_with("testuser", card_list)

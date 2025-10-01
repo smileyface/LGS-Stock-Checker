@@ -83,6 +83,7 @@ export function useSocket() {
     }
 
     return {
+        socket, // Expose the raw socket instance for custom event handling
         trackedCards: readonly(trackedCards),
         availabilityMap: readonly(availabilityMap),
         deleteCard,

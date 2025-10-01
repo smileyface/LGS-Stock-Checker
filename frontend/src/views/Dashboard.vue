@@ -1,6 +1,6 @@
 <template>
     <BaseLayout :title="pageTitle">
-        <AddCardModal ref="addCardModalRef" @save-card="saveCard" />
+        <AddCardModal v-if="isAddModalVisible" @save-card="saveCard" @close="isAddModalVisible = false" />
         <EditCardModal v-if="cardToEdit" :card-to-edit="cardToEdit" ref="editCardModalRef" @update-card="updateCard" />
         <div class="container mt-4">
             <h1>Dashboard</h1>
@@ -10,7 +10,7 @@
             <table class="table table-striped table-bordered" id="cardTable">
                 <thead>
                     <tr>
-                        <th style="width: 80px;">Actions</th> <th>Amount</th>
+                        <th style="width: 80px;"></th> <th>Amount</th>
                         <th>Card Name</th>
                         <th>Set Code</th>
                         <th>Collector Number</th>
@@ -21,9 +21,9 @@
                 <tbody>
                     <tr v-for="card in trackedCards" :key="card.card_name">
                         <td>
-                            <div class="btn-group btn-group-sm" role="group" aria-label="Card Actions">
-                                <button type="button" class="btn btn-outline-secondary" title="Edit" @click="editCard(card)">✏️</button>
-                                <button type="button" class="btn btn-outline-danger" title="Delete" @click="deleteCard(card.card_name)">❌</button>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-light" title="Edit" @click="editCard(card)">✏️</button>
+                                <button class="btn btn-sm btn-light" title="Delete" @click="deleteCard(card.card_name)">❌</button>
                             </div>
                         </td>
                         <td>{{ card.amount }}</td>
@@ -36,7 +36,7 @@
                 </tbody>
             </table>
             
-            <button class="btn btn-success mt-3" @click="showAddCardModal">
+            <button class="btn btn-success mt-3" @click="isAddModalVisible = true">
                 Add Card
             </button>
             
@@ -61,9 +61,9 @@ import { useSocket } from '../composables/useSocket';
 const username = computed(() => authStore.user?.username || '');
 const pageTitle = ref('Dashboard');
 const allStores = computed(() => authStore.user?.stores || []);
-const addCardModalRef = ref(null);
 const editCardModalRef = ref(null);
 const cardToEdit = ref(null);
+const isAddModalVisible = ref(false);
 
 // Use the composable to get reactive state and methods
 const { 
@@ -99,10 +99,5 @@ function editCard(card) {
     nextTick(() => {
         editCardModalRef.value?.show();
     });
-}
-
-function showAddCardModal() {
-    console.log('➕ Opening add card modal.');
-    addCardModalRef.value?.show();
 }
 </script>

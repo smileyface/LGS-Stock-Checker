@@ -25,6 +25,10 @@ This document outlines the functional requirements for the LGS-Stock-Checker fro
 -   **[UI-2.2.3]** If a card is found to be in stock at any of the user's preferred stores, a distinct "Available" status (e.g., a green badge) shall be displayed.
 -   **[UI-2.2.4]** If a card is confirmed to be out of stock at all preferred stores, a "Not Available" status (e.g., a gray badge) shall be displayed.
 
+### 2.3 Availability Details
+-   **[UI-2.3.1]** Double-clicking the "Available" status badge for a card shall open the "In Stock Details Modal".
+-   **[UI-2.3.2]** If a user double-clicks a non-"Available" badge, no action shall be taken.
+
 ### 2.3 Card Management Actions
 -   **[UI-2.3.1]** Each card row shall contain an "Edit" button that, when clicked, opens the Edit Card Modal pre-filled with that card's data.
 -   **[UI-2.3.2]** Each card row shall contain a "Delete" button that, when clicked, removes the card from the user's tracked list.
@@ -45,6 +49,14 @@ This document outlines the functional requirements for the LGS-Stock-Checker fro
 -   **[UI-3.2.4]** Upon saving changes, the modal shall emit an `update-card` event with the modified card data.
 -   **[UI-3.2.5]** After saving, the modal shall automatically close.
 
+### 3.3 In Stock Details Modal (`InStockModal.vue`)
+-   **[UI-3.3.1]** The modal shall display a list of all available printings for the selected card across all of the user's preferred stores.
+-   **[UI-3.3.2]** Each item in the list shall represent a unique available printing at a specific store.
+-   **[UI-3.3.3]** Each item shall display the store name, price, set code, collector number, and finish.
+-   **[UI-3.3.4]** Each item shall display the card's image for that specific printing. The image shall be linked directly from an external service (e.g., Scryfall) using the set code and collector number, not stored locally.
+-   **[UI-3.3.5]** The list of available printings shall be sortable by price.
+-   **[UI-3.3.6]** The modal shall include a "Close" button to dismiss it.
+
 ## 4. Account Management (`Account.vue`)
 
 ### 4.1 User Information
@@ -55,6 +67,18 @@ This document outlines the functional requirements for the LGS-Stock-Checker fro
 ### 4.2 Store Preferences
 -   **[UI-4.2.1]** The Account page shall display a list of all available stores as a series of checkboxes.
 -   **[UI-4.2.2]** The checkboxes shall reflect the user's currently saved store preferences.
+-   **[UI-4.2.3]** The user shall be able to modify their store preferences by checking or unchecking the boxes.
+-   **[UI-4.2.4]** A "Save Preferences" button shall be present to persist any changes to the store selection.
+
+## 5. General Layout & Navigation (`BaseLayout.vue`)
+
+-   **[UI-5.1.1]** The application shall feature a consistent navigation bar across all authenticated views.
+-   **[UI-5.1.2]** The navigation bar shall include links to the "Dashboard" and "Account" pages.
+-   **[UI-5.1.3]** The navigation bar shall include a "Logout" button that, when clicked, ends the user's session and redirects them to the Login page.
+
+---
+
+*This document will be expanded as new UI features are added.*
 -   **[UI-4.2.3]** The user shall be able to modify their store preferences by checking or unchecking the boxes.
 -   **[UI-4.2.4]** A "Save Preferences" button shall be present to persist any changes to the store selection.
 

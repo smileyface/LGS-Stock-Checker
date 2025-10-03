@@ -24,7 +24,6 @@ class Authority_Games_Mesa_Arizona(Store):
         response = requests.get(self.search_url, params=search_params)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
-        print("Here we are!")
         product_listings = self._get_product_listings(soup)
         available_products = []
 

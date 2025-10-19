@@ -4,6 +4,7 @@ from data import database
 from managers import user_manager
 from managers import socket_manager
 from managers import redis_manager
+from managers import flask_manager
 
 
 from utility import logger
@@ -41,6 +42,15 @@ def health_check():
             return "Service Unavailable: Redis connection failed", 503
 
         # 3. Check SocketIO connection
+
+        # 4. Check Flask Session OK
+        if not flask_manager.health_check():
+            logger.error(
+                "❌ Health check failed: Flask Session connection failed."
+            )
+            return "Service Unavailable: Flask Session connection failed", 503
+
+        # 5. Check Flask Login OK  
 
         return "OK", 200
     except Exception as e:

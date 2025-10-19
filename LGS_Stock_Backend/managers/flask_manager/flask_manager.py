@@ -3,6 +3,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 
 from flask_login import LoginManager
+from flask import session
 from flask_session import Session
 
 from managers import user_manager
@@ -45,3 +46,9 @@ def login_manager_init(app):
 
 def register_blueprints(app):
     routes.register_blueprints(app)
+
+def health_check():
+    if not session:
+        logger.error("❌ Health check failed: No session found")
+        return False
+    return True

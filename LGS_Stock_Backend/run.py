@@ -93,47 +93,6 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     def shutdown_session(exception=None):
         database.remove_session()
 
-    # Health check route
-
-    @app.route("/api/health")
-    def health_check():
-        """
-        Health check endpoint that verifies connectivity to critical services.
-        Used by Docker's healthcheck to ensure the application is fully operational.
-        """
-        try:
-            # Add a guard to ensure the database has been initialized.
-            if not database.get_session():
-                lgs_logger = logging.getLogger("LGS_Stock_Checker")
-                lgs_logger.error(
-                    "❌ Health check failed: Database is not initialized (SessionLocal is None)."
-                )
-                return "Service Unavailable: DB not configured", 503
-
-            # 1. Check Database connection
-            if not database.health_check():
-                lgs_logger = logging.getLogger("LGS_Stock_Checker")
-                lgs_logger.error(
-                    "❌ Health check failed: Database connection failed."
-                )
-                return "Service Unavailable: DB connection failed", 503
-
-            # 2. Check Redis connection
-            redis_conn = redis.from_url(app.config.get("REDIS_URL", redis_manager.REDIS_URL))
-            redis_conn.ping()
-
-            return "OK", 200
-        except Exception as e:
-            # Use the application's configured logger to report the health check failure.
-            lgs_logger = logging.getLogger("LGS_Stock_Checker")
-            lgs_logger.error(
-                f"❌ Health check failed: {e}", exc_info=False
-            )  # exc_info=False to keep logs clean
-            # Return a 503 Service Unavailable status to make the healthcheck fail.
-            return "Service Unavailable", 503
-
-    return app
-
 
 # This block is only for running the local development server directly
 if __name__ == "__main__":

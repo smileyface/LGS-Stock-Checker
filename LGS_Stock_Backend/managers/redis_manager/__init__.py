@@ -1,3 +1,4 @@
-from .redis_manager import scheduler, queue, REDIS_URL
+from .redis_manager import scheduler, queue, REDIS_URL, health_check
 
-__all__ = ["scheduler", "queue", "REDIS_URL"]
+
+__all__ = ["scheduler", "queue", "REDIS_URL", "health_check"]

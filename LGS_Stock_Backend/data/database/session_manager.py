@@ -1,9 +1,8 @@
 from functools import wraps
 from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy import text
 
 from utility import logger
-# Import the module itself to access SessionLocal at runtime, not import time.
-from . import db_config
 
 SessionLocal = None
 
@@ -12,7 +11,7 @@ def db_query(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        session = db_config.get_session()
+        session = get_session()
         # Open a new session
         try:
             result = func(*args, **kwargs, session=session)  # Pass session to function
@@ -23,7 +22,7 @@ def db_query(func):
             logger.error(f"❌ Database query failed: {str(e)}")
             raise
         finally:
-            db_config.SessionLocal.remove()  # Ensure the session is closed and returned to the pool
+            SessionLocal.remove()  # Ensure the session is closed and returned to the pool
             logger.debug("🔍 Database session scope finished for db_query decorator.")
 
     return wrapper
@@ -59,3 +58,14 @@ def get_session():
     if not SessionLocal:
         raise RuntimeError("Database not initialized. Call initialize_database() first.")
     return SessionLocal()
+
+@db_query
+def health_check(session):
+    try:
+        session.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        logger.error(f"❌ Database Health check failed: {e}")
+        return False
+    finally:
+        remove_session()

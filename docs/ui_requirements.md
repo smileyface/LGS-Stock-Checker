@@ -24,6 +24,7 @@ This document outlines the functional requirements for the LGS-Stock-Checker fro
 -   **[UI-2.2.2]** While an availability check is in progress for a card, a "Searching" status with a visual loading indicator (e.g., a spinner) shall be displayed.
 -   **[UI-2.2.3]** If a card is found to be in stock at any of the user's preferred stores, a distinct "Available" status (e.g., a green badge) shall be displayed.
 -   **[UI-2.2.4]** If a card is confirmed to be out of stock at all preferred stores, a "Not Available" status (e.g., a gray badge) shall be displayed.
+-   **[UI-2.2.5]** Before an initial availability check has been completed for a card, its status shall default to "Not Available".
 
 ### 2.3 Availability Details
 -   **[UI-2.3.1]** Double-clicking the "Available" status badge for a card shall open the "In Stock Details Modal".

@@ -382,3 +382,5 @@ The frontend and backend communicate via two primary methods: a RESTful API for 
 | get_card_printings | Client -> Server | { "card_name": "..." } | Requests all valid printings for a given card name. |
 | card_printings_data | Server -> Client | { "card_name", "printings": [...] } | Returns a list of all valid printings for a card. |
 | card_availability_data | Server -> Client | { "store", "card", "items": [...] } | Sends real-time availability results for a specific card and store. |
+| get_stock_data | Client -> Server | { "card_name": "..." } | Requests fresh, on-demand stock data for a single card. |
+| stock_data | Server -> Client | { "card_name", "items": [{"printing", "price", "store", "amount"}]} | Returns an aggregated list of all available items for a card from all preferred stores. |

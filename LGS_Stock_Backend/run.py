@@ -23,10 +23,8 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     import tasks.card_availability_tasks
     import tasks.catalog_tasks
 
-    
-
-
-
+    socket_manager.configure_socket_io(app)
+    socket_manager.register_socket_handlers()
 
 
     database_url = os.environ.get("DATABASE_URL")

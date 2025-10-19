@@ -44,11 +44,24 @@ def configure_socket_io(app):
 
 def health_check():
     """
-    Performs a health check on the Socket.IO connection.
+    Performs a health check on the Socket.IO server instance.
+
+    This check verifies that the Socket.IO server has been initialized and
+    is configured with a Redis message queue, which is critical for a
+    multi-process environment.
     """
     try:
-        socketio.ping()
+        # 1. Check if the server has been initialized by init_app()
+        if not hasattr(socketio, 'server') or not socketio.server:
+            raise RuntimeError("Socket.IO server has not been initialized.")
+
+        # 2. Check if the client manager is configured for Redis.
+        # This is crucial for multi-process communication (e.g., with workers).
+        # The class name check ensures we're not using the default in-memory manager.
+        if 'RedisManager' not in socketio.server.manager.__class__.__name__:
+            raise RuntimeError("Socket.IO is not configured with a Redis message queue.")
+
         return True
     except Exception as e:
         logger.error(f"❌ Socket.IO health check failed: {e}")
-        return False   
+        return False

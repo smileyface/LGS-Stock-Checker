@@ -67,5 +67,3 @@ def health_check(session):
     except Exception as e:
         logger.error(f"❌ Database Health check failed: {e}")
         return False
-    finally:
-        remove_session()

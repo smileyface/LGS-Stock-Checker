@@ -10,6 +10,8 @@ from rq import Queue
 from rq_scheduler import Scheduler
 import os
 
+from utility import logger
+
 # --- Redis Connection ---
 # Use an environment variable for the URL, falling back to a default for convenience.
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379")
@@ -19,3 +21,12 @@ redis_job_conn = Redis.from_url(REDIS_URL)
 # The default queue name is 'default'.
 queue = Queue(connection=redis_job_conn)
 scheduler = Scheduler(queue=queue, connection=redis_job_conn)
+
+def health_check():
+    try:
+        redis_job_conn.ping()
+        return True
+    except Exception as e:
+        logger.error(f"❌ Redis Health check failed: {e}")
+        return False
+

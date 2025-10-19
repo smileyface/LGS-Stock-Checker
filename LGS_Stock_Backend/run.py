@@ -15,6 +15,16 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     if config_name is None:
         config_name = os.getenv("FLASK_CONFIG", "default")
 
+    # --- Configuration Loading ---
+    from settings import config
+    app.config.from_object(config[config_name])
+    if override_config:
+        app.config.update(override_config)
+
+    # --- Logger Configuration (MUST happen after config, before other imports) ---
+    if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
+        os.environ["LOG_LEVEL"] = "DEBUG"
+
     # --- Move imports inside the factory to prevent side effects ---
     from settings import config
     from routes import register_blueprints
@@ -22,6 +32,8 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     from managers import socket_manager
     from managers import redis_manager
     from data import database
+    from utility import logger
+
 
     # Import task modules to ensure they register themselves on startup.
     import tasks.card_availability_tasks
@@ -32,25 +44,8 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     # running behind a reverse proxy like Nginx in Docker.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-    app.config.from_object(config[config_name])
-    if override_config:
-        app.config.update(override_config)
-
     config[config_name].init_app(app)
 
-    # --- Configure application-wide logging ---
-    # Set the log level from an environment variable, defaulting to INFO.
-    # If the app is in debug mode (via FLASK_CONFIG=development), force DEBUG level.
-    log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
-    if app.debug:
-        log_level_name = "DEBUG"
-
-    # Based on your log files, the custom logger is named 'LGS_Stock_Checker'.
-    # We get this specific logger and set its level. The handlers are assumed
-    # to be configured in the `utility.logger` module.
-    lgs_logger = logging.getLogger("LGS_Stock_Checker")
-    lgs_logger.setLevel(log_level_name)
-    lgs_logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
 
     # Initialize session management. The configuration (e.g., SESSION_TYPE)
     # is now correctly loaded from the config object.
@@ -67,7 +62,7 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     cors_origins_str = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:8000")
 
     allowed_origins = [origin.strip() for origin in cors_origins_str.split(",")]
-    lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
+    logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
     message_queue_url = app.config.get(
         "SOCKETIO_MESSAGE_QUEUE", redis_manager.REDIS_URL
@@ -101,6 +96,18 @@ if __name__ == "__main__":
     import eventlet
 
     eventlet.monkey_patch()
+    
+    from managers import socket_manager
+
+    app = create_app("development")
+    # The host and port are passed here for the dev server run
+    socket_manager.socketio.run(app, debug=True, host="0.0.0.0", port=5000)
+    # This must be done before other imports that might initialize sockets.
+    import eventlet
+
+    eventlet.monkey_patch()
+    
+    from managers import socket_manager
 
     app = create_app("development")
     # The host and port are passed here for the dev server run

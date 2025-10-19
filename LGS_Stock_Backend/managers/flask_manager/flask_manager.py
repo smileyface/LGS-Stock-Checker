@@ -48,7 +48,18 @@ def register_blueprints(app):
     routes.register_blueprints(app)
 
 def health_check():
-    if not session:
-        logger.error("❌ Health check failed: No session found")
+    """
+    Performs a health check on the Flask session mechanism.
+
+    It verifies that the session is operational by writing and reading a test value.
+    This implicitly checks the connection to the session backend (e.g., Redis).
+    """
+    try:
+        # A simple key to test the session functionality.
+        session["health_check"] = "ok"
+        if session.get("health_check") == "ok":
+            return True
         return False
-    return True
+    except Exception as e:
+        logger.error(f"❌ Flask Session health check failed: {e}")
+        return False

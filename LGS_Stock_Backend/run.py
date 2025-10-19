@@ -15,13 +15,11 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     # --- Move imports inside the factory to prevent side effects ---
     from managers import socket_manager
     from managers import redis_manager
+    from managers import task_manager
     from data import database
     from utility import logger
 
-
-    # Import task modules to ensure they register themselves on startup.
-    import tasks.card_availability_tasks
-    import tasks.catalog_tasks
+    task_manager.init_task_manager()
 
     socket_manager.configure_socket_io(app)
     socket_manager.register_socket_handlers()

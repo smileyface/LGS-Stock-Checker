@@ -78,3 +78,7 @@ def trigger_scheduled_task(task_id: str):
     except Exception as e:
         logger.error(f"❌ Failed to trigger scheduled task '{task_id}': {e}")
  
+def init_task_manager():
+    # Import task modules to ensure they register themselves on startup.
+    import tasks.card_availability_tasks
+    import tasks.catalog_tasks

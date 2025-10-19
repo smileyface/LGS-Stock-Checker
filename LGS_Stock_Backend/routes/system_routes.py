@@ -11,7 +11,7 @@ from utility import logger
 
 system_bp = Blueprint('system_bp', __name__)
 
-@system_bp("/api/health")
+@system_bp.route("/api/health")
 def health_check():
     """
     Health check endpoint that verifies connectivity to critical services.

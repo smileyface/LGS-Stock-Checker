@@ -25,6 +25,7 @@ def emit_from_worker(event: str, data: dict, room: str):
     Allows a background worker (which doesn't have the Flask app context)
     to emit a Socket.IO event to clients via the Redis message queue.
     """
+    logger.info(f"📢 Worker emitting event '{event}' to room '{room}' via Redis.")
     try:
         # Create a new SocketIO instance that only knows about the message queue.
         # This is the correct way for external processes to publish events.

@@ -23,26 +23,11 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     import tasks.card_availability_tasks
     import tasks.catalog_tasks
 
-    # --- Configure CORS and SocketIO ---
-    cors_origins_str = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:8000")
+    
 
-    allowed_origins = [origin.strip() for origin in cors_origins_str.split(",")]
-    logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
-    message_queue_url = app.config.get(
-        "SOCKETIO_MESSAGE_QUEUE", redis_manager.REDIS_URL
-    )
 
-    # Initialize SocketIO with the app and specific configurations
-    socket_manager.socketio.init_app(
-        app,
-        message_queue=message_queue_url,
-        cors_allowed_origins=allowed_origins,
-        async_mode="eventlet",
-        engineio_logger=False,  # Set to True for detailed Engine.IO debugging
-    )
-    # Discover and register all socket event handlers
-    socket_manager.register_socket_handlers()
+
 
     database_url = os.environ.get("DATABASE_URL")
     if database_url:

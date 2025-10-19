@@ -41,3 +41,14 @@ def configure_socket_io(app):
     )
     # Discover and register all socket event handlers
     register_socket_handlers()
+
+def health_check():
+    """
+    Performs a health check on the Socket.IO connection.
+    """
+    try:
+        socketio.ping()
+        return True
+    except Exception as e:
+        logger.error(f"❌ Socket.IO health check failed: {e}")
+        return False   

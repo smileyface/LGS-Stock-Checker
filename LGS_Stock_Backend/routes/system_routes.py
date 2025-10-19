@@ -20,7 +20,6 @@ def health_check():
     """
     try:
         # Add a guard to ensure the database has been initialized. 
-        # Add a guard to ensure the database has been initialized.
         if not database.get_session():
             logger.error(
                 "❌ Health check failed: Database is not initialized (SessionLocal is None)."
@@ -42,6 +41,11 @@ def health_check():
             return "Service Unavailable: Redis connection failed", 503
 
         # 3. Check SocketIO connection
+        if not socket_manager.health_check():
+            logger.error(
+                "❌ Health check failed: Socket.IO connection failed."
+            )
+            return "Service Unavailable: Socket.IO connection failed", 503
 
         # 4. Check Flask Session OK
         if not flask_manager.health_check():

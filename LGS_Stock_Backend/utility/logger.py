@@ -36,17 +36,21 @@ def setup_logger():
     This function is designed to be called once. The check for existing
     handlers prevents re-configuration on subsequent imports.
     """
-    log = logging.getLogger("LGS_Stock_Checker")
-    if log.handlers:
-        return log
-
     log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
     log_level = getattr(logging, log_level_name, logging.INFO)
+
+    log = logging.getLogger("LGS_Stock_Checker")
     log.setLevel(log_level)
 
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(EmojiFormatter())
-    log.addHandler(handler)
+    # If handlers already exist, don't add more.
+    # This prevents duplicate log messages if this function is called again.
+    if not log.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(EmojiFormatter())
+        log.addHandler(handler)
+    
+    log.info(f"✅ Logger configured with log level: {log_level_name}")
+
     return log
 
 # Create the logger instance that will be imported by other modules

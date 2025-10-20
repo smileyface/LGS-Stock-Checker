@@ -5,7 +5,13 @@ from data import database
 from data.database import exceptions
 from .socket_manager import socketio
 from .. import user_manager, availability_manager, store_manager
-from .socket_schemas import AddCardSchema, UpdateCardSchema, DeleteCardSchema, GetPrintingsSchema, UpdateStoreSchema
+from .socket_schemas import (
+    AddCardSchema,
+    UpdateCardSchema,
+    DeleteCardSchema,
+    GetPrintingsSchema,
+    UpdateStoreSchema,
+)
 from utility import logger
 
 
@@ -15,6 +21,7 @@ def get_username():
         return current_user.username
     return None
 
+
 @socketio.on("get_card_printings")
 def handle_get_card_printings(data: dict):
     """
@@ -23,7 +30,7 @@ def handle_get_card_printings(data: dict):
     """
     validated_data = GetPrintingsSchema.model_validate(data)
     card_name = validated_data.card_name
-    if(not database.is_card_in_catalog(card_name)):
+    if not database.is_card_in_catalog(card_name):
         logger.info(f"{card_name} not in catalog")
         return
 
@@ -31,6 +38,7 @@ def handle_get_card_printings(data: dict):
     payload = {"card_name": card_name, "printings": printings}
     socketio.emit("card_printings_data", payload)
     logger.info(f"📡 Sent {len(printings)} printings for '{card_name}'.")
+
 
 def _send_user_cards(username: str):
     """Fetches a user's card list, formats it, and emits it over Socket.IO."""
@@ -41,6 +49,7 @@ def _send_user_cards(username: str):
     logger.info(f"📜 Fetching and sending tracked cards for user: {username}")
     cards = user_manager.load_card_list(username)
 
+    # Build a complete list of all cards for the user.
     # user_manager.load_card_list returns an empty list if no cards are found.
     # The list comprehension will correctly handle an empty list.
     card_list = [
@@ -61,9 +70,10 @@ def _send_user_cards(username: str):
             ),
         }
         for card in cards
+        if card and card.card_name
     ]
 
-    # Emit to the user's room to update all of their connected clients.
+    # Emit a single event with the entire list to the user's room.
     socketio.emit(
         "cards_data", {"username": username, "tracked_cards": card_list}, room=username
     )
@@ -82,33 +92,51 @@ def _send_user_stores(username: str):
     store_list = [store.model_dump() for store in stores]
 
     socketio.emit("user_stores_data", {"stores": store_list}, room=username)
-    logger.info(f"📡 Sent store list to room '{username}' with {len(store_list)} items.")
+    logger.info(
+        f"📡 Sent store list to room '{username}' with {len(store_list)} items."
+    )
 
 
 @socketio.on("get_card_availability")
-def handle_get_card_availability():
-    """Handles a front-end request for updated card availability data."""
-    logger.info("📩 Received 'get_card_availability' request from front end.")
+def handle_get_card_availability(data: dict = None):
+    """
+    Handles a front-end request for updated card availability data.
+    If `data` is provided, it can be used to check a specific card.
+    If `data` is None, it checks all tracked cards for the user.
+    """
+    logger.info(f"📩 Received 'get_card_availability' request. Data: {data}")
     username = get_username()
     if username:
         logger.info(f"🔍 Fetching card availability for user: {username}")
-        # 1. Trigger the availability check. This function queues tasks for any non-cached
+        # TODO: In the future, use the `data` payload to check a specific card.
+        # For now, this function triggers a check for all cards.
         #    items and returns any data that was already in the cache.
-        cached_data = availability_manager.get_cached_availability_or_trigger_check(username)
+        cached_data = availability_manager.get_cached_availability_or_trigger_check(
+            username
+        )
 
         # 2. Immediately send any cached data back to the client.
         if cached_data:
-            logger.info(f"📡 Sending {sum(len(cards) for cards in cached_data.values())} cached availability items to user '{username}'.")
+            logger.info(
+                f"📡 Sending {sum(len(cards) for cards in cached_data.values())} cached availability items to user '{username}'."
+            )
             # The data is structured as {store_slug: {card_name: items}}. We need to emit it
             # in the format the frontend expects: one event per item.
             for store_slug, cards in cached_data.items():
                 for card_name, items in cards.items():
-                    event_data = {"store": store_slug, "card": card_name, "items": items}
+                    event_data = {
+                        "username": username,
+                        "store": store_slug,
+                        "card": card_name,
+                        "items": items,
+                    }
                     socketio.emit("card_availability_data", event_data, room=username)
         else:
             logger.info(f"No cached availability data found for user '{username}'.")
 
-        logger.info(f"✅ Card availability check process initiated for user '{username}'.")
+        logger.info(
+            f"✅ Card availability check process initiated for user '{username}'."
+        )
     else:
         logger.warning("🚨 No username found for 'get_card_availability' request.")
 
@@ -136,7 +164,9 @@ def handle_search_card_names(data: dict):
     logger.info(f"🗂️ Searching for card names matching '{query}'...")
     try:
         card_names = database.search_card_names(query, limit=10)
-        socketio.emit("card_name_search_results", {"query": query, "card_names": card_names})
+        socketio.emit(
+            "card_name_search_results", {"query": query, "card_names": card_names}
+        )
         logger.info(f"📡 Sent {len(card_names)} search results for '{query}'.")
     except Exception as e:
         logger.error(f"❌ Failed to search for card names: {e}")
@@ -163,17 +193,24 @@ def handle_add_user_tracked_card(data: dict):
         )
 
         # Delegate to the availability manager to trigger the check, adhering to data flow rules.
-        card_data_for_task = {"card_name": validated_data.card, "specifications": validated_data.card_specs}
+        card_data_for_task = {
+            "card_name": validated_data.card,
+            "specifications": validated_data.card_specs,
+        }
         # Pass _send_user_cards as a callback to be executed *after* the availability checks
         # have been queued. This ensures the frontend receives events in the correct order.
         availability_manager.trigger_availability_check_for_card(
-            username, card_data_for_task, on_complete_callback=lambda: _send_user_cards(username)
+            username,
+            card_data_for_task,
+            on_complete_callback=lambda: _send_user_cards(username),
         )
     except ValidationError as e:
         logger.error(f"❌ Invalid 'add_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
     except exceptions.InvalidSpecificationError as e:
-        logger.warning(f"⚠️ User '{username}' submitted an invalid card specification: {e}")
+        logger.warning(
+            f"⚠️ User '{username}' submitted an invalid card specification: {e}"
+        )
         # Send a specific, user-friendly error message to the client.
         socketio.emit("error", {"message": str(e)})
 
@@ -186,7 +223,9 @@ def handle_delete_user_tracked_card(data: dict):
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to delete a card.")
-            socketio.emit("error", {"message": "Authentication required to delete cards."})
+            socketio.emit(
+                "error", {"message": "Authentication required to delete cards."}
+            )
             return
 
         database.delete_user_card(username, validated_data.card)
@@ -204,7 +243,9 @@ def handle_update_user_tracked_cards(data: dict):
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to update a card.")
-            socketio.emit("error", {"message": "Authentication required to update cards."})
+            socketio.emit(
+                "error", {"message": "Authentication required to update cards."}
+            )
             return
 
         database.update_user_tracked_card_preferences(
@@ -214,6 +255,24 @@ def handle_update_user_tracked_cards(data: dict):
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for update_card: {e}"})
+
+
+@socketio.on("worker_availability_result")
+def handle_worker_availability_result(data: dict):
+    """
+    Internal handler for caching availability data received from a worker.
+    This is not intended to be called directly by clients.
+    """
+    logger.info(f"📩 Received 'worker_availability_result' from worker. Data: {data}")
+    store_name = data.get("store")
+    card_name = data.get("card")
+    items = data.get("items")
+
+    if not all([store_name, card_name, items is not None]):
+        logger.error(f"❌ Invalid 'worker_availability_result' payload: {data}")
+        return
+
+    availability_manager.cache_availability_data(store_name, card_name, items)
 
 
 @socketio.on("update_stores")
@@ -233,3 +292,38 @@ def handle_update_user_stores(data: dict):
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_stores' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for update_stores: {e}"})
+
+
+@socketio.on("stock_data_request")
+def handle_stock_data_request(data: dict):
+    """ """
+    logger.info(
+        f"📩 Received 'stock_data_request' request from front end. Data: {data}"
+    )
+    username = get_username()
+    if not username:
+        logger.warning("🚨 No username found for 'stock_data_request' request.")
+        return
+
+    card_name = data.get("card_name")
+    if not card_name:
+        logger.error("❌ 'stock_data_request' received without 'card_name'.")
+        socketio.emit("error", {"message": "Card name is required to get stock data."})
+        return
+
+    logger.info(
+        f"🔍 Aggregating all available items for '{card_name}' for user '{username}'."
+    )
+    all_available_items = availability_manager.get_cached_availability_data(
+        username, card_name
+    )
+
+    # Emit the aggregated data back to the client.
+    socketio.emit(
+        "stock_data",
+        {"card_name": card_name, "items": all_available_items},
+        room=username,
+    )
+    logger.info(
+        f"📡 Sent {len(all_available_items)} aggregated stock items for '{card_name}' to user '{username}'."
+    )

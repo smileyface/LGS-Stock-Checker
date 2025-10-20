@@ -67,7 +67,7 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
             if not store or not store.slug or not card or not card.card_name:
                 continue
             
-            cached_data = availability_storage.get_availability_data(store.slug, card.card_name)
+            cached_data = availability_storage.get_cached_availability_data(store.slug, card.card_name)
             if cached_data is not None:
                 logger.debug(f"✅ Cache hit for {card.card_name} at {store.name}.")
                 cached_results.setdefault(store.slug, {})[card.card_name] = cached_data
@@ -77,3 +77,28 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
                 task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card.model_dump())
 
     return cached_results
+
+
+def get_all_available_items_for_card(username: str, card_name: str) -> list:
+    """
+    Aggregates all available items for a single card from the cache across all of a user's preferred stores.
+    This is used to populate the 'In Stock Details' modal on demand.
+    """
+    user_stores = database.get_user_stores(username)
+    if not user_stores:
+        logger.warning(f"User '{username}' has no stores configured. Cannot get stock data.")
+        return []
+
+    all_available_items = []
+    for store in user_stores:
+        # Fetch from cache
+        cached_data = availability_storage.get_cached_availability_data(store.slug, card_name)
+        if cached_data:  # cached_data is a list of item dicts
+            # Add the store name to each item before adding it to the aggregated list.
+            for item in cached_data:
+                item_with_store = item.copy()
+                item_with_store['store_name'] = store.name
+                all_available_items.append(item_with_store)
+
+    logger.info(f"Aggregated {len(all_available_items)} available items for '{card_name}' for user '{username}'.")
+    return all_available_items

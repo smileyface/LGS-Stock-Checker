@@ -21,7 +21,7 @@ def cache_availability_data(store_name, card_name, available_items):
     logger.info(f"✅ Cached availability results for {card_name}")
 
 
-def get_availability_data(store_name, card_name):
+def get_cached_availability_data(store_name, card_name):
     """
     Retrieve availability data for a specific card at a store from Redis.
     """

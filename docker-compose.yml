@@ -23,6 +23,8 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
+    # Allow Gunicorn up to 130s to finish requests and shut down gracefully.
+    stop_grace_period: 130s
     environment: *common-backend-env
     # NOTE: Temporarily set to 1 worker to avoid multi-process initialization issues.
     # The long-term solution is to refactor app initialization using Gunicorn hooks (e.g., post_fork)
@@ -35,8 +37,10 @@ services:
         condition: service_healthy
     # Add a healthcheck to ensure the Gunicorn server is responsive.
     healthcheck:
-      # Use curl to ping a non-existent but valid API path. We expect a 404, which proves the server is running.
-      test: [ "CMD-SHELL", "curl -f http://localhost:5000/api/health || exit 1" ]
+      # This check verifies that the Gunicorn process is running and responding to HTTP.
+      # It curls a non-existent path. If curl exits with code 22 (404 Not Found),
+      # the server is up, so we exit with 0 (success). Otherwise, we exit with 1 (failure).
+      test: [ "CMD-SHELL", "curl -f http://localhost:5000/api/this-path-does-not-exist; if [ $$? -eq 22 ]; then exit 0; else exit 1; fi" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -54,8 +58,7 @@ services:
       - "0.0.0.0:8000:80"
     depends_on:
       backend:
-        # Change this to wait for the backend to be healthy, not just started.
-        condition: service_healthy
+        condition: service_healthy # Wait for the backend to be fully ready
     networks:
       - stock-net
 
@@ -65,11 +68,15 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-worker-1
     restart: unless-stopped
+    # Allow the worker up to 130s to finish its current job before being killed.
+    stop_grace_period: 130s
     command: [ "python", "worker_entrypoint.py" ]
     depends_on:
       # The worker should wait for the main backend app to be healthy
-      # to ensure all application components are initialized.
-      backend:
+      # to ensure all application components are initialized, and Redis for connection.
+      redis:
+        condition: service_healthy
+      db:
         condition: service_healthy
     environment: *common-backend-env
     networks:
@@ -81,13 +88,13 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1
     restart: unless-stopped
-    # The -v flag enables verbose logging, so we can see the scheduler's activity.
-    # The interval is reduced to 10s for more responsive job queuing.
-    command: [ "rqscheduler", "--host", "redis", "--port", "6379", "--interval", "10", "-v" ]
+    # Give the scheduler time to unregister itself cleanly.
+    stop_grace_period: 30s
+    # Use the dedicated entrypoint to ensure tasks are registered before the scheduler starts.
+    command: [ "python", "scheduler_entrypoint.py" ]
     depends_on:
-      # The scheduler must wait for both the backend (for app context)
-      # and Redis (for its direct connection) to be healthy.
-      backend:
+      # and Redis/DB to be healthy.
+      db:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -131,18 +138,6 @@ services:
       retries: 5
       # Add a start_period to give the database time to initialize on slow hardware.
       start_period: 30s
-
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: lgs-stock-checker-dozzle-1
-    restart: unless-stopped
-    volumes:
-      # Mount the Docker socket to allow Dozzle to read container logs
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "9999:8080" # Expose Dozzle's web UI on host port 9999
-    networks:
-      - stock-net
 
 networks:
   stock-net:

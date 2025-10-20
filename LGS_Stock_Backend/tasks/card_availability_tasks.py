@@ -106,16 +106,20 @@ def update_availability_single_card(username, store_name, card):
     card_specs = card.get("specifications")
     available_items = store.fetch_card_availability(card_name, card_specs)
 
-    # Always cache the result, even if it's an empty list.
-    # This prevents re-checking unavailable cards until the cache expires.
-    availability_manager.cache_availability_data(store_name, card_name, available_items or [])
+    socket_emit.emit_from_worker("card_availability_data", {"store": store_name, "card": card_name, "items": available_items or []}, room=username)
     logger.info(f"✅ Cached availability results for {card_name} at {store_name}.")
 
     if available_items:
         logger.info(f"✅ Found {len(available_items)} listings for {card_name} at {store_name}. Caching and emitting.")
     else:
         logger.info(f"ℹ️ No available listings found for {card_name} at {store_name}. Caching empty result.")
-    
+
+    # --- Communication ---
+    # 1. Emit the result to the backend server's internal handler for caching.
+    #    The room is not needed here as it's a server-to-server message.
+    internal_event_data = {"store": store_name, "card": card_name, "items": available_items or []}
+    socket_emit.emit_from_worker("worker_availability_result", internal_event_data, room=None)
+
     # Emit the result to the user, whether items were found or not.
     # The front end will interpret an empty 'items' list as "Not Available".
     event_data = {"username": username, "store": store_name, "card": card_name, "items": available_items or []}

@@ -7,6 +7,7 @@ from flask import session
 from flask_session import Session
 
 from managers import user_manager
+from . import worker_listener
 
 from utility import logger
 
@@ -37,6 +38,9 @@ def initalize_flask_app(override_config=None, config_name=None):
     Session(app)
     logger.info("✅ Flask app configured successfully")
 
+    # Start the background thread to listen for worker results
+    worker_listener.start_worker_listener(app)
+
     return app
 
 def login_manager_init(app):
@@ -62,22 +66,4 @@ def health_check():
         return False
     except Exception as e:
         logger.error(f"❌ Flask Session health check failed: {e}")
-        return False
-
-def health_check():
-    """
-    Performs a health check on the Flask session mechanism.
-
-    It verifies that the session is operational by writing and reading a test value.
-    This implicitly checks the connection to the session backend (e.g., Redis).
-    """
-    try:
-        # A simple key to test the session functionality.
-        session["health_check"] = "ok"
-        if session.get("health_check") == "ok":
-            return True
-        return False
-    except Exception as e:
-        logger.error(f"❌ Flask Session health check failed: {e}")
-        return False(f"❌ Flask Session health check failed: {e}")
         return False

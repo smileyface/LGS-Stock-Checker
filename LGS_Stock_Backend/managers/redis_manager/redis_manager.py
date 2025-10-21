@@ -9,6 +9,7 @@ from redis import Redis
 from rq import Queue
 from rq_scheduler import Scheduler
 import os
+import json
 
 from utility import logger
 
@@ -22,6 +23,16 @@ redis_job_conn = Redis.from_url(REDIS_URL)
 queue = Queue(connection=redis_job_conn)
 scheduler = Scheduler(queue=queue, connection=redis_job_conn)
 
+def pubsub(**kwargs):
+    return redis_job_conn.pubsub(**kwargs)
+
+def publish_worker_result(channel: str, payload: dict):
+    """
+    Publishes a JSON payload to a specified Redis channel using the job connection.
+    This abstracts the direct Redis publish operation.
+    """
+    redis_job_conn.publish(channel, json.dumps(payload))
+
 def health_check():
     try:
         redis_job_conn.ping()
@@ -29,4 +40,3 @@ def health_check():
     except Exception as e:
         logger.error(f"❌ Redis Health check failed: {e}")
         return False
-

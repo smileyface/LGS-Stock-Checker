@@ -1,7 +1,8 @@
 import time
+import json
 
-from data import database, cache
-from managers import store_manager, user_manager, availability_manager, task_manager
+from data import database, cache # Keep cache for now, though not used in this file
+from managers import store_manager, user_manager, task_manager, redis_manager
 from managers.socket_manager import socket_emit
 from utility import logger
 
@@ -106,23 +107,26 @@ def update_availability_single_card(username, store_name, card):
     card_specs = card.get("specifications")
     available_items = store.fetch_card_availability(card_name, card_specs)
 
-    socket_emit.emit_from_worker("card_availability_data", {"store": store_name, "card": card_name, "items": available_items or []}, room=username)
-    logger.info(f"✅ Cached availability results for {card_name} at {store_name}.")
-
     if available_items:
         logger.info(f"✅ Found {len(available_items)} listings for {card_name} at {store_name}. Caching and emitting.")
     else:
         logger.info(f"ℹ️ No available listings found for {card_name} at {store_name}. Caching empty result.")
 
-    # --- Communication ---
-    # 1. Emit the result to the backend server's internal handler for caching.
-    #    The room is not needed here as it's a server-to-server message.
-    internal_event_data = {"store": store_name, "card": card_name, "items": available_items or []}
-    socket_emit.emit_from_worker("worker_availability_result", internal_event_data, room=None)
+    # --- Report results back to the backend ---
+    # Publish the results to a dedicated Redis channel for the backend to process.
+    # This is the correct way for a worker to report back to the main application.
+    result_payload = {
+        "type": "availability_result",
+        "payload": {
+            "store": store_name,
+            "card": card_name,
+            "items": available_items or [],
+        }
+    }
+    redis_manager.publish_worker_result("worker-results", result_payload)
 
-    # Emit the result to the user, whether items were found or not.
-    # The front end will interpret an empty 'items' list as "Not Available".
+    # --- Emit results to the client ---
+    # The worker still emits directly to the client for real-time UI updates.
     event_data = {"username": username, "store": store_name, "card": card_name, "items": available_items or []}
     socket_emit.emit_from_worker("card_availability_data", event_data, room=username)
-
     return True

@@ -3,8 +3,6 @@ x-common-backend-env:
   # LOG_LEVEL is inherited from the shell environment where docker-compose is run.
   # The deploy.sh script sets and exports this variable.
   # Add the path where pip installs executables to the container's PATH
-  # The default PATH in the python:3.9-slim image already includes /usr/local/bin,
-  # so we don't need to modify it. We'll keep the anchor for other variables.
   &common-backend-env
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
   REDIS_HOST: redis
@@ -14,7 +12,6 @@ x-common-backend-env:
   DATABASE_URL: postgresql://lgs_user:lgs_password@db:5432/lgs_stock_checker
   # Default origins for local dev. The SERVER_IP is for remote access and is set by deploy.sh
   CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://192.168.1.120:8000,http://localhost:8000,http://localhost:5173}
-  PATH: /usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 services:
   backend:
@@ -38,9 +35,8 @@ services:
     # Add a healthcheck to ensure the Gunicorn server is responsive.
     healthcheck:
       # This check verifies that the Gunicorn process is running and responding to HTTP.
-      # It curls a non-existent path. If curl exits with code 22 (404 Not Found),
-      # the server is up, so we exit with 0 (success). Otherwise, we exit with 1 (failure).
-      test: [ "CMD-SHELL", "curl -f http://localhost:5000/api/this-path-does-not-exist; if [ $$? -eq 22 ]; then exit 0; else exit 1; fi" ]
+      # It uses the dedicated /api/health endpoint, which checks DB, Redis, etc.
+      test: [ "CMD-SHELL", "curl -f http://localhost:5000/api/health || exit 1" ]
       interval: 15s
       timeout: 10s
       retries: 5

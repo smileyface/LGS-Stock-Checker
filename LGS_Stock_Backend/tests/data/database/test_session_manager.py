@@ -2,6 +2,13 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from data.database.session_manager import db_query
+from data.database.models.orm_models import User
+
+@pytest.fixture(autouse=True)
+def stop_global_db_mock(mocker):
+    """Stop the global mock of get_session to allow local patching in this module."""
+    mocker.stopall()
+    yield
 
 # The path to SessionLocal where it's looked up. The db_query decorator in
 # session_manager imports `db_config` and then calls `db_config.get_session()`
@@ -16,6 +23,8 @@ def test_db_query_success():
     """
     # 1. Arrange
     mock_session = MagicMock()
+    # Create a mock that looks like a SQLAlchemy ORM object
+    mock_orm_object = User(username="test", password_hash="test")
 
     # Patch the SessionLocal factory to control session creation
     with patch(SESSION_LOCAL_PATH, return_value=mock_session) as mock_session_local_factory:
@@ -28,7 +37,7 @@ def test_db_query_success():
             return "Success"
 
         # 2. Act
-        result = successful_function("some_data")
+        result = successful_function(mock_orm_object)
 
         # 3. Assert
         # Check session management
@@ -38,7 +47,7 @@ def test_db_query_success():
         mock_session_local_factory.remove.assert_called_once()  # Session was closed/removed
 
         # Check function behavior
-        mock_session.add.assert_called_once_with("some_data")
+        mock_session.add.assert_called_once_with(mock_orm_object)
         assert result == "Success"
 
 
@@ -49,15 +58,16 @@ def test_db_query_exception_rolls_back_and_reraises():
     """
     # 1. Arrange
     mock_session = MagicMock()
-    test_exception = ValueError("Something went wrong")
+    mock_orm_object = User(username="test", password_hash="test")
+    test_exception = ValueError("Something went wrong") # noqa
 
     with patch(SESSION_LOCAL_PATH, return_value=mock_session) as mock_session_local_factory:
 
-        @db_query
+        @db_query # noqa
         def failing_function(session=None):
-            session.add("some_data")
+            session.add(mock_orm_object)
             raise test_exception
-
+            
         # 2. Act & Assert
         with pytest.raises(ValueError) as excinfo:
             failing_function()
@@ -72,7 +82,7 @@ def test_db_query_exception_rolls_back_and_reraises():
         mock_session_local_factory.remove.assert_called_once()  # Session was still closed
 
         # Check function behavior
-        mock_session.add.assert_called_once_with("some_data")
+        mock_session.add.assert_called_once_with(mock_orm_object)
 
 
 def test_db_query_passes_args_and_kwargs():

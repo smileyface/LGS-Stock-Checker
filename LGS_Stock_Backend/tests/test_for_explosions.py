@@ -10,7 +10,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
-
+from tests.conftest import seed_user, seed_stores
 from data.database.models.orm_models import Store, User
 import managers, utility, data, routes, tasks
 
@@ -35,7 +35,8 @@ PACKAGES_TO_TEST = import_all_modules_from_packages(managers, data, utility, rou
 def _get_arg_from_known_names(param_name, func, live_user, live_store, data_payloads):
     """Generate arguments based on specific, known parameter names."""
     if func.__name__ == 'add_user' and 'username' in param_name:
-        return "new_smoke_test_user"
+        # Generate a unique username for each call to prevent IntegrityError
+        return f"new_smoke_test_user_{datetime.now().timestamp()}"
     if param_name == 'app':
         mock_app = MagicMock()
         mock_app.config = {}
@@ -121,8 +122,8 @@ def _generate_test_args(func, params, live_user, live_store):
             continue
 
         # Skip dependency-injected database sessions
-        # if "session" in param_name:
-        #     continue  # The @db_query decorator injects the session; skip.
+        if "session" in param_name:
+            continue  # The @db_query decorator injects the session; skip.
 
         # --- Argument Generation Strategy ---
         # 1. Try to generate an argument based on known parameter names.
@@ -156,25 +157,35 @@ def test_all_functions_no_crashes(package, db_session, mocker, seeded_user, seed
     # that access request.json without the correct Content-Type header.
     mocker.patch("werkzeug.wrappers.request.Request.get_json", return_value={})
 
+    # Mock get_redis_connection where it is defined to cover most cases.
+    mocker.patch("managers.redis_manager.redis_manager.get_redis_connection", return_value=MagicMock())
+    # Also mock it where it's imported and used in cache_manager to ensure it's caught.
+    mocker.patch("data.cache.cache_manager.redis_manager.get_redis_connection", return_value=MagicMock())
+
     # Explicitly mock the scheduler for the smoke test. This prevents functions
     # like `_schedule_if_not_exists` from making real Redis calls, which is the
     # most common source of network-related failures in this test.
     mocker.patch("managers.redis_manager.scheduler", return_value=MagicMock())
 
-    # Fetch seeded objects once per module test, not once per function.
-    # This significantly reduces redundant database queries.
-    live_user = seeded_user
-    live_store = seeded_store
-
     for name, func in inspect.getmembers(package, inspect.isfunction):
         # Ensure we only test functions defined in the current package, not imported ones.
         if func.__module__ != package.__name__:
             continue
-
-        # Skip app factory functions as they require a specific setup context
-        # provided by fixtures, not the generic argument generation.
-        if name in ('initalize_flask_app', 'create_app', 'initialize_redis'):
+    
+            # Skip app factory functions as they require a specific setup context
+            # provided by fixtures, not the generic argument generation.
+        if name in ('initalize_flask_app', 'create_app', 'initialize_redis', 'configure_socket_io'):
             continue
+
+        # --- State Reset ---
+        # For each function, clear all tables and re-seed the database.
+        # This provides a clean, isolated environment for every function call,
+        # preventing data from one call from interfering with the next.
+        for table in reversed(User.metadata.sorted_tables):
+            db_session.execute(table.delete())
+        db_session.commit()
+        live_user = seed_user(db_session)
+        live_store = seed_stores(db_session)[0] # Get the first store
 
         params = inspect.signature(func).parameters
         pos_args, kw_args = _generate_test_args(func, params, live_user, live_store)

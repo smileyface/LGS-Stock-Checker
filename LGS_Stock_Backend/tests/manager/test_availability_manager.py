@@ -135,5 +135,5 @@ def test_get_card_availability_handles_invalid_store(
 
     # Verify that get_availability_data was only called for the one valid store
     mock_storage.get_cached_availability_data.assert_called_once_with(
-        "valid-store", "Test Card"
+        "valid-store", "Test Card",
     )

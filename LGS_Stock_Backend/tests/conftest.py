@@ -1,24 +1,53 @@
 import sys
 import os
 import pytest
+import redis # Import redis here for global patching
+from unittest.mock import MagicMock, patch
 # Add the package root to the path to resolve module-level imports during test discovery.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Initialize the database with the test URL *before* any application modules are imported.
-# This prevents the ImportError during test discovery.
-from data.database import db_config
+# Import models for use in fixtures. Database modules will be imported within fixtures
+# to ensure they are configured for the test environment.
 from data.database.models.orm_models import Base, User, Store, Card, Set, Finish, CardPrinting
 from flask import session
 from unittest.mock import patch
-
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
 from werkzeug.security import generate_password_hash
 from run import create_app
 
+# Global variables to hold the patcher and the mock Redis instance
+_global_redis_patcher = None
+_global_mock_redis_instance = None
 
-@pytest.fixture(scope="session")
-def app():
+def pytest_configure(config):
+    """
+    Called after command line options have been parsed and plugins have been loaded.
+    This is the earliest point to patch modules that are imported during test collection.
+    """
+    global _global_redis_patcher, _global_mock_redis_instance
+
+    # Create a mock instance that will be returned by all calls to Redis() or Redis.from_url()
+    _global_mock_redis_instance = MagicMock()
+
+    # Use create_autospec to create a mock *class* that mimics the real redis.Redis class.
+    # This is crucial for `isinstance()` checks to work correctly in third-party libraries.
+    mock_redis_client_class = patch("redis.Redis", autospec=True).start()
+    mock_redis_client_class.from_url.return_value = _global_mock_redis_instance
+    mock_redis_client_class.return_value = _global_mock_redis_instance
+
+    # We no longer need a global patcher variable to manage start/stop manually here.
+    # The patch is started and we can let pytest handle cleanup.
+
+def pytest_unconfigure(config):
+    """
+    Called before test process is exited.
+    """
+    global _global_redis_patcher
+    patch.stopall()
+
+@pytest.fixture(scope="function")
+def app(mocker, db_session):
     """Creates a test Flask application instance for the entire test session."""
     # Define test-specific config overrides.
     # Using 'filesystem' for sessions avoids the need for a live Redis server during tests.
@@ -31,8 +60,11 @@ def app():
         # The test client is not compatible with a message queue.
         "SOCKETIO_MESSAGE_QUEUE": None,
     }
-    # Pass the overrides to the app factory.
-    _app = create_app("testing", override_config=test_config)
+    # Patch the worker listener to prevent the background thread from starting during tests.
+    mocker.patch("managers.flask_manager.worker_listener.start_worker_listener")
+
+    # Pass the overrides and the test database URL to the app factory.
+    _app = create_app("testing", override_config=test_config, database_url=TEST_DATABASE_URL)
     return _app
 
 
@@ -61,31 +93,27 @@ def app_context(app):
 @pytest.fixture(scope="function")
 def db_session():
     """
-    Pytest fixture that provides a clean, isolated database session for each test function.
-    It handles the full lifecycle: initializing the test database, creating tables,
-    yielding a session, and tearing everything down.
+    Provides a clean, isolated database session for each test function.
+    This fixture now handles the entire database lifecycle: creating the engine,
+    creating tables, yielding a session, and tearing everything down.
     """
-    # Initialize the database for testing. The `initialize_database` function
-    # is idempotent (it checks if the engine is already set), so this is safe
-    # to call for every test. This also ensures that tests which do not use
-    # the database do not incur the overhead of initializing it.
-    db_config.initialize_database(TEST_DATABASE_URL, for_testing=True)
+    from data.database import db_config, session_manager
 
-    # Create tables before the test runs
-    Base.metadata.create_all(bind=db_config.engine)
-    session_instance = db_config.SessionLocal()
+    # Initialize the database with the test URL for this specific test run.
+    db_config.initialize_database(TEST_DATABASE_URL)
+    engine = db_config.get_engine()
+    Base.metadata.create_all(bind=engine)
+    
+    session_instance = session_manager.get_session()
     try:
-        # Yield the actual SQLAlchemy session instance to the tests.
         yield session_instance
     finally:
-        # Use .remove() to be consistent with the @db_query decorator's cleanup.
-        # This ensures the session is properly disposed from the scoped_session registry.
-        db_config.SessionLocal.remove()
-        # Drop all tables to ensure a clean state for the next test.
-        Base.metadata.drop_all(bind=db_config.engine)
+        # Ensure the session is removed before dropping tables.
+        session_manager.remove_session()
+        Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def seeded_user(db_session):
     """Fixture to create and commit a test user to the database."""
     user = User(username="testuser", password_hash=generate_password_hash("password"))
@@ -139,20 +167,17 @@ def seeded_store(seeded_stores):
 
 
 @pytest.fixture(autouse=True)
-def mock_redis(mocker):
+def mock_redis_manager_objects(mocker):
     """
     Automatically mock the low-level Redis connection objects and the
     import-time Queue/Scheduler objects to prevent any real network calls.
     """
-    # Mock the data layer's redis connection with configured return values
-    mock_data_redis = mocker.MagicMock()
-    mock_data_redis.get.return_value = None  # Simulate key not found
-    mock_data_redis.hgetall.return_value = {}  # Simulate empty hash
-    # Patch the redis_conn object where it is *used* in the cache_manager module.
-    # This is the most reliable way to ensure the mock is applied.
-    mocker.patch("data.cache.cache_manager.redis_conn", mock_data_redis)
+    global _global_mock_redis_instance # Access the globally stored mock instance
 
-    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.redis_job_conn", mocker.MagicMock())
+    # Ensure redis_job_conn points to our global mock instance.
+    # This handles cases where redis_manager was imported before the global patch fully took effect on its module-level variable.
+    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.redis_job_conn", _global_mock_redis_instance)
+
     # Mock the objects that capture the connection at import time
     # The mock for the queue needs a 'task' attribute to handle the @task decorator during test discovery.
     # This mock ensures that decorating a function with @queue.task just returns the original function.
@@ -160,7 +185,10 @@ def mock_redis(mocker):
     mock_queue.task.side_effect = lambda func: func
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mock_queue)
     mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.scheduler", mocker.MagicMock())
-
+    
+    # Explicitly patch data.cache.cache_manager.redis_conn if it's a separate module-level instance.
+    # This ensures it also uses the globally mocked Redis.
+    mocker.patch("data.cache.cache_manager.redis_conn", _global_mock_redis_instance)
 
 
 @pytest.fixture(autouse=True)
@@ -195,12 +223,6 @@ def mock_fetch_all_card_data(mocker):
 def mock_store():
     """Mocks the store_manager.store_list function."""
     with patch("tasks.card_availability_tasks.store_manager.store_list") as mock:
-        yield mock
-
-@pytest.fixture
-def mock_cache_availability():
-    """Mocks the availability_manager.cache_availability_data function."""
-    with patch("tasks.card_availability_tasks.availability_manager.cache_availability_data") as mock:
         yield mock
 
 
@@ -250,6 +272,11 @@ def mock_sh_emit(mocker):
 def mock_sh_trigger_availability_check(mocker):
     """Mocks the trigger_availability_check_for_card function used in socket handlers."""
     return mocker.patch("managers.socket_manager.socket_handlers.availability_manager.trigger_availability_check_for_card")
+
+@pytest.fixture
+def mock_cache_availability(mocker):
+    """Mocks the cache_availability function used in socket handlers."""
+    return mocker.patch("managers.availability_manager.cache_availability_data")
 
 
 @pytest.fixture

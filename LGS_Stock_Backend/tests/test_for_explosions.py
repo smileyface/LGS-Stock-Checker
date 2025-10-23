@@ -32,24 +32,68 @@ def import_all_modules_from_packages(*packages):
 PACKAGES_TO_TEST = import_all_modules_from_packages(managers, data, utility, routes, tasks)
 
 
-@pytest.fixture
-def seed_data(db_session):
-    """Seeds the database with a test user and a test store for smoke tests."""
-    test_user = User(id=1, username="testuser", password_hash=generate_password_hash("password"))
-    test_store = Store(
-        id=1,
-        name="Test Store",
-        slug="test_store",
-        homepage="https://test.com",
-        search_url="https://test.com/search",
-        fetch_strategy="default",
-    )
-    db_session.add(test_user)
-    db_session.add(test_store)
-    db_session.commit()
-    # Return the IDs of the created objects. This avoids passing detached
-    # instances to the test function, which can cause errors.
-    return {"user_id": test_user.id, "store_id": test_store.id}
+def _get_arg_from_known_names(param_name, func, live_user, live_store, data_payloads):
+    """Generate arguments based on specific, known parameter names."""
+    if func.__name__ == 'add_user' and 'username' in param_name:
+        return "new_smoke_test_user"
+    if param_name == 'app':
+        mock_app = MagicMock()
+        mock_app.config = {}
+        return mock_app
+    if param_name == "data" and func.__name__ in data_payloads:
+        return data_payloads[func.__name__]
+    if "user" in param_name and ("name" in param_name or "username" in param_name):
+        return live_user.username
+    if "user" in param_name and "id" in param_name:
+        return live_user.id
+    if "store" in param_name and "id" in param_name:
+        return live_store.id
+    if param_name == "store_slugs":
+        return [live_store.slug]
+    if "slug" in param_name:
+        return live_store.slug
+    if "password" in param_name and "hash" not in param_name:
+        return "a_valid_password"
+    if "password_hash" in param_name:
+        return "a_valid_test_hash"
+    return None  # Sentinel value indicating no match
+
+
+def _get_arg_from_type_hint(param, live_user, live_store):
+    """Generate arguments based on type hints."""
+    annotation = param.annotation
+    origin = typing.get_origin(annotation)
+
+    # Handle Optional[T] by trying to resolve T
+    if origin is typing.Union and type(None) in typing.get_args(annotation):
+        # Find the first non-None type in Optional[T, U, ...]
+        non_none_type = next((t for t in typing.get_args(annotation) if t is not type(None)), None)
+        if non_none_type:
+            annotation = non_none_type # Try to generate a value for the underlying type
+
+    # Handle specific ORM model types
+    if annotation is User:
+        return live_user
+    if annotation is Store:
+        return live_store
+
+    # Handle common non-trivial types
+    if annotation is callable:
+        return lambda: "dummy function"
+    if annotation is SocketIO:
+        return MagicMock()
+
+    # Fallback to generic types
+    if hasattr(annotation, '__total__'):  # Heuristic for TypedDict
+        return {}
+    if annotation is dict or origin is dict: return {}
+    if annotation is list or origin is list: return []
+    if annotation is str: return "test_string"
+    if annotation is int: return 1
+    if annotation is float: return 1.0
+    if annotation is datetime: return datetime.now()
+    if annotation is bool: return False
+    return None # Sentinel value indicating no match
 
 
 def _generate_test_args(func, params, live_user, live_store):
@@ -70,73 +114,40 @@ def _generate_test_args(func, params, live_user, live_store):
     }
 
     for param_name, param in params.items():
-        arg_value = None
         is_kw_only = param.kind == inspect.Parameter.KEYWORD_ONLY
 
-        # --- Argument Generation Logic ---
-        # 1. Handle specific, known parameter names and function contexts.
-        if func.__name__ == 'add_user' and 'username' in param_name:
-            arg_value = "new_smoke_test_user"
-        elif param_name == "data" and func.__name__ in data_payloads:
-            arg_value = data_payloads[func.__name__]
-        elif "user" in param_name and ("name" in param_name or "username" in param_name):
-            arg_value = live_user.username
-        elif "user" in param_name and "id" in param_name:
-            arg_value = live_user.id
-        elif "store" in param_name and "id" in param_name:
-            arg_value = live_store.id
-        elif param_name == "store_slugs":
-            arg_value = [live_store.slug]
-        elif "slug" in param_name:
-            arg_value = live_store.slug
-        elif "password" in param_name and "hash" not in param_name:
-            arg_value = "a_valid_password"
-        elif "password_hash" in param_name:
-            arg_value = "a_valid_test_hash"
-        elif "session" in param_name:
-            continue  # The @db_query decorator injects the session; skip.
+        # Skip variable-length positional and keyword arguments (*args, **kwargs)
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
 
-        # 2. Handle common non-trivial types.
-        elif param.annotation is callable:
-            arg_value = lambda: "dummy function"
-        elif param.annotation is SocketIO:
-            arg_value = MagicMock()
+        # Skip dependency-injected database sessions
+        # if "session" in param_name:
+        #     continue  # The @db_query decorator injects the session; skip.
 
-        # 3. Fallback to generic types based on type hints or defaults.
-        else:
-            origin = typing.get_origin(param.annotation)
-            if param.default is not inspect.Parameter.empty:
-                arg_value = param.default
-            elif hasattr(param.annotation, '__total__'):  # Heuristic for TypedDict
-                arg_value = {}
-            elif param.annotation is dict or origin is dict:
-                arg_value = {}
-            elif param.annotation is list or origin is list:
-                arg_value = []
-            elif param.annotation == str:
-                arg_value = "test_string"
-            elif param.annotation == int:
-                arg_value = 1
-            elif param.annotation == float:
-                arg_value = 1.0
-            elif param.annotation == datetime:
-                arg_value = datetime.now()
-            elif param.annotation == bool:
-                arg_value = False
-            else:
-                arg_value = None  # Safe fallback
+        # --- Argument Generation Strategy ---
+        # 1. Try to generate an argument based on known parameter names.
+        arg_value = _get_arg_from_known_names(param_name, func, live_user, live_store, data_payloads)
+
+        # 2. If not found, try to generate based on type hints.
+        if arg_value is None:
+            arg_value = _get_arg_from_type_hint(param, live_user, live_store)
+
+        # 3. If still not found, use the parameter's default value, if it exists.
+        if arg_value is None and param.default is not inspect.Parameter.empty:
+            arg_value = param.default
+
+        # 4. As a final fallback, the value remains None.
 
         if is_kw_only:
             kw_args[param_name] = arg_value
-        else:
-            pos_args.append(arg_value)
-
+        else: pos_args.append(arg_value)
+        
     return pos_args, kw_args
 
 
 @pytest.mark.smoke
 @pytest.mark.parametrize("package", PACKAGES_TO_TEST, ids=[p.__name__ for p in PACKAGES_TO_TEST])
-def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
+def test_all_functions_no_crashes(package, db_session, mocker, seeded_user, seeded_store):
     """
     Smoke test to ensure that functions can be called with basic, safe inputs
     without raising exceptions. This test uses seeded data for more realistic scenarios.
@@ -152,12 +163,17 @@ def test_all_functions_no_crashes(package, seed_data, db_session, mocker):
 
     # Fetch seeded objects once per module test, not once per function.
     # This significantly reduces redundant database queries.
-    live_user = db_session.query(User).filter_by(id=seed_data["user_id"]).one()
-    live_store = db_session.query(Store).filter_by(id=seed_data["store_id"]).one()
+    live_user = seeded_user
+    live_store = seeded_store
 
     for name, func in inspect.getmembers(package, inspect.isfunction):
         # Ensure we only test functions defined in the current package, not imported ones.
         if func.__module__ != package.__name__:
+            continue
+
+        # Skip app factory functions as they require a specific setup context
+        # provided by fixtures, not the generic argument generation.
+        if name in ('initalize_flask_app', 'create_app', 'initialize_redis'):
             continue
 
         params = inspect.signature(func).parameters

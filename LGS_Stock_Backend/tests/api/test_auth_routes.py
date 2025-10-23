@@ -155,7 +155,6 @@ def test_update_invalid_username(client, seeded_user):
     assert response.status_code == 400
     assert response.json["error"] == "Username already exists"
 
-
 def test_update_invalid_password(client, seeded_user):
     """
     GIVEN a logged-in user

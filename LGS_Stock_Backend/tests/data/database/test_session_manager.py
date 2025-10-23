@@ -6,7 +6,7 @@ from data.database.session_manager import db_query
 # The path to SessionLocal where it's looked up. The db_query decorator in
 # session_manager imports `db_config` and then calls `db_config.get_session()`
 # and `db_config.SessionLocal`, so we must patch it there.
-SESSION_LOCAL_PATH = "data.database.session_manager.db_config.SessionLocal"
+SESSION_LOCAL_PATH = "data.database.session_manager.SessionLocal"
 
 
 def test_db_query_success():

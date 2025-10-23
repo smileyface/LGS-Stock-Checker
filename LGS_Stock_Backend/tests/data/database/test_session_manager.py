@@ -71,7 +71,7 @@ def test_db_query_exception_rolls_back_and_reraises():
         # 2. Act & Assert
         with pytest.raises(ValueError) as excinfo:
             failing_function()
-
+            
         # Check that the original exception was re-raised
         assert excinfo.value is test_exception
 

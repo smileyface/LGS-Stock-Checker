@@ -32,30 +32,62 @@ socket.on('availability_check_started', (data) => {
     if (!data || !data.card) return;
     const cardName = data.card;
     console.log(`⏳ Received 'availability_check_started' for: ${cardName}`);
-    // Set the status to 'searching' to trigger the spinner in the UI.
-    availabilityMap.value[cardName] = { status: 'searching', stores: [] };
+    // Ensure the base object exists with an items array before setting status.
+    const existingEntry = availabilityMap.value[cardName] || { items: [] };
+    // Set the status to 'searching' to trigger the spinner in the UI, preserving existing items if any.
+    availabilityMap.value[cardName] = {
+        ...existingEntry,
+        status: 'searching'
+    };
 });
 
 socket.on('card_availability_data', (data) => {
     if (!data || !data.card || !data.store) return;
 
     const cardName = data.card;
-    const storeName = data.store;
-    const isAvailable = data.items && data.items.length > 0;
-    console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${storeName}'. Available: ${isAvailable}`);
+    const newItems = data.items || [];
+    console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${data.store}'. Found: ${newItems.length} items.`);
 
+    // Ensure the entry for the card exists.
     if (!availabilityMap.value[cardName]) {
-        availabilityMap.value[cardName] = { status: 'searching', stores: [] };
+        availabilityMap.value[cardName] = { status: 'completed', items: [] };
+    } else {
+        // Filter out any old items from the same store before adding new ones.
+        availabilityMap.value[cardName].items = availabilityMap.value[cardName].items.filter(
+            item => item.store !== data.store
+        );
     }
 
+    // Add the new items from the current store and mark the check as completed.
+    availabilityMap.value[cardName].items.push(...newItems);
+    availabilityMap.value[cardName].store = data.store;
     availabilityMap.value[cardName].status = 'completed';
+});
 
-    const storeIndex = availabilityMap.value[cardName].stores.indexOf(storeName);
-    if (isAvailable && storeIndex === -1) {
-        availabilityMap.value[cardName].stores.push(storeName);
-    } else if (!isAvailable && storeIndex !== -1) {
-        availabilityMap.value[cardName].stores.splice(storeIndex, 1);
+socket.on('job_interrupted', (data) => {
+    if (!data || !data.card) return;
+    const cardName = data.card;
+    console.warn(`🚦 Received 'job_interrupted' for: ${cardName}.`);
+
+    // If we have an entry for this card, mark its status as stalled.
+    if (availabilityMap.value[cardName]) {
+        availabilityMap.value[cardName] = {
+            ...availabilityMap.value[cardName],
+            status: 'stalled' // A new status to indicate interruption.
+        };
     }
+});
+
+socket.on('user_stores_data', (data) => {
+    // This event is sent from the backend but was not being handled.
+    // You can now use this data to update the UI, for example in a settings page.
+    console.log("🏬 Received 'user_stores_data':", data.stores);
+});
+
+socket.on('stock_data', (data) => {
+    if (!data || !data.card) return;
+    const cardName = data.card;
+    console.log(`📦 Received 'stock_data' for: ${cardName}`);
 });
 
 // --- Emitter Functions ---
@@ -74,6 +106,11 @@ function updateCard(cardData) {
     socket.emit('update_card', cardData);
 }
 
+function getStockData(cardName) {
+    console.log(`🔍 Emitting 'stock_data_request' for: ${cardName}`);
+    socket.emit('stock_data_request', { card_name: cardName });
+}
+
 /**
  * The main composable function.
  */
@@ -89,6 +126,7 @@ export function useSocket() {
         deleteCard,
         saveCard,
         updateCard,
+        getStockData
     };
 }
 

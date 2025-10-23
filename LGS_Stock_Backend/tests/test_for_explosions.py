@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 from datetime import datetime
 import pytest
-from werkzeug.security import generate_password_hash
+from tests.conftest import seed_user, seed_stores
 from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
 from tests.conftest import seed_user, seed_stores
@@ -166,6 +166,17 @@ def test_all_functions_no_crashes(package, db_session, mocker, seeded_user, seed
     # like `_schedule_if_not_exists` from making real Redis calls, which is the
     # most common source of network-related failures in this test.
     mocker.patch("managers.redis_manager.scheduler", return_value=MagicMock())
+
+    # For tasks, we don't want to hit the real Scryfall API.
+    # Mock the fetch functions to return controlled, small datasets.
+    if package.__name__.startswith("tasks"):
+        mocker.patch("tasks.catalog_tasks.fetch_scryfall_card_names", return_value=["Card A", "Card B"])
+        mocker.patch("tasks.catalog_tasks.fetch_all_sets", return_value=[])
+        
+        mock_store_instance = MagicMock()
+        mock_store_instance.fetch_card_availability.return_value = []
+        mocker.patch("tasks.card_availability_tasks.store_manager.get_store", return_value=mock_store_instance)
+
 
     for name, func in inspect.getmembers(package, inspect.isfunction):
         # Ensure we only test functions defined in the current package, not imported ones.

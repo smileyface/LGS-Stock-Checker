@@ -12,10 +12,15 @@ vi.mock('../src/composables/useSocket', () => ({
 
 // Mock child components to isolate the Dashboard component
 const mockEditModalShow = vi.fn();
+const mockInStockModalShow = vi.fn();
 const AddCardModal = { template: '<div class="add-card-modal-mock"></div>' };
 const EditCardModal = {
     template: '<div class="edit-card-modal-mock"></div>',
     methods: { show: mockEditModalShow } // Expose a mock `show` method for the ref to call
+};
+const InStockModal = {
+    template: '<div class="in-stock-modal-mock"></div>',
+    methods: { show: mockInStockModalShow }
 };
 const BaseLayout = { template: '<div><slot /></div>' };
 
@@ -28,6 +33,7 @@ describe('Dashboard.vue', () => {
     beforeEach(() => {
         // Reset state before each test
         mockEditModalShow.mockClear();
+        mockInStockModalShow.mockClear();
         trackedCards.value = [];
         availabilityMap.value = {};
 
@@ -43,7 +49,7 @@ describe('Dashboard.vue', () => {
         // Mount the component once for all tests in this block
         wrapper = mount(Dashboard, {
             global: {
-                stubs: { AddCardModal, EditCardModal, BaseLayout }
+                stubs: { AddCardModal, EditCardModal, InStockModal, BaseLayout }
             }
         });
     });
@@ -66,27 +72,27 @@ describe('Dashboard.vue', () => {
         trackedCards.value = [{ card_name: cardName, amount: 4 }];
         availabilityMap.value = { [cardName]: { status: 'searching', stores: [] } };
         await wrapper.vm.$nextTick();
-
-        const availabilityCell = wrapper.find('tbody tr td:last-child');
-        expect(availabilityCell.html()).toContain('spinner-border');
-        expect(availabilityCell.text()).toContain('Searching');
+ 
+        const searchingBadge = wrapper.find('.badge.bg-info');
+        expect(searchingBadge.exists()).toBe(true);
+        expect(searchingBadge.text()).toContain('Searching');
     });
 
     it('renders "Available" badge when card is available', async () => {
         const cardName = 'Swords to Plowshares';
         trackedCards.value = [{ card_name: cardName, amount: 2 }];
-        availabilityMap.value = { [cardName]: { status: 'completed', stores: ['StoreA'] } };
+        availabilityMap.value = { [cardName]: { status: 'completed', items: [{ price: 1.99 }] } };
         await wrapper.vm.$nextTick();
 
-        const availabilityCell = wrapper.find('tbody tr td:last-child');
-        expect(availabilityCell.html()).toContain('badge bg-success');
-        expect(availabilityCell.text()).toBe('Available');
+        const availableBadge = wrapper.find('.badge.bg-success');
+        expect(availableBadge.exists()).toBe(true);
+        expect(availableBadge.text()).toBe('Available');
     });
 
     it('renders "Not Available" badge when card is not available', async () => {
         const cardName = 'Dark Ritual';
         trackedCards.value = [{ card_name: cardName, amount: 4 }];
-        availabilityMap.value = { [cardName]: { status: 'completed', stores: [] } };
+        availabilityMap.value = { [cardName]: { status: 'completed', items: [] } };
         await wrapper.vm.$nextTick();
 
         const availabilityCell = wrapper.find('tbody tr td:last-child');
@@ -122,5 +128,24 @@ describe('Dashboard.vue', () => {
         // The component uses nextTick internally before calling show()
         await wrapper.vm.$nextTick();
         expect(mockEditModalShow).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens the in-stock modal on double-clicking an "Available" badge', async () => {
+        const cardName = 'Brainstorm';
+        const availableItems = [{ store_name: 'Store A', price: 0.99, set_code: 'ICE', collector_number: '1', finish: 'non-foil' }];
+        trackedCards.value = [{ card_name: cardName, amount: 4, specifications: [] }];
+        availabilityMap.value = { [cardName]: { status: 'completed', items: availableItems } };
+        await wrapper.vm.$nextTick();
+
+        // Find the "Available" badge and trigger a double-click
+        const availableBadge = wrapper.find('.badge.bg-success');
+        await availableBadge.trigger('dblclick');
+
+        // Assert that the component's state was updated correctly
+        expect(wrapper.vm.selectedCardForStock).toBe(cardName);
+        expect(wrapper.vm.availableItemsForModal).toEqual(availableItems);
+
+        // Assert that the modal's show method was called
+        expect(mockInStockModalShow).toHaveBeenCalledTimes(1);
     });
 });

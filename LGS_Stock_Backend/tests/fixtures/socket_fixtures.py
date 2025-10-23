@@ -13,7 +13,7 @@ def mock_socketio_context(mocker):
 @pytest.fixture
 def mock_store():
     """Mocks the store_manager.store_list function."""
-    with patch("tasks.card_availability_tasks.store_manager.store_list") as mock:
+    with patch("tasks.card_availability_tasks.store_manager") as mock:
         yield mock
 
 @pytest.fixture

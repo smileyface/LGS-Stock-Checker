@@ -10,7 +10,7 @@ from tasks.card_availability_tasks import (
 @pytest.fixture
 def mock_publish_worker_result(mocker):
     """Mocks the redis_manager.publish_worker_result function."""
-    return mocker.patch("tasks.card_availability_tasks.redis_manager.publish_worker_result")
+    return mocker.patch("managers.redis_manager.publish_worker_result")
 
 
 def test_update_availability_single_card_success(mock_store, mock_publish_worker_result, mock_socket_emit):
@@ -27,14 +27,14 @@ def test_update_availability_single_card_success(mock_store, mock_publish_worker
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = available_items
-    mock_store.return_value = mock_store_instance
+    mock_store.get_store.return_value = mock_store_instance
 
     # Act
     result = update_availability_single_card(username, store_name, card_data)
 
     # Assert
     assert result is True
-    mock_store.assert_called_once_with(store_name)
+    mock_store.get_store.assert_called_once_with(store_name)
     mock_store_instance.fetch_card_availability.assert_called_once_with("Sol Ring", [])
 
     # Verify result publishing
@@ -109,7 +109,7 @@ def test_update_availability_single_card_no_items_found(mock_store, mock_publish
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = []
-    mock_store.return_value = mock_store_instance
+    mock_store.get_store.return_value = mock_store_instance
 
     # Act
     result = update_availability_single_card(username, store_name, card_data)

@@ -53,8 +53,7 @@ This document outlines the functional requirements for the LGS-Stock-Checker fro
 ### 3.3 In Stock Details Modal (`InStockModal.vue`)
 -   **[UI-3.3.1]** The modal shall display a list of all available printings for the selected card across all of the user's preferred stores.
 -   **[UI-3.3.2]** Each item in the list shall represent a unique available printing at a specific store.
--   **[UI-3.3.3]** Each item shall display the store name, price, set code, collector number, and finish.
--   **[UI-3.3.4]** Each item shall display the card's image for that specific printing. The image shall be linked directly from an external service (e.g., Scryfall) using the set code and collector number, not stored locally.
+-   **[UI-3.3.3]** Each item shall display the store name, price, set code, and quantity.
 -   **[UI-3.3.5]** The list of available printings shall be sortable by price.
 -   **[UI-3.3.6]** The modal shall include a "Close" button to dismiss it.
 

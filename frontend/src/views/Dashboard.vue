@@ -3,9 +3,9 @@
         <AddCardModal v-if="isAddModalVisible" @save-card="saveCard" @close="isAddModalVisible = false" />
         <EditCardModal v-if="cardToEdit" :card-to-edit="cardToEdit" ref="editCardModalRef" @update-card="updateCard" /> 
         <InStockModal 
-            ref="inStockModalRef" 
-            :card-name="selectedCardForStock" 
-            :available-items="availableItemsForModal" 
+            ref="inStockModalRef"
+            :card-name="selectedCardForStock"
+            :items="availableItemsForModal"
         />
         <div class="container mt-4">
             <h1>Dashboard</h1>

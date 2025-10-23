@@ -175,7 +175,7 @@ def test_all_functions_no_crashes(package, db_session, mocker, seeded_user, seed
         
         mock_store_instance = MagicMock()
         mock_store_instance.fetch_card_availability.return_value = []
-        mocker.patch("tasks.card_availability_tasks.store_manager.get_store", return_value=mock_store_instance)
+        mocker.patch("managers.store_manager.get_store", return_value=mock_store_instance)
 
 
     for name, func in inspect.getmembers(package, inspect.isfunction):

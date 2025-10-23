@@ -96,7 +96,7 @@ def update_availability_single_card(username, store_name, card):
     logger.info(f"📌 Task started: Updating availability for {card_name} at {store_name} (User: {username})")
 
     # Ensure store_name is in the correct format
-    store = store_manager.store_list(store_name)
+    store = store_manager.get_store(store_name)
     if not store:
         logger.warning(f"🚨 Store '{store_name}' is not configured or missing from STORE_REGISTRY. Task aborted.")
         return False

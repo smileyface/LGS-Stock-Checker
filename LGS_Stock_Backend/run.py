@@ -1,7 +1,7 @@
 import os
 import logging
 
-def create_app(config_name=None, override_config=None, skip_scheduler=False):
+def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
 
     from managers import flask_manager
     app = flask_manager.initalize_flask_app(override_config, config_name)
@@ -24,15 +24,22 @@ def create_app(config_name=None, override_config=None, skip_scheduler=False):
     socket_manager.configure_socket_io(app)
 
 
-    database_url = os.environ.get("DATABASE_URL")
-    if database_url:
-        database.initialize_database(database_url)
-        database.startup_database()
+    # Use the provided database_url, or fall back to the environment variable.
+    # This allows tests to inject a different database URL.
+    db_url = database_url or os.environ.get("DATABASE_URL")
+
+    if db_url:
+        database.initialize_database(db_url)
+        # The startup_database function syncs stores, which requires tables to exist.
+        # In a test environment, tables are created by fixtures, so we skip this.
+        if config_name != "testing":
+            database.startup_database()
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         database.remove_session()
 
+    logger.info("✅ Flask app created successfully")
     return app
 
 # This block is only for running the local development server directly via `python run.py`.

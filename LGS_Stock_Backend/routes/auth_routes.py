@@ -70,12 +70,12 @@ def register():
 @auth_bp.route('/api/logout', methods=['POST'])
 @login_required
 def logout():
-        # Optional cleanup of old session key, if it exists
+    """Handles user logout."""
+    # Optional cleanup of old session key, if it exists
     if "username" in session:
         del session["username"]
 
     socket_manager.log_and_emit("info", f"✅ User '{current_user.username}' logged out successfully.")
-    """Handles user logout."""
     logout_user()
     return jsonify({"message": "Logout successful"}), 200
 

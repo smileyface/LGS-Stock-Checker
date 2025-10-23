@@ -17,10 +17,7 @@ def update_card_catalog():
 
     if card_names:
         logger.info(f"🗂️ Fetched {len(card_names)} card names from source. Updating database catalog...")
-        database.add_card_names_to_catalog(card_names)
-        logger.info("✅ Successfully updated card catalog in the database.")
-    else:
-        logger.warning("⚠️ Could not fetch card names from source. Catalog update skipped.")
+        database.add_card_names_to_catalog(card_names) # This now handles bulk insertion efficiently
 
     logger.info("🏁 Finished background task: update_card_catalog")
 

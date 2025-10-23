@@ -257,24 +257,6 @@ def handle_update_user_tracked_cards(data: dict):
         socketio.emit("error", {"message": f"Invalid data for update_card: {e}"})
 
 
-@socketio.on("worker_availability_result")
-def handle_worker_availability_result(data: dict):
-    """
-    Internal handler for caching availability data received from a worker.
-    This is not intended to be called directly by clients.
-    """
-    logger.info(f"📩 Received 'worker_availability_result' from worker. Data: {data}")
-    store_name = data.get("store")
-    card_name = data.get("card")
-    items = data.get("items")
-
-    if not all([store_name, card_name, items is not None]):
-        logger.error(f"❌ Invalid 'worker_availability_result' payload: {data}")
-        return
-
-    availability_manager.cache_availability_data(store_name, card_name, items)
-
-
 @socketio.on("update_stores")
 def handle_update_user_stores(data: dict):
     """Handles a request to update the user's entire list of preferred stores."""
@@ -314,7 +296,7 @@ def handle_stock_data_request(data: dict):
     logger.info(
         f"🔍 Aggregating all available items for '{card_name}' for user '{username}'."
     )
-    all_available_items = availability_manager.get_cached_availability_data(
+    all_available_items = availability_manager.get_all_available_items_for_card(
         username, card_name
     )
 

@@ -28,6 +28,10 @@ services:
       - ./frontend:/app
       # Anonymous volume to prevent host node_modules from overwriting the container's.
       - /app/node_modules
+    ports:
+      # Override the production port mapping.
+      # Expose the Vite dev server's port (5173) to the host.
+      - "5173:5173"
 
   worker:
     volumes:

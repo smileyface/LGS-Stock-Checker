@@ -120,7 +120,9 @@ function showInStockModal(cardName) {
     const availability = availabilityMap.value[cardName];
     selectedCardForStock.value = cardName;
     availableItemsForModal.value = availability?.items || [];
-    inStockModalRef.value?.show();
+    nextTick(() => {
+        inStockModalRef.value?.show();
+    });
 }
 
 function handleTableDoubleClick(event) {
@@ -131,8 +133,8 @@ function handleTableDoubleClick(event) {
     if (badge) {
         const cardName = badge.dataset.cardName;
         if (cardName) {
-            showInStockModal(cardName);
             getStockData(cardName);
+            showInStockModal(cardName);
         }
     }
 }

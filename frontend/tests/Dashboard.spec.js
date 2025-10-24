@@ -16,11 +16,17 @@ const mockInStockModalShow = vi.fn();
 const AddCardModal = { template: '<div class="add-card-modal-mock"></div>' };
 const EditCardModal = {
     template: '<div class="edit-card-modal-mock"></div>',
-    methods: { show: mockEditModalShow } // Expose a mock `show` method for the ref to call
+    // To correctly simulate a <script setup> component with defineExpose,
+    // we need a setup function that returns the methods to be exposed.
+    setup() {
+        return { show: mockEditModalShow };
+    }
 };
 const InStockModal = {
     template: '<div class="in-stock-modal-mock"></div>',
-    methods: { show: mockInStockModalShow }
+    setup() {
+        return { show: mockInStockModalShow };
+    }
 };
 const BaseLayout = { template: '<div><slot /></div>' };
 
@@ -45,6 +51,7 @@ describe('Dashboard.vue', () => {
             saveCard: vi.fn(),
             updateCard: vi.fn(),
         });
+        useSocket().getStockData = vi.fn(); // Mock getStockData separately for this test
 
         // Mount the component once for all tests in this block
         wrapper = mount(Dashboard, {
@@ -72,7 +79,7 @@ describe('Dashboard.vue', () => {
         trackedCards.value = [{ card_name: cardName, amount: 4 }];
         availabilityMap.value = { [cardName]: { status: 'searching', stores: [] } };
         await wrapper.vm.$nextTick();
- 
+
         const searchingBadge = wrapper.find('.badge.bg-info');
         expect(searchingBadge.exists()).toBe(true);
         expect(searchingBadge.text()).toContain('Searching');
@@ -130,7 +137,7 @@ describe('Dashboard.vue', () => {
         expect(mockEditModalShow).toHaveBeenCalledTimes(1);
     });
 
-    it('opens the in-stock modal on double-clicking an "Available" badge', async () => {
+    it("opens the in-stock modal on double-clicking an 'Available' badge", async () => {
         const cardName = 'Brainstorm';
         const availableItems = [{ store_name: 'Store A', price: 0.99, set_code: 'ICE', collector_number: '1', finish: 'non-foil' }];
         trackedCards.value = [{ card_name: cardName, amount: 4, specifications: [] }];
@@ -145,7 +152,9 @@ describe('Dashboard.vue', () => {
         expect(wrapper.vm.selectedCardForStock).toBe(cardName);
         expect(wrapper.vm.availableItemsForModal).toEqual(availableItems);
 
-        // Assert that the modal's show method was called
+        // Assert that the modal's show method was called. This requires waiting for the nextTick
+        // that is used inside the showInStockModal function.
+        await wrapper.vm.$nextTick();
         expect(mockInStockModalShow).toHaveBeenCalledTimes(1);
     });
 });

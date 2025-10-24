@@ -7,8 +7,10 @@ This file creates and configures the Flask app and its extensions.
 import eventlet
 eventlet.monkey_patch()
 
+from utility import logger
 from run import create_app
 
 # Create the app instance using the factory.
 # The factory handles all configuration, blueprint registration, and extension initialization.
+logger.info("🚀 Creating app context for server...")
 app = create_app()

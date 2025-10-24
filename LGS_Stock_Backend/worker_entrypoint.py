@@ -1,8 +1,9 @@
-from rq import Worker, Queue
+from rq import Queue
 
 # Import the application factory
 from run import create_app
-from managers.redis_manager.redis_manager import redis_job_conn
+from tasks.custom_worker import LGSWorker
+from managers import redis_manager
 
 
 listen = ["default"]
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     # The app context is needed for tasks that interact with the database
     # or other Flask extensions.
     with app.app_context():
-        queues = [Queue(q, connection=redis_job_conn) for q in listen]
-        worker = Worker(queues, connection=redis_job_conn)
+        queues = [Queue(q, connection=redis_manager.get_redis_connection()) for q in listen]
+        worker = LGSWorker(queues, connection=redis_manager.get_redis_connection())
         # worker.work() runs the worker in a continuous loop, listening for jobs.
         worker.work()

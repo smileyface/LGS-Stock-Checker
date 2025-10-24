@@ -72,11 +72,19 @@ run_tests_if_needed() {
     local branch=$2
     if [ "$branch" = "master" ]; then
         echo "🔬 This is a release deployment to 'master'. Running tests..."
-        # Note: For better performance, consider creating a dedicated 'test' stage
-        # in your Dockerfile that includes dev dependencies, avoiding runtime installation.
-        local test_command="pip install -r LGS_Stock_Backend/requirements-dev.txt && pytest"
-        if ! $composer_cmd -f docker-compose.yml run --rm backend sh -c "$test_command"; then
-            echo "❌ Tests failed. Aborting release deployment." >&2
+
+        echo "   - Running backend tests..."
+        # Build the 'backend' service, stopping at the 'test' stage.
+        # This is more efficient than `docker-compose run` as it uses the build cache.
+        # Assumes a 'test' stage exists in the backend Dockerfile.
+        if ! $composer_cmd -f docker-compose.yml build --build-arg BUILDKIT_INLINE_CACHE=1 --target test backend; then
+            echo "❌ Backend tests failed. Aborting release deployment." >&2
+            exit 1
+        fi
+
+        echo "   - Running frontend tests..."
+        if ! $composer_cmd -f docker-compose.yml build --build-arg BUILDKIT_INLINE_CACHE=1 --target test frontend; then
+            echo "❌ Frontend tests failed. Aborting release deployment." >&2
             exit 1
         fi
     else

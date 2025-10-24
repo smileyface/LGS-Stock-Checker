@@ -8,117 +8,116 @@ These requirements define the expected behavior of user account creation, modifi
 
 ### 1.1 Core User Operations
 
--   **[1.1.1]** The system shall allow a new user to be created with a unique username and a password hash.
--   **[1.1.2]** The system shall prevent the creation of a new user if the chosen username already exists.
--   **[1.1.3]** The system shall be able to retrieve a user's complete data by their exact, case-sensitive username.
--   **[1.1.4]** The system shall return no user data when queried with a non-existent username.
--   **[1.1.5]** The system shall provide a method to retrieve all registered users.
--   **[1.1.6]** The system shall return an empty list when retrieving all users if none exist.
--   **[1.1.7]** The system shall provide a "display" version of a user's data that explicitly excludes the password hash.
+- **[1.1.1]** The system shall allow a new user to be created with a unique username and a password hash.
+- **[1.1.2]** The system shall prevent the creation of a new user if the chosen username already exists.
+- **[1.1.3]** The system shall be able to retrieve a user's complete data by their exact, case-sensitive username.
+- **[1.1.4]** The system shall return no user data when queried with a non-existent username.
+- **[1.1.5]** The system shall provide a method to retrieve all registered users.
+- **[1.1.6]** The system shall return an empty list when retrieving all users if none exist.
+- **[1.1.7]** The system shall provide a "display" version of a user's data that explicitly excludes the password hash.
 
 ### 1.2 User Data Modification
 
--   **[1.2.1]** The system shall allow an existing user's username to be updated. After the update, the old username shall no longer be valid for lookups.
--   **[1.2.2]** An attempt to update the username for a non-existent user shall not create a new user or raise an error.
--   **[1.2.3]** The system shall allow an existing user's password hash to be updated.
--   **[1.2.4]** An attempt to update the password for a non-existent user shall not create a new user or raise an error.
--   **[1.2.5]** The system shall prevent one user from updating another user's username.
--   **[1.2.6]** The system shall ensure all API requests are authenticated
+- **[1.2.1]** The system shall allow an existing user's username to be updated. After the update, the old username shall no longer be valid for lookups.
+- **[1.2.2]** An attempt to update the username for a non-existent user shall not create a new user or raise an error.
+- **[1.2.3]** The system shall allow an existing user's password hash to be updated.
+- **[1.2.4]** An attempt to update the password for a non-existent user shall not create a new user or raise an error.
+- **[1.2.5]** The system shall prevent one user from updating another user's username.
+- **[1.2.6]** The system shall ensure all API requests are authenticated
 
 ### 1.3 User Store Preferences
 
--   **[1.3.1]** A user shall be able to add a store to their list of tracked preferences.
--   **[1.3.2]** The system shall prevent a user from adding the same store to their preferences multiple times.
--   **[1.3.3]** A user shall be able to retrieve their list of tracked preferences.
--   **[1.3.4]** The system shall return an empty list when retrieving preferences for a non-existent user.
--   **[1.3.5]** A user shall be able to update their list of tracked preferences.
--   **[1.3.6]** An attempt to add a non-existent store to a user's preferences shall be ignored.
--   **[1.3.7]** A user shall be able to remove a store from their list of tracked preferences.
-
+- **[1.3.1]** A user shall be able to add a store to their list of tracked preferences.
+- **[1.3.2]** The system shall prevent a user from adding the same store to their preferences multiple times.
+- **[1.3.3]** A user shall be able to retrieve their list of tracked preferences.
+- **[1.3.4]** The system shall return an empty list when retrieving preferences for a non-existent user.
+- **[1.3.5]** A user shall be able to update their list of tracked preferences.
+- **[1.3.6]** An attempt to add a non-existent store to a user's preferences shall be ignored.
+- **[1.3.7]** A user shall be able to remove a store from their list of tracked preferences.
 
 ### 1.4 Invalid Input
--   **[1.4.1]** The system shall return an error `401 Unauthorized` if there's an invalid password or username when logging in.
--   **[1.4.2]** The system shall return an error `400 Bad Request` if a user enters an empty username when updating their username.
--   **[1.4.3]** The system shall return an error `400 Bad Request` if a user enters an already existing username when updating their username.
--   **[1.4.4]** The system shall return an error `400 Bad Request` if a user enters an empty password when updating their password.
+
+- **[1.4.1]** The system shall return an error `401 Unauthorized` if there's an invalid password or username when logging in.
+- **[1.4.2]** The system shall return an error `400 Bad Request` if a user enters an empty username when updating their username.
+- **[1.4.3]** The system shall return an error `400 Bad Request` if a user enters an already existing username when updating their username.
+- **[1.4.4]** The system shall return an error `400 Bad Request` if a user enters an empty password when updating their password.
 
 ## 2 Store Management
 
 These requirements define how store information is managed and retrieved.
 
 ### 2.1 Core Store Operations
--   **[2.1.1]** The system shall be able to retrieve a specific store's metadata using its unique slug.
--   **[2.1.2]** The system shall return no data when queried with a non-existent store slug.
--   **[2.1.3]** The system shall be able to retrieve a list of all available stores.
--   **[2.1.4]** The system shall return an empty list when retrieving all stores if none exist.
+
+- **[2.1.1]** The system shall be able to retrieve a specific store's metadata using its unique slug.
+- **[2.1.2]** The system shall return no data when queried with a non-existent store slug.
+- **[2.1.3]** The system shall be able to retrieve a list of all available stores.
+- **[2.1.4]** The system shall return an empty list when retrieving all stores if none exist.
 
 ## 3. Card Tracking Management
 
 These requirements define how users manage the list of cards they want to track.
 
--   **[3.1.1]** A user shall be able to add a new card to their tracked list, specifying an amount and optional specifications (set, finish, etc.).
--   **[3.1.2]** A duplicate card shall be defined as a card with the same name and specifications.
--   **[3.1.3]** The system shall prevent adding a duplicate card *specification* for the same user. Adding a card name that is already tracked will add new specifications to the existing entry.
--   **[3.1.4]** A user shall be able to remove a card from their tracked list.
--   **[3.1.5]** A user shall be able to update the amount and specifications of a card they are tracking.
--   **[3.1.6]** The system shall provide a complete list of a user's tracked cards, including all associated specifications.
+- **[3.1.1]** A user shall be able to add a new card to their tracked list, specifying an amount and optional specifications (set, finish, etc.).
+- **[3.1.2]** A duplicate card shall be defined as a card with the same name and specifications.
+- **[3.1.3]** The system shall prevent adding a duplicate card *specification* for the same user. Adding a card name that is already tracked will add new specifications to the existing entry.
+- **[3.1.4]** A user shall be able to remove a card from their tracked list.
+- **[3.1.5]** A user shall be able to update the amount and specifications of a card they are tracking.
+- **[3.1.6]** The system shall provide a complete list of a user's tracked cards, including all associated specifications.
 
 ### 3.2 Card Specifications
 
--   **[3.2.1]** The system shall maintain a list of valid specifications, including set codes, collector numbers,and finishes.
--   **[3.2.2]** The system shall allow users to select from valid specifications when adding or editing a card.
--   **[3.2.3]** If a specification is not valid, the system should alert the user
+- **[3.2.1]** The system shall maintain a list of valid specifications, including set codes, collector numbers,and finishes.
+- **[3.2.2]** The system shall allow users to select from valid specifications when adding or editing a card.
+- **[3.2.3]** If a specification is not valid, the system should alert the user
 
 ## 4. Cataloging & Search
 
 ### 4.1 Card Catalog
 
 These requirements define the global card catalog used for searching and validation.
--   **[4.1.0]** A duplicate card shall be defined as a card with the same name.
--   **[4.1.1]** The system shall maintain a database table of unique card names (referred to as the "card catalog") to ensure data integrity and consistency across the application.
--   **[4.1.2]** The system shall provide a search endpoint that returns a list of card names matching a partial query string.
--   **[4.1.3]** The card name search shall be case-insensitive.
--   **[4.1.4]** The system shall have a mechanism (e.g., a background task) to populate the global card catalog from an external source.
--   **[4.1.5]** The card catalogue shall contain a list of every unique card in the game.
--   **[4.1.6]** The system shall include a scheduled background task that periodically fetches a list of all known card names from an external source (e.g., Scryfall) and updates the card catalog.
--   **[4.1.7]** The background task shall add any new card names to the catalog that are not already present.
--   **[4.1.8]** The background task shall not remove any card names from the catalog, even if they are no longer present in the external source.
+
+- **[4.1.0]** A duplicate card shall be defined as a card with the same name.
+- **[4.1.1]** The system shall maintain a database table of unique card names (referred to as the "card catalog") to ensure data integrity and consistency across the application.
+- **[4.1.2]** The system shall provide a search endpoint that returns a list of card names matching a partial query string.
+- **[4.1.3]** The card name search shall be case-insensitive.
+- **[4.1.4]** The system shall have a mechanism (e.g., a background task) to populate the global card catalog from an external source.
+- **[4.1.5]** The card catalogue shall contain a list of every unique card in the game.
+- **[4.1.6]** The system shall include a scheduled background task that periodically fetches a list of all known card names from an external source (e.g., Scryfall) and updates the card catalog.
+- **[4.1.7]** The background task shall add any new card names to the catalog that are not already present.
+- **[4.1.8]** The background task shall not remove any card names from the catalog, even if they are no longer present in the external source.
 
 ### 4.2 Set Catalog
 
--   **[4.2.1]** The system shall maintain a database table of unique card sets (referred to as the "set catalog"), storing at least the set code, name, and release date.
--   **[4.2.2]** The system shall include a scheduled background task that periodically fetches a list of all known sets from an external source (e.g., Scryfall).
--   **[4.2.3]** The background task shall add any new sets to the catalog that are not already present, using the set code as the unique identifier.
--   **[4.2.4]** The background task shall not remove any sets from the catalog.
+- **[4.2.1]** The system shall maintain a database table of unique card sets (referred to as the "set catalog"), storing at least the set code, name, and release date.
+- **[4.2.2]** The system shall include a scheduled background task that periodically fetches a list of all known sets from an external source (e.g., Scryfall).
+- **[4.2.3]** The background task shall add any new sets to the catalog that are not already present, using the set code as the unique identifier.
+- **[4.2.4]** The background task shall not remove any sets from the catalog.
 
 ### 4.3 Card Printing Catalog & Specification Validation
 
 These requirements define the system for storing detailed card printing data and using it to validate user input.
 
--   **[4.3.1]** The system shall maintain a detailed catalog of all individual card printings. Each printing must be associated with a card name, a set code, and a collector number.
--   **[4.3.2]** The system shall maintain a catalog of all possible card finishes (e.g., "foil", "nonfoil", "etched").
--   **[4.3.3]** The system shall associate each card printing with its available finishes.
--   **[4.3.4]** The system shall include a scheduled background task (e.g., `update_full_catalog`) to populate the card printing, finish, and association catalogs from an external source.
--   **[4.3.5]** The system shall provide an API endpoint to retrieve all valid printings (i.e., all valid combinations of set, collector number, and finish) for a given card name. This will be used to populate dropdown menus in the UI.
--   **[4.3.6]** When a user adds or updates a tracked card with specifications, the system must validate that the provided `set_code`, `collector_number`, and `finish` combination is a valid, existing printing for that card name according to the catalog.
--   **[4.3.7]** When a user tracks a card without providing any specifications (set, collector number, or finish), it signifies that they are interested in any available printing of that card.
--   **[4.3.8]** When a user provides a partial set of specifications (e.g., only a `set_code`), any omitted fields (e.g., `collector_number`, `finish`) shall be treated as wildcards, matching any valid value for that field.
--   **[4.3.9]** If a user submits a request with an invalid specification combination, the system shall reject the request and return an informative error.
+- **[4.3.1]** The system shall maintain a detailed catalog of all individual card printings. Each printing must be associated with a card name, a set code, and a collector number.
+- **[4.3.2]** The system shall maintain a catalog of all possible card finishes (e.g., "foil", "nonfoil", "etched").
+- **[4.3.3]** The system shall associate each card printing with its available finishes.
+- **[4.3.4]** The system shall include a scheduled background task (e.g., `update_full_catalog`) to populate the card printing, finish, and association catalogs from an external source.
+- **[4.3.5]** The system shall provide an API endpoint to retrieve all valid printings (i.e., all valid combinations of set, collector number, and finish) for a given card name. This will be used to populate dropdown menus in the UI.
+- **[4.3.6]** When a user adds or updates a tracked card with specifications, the system must validate that the provided `set_code`, `collector_number`, and `finish` combination is a valid, existing printing for that card name according to the catalog.
+- **[4.3.7]** When a user tracks a card without providing any specifications (set, collector number, or finish), it signifies that they are interested in any available printing of that card.
+- **[4.3.8]** When a user provides a partial set of specifications (e.g., only a `set_code`), any omitted fields (e.g., `collector_number`, `finish`) shall be treated as wildcards, matching any valid value for that field.
+- **[4.3.9]** If a user submits a request with an invalid specification combination, the system shall reject the request and return an informative error.
 
 ## 5. Availability Checking & Notifications
 
 These requirements define the core functionality of checking for card availability at various stores.
 
--   **[5.1.1]** The system shall be able to trigger an availability check for a user's tracked cards against their list of preferred stores.
--   **[5.1.2]** Availability checks shall be performed by background workers to avoid blocking the main application and user interface.
--   **[5.1.3]** The system shall cache availability results (e.g., in Redis) to minimize redundant web scraping and improve performance.
--   **[5.1.4]** The system shall notify the user in real-time via WebSockets when new availability data is found for a card they are tracking.
--   **[5.1.5]** The real-time availability data payload for a found item must include the store name, the price, and the specific printing details (set code, collector number, finish).
--   **[5.1.6]** The system shall automatically trigger an availability check for a newly added card against the user's preferred stores.
--   **[5.1.7]** The system shall recheck card availability at regular intervals.
- 
-
-
+- **[5.1.1]** The system shall be able to trigger an availability check for a user's tracked cards against their list of preferred stores.
+- **[5.1.2]** Availability checks shall be performed by background workers to avoid blocking the main application and user interface.
+- **[5.1.3]** The system shall cache availability results (e.g., in Redis) to minimize redundant web scraping and improve performance.
+- **[5.1.4]** The system shall notify the user in real-time via WebSockets when new availability data is found for a card they are tracking.
+- **[5.1.5]** The real-time availability data payload for a found item must include the store name, the price, and the specific printing details (set code, collector number, finish).
+- **[5.1.6]** The system shall automatically trigger an availability check for a newly added card against the user's preferred stores.
+- **[5.1.7]** The system shall recheck card availability at regular intervals.
 
 ---
 

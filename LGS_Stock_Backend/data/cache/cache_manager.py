@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, Optional
 
-from data.redis_client import redis_conn
+from managers import redis_manager
 from utility import logger
 
 
@@ -14,6 +14,7 @@ def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[in
     - Logs the action with a timestamp and status.
     """
     try:
+        redis_conn = redis_manager.get_redis_connection(decode_responses=True)
         value_json = json.dumps(value)  # Ensure value is serialized
 
         if field:
@@ -36,6 +37,7 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
     Load data from Redis.
     """
     try:
+        redis_conn = redis_manager.get_redis_connection(decode_responses=True)
         data = redis_conn.hget(key, field) if field else redis_conn.get(key)
 
         if data:
@@ -52,6 +54,7 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
 def get_all_hash_fields(key: str) -> Dict[str, Any]:
 
     """Retrieve all fields and values from a Redis hash."""
+    redis_conn = redis_manager.get_redis_connection(decode_responses=False) # hgetall returns bytes
     data = redis_conn.hgetall(key)
     return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
 
@@ -64,6 +67,7 @@ def delete_data(key: str, field=None) -> None:
     - Otherwise, deletes the entire key (`delete`).
     """
     try:
+        redis_conn = redis_manager.get_redis_connection(decode_responses=True)
         if field:
             redis_conn.hdel(key, field)
             logger.info(f"🗑️ Deleted field {field} from Redis Hash {key}")

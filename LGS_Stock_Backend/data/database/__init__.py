@@ -14,6 +14,8 @@ The import order here is critical to avoid circular dependencies.
 from . import schema
 from .db_config import initialize_database, startup_database
 
+from .session_manager import db_query, get_session, remove_session, health_check
+
 # Now that `data.database.schema` is available, we can safely import the repositories.
 from .repositories.card_repository import (
     get_users_cards, add_user_card, delete_user_card, update_user_tracked_cards_list,
@@ -32,6 +34,9 @@ from .repositories.store_repository import get_store_metadata, get_all_stores
 __all__ = [
     # Setup
     "initialize_database", "schema", "startup_database"
+
+    # Session Manager
+    "db_query", "get_session", "remove_session", "health_check",
 
     # Card Repository
     "get_users_cards", "add_user_card", "delete_user_card",

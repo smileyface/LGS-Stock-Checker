@@ -1,17 +1,23 @@
 # This override file is used for local development.
-# It enables hot-reloading for both the frontend and backend services.
+# It is merged with the base docker-compose.yml to enable hot-reloading
+# and add development-specific services.
+
+x-common-backend-env: &common-backend-env
+  LOG_LEVEL: ${LOG_LEVEL:-DEBUG} # Default to DEBUG for local development
+  FLASK_CONFIG: development
 
 services:
   backend:
-    # Mount the backend source code into the container.
-    # Any changes you make locally will be reflected inside the container.
+    # Override the production command to run the dev server with hot-reloading.
+    command: [ "python", "run.py" ]
     volumes:
+      # Mount the source code into the container.
       - ./LGS_Stock_Backend:/app
-    # Override the command to run Flask in debug mode for hot-reloading.
-    command: [ "flask", "run", "--host=0.0.0.0", "--port=5000", "--debug" ]
-    # Map the debug port to the host so you can potentially attach a debugger.
     ports:
+      # Expose the backend port for direct access/debugging.
       - "5000:5000"
+    environment:
+      <<: *common-backend-env
 
   frontend:
     # Override the build context to use the development Dockerfile.
@@ -20,6 +26,41 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./frontend:/app
-      # This is an anonymous volume to prevent node_modules on the host
-      # from overwriting the container's node_modules.
+      # Anonymous volume to prevent host node_modules from overwriting the container's.
       - /app/node_modules
+    ports:
+      # Override the production port mapping.
+      # Expose the Vite dev server's port (5173) to the host.
+      - "5173:5173"
+
+  worker:
+    volumes:
+      - ./LGS_Stock_Backend:/app
+    environment:
+      <<: *common-backend-env
+
+  # --- Development-only services ---
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: lgs-stock-checker-dozzle-1
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9999:8080"
+    networks:
+      - stock-net
+
+  rq-dashboard:
+    image: eoranged/rq-dashboard:latest
+    container_name: lgs-stock-checker-rq-dashboard-1
+    restart: unless-stopped
+    ports:
+      - "9181:9181"
+    environment:
+      RQ_DASHBOARD_REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      - redis
+    networks:
+      - stock-net

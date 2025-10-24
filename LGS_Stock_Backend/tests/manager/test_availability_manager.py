@@ -54,14 +54,14 @@ def test_get_card_availability_with_cached_data(
     mock_database.get_user_stores.return_value = [mock_store]
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
     cached_data = [{"price": "1.00"}]
-    mock_storage.get_availability_data.return_value = cached_data
+    mock_storage.get_cached_availability_data.return_value = cached_data
     mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
     cached_results = get_cached_availability_or_trigger_check(username)
 
     # Assert
-    mock_storage.get_availability_data.assert_called_once_with("test-store", "Test Card")
+    mock_storage.get_cached_availability_data.assert_called_once_with("test-store", "Test Card")
     assert cached_results == {"test-store": {"Test Card": cached_data}} # noqa
 
 
@@ -82,14 +82,14 @@ def test_get_card_availability_with_no_cached_data(
     mock_database.get_user_stores.return_value = [mock_store]
     mock_card = MockCard("Test Card")
     mock_user_manager.load_card_list.return_value = [mock_card]
-    mock_storage.get_availability_data.return_value = None
+    mock_storage.get_cached_availability_data.return_value = None
     mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
     cached_results = get_cached_availability_or_trigger_check(username)
 
     # Assert
-    mock_storage.get_availability_data.assert_called_once_with("test-store", "Test Card")
+    mock_storage.get_cached_availability_data.assert_called_once_with("test-store", "Test Card")
     mock_queue_task.assert_called_once_with(
         task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD,
         username,
@@ -134,6 +134,6 @@ def test_get_card_availability_handles_invalid_store(
     mock_user_manager.load_card_list.assert_called_once_with(username)
 
     # Verify that get_availability_data was only called for the one valid store
-    mock_storage.get_availability_data.assert_called_once_with(
-        "valid-store", "Test Card"
+    mock_storage.get_cached_availability_data.assert_called_once_with(
+        "valid-store", "Test Card",
     )

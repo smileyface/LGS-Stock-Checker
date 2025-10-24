@@ -20,19 +20,22 @@ def log_and_emit(level: str, message: str, room: str = None):
         socketio.emit("server_log", payload)
 
 
-def emit_from_worker(event: str, data: dict, room: str):
+def emit_from_worker(event: str, data: dict, room: str = None):
     """
     Allows a background worker (which doesn't have the Flask app context)
     to emit a Socket.IO event to clients via the Redis message queue.
+    If 'room' is None, it's a broadcast message (e.g., to the server itself).
     """
+    target = f"to room '{room}'" if room else "as a broadcast"
+    logger.info(f"📢 Worker emitting event '{event}' {target} via Redis.")
     try:
         # Create a new SocketIO instance that only knows about the message queue.
         # This is the correct way for external processes to publish events.
         external_socketio = SocketIO(message_queue=REDIS_URL)
         external_socketio.emit(event, data, room=room)
-        logger.info(f"📢 Worker dispatched event '{event}' to room '{room}' via Redis.")
+        logger.info(f"📢 Worker dispatched event '{event}' {target} via Redis.")
     except Exception as e:
-        logger.error(f"❌ Worker failed to dispatch event '{event}' to room '{room}': {e}")
+        logger.error(f"❌ Worker failed to dispatch event '{event}' {target}: {e}")
 
 
 def emit_card_availability_data(username: str, store_slug: str, card_name: str, items: list):

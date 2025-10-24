@@ -1,30 +1,38 @@
-# Stage 1: Dependencies ("deps")
-# This stage installs npm dependencies and is cached as a separate layer.
-# It only rebuilds when package.json or package-lock.json changes.
-FROM node:18-alpine AS deps
+# -----------------------------------------------------------------------------
+# Stage 1: Base - Install all dependencies
+# -----------------------------------------------------------------------------
+# This stage installs both production and development dependencies.
+# It's used as a foundation for both the 'test' and 'builder' stages.
+FROM node:20-alpine as base
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Stage 2: Development ("development-stage")
-# This stage uses the pre-installed dependencies from 'deps' and runs the dev server.
-FROM deps AS development-stage
+# -----------------------------------------------------------------------------
+# Stage 2: Test - Run frontend tests
+# -----------------------------------------------------------------------------
+# This stage copies the source code and runs the test suite.
+# The `deploy.sh` script will target this stage to verify code quality.
+FROM base as test
+WORKDIR /app
 COPY . .
-EXPOSE 5173
-CMD ["npm", "run", "dev"]
+# This command assumes your tests are configured to run via `npm test`.
+# If the tests fail, the Docker build will stop here.
+RUN npm test
 
-# Stage 3: Build ("build-stage")
-# This stage uses the pre-installed dependencies from 'deps' and builds the static assets.
-FROM deps AS build-stage
+# -----------------------------------------------------------------------------
+# Stage 3: Builder - Create the production build
+# -----------------------------------------------------------------------------
+FROM base as builder
+WORKDIR /app
 COPY . .
 RUN npm run build
 
-# Stage 4: Production ("production-stage")
-# This is a minimal nginx image that serves the static files built in the previous stage.
-FROM nginx:stable-alpine AS production-stage
-# Copy the built Vue app from the build-stage
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-# Copy our custom Nginx configuration that includes the reverse proxy
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+# -----------------------------------------------------------------------------
+# Stage 4: Production - Serve the built assets with Nginx
+# -----------------------------------------------------------------------------
+FROM nginx:1.25-alpine as production
+COPY --from=builder /app/dist /usr/share/nginx/html
+# You can add a custom nginx.conf here if needed
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

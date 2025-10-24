@@ -1,16 +1,14 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import StaticPool
 
 from utility import logger
 from .models.orm_models import Store, Base
-from .session_manager import db_query
+from .session_manager import db_query, init_session
 from managers.store_manager.stores import STORE_REGISTRY
 
 # These will be initialized by the app factory or test setup.
 engine = None
-SessionLocal = None
 
 def initialize_database(database_url: str, for_testing: bool = False):
     """
@@ -18,32 +16,31 @@ def initialize_database(database_url: str, for_testing: bool = False):
     In testing, uses a StaticPool to ensure a single connection for in-memory DB.
     """
 
-    logger.info(f"Initalizing database with URL: {database_url}")
-    global engine, SessionLocal
+    global engine
 
     if engine:
         # Avoid re-initialization.
+        logger.info("⛃ Database already initialized. Skipping.")
         return
 
-    if for_testing:
-        engine = create_engine(
-            database_url,
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-        )
-    else:
-        engine = create_engine(database_url)
+    logger.info(f"⛃ Initializing database with URL: {database_url}")
+    try:
+        if for_testing:
+            engine = create_engine(
+                database_url,
+                connect_args={"check_same_thread": False},
+                poolclass=StaticPool,
+            )
+        else:
+            engine = create_engine(database_url)
+    except Exception as e:
+        logger.error(f"❌ Error initializing database: {e}")
+        return
         
-    SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False))
-
+    init_session(engine)
+    logger.info("🔄 Creating database tables...")
     Base.metadata.create_all(bind=get_engine())
 
-
-def get_session():
-    """Provides a database session from the session factory."""
-    if not SessionLocal:
-        raise RuntimeError("Database not initialized. Call initialize_database() first.")
-    return SessionLocal()
 
 def get_engine():
     """Provides the database engine."""
@@ -58,7 +55,6 @@ def startup_database():
     It uses local imports to avoid circular dependencies between the data layer
     and the manager layer.
     """
-
 
     @db_query
     def _sync(session):

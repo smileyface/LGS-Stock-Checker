@@ -37,7 +37,7 @@ def scrape_all_stores(card_name: str) -> Dict[str, List[Dict]]:
     return availability
 
 
-def store_list(store_name: str = None):
+def get_store(store_name: str = None):
     """Returns a specific store implementation or a list of all stores."""
     if store_name:
         return STORE_REGISTRY.get(store_name)

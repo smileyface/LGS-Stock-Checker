@@ -7,34 +7,40 @@ from tasks.card_availability_tasks import (
 )
 
 
-def test_update_availability_single_card_success(
-    mock_store, mock_cache_availability, mock_socket_emit
-):
+@pytest.fixture
+def mock_publish_worker_result(mocker):
+    """Mocks the redis_manager.publish_worker_result function."""
+    return mocker.patch("managers.redis_manager.publish_worker_result")
+
+
+def test_update_availability_single_card_success(mock_store, mock_publish_worker_result, mock_socket_emit):
     """
     GIVEN a card and store
     WHEN update_availability_single_card is called and finds available items
-    THEN it should fetch data, cache it, and emit a socket event.
+    THEN it should fetch data, publish the result to Redis, and emit socket events.
     """
     # Arrange
     username = "testuser"
     store_name = "test-store"
     card_data = {"card_name": "Sol Ring", "specifications": []}
-    
+    available_items = [{"price": 1.99, "condition": "NM"}]
+
     mock_store_instance = MagicMock()
-    mock_store_instance.fetch_card_availability.return_value = [{"price": 1.99, "condition": "NM"}]
-    mock_store.return_value = mock_store_instance
+    mock_store_instance.fetch_card_availability.return_value = available_items
+    mock_store.get_store.return_value = mock_store_instance
 
     # Act
     result = update_availability_single_card(username, store_name, card_data)
 
     # Assert
     assert result is True
-    mock_store.assert_called_once_with(store_name)
+    mock_store.get_store.assert_called_once_with(store_name)
     mock_store_instance.fetch_card_availability.assert_called_once_with("Sol Ring", [])
-    
-    # Verify caching
-    mock_cache_availability.assert_called_once_with(
-        store_name, "Sol Ring", [{"price": 1.99, "condition": "NM"}]
+
+    # Verify result publishing
+    mock_publish_worker_result.assert_called_once_with(
+        "worker-results",
+        {"type": "availability_result", "payload": {"store": store_name, "card": "Sol Ring", "items": available_items}},
     )
 
     # Verify socket emission
@@ -47,7 +53,7 @@ def test_update_availability_single_card_success(
                 "username": username,
                 "store": store_name,
                 "card": "Sol Ring",
-                "items": [{"price": 1.99, "condition": "NM"}],
+                "items": available_items,
             },
             room=username,
         ),
@@ -90,13 +96,11 @@ def test_update_all_tracked_cards_availability(mocker):
     assert mock_update_for_user.call_count == 2
 
 
-def test_update_availability_single_card_no_items_found(
-    mock_store, mock_cache_availability, mock_socket_emit
-):
+def test_update_availability_single_card_no_items_found(mock_store, mock_publish_worker_result, mock_socket_emit): # noqa
     """
     GIVEN a card and store
     WHEN update_availability_single_card finds no available items
-    THEN it should cache an empty list and emit both start and result events.
+    THEN it should publish an empty list and emit both start and result events.
     """
     # Arrange
     username = "testuser"
@@ -105,15 +109,16 @@ def test_update_availability_single_card_no_items_found(
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = []
-    mock_store.return_value = mock_store_instance
+    mock_store.get_store.return_value = mock_store_instance
 
     # Act
     result = update_availability_single_card(username, store_name, card_data)
 
     # Assert
     assert result is True
-    mock_cache_availability.assert_called_once_with(
-        store_name, "Obscure Card", []
+    mock_publish_worker_result.assert_called_once_with(
+        "worker-results",
+        {"type": "availability_result", "payload": {"store": store_name, "card": "Obscure Card", "items": []}}
     )
 
     # Verify socket emission still happens, but with an empty items list

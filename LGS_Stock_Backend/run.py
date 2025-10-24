@@ -1,122 +1,57 @@
 import os
 import logging
-from flask import Flask
-from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_login import LoginManager
-from flask_session import Session
-import redis
 
-login_manager = LoginManager()
+def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
 
-def create_app(config_name=None, override_config=None, skip_scheduler=False):
-    app = Flask(__name__)
+    from managers import flask_manager
+    app = flask_manager.initalize_flask_app(override_config, config_name)
+    flask_manager.login_manager_init(app)
+    flask_manager.register_blueprints(app)
 
-    if config_name is None:
-        config_name = os.getenv('FLASK_CONFIG', 'default')
-    
+    # --- Logger Configuration (MUST happen after config, before other imports) ---
+    if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
+        os.environ["LOG_LEVEL"] = "DEBUG"
+
     # --- Move imports inside the factory to prevent side effects ---
-    from settings import config
-    from routes import register_blueprints
-    from managers.socket_manager import socketio, register_socket_handlers
-    from managers.user_manager import load_user_by_id
-    from managers.redis_manager.redis_manager import REDIS_URL
-    from data.database.db_config import SessionLocal, initialize_database, startup_database
+    from managers import socket_manager
+    from managers import redis_manager
+    from managers import task_manager
+    from data import database
+    from utility import logger
 
-    # Import task modules to ensure they register themselves on startup.
-    import tasks.card_availability_tasks
-    import tasks.catalog_tasks
-    from tasks.scheduler_setup import schedule_recurring_tasks
+    task_manager.init_task_manager()
 
-    # Apply ProxyFix middleware to make the app aware of proxy headers.
-    # This is crucial for correct URL generation and security features when
-    # running behind a reverse proxy like Nginx in Docker.
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    socket_manager.configure_socket_io(app)
 
-    app.config.from_object(config[config_name])
-    if override_config:
-        app.config.update(override_config)
 
-    config[config_name].init_app(app)
+    # Use the provided database_url, or fall back to the environment variable.
+    # This allows tests to inject a different database URL.
+    db_url = database_url or os.environ.get("DATABASE_URL")
 
-    # --- Configure application-wide logging ---
-    # Set the log level from an environment variable, defaulting to INFO.
-    # If the app is in debug mode (via FLASK_CONFIG=development), force DEBUG level.
-    log_level_name = os.environ.get('LOG_LEVEL', 'INFO').upper()
-    if app.debug:
-        log_level_name = 'DEBUG'
-    
-    # Based on your log files, the custom logger is named 'LGS_Stock_Checker'.
-    # We get this specific logger and set its level. The handlers are assumed
-    # to be configured in the `utility.logger` module.
-    lgs_logger = logging.getLogger('LGS_Stock_Checker')
-    lgs_logger.setLevel(log_level_name)
-    lgs_logger.info(f"📝 Logger for 'LGS_Stock_Checker' set to level: {log_level_name}")
-    
-    # Initialize session management. The configuration (e.g., SESSION_TYPE)
-    # is now correctly loaded from the config object.
-    Session(app)
+    if db_url:
+        database.initialize_database(db_url)
+        # The startup_database function syncs stores, which requires tables to exist.
+        # In a test environment, tables are created by fixtures, so we skip this.
+        if config_name != "testing":
+            database.startup_database()
 
-    # --- Initialize Flask-Login ---
-    login_manager.init_app(app)
-    login_manager.user_loader(load_user_by_id)
-
-    # Register blueprints
-    register_blueprints(app)
-
-    # --- Configure CORS and SocketIO ---
-    cors_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000')
-
-    allowed_origins = [origin.strip() for origin in cors_origins_str.split(',')]
-    lgs_logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
-
-    message_queue_url = app.config.get("SOCKETIO_MESSAGE_QUEUE", REDIS_URL)
-
-    # Initialize SocketIO with the app and specific configurations
-    socketio.init_app(
-        app,
-        message_queue=message_queue_url,
-        cors_allowed_origins=allowed_origins,
-        async_mode="eventlet",
-        engineio_logger=False  # Set to True for detailed Engine.IO debugging
-    )
-    # Discover and register all socket event handlers
-    register_socket_handlers()
-    
-    database_url = os.environ.get("DATABASE_URL")
-    if database_url:
-        initialize_database(database_url)
-        startup_database()
-
-    # Schedule recurring background jobs, but allow skipping for worker processes.
-    if not skip_scheduler:
-        schedule_recurring_tasks()
-        
     @app.teardown_appcontext
     def shutdown_session(exception=None):
-        """Remove the database session after each request to prevent leaks."""
-        # This check prevents an error if the app is run without a DATABASE_URL,
-        # in which case SessionLocal would be None.
-        if SessionLocal:
-            SessionLocal.remove()
+        database.remove_session()
 
-    @app.route('/api/health')
-    def health_check():
-        """
-        Simple health check endpoint that returns a 200 OK response.
-        Used by Docker's healthcheck to verify the application is running.
-        """
-        # In a more complex app, you might check DB/Redis connections here.
-        return "OK", 200
-
+    logger.info("✅ Flask app created successfully")
     return app
 
-# This block is only for running the local development server directly
+# This block is only for running the local development server directly via `python run.py`.
+# It is the entrypoint used by `docker-compose.dev.yml`.
 if __name__ == "__main__":
     # Monkey patch for the development server when run directly.
     # This must be done before other imports that might initialize sockets.
     import eventlet
     eventlet.monkey_patch()
 
-    app = create_app('development')
-    # The host and port are passed here for the dev server run
-    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
+    from managers import socket_manager
+
+    app = create_app("development")
+    # The host and port are passed here for the dev server run.
+    socket_manager.socketio.run(app, debug=True, host="0.0.0.0", port=5000)

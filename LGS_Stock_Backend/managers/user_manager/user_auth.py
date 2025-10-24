@@ -8,7 +8,6 @@ from typing import Optional
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from data import database
-from data.database.db_config import SessionLocal
 from data.database.schema.user_schema import UserDBSchema
 from data.database.models.orm_models import User
 from utility import logger

@@ -124,7 +124,7 @@ describe('useSocket Composable', () => {
 
         expect(availabilityMap.value['Lightning Bolt']).toEqual({
             status: 'searching',
-            stores: [],
+            items: [],
         });
     });
 
@@ -140,7 +140,8 @@ describe('useSocket Composable', () => {
 
         expect(availabilityMap.value['Brainstorm']).toEqual({
             status: 'completed',
-            stores: ['StoreA'],
+            items: [{ price: 1.99 }],
+            store: 'StoreA',
         });
     });
 

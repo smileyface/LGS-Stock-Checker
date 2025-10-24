@@ -16,6 +16,9 @@ def test_anonymous_websocket_connection_lifecycle(app, client, mocker):
     # Arrange: Spy on the logger within the socket_connections module
     mock_logger = mocker.patch("managers.socket_manager.socket_connections.logger")
 
+    # Ensure a clean session state by logging out any pre-existing user.
+    client.post("/api/logout")
+
     # Act: Create a test client. This automatically triggers the 'connect' event.
     test_ws_client = socketio.test_client(app, flask_test_client=client)
 

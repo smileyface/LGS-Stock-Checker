@@ -1,7 +1,12 @@
 <template>
     <BaseLayout :title="pageTitle">
         <AddCardModal v-if="isAddModalVisible" @save-card="saveCard" @close="isAddModalVisible = false" />
-        <EditCardModal v-if="cardToEdit" :card-to-edit="cardToEdit" ref="editCardModalRef" @update-card="updateCard" />
+        <EditCardModal v-if="cardToEdit" :card-to-edit="cardToEdit" ref="editCardModalRef" @update-card="updateCard" /> 
+        <InStockModal 
+            ref="inStockModalRef"
+            :card-name="selectedCardForStock"
+            :items="availableItemsForModal"
+        />
         <div class="container mt-4">
             <h1>Dashboard</h1>
             <p>Welcome, <strong>{{ username }}</strong>!</p>
@@ -18,7 +23,7 @@
                         <th>Available</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody @dblclick="handleTableDoubleClick">
                     <tr v-for="card in trackedCards" :key="card.card_name">
                         <td>
                             <div class="action-buttons">
@@ -55,12 +60,19 @@ import { ref, onMounted, computed, nextTick } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
 import AddCardModal from '../components/AddCardModal.vue';
 import EditCardModal from '../components/EditCardModal.vue';
+import InStockModal from '../components/InStockModal.vue';
 import { authStore } from '../stores/auth';
 import { useSocket } from '../composables/useSocket';
 
 const username = computed(() => authStore.user?.username || '');
 const pageTitle = ref('Dashboard');
 const allStores = computed(() => authStore.user?.stores || []);
+
+// --- Modal State ---
+const inStockModalRef = ref(null);
+const selectedCardForStock = ref('');
+const availableItemsForModal = ref([]);
+
 const editCardModalRef = ref(null);
 const cardToEdit = ref(null);
 const isAddModalVisible = ref(false);
@@ -71,25 +83,27 @@ const {
     availabilityMap, 
     deleteCard, 
     saveCard, 
-    updateCard 
+    updateCard,
+    getStockData
 } = useSocket();
 
 function renderAvailability(cardName) {
     const availability = availabilityMap.value[cardName];
 
-    if (!availability || availability.status === 'searching') {
+    // 1. Explicitly check for 'searching' status
+    if (availability && availability.status === 'searching') {
         return `<span class="badge bg-info text-dark d-inline-flex align-items-center">
                     <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                     Searching</span>`;
     }
 
-    // If the check is complete and the stores array has items, it's available.
-    if (availability.stores && availability.stores.length > 0) {
-        return '<span class="badge bg-success">Available</span>';
+    // 2. Check for 'Available' status
+    if (availability && availability.status === 'completed' && availability.items && availability.items.length > 0) {
+        return `<span class="badge bg-success available-badge" style="cursor: pointer;" data-card-name="${cardName}">Available</span>`;
     }
 
-    // Otherwise, it's not available.
-        return '<span class="badge bg-secondary">Not Available</span>';
+    // 3. Default to 'Not Available' for all other cases (e.g., not yet searched, or completed with no items)
+    return '<span class="badge bg-secondary">Not Available</span>';
 }
 
 function editCard(card) {
@@ -99,6 +113,30 @@ function editCard(card) {
     nextTick(() => {
         editCardModalRef.value?.show();
     });
+}
+
+function showInStockModal(cardName) {
+    console.log(`🖱️ Opening in-stock modal for: ${cardName}`);
+    const availability = availabilityMap.value[cardName];
+    selectedCardForStock.value = cardName;
+    availableItemsForModal.value = availability?.items || [];
+    nextTick(() => {
+        inStockModalRef.value?.show();
+    });
+}
+
+function handleTableDoubleClick(event) {
+    // Check if the clicked element (or its parent) is an 'available-badge'
+    console.log("handleTableDoubleClick")
+    const badge = event.target.closest('.available-badge');
+
+    if (badge) {
+        const cardName = badge.dataset.cardName;
+        if (cardName) {
+            getStockData(cardName);
+            showInStockModal(cardName);
+        }
+    }
 }
 </script>
 

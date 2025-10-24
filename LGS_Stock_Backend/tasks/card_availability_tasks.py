@@ -1,7 +1,8 @@
 import time
+import json
 
-from data import database, cache
-from managers import store_manager, user_manager, availability_manager, task_manager
+from data import database, cache # Keep cache for now, though not used in this file
+from managers import store_manager, user_manager, task_manager, redis_manager
 from managers.socket_manager import socket_emit
 from utility import logger
 
@@ -95,7 +96,7 @@ def update_availability_single_card(username, store_name, card):
     logger.info(f"📌 Task started: Updating availability for {card_name} at {store_name} (User: {username})")
 
     # Ensure store_name is in the correct format
-    store = store_manager.store_list(store_name)
+    store = store_manager.get_store(store_name)
     if not store:
         logger.warning(f"🚨 Store '{store_name}' is not configured or missing from STORE_REGISTRY. Task aborted.")
         return False
@@ -106,19 +107,26 @@ def update_availability_single_card(username, store_name, card):
     card_specs = card.get("specifications")
     available_items = store.fetch_card_availability(card_name, card_specs)
 
-    # Always cache the result, even if it's an empty list.
-    # This prevents re-checking unavailable cards until the cache expires.
-    availability_manager.cache_availability_data(store_name, card_name, available_items or [])
-    logger.info(f"✅ Cached availability results for {card_name} at {store_name}.")
-
     if available_items:
         logger.info(f"✅ Found {len(available_items)} listings for {card_name} at {store_name}. Caching and emitting.")
     else:
         logger.info(f"ℹ️ No available listings found for {card_name} at {store_name}. Caching empty result.")
-    
-    # Emit the result to the user, whether items were found or not.
-    # The front end will interpret an empty 'items' list as "Not Available".
+
+    # --- Report results back to the backend ---
+    # Publish the results to a dedicated Redis channel for the backend to process.
+    # This is the correct way for a worker to report back to the main application.
+    result_payload = {
+        "type": "availability_result",
+        "payload": {
+            "store": store_name,
+            "card": card_name,
+            "items": available_items or [],
+        }
+    }
+    redis_manager.publish_worker_result("worker-results", result_payload)
+
+    # --- Emit results to the client ---
+    # The worker still emits directly to the client for real-time UI updates.
     event_data = {"username": username, "store": store_name, "card": card_name, "items": available_items or []}
     socket_emit.emit_from_worker("card_availability_data", event_data, room=username)
-
     return True

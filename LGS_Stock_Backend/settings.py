@@ -37,7 +37,7 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     # Production specific configs go here
-    pass
+    DEBUG = False
 
 config = {
     'development': DevelopmentConfig,

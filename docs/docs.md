@@ -60,7 +60,7 @@ alt Username is available
    deactivate DB
    Backend-->>Client: 201 Created {message: "User created"}
 else Username already exists
-   Backend-->>Client: 400 Bad Request {error: "Username taken"}
+   Backend-->>Client: 409 Conflict {error: "Username already exists"}
 end
 deactivate Backend
 ```
@@ -107,15 +107,21 @@ sequenceDiagram
     participant Client as Frontend (Vue.js)
     participant Backend as Backend API (Flask)
     participant DB as Database
+    participant Redis as Redis Queue
 
     Client->>Backend: Emits "add_card" {card, amount, specs}
     activate Backend
     Backend->>DB: user_manager.add_user_card(...)
     activate DB
-    DB-->>Backend: Card added/updated
+    DB-->>Backend: Card added to DB
     deactivate DB
 
-    Note over Backend: After DB operation, send updated list
+    note over Backend: Requirement [5.1.6] - Trigger availability check for the new card
+    loop For each preferred store
+        Backend->>Redis: Enqueue "update_availability_single_card" task
+    end
+
+    note over Backend: After queuing tasks, send updated list to client
     Backend->>DB: user_manager.load_card_list(username)
     activate DB
     DB-->>Backend: Returns updated list of tracked cards
@@ -348,41 +354,33 @@ The frontend and backend communicate via two primary methods: a RESTful API for 
 
 | Method | Endpoint | Description |
 |--------|---------------------------------|------------------------------------------------------|
+| POST | /api/register | Creates a new user account. |
 | POST | /api/login | Authenticates a user and creates a session. |
 | POST | /api/logout | Logs out the current user. |
 | GET | /api/user_data | Retrieves the logged-in user's profile data. |
 | GET | /api/stores | Returns a list of all available store slugs. |
+| GET | /api/card_printings/{card_name} | Retrieves all valid printings for a given card name. |
 | POST | /api/account/update_username | Updates the logged-in user's username. |
 | POST | /api/account/update_password | Updates the logged-in user's password. |
 | POST | /api/account/update_stores | Updates the logged-in user's preferred stores. |
 
 #### Socket.IO Events
 
-| Event Name | Direction | Data Payload | Description |
-|------------------------------|-------------------|---------------------------------------------|--------------------------------------------------------------------------|
-| connect | Client -> Server | - | Establishes a WebSocket connection. |
-| get_cards | Client -> Server | - | Requests the user's full list of tracked cards. |
-| cards_data | Server -> Client | { "tracked_cards": [...] } | Sends the full list of tracked cards to the client. |
-| add_card | Client -> Server | { "card", "amount", "card_specs" } | Adds a new card to the user's tracked list. |
-| update_card | Client -> Server | { "card", "update_data": {...} } | Updates the amount or specifications of a tracked card. |
-| delete_card | Client -> Server | { "card": "..." } | Deletes a card from the user's tracked list. |
-| search_card_names | Client -> Server | { "query": "..." } | Requests a list of card names matching a partial search query. |
-| card_name_search_results | Server -> Client | { "card_names": [...] } | Returns a list of autocomplete suggestions for the card search. |
-| get_card_availability | Client -> Server | - | Triggers background tasks to check for card availability. |
-| availability_check_started | Server -> Client | { "store", "card" } | Notifies the UI that a check has begun for a specific item. |
-| get_card_printings | Client -> Server | { "card_name": "..." } | Requests all valid printings for a given card name. |
-| card_printings_data | Server -> Client | { "card_name", "printings": [...] } | Returns a list of all valid printings for a card. |
-| card_availability_data | Server -> Client | { "store", "card", "items": [...] } | Sends real-time availability results for a specific card and store. |
-| get_stock_data | Client -> Server | { "card_name": "..." } | Requests fresh, on-demand stock data for a single card. |
-| stock_data | Server -> Client | { "card_name", "items": [{"printing", "price", "store_name", "amount"}]} | Returns an aggregated list of all available items for a card from all preferred stores. |
-| delete_card | Client -> Server | { "card": "..." } | Deletes a card from the user's tracked list. |
-| search_card_names | Client -> Server | { "query": "..." } | Requests a list of card names matching a partial search query. |
-| card_name_search_results | Server -> Client | { "card_names": [...] } | Returns a list of autocomplete suggestions for the card search. |
-| get_card_availability | Client -> Server | - | Triggers background tasks to check for card availability. |
-| availability_check_started | Server -> Client | { "store", "card" } | Notifies the UI that a check has begun for a specific item. |
-| get_card_printings | Client -> Server | { "card_name": "..." } | Requests all valid printings for a given card name. |
-| card_printings_data | Server -> Client | { "card_name", "printings": [...] } | Returns a list of all valid printings for a card. |
-| card_availability_data | Server -> Client | { "store", "card", "items": [...] } | Sends real-time availability results for a specific card and store. |
-| get_stock_data | Client -> Server | { "card_name": "..." } | Requests fresh, on-demand stock data for a single card. |
-| stock_data | Server -> Client | { "card_name", "items": [{"printing", "price", "store", "amount"}]} | Returns an aggregated list of all available items for a card from all preferred stores. |
-| stock_data | Server -> Client | { "card_name", "items": [{"printing", "price", "store_name", "amount"}]} | Returns an aggregated list of all available items for a card from all preferred stores. |
+| Event Name                   | Direction        | Payload |Description|
+|------------------------------| ---------------- | --------|-----------|
+| **Client -> Server**         |                  |         |           |
+| `get_cards`                  | Client -> Server | None                                                                                                | Requests the user's full list of tracked cards.                                                                                             |
+| `add_card`                   | Client -> Server | `{ "card", "amount", "card_specs" }`                                                                | Adds a new card to the user's tracked list. Responds with `cards_data`.                                                                     |
+| `update_card`                | Client -> Server | `{ "card", "update_data": {...} }`                                                                  | Updates the amount or specifications of a tracked card. Responds with `cards_data`.                                                         |
+| `delete_card`                | Client -> Server | `{ "card": "..." }`                                                                                 | Deletes a card from the user's tracked list. Responds with `cards_data`.                                                                    |
+| `search_card_names`          | Client -> Server | `{ "query": "..." }`                                                                                | Requests a list of card names matching a partial search query.                                                                              |
+| `get_card_availability`      | Client -> Server | None                                                                                                | Triggers background tasks to check for card availability.                                                                                   |
+|                              |                  |                                                                                                     |                                                                                                                                             |
+| **Server -> Client**         |                  |                                                                                                     |                                                                                                                                             |
+| `cards_data`                 | Server -> Client | `{ "tracked_cards": [...] }`                                                                        | Sends the full list of tracked cards to the client.                                                                                         |
+| `card_name_search_results`   | Server -> Client | `{ "card_names": [...] }`                                                                           | Returns a list of autocomplete suggestions for the card search.                                                                             |
+| `availability_check_started` | Server -> Client | `{ "store", "card" }`                                                                               | Notifies the UI that a check has begun for a specific item.                                                                                 |
+| `card_printings_data`        | Server -> Client | `{ "card_name", "printings": [...] }`                                                                | Returns a list of all valid printings for a card.                                                                                           |
+| `card_availability_data`     | Server -> Client | `{ "store", "card", "items": [...] }`                                                               | Sends real-time availability results for a specific card and store.                                                                         |
+| `availability_changed`       | Server -> Client | `{ "card_name", "added": [...], "removed": [...], "updated": [...] }`                               | Notifies the client that the availability status of a tracked card has changed.                                                             |
+| `log`                        | Server -> Client | `{ "level", "message" }`                                                                            | Sends a log message to be displayed in the client's console or UI.                                                                          |

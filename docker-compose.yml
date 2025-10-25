@@ -26,7 +26,11 @@ services:
     # NOTE: Temporarily set to 1 worker to avoid multi-process initialization issues.
     # The long-term solution is to refactor app initialization using Gunicorn hooks (e.g., post_fork)
     # to create connections within each worker, rather than in the master process.
-    command: [ "gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "--timeout", "120", "server_entrypoint:app" ]
+    command: >
+      gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 --timeout 120 --log-level ${LOG_LEVEL:-info} --access-logfile /dev/null --error-logfile - server_entrypoint:app
+    ports:
+      # Map host port 5000 to container port 5000 for direct API access
+      - "5000:5000"
     depends_on:
       redis:
         condition: service_healthy
@@ -62,8 +66,8 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
-    container_name: lgs-stock-checker-worker-1
-    restart: unless-stopped
+    container_name: lgs-stock-checker-worker-1 # Add autoheal label
+    restart: on-failure
     # Allow the worker up to 130s to finish its current job before being killed.
     stop_grace_period: 130s
     command: [ "python", "worker_entrypoint.py" ]
@@ -75,6 +79,9 @@ services:
       db:
         condition: service_healthy
     environment: *common-backend-env
+    labels:
+      # This label tells autoheal to monitor this container
+      - "autoheal=true"
     networks:
       - stock-net
 
@@ -82,8 +89,8 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
-    container_name: lgs-stock-checker-scheduler-1
-    restart: unless-stopped
+    container_name: lgs-stock-checker-scheduler-1 # Add autoheal label
+    restart: on-failure
     # Give the scheduler time to unregister itself cleanly.
     stop_grace_period: 30s
     # Use the dedicated entrypoint to ensure tasks are registered before the scheduler starts.
@@ -95,8 +102,20 @@ services:
       redis:
         condition: service_healthy
     environment: *common-backend-env
+    labels:
+      # This label tells autoheal to monitor this container
+      - "autoheal=true"
     networks:
       - stock-net
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: lgs-stock-checker-autoheal-1
+    restart: always
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   redis:
     image: "redis:6.2-alpine" # Using a specific version is good practice

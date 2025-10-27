@@ -28,9 +28,7 @@ services:
     # to create connections within each worker, rather than in the master process.
     command: >
       gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 --timeout 120 --log-level ${LOG_LEVEL:-info} --access-logfile /dev/null --error-logfile - server_entrypoint:app
-    ports:
-      # Map host port 5000 to container port 5000 for direct API access
-      - "5000:5000"
+    ports: [ "5000:5000" ] # Map host port 5000 to container port 5000 for direct API access
     depends_on:
       redis:
         condition: service_healthy

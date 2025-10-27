@@ -4,7 +4,7 @@
 worker_class = 'eventlet'
 
 # Number of worker processes
-workers = 4
+workers = 1
 
 # The address to bind to
 bind = '0.0.0.0:5000'

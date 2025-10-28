@@ -1,4 +1,5 @@
-from managers.redis_manager import scheduler, queue
+from managers import redis_manager
+from managers import availability_manager
 from . import task_definitions
 from utility import logger
 
@@ -51,7 +52,7 @@ def queue_task(task_id: str, *args, **kwargs):
         return
 
     try:
-        queue.enqueue(func, *args, **kwargs)
+        redis_manager.queue.enqueue(func, *args, **kwargs)
         # Use func.__name__ to get the name of the function for logging.
         logger.info(f"📌 Queued task '{task_id}' ({func.__name__})")
     except Exception as e:
@@ -68,10 +69,10 @@ def trigger_scheduled_task(task_id: str):
     """
     logger.info(f"⚡ Attempting to trigger scheduled task: {task_id}")
     try:
-        job = scheduler.fetch_job(task_id)
+        job = redis_manager.scheduler.fetch_job(task_id)
         if job:
             # Enqueue the job immediately for a worker to pick up.
-            scheduler.enqueue_job(job)
+            redis_manager.scheduler.enqueue_job(job)
             logger.info(f"✅ Successfully triggered scheduled task: {task_id}")
         else:
             logger.warning(f"⚠️ Scheduled task '{task_id}' not found. Cannot trigger.")

@@ -1,7 +1,7 @@
 import time
 import json
 
-from data import database, cache # Keep cache for now, though not used in this file
+from data import database
 from managers import store_manager, user_manager, task_manager, redis_manager
 from managers.socket_manager import socket_emit
 from utility import logger

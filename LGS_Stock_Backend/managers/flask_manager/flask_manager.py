@@ -7,7 +7,6 @@ from flask import session
 from flask_session import Session
 
 from managers import user_manager
-from . import worker_listener
 
 from utility import logger
 
@@ -37,9 +36,6 @@ def initalize_flask_app(override_config=None, config_name=None):
     # is now correctly loaded from the config object.
     Session(app)
     logger.info("✅ Flask app configured successfully")
-
-    # Start the background thread to listen for worker results
-    worker_listener.start_worker_listener(app)
 
     return app
 

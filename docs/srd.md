@@ -117,6 +117,7 @@ These requirements define the core functionality of checking for card availabili
 - **[5.1.4]** The system shall notify the user in real-time via WebSockets when new availability data is found for a card they are tracking.
 - **[5.1.5]** The real-time availability data payload for a found item must include the store name, the price, and the specific printing details (set code, collector number, finish).
 - **[5.1.6]** The system shall automatically trigger an availability check for a newly added card against the user's preferred stores.
+- **[5.1.6.1]** When the client receives availability data, it shall intelligently merge the results: if an item already exists in the local state, its price should be updated; otherwise, the new item should be added. Items no longer present in the payload should be removed from the local state for that specific store.
 - **[5.1.7]** The system shall recheck card availability at regular intervals.
 
 ---

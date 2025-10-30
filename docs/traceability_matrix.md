@@ -2,6 +2,8 @@
 
 This document provides a mapping from the software requirements defined in `srd.md` to the specific implementation artifacts (code files, functions, etc.) within the project. This ensures that every requirement has a corresponding implementation and helps in assessing the impact of code changes.
 
+## 1. User Management (Backend)
+
 ## 1. User Management
 
 | Requirement ID | Requirement Description | Implementation Artifact(s) | Test Case(s) |

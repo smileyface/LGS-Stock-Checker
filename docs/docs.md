@@ -10,17 +10,19 @@ This project follows a modern client-server architecture with a decoupled fronte
 
 * **Backend (Flask API)**: The central server that handles business logic, authentication, and orchestrates operations. It exposes REST endpoints for standard CRUD operations and manages WebSocket connections. When a user requests an action that requires a background job (like checking card availability), the backend's primary role is to queue that task and immediately return a response to the client. It does not perform the heavy lifting itself.
 
-* **Database (PostgreSQL)**: The system's source of truth for all persistent data. This includes user accounts, tracked cards, store information, and the global card/set catalogs.
+* **Scheduler**: A dedicated process responsible for all task management. It schedules recurring jobs (e.g., daily catalog updates) and listens for on-demand task requests from the Backend via a Redis Pub/Sub channel. It is the *only* component that enqueues jobs into the Task Queue.
 
-* **Task Queue (Redis & RQ)**: A Redis-backed queue managed by the Python RQ (Redis Queue) library. The backend places long-running or intensive jobs (like web scraping) onto the queue to be processed asynchronously. This ensures the API remains responsive.
+* **Task Queue (Redis & RQ)**: A Redis-backed queue managed by the Python RQ (Redis Queue) library. The **Scheduler** places long-running or intensive jobs (like web scraping) onto the queue to be processed asynchronously. This ensures the API remains responsive.
 
-* **Worker (RQ Worker)**: A separate process that listens to the Task Queue. It picks up jobs as they are added and executes them. This is where tasks like scraping external store websites or updating catalogs from an external API actually happen. After completing a job, the worker can emit results directly back to the client via a worker-safe WebSocket emitter.
+* **Worker (RQ Worker)**: A separate process that listens to the Task Queue. It picks up jobs as they are added and executes them. This is where tasks like scraping external store websites or updating catalogs from an external API actually happen. After completing a job, the worker reports results back to the Backend via a Redis Pub/Sub channel.
 
 * **Cache (Redis)**: A Redis instance used for caching temporary data, most notably the results of web scraping for card availability. This prevents the system from repeatedly scraping the same store for the same card, reducing external requests and improving response time.
 
 ### Backend System Layers
 
 The backend application is structured into distinct layers to enforce a clear separation of concerns and a unidirectional data flow. This makes the system easier to test, maintain, and reason about.
+
+*   **Data Flow Rule**: The core data flow for asynchronous tasks is: **Backend -> Scheduler -> Worker -> Backend**. The Backend API should never enqueue jobs directly or perform heavy lifting.
 
 * **Handlers (Controller Layer)**: Located in `managers/socket_manager/socket_handlers.py`. This is the entry point for all client communication via WebSockets. Its responsibilities are to:
   * Receive incoming requests.
@@ -31,7 +33,7 @@ The backend application is structured into distinct layers to enforce a clear se
 * **Managers (Service Layer)**: Located in the `managers/` directory (e.g., `availability_manager`, `user_manager`, `task_manager`). This layer contains the core business logic of the application. Its responsibilities are to:
   * Orchestrate complex operations.
   * Interact with the Data Layer to fetch or persist information.
-  * Use the `task_manager` to queue background jobs by their string ID.
+  * Use the `task_manager` to publish commands for the **Scheduler** to queue background jobs.
   * **Data Flow Rule**: Managers should **never** import directly from the `tasks` or `handlers` layers.
 
 * **Tasks (Worker Layer)**: Located in the `tasks/` directory. These are the functions that are executed asynchronously by the RQ Workers. Their responsibilities are to:
@@ -106,22 +108,24 @@ When a user adds a new card, the following sequence of operations occurs across 
 sequenceDiagram
     participant Client as Frontend (Vue.js)
     participant Backend as Backend API (Flask)
+    participant Scheduler
     participant DB as Database
-    participant Redis as Redis Queue
+    participant Redis as Redis (Pub/Sub & Queue)
 
     Client->>Backend: Emits "add_card" {card, amount, specs}
     activate Backend
     Backend->>DB: user_manager.add_user_card(...)
     activate DB
-    DB-->>Backend: Card added to DB
+    DB-->>Backend: Card added
     deactivate DB
 
-    note over Backend: Requirement [5.1.6] - Trigger availability check for the new card
+    note over Backend, Scheduler: Requirement [5.1.6] - Backend publishes a command for the Scheduler
     loop For each preferred store
-        Backend->>Redis: Enqueue "update_availability_single_card" task
+        Backend->>Redis: Publishes "queue_task" command for "update_availability_single_card"
     end
+    Redis->>Scheduler: Receives command, enqueues task to RQ
 
-    note over Backend: After queuing tasks, send updated list to client
+    note over Backend: After publishing commands, send updated list to client
     Backend->>DB: user_manager.load_card_list(username)
     activate DB
     DB-->>Backend: Returns updated list of tracked cards

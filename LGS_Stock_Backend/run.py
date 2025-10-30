@@ -14,7 +14,7 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
 
     # --- Move imports inside the factory to prevent side effects ---
     from managers import socket_manager
-    from managers import redis_manager
+    from managers import flask_manager
     from managers import task_manager
     from data import database
     from utility import logger
@@ -22,6 +22,10 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     task_manager.init_task_manager()
 
     socket_manager.configure_socket_io(app)
+
+    
+    # Start the background thread to listen for worker results
+    flask_manager.start_worker_listener(app)
 
 
     # Use the provided database_url, or fall back to the environment variable.

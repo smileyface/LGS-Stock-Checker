@@ -194,23 +194,32 @@ Notifies the client that a background availability check has started for a speci
     });
     ```
 
+## Worker-to-Server Events
+
+These messages are sent to the central server from the federated workers.
+
 ### `card_availability_data`
 
 Sends real-time stock information for a specific card from a specific store. This is the result of a completed background check.
 
-* **Payload:** `Object` containing card details and an array of found items.
-* **Example Listener:**
+* **Payload:** 
+  `
+  [{
+    store: "store-slug",
+    card: "Card Name",
+    items: [ { price: 1.99, set: "M21", quantity: 4}, ... ]
+  } ...]
+  `  on find. `[]` on not found.
 
-    ```javascript
-    socket.on('card_availability_data', (data) => {
-      /*
-        data = {
-          store: "store-slug",
-          card: "Card Name",
-          items: [ { price: 1.99, set: "M21", quantity: 4, ... }, ... ]
-        }
-      */
-      console.log(`Received ${data.items.length} items for ${data.card} from ${data.store}.`);
-      // Update UI with availability status and details
-    });
-    ```
+## Server-to-Scheduler Events
+
+### `update_card_availability`
+
+Sends a command to the scheduler that adds an availability job on the queue for specified cards.
+
+* **Payload:** 
+  `
+  {
+    card: "Card Name"
+  }
+  `

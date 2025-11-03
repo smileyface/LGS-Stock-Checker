@@ -119,12 +119,16 @@ sequenceDiagram
     DB-->>Backend: Card added
     deactivate DB
 
-    note over Backend, Scheduler: Requirement [5.1.6] - Backend publishes a command for the Scheduler
+    note over Backend, Redis: Requirement [5.1.6] - Backend commands the Scheduler to check availability
     loop For each preferred store
-        Backend->>Redis: Publishes "queue_task" command for "update_availability_single_card"
+        Backend->>Redis: Publishes "availability_request" command to 'scheduler-requests' channel
     end
-    Redis->>Scheduler: Receives command, enqueues task to RQ
 
+    note over Redis, Scheduler: Scheduler's listener receives the command
+    Redis->>Scheduler: Receives "availability_request" command
+    activate Scheduler
+    Scheduler->>Redis: Enqueues "update_availability_single_card" task to RQ
+    deactivate Scheduler
     note over Backend: After publishing commands, send updated list to client
     Backend->>DB: user_manager.load_card_list(username)
     activate DB
@@ -189,7 +193,7 @@ sequenceDiagram
     deactivate ExternalStore
 
     Note over Worker, Server: 7. Worker publishes result to a Redis Pub/Sub channel
-    Worker->>Redis: Publishes "availability_result" to Pub/Sub
+    Worker->>Redis: Publishes "availability_result" to 'worker-results' channel
     Redis->>Server: Server (listening) receives result
     activate Server
     Server->>Redis: Caches the new data
@@ -252,17 +256,22 @@ sequenceDiagram
 
 participant Scheduler
 participant Redis as Redis Queue
-participant Worker as RQ Worker
+participant OrchestratorWorker as Worker (Orchestrator)
 participant DB as Database
-Scheduler->>Redis: Enqueues "update_all_tracked_cards_availability" task
-note over Redis, Worker: Worker polls the queue for jobs
-Redis->>Worker: Delivers task
-activate Worker
-Worker->>DB: Get all users and their tracked cards
-DB-->>Worker: List of (user, card, store) combinations
-note over Worker: For each combination, the worker enqueues a specific "update_availability_single_card" task. This distributes the load and re-uses the existing logic shown in the "Checking Card Availability" diagram.
-Worker->>Redis: Enqueue many "update_availability_single_card" tasks
-deactivate Worker 
+note over Scheduler: 1. Scheduler enqueues the top-level orchestration task
+Scheduler->>Redis: Enqueue "update_all_tracked_cards_availability"
+
+note over Redis, OrchestratorWorker: 2. A worker picks up the orchestration task
+Redis->>OrchestratorWorker: Delivers task
+activate OrchestratorWorker
+OrchestratorWorker->>DB: Get all users, their cards, and their stores
+DB-->>OrchestratorWorker: List of all (user, card, store) combinations
+
+note over OrchestratorWorker, Redis: 3. Worker commands the Scheduler to enqueue scrape jobs (Fan-out)
+loop For each (user, card, store) combination
+    OrchestratorWorker->>Redis: Publishes "availability_request" command to 'scheduler-requests' channel
+end
+deactivate OrchestratorWorker
 ```
 
 #### Background Card Catalog Update

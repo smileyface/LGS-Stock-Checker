@@ -4,7 +4,7 @@ from typing import Dict
 from . import availability_storage
 
 # Manager package imports
-from managers import user_manager
+from managers import user_manager, redis_manager
 from managers import task_manager, socket_manager
 
 # Project package imports
@@ -14,9 +14,14 @@ from utility import logger
 
 def check_availability(username: str) -> Dict[str, str]:
     """Manually triggers an availability update for a user's card list."""
-    logger.info(f"🔄 User {username} requested a manual availability refresh.")    
-    task_manager.queue_task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY, username)
-    return {"status": "queued", "message": "Availability update has been triggered."}
+    logger.info(f"🔄 User {username} requested a manual availability refresh.")
+    command = {
+        "type": "queue_all_availability_checks",
+        "payload": {"username": username}
+    }
+    redis_manager.publish_pubsub("scheduler-requests", command)
+    logger.info(f"📢 Published 'queue_all_availability_checks' command for user '{username}'.")
+    return {"status": "requested", "message": "Availability update has been requested."}
 
 
 def trigger_availability_check_for_card(username: str, card_data: dict, on_complete_callback: callable = None):
@@ -39,9 +44,14 @@ def trigger_availability_check_for_card(username: str, card_data: dict, on_compl
     for store in user_stores:
         if not store or not store.slug:
             continue
-        logger.debug(f"Queueing availability check for '{card_name}' at '{store.slug}'.")
-        # Queue the background task using the task manager
-        task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card_data)
+        logger.debug(f"Publishing command to check '{card_name}' at '{store.slug}'.")
+        command = {
+            "type": "availability_request",
+            "payload": {
+                "username": username, "store": store.slug, "card_data": card_data
+            }
+        }
+        redis_manager.publish_pubsub("scheduler-requests", command)
     
     # After queuing all tasks, call the callback if one was provided.
     # This is used to send the updated card list back to the user at the right time.
@@ -73,8 +83,15 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
                 cached_results.setdefault(store.slug, {})[card.card_name] = cached_data
             else:
                 logger.info(f"⏳ Cache miss for {card.card_name} at {store.name}. Queueing check.")
-                # Queue a task for only the specific card/store that missed the cache.
-                task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card.model_dump())
+                # Publish a command for the scheduler to queue the task.
+                command = {
+                    "type": "availability_request",
+                    "payload": {
+                        "username": username, "store": store.slug, "card_data": card.model_dump()
+                    }
+                }
+                redis_manager.publish_pubsub("scheduler-requests", command)
+
 
     return cached_results
 

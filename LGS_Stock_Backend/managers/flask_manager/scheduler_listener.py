@@ -1,10 +1,34 @@
 import threading
 import json
 import atexit
-from managers import redis_manager, task_manager
-from data import cache, database
+from managers import redis_manager, task_manager, user_manager
 from utility import logger
 
+def _handle_availability_request(payload: dict):
+    # Add validation to ensure the payload has the required keys.
+    required_keys = ["username", "store", "card_data"]
+    if not all(key in payload for key in required_keys):
+        logger.error(f"Invalid 'availability_request' payload. Missing required keys. Payload: {payload}")
+        return
+
+    # If validation passes, proceed to queue the task.
+    task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, payload["username"], payload["store"], payload["card_data"])
+
+def _handle_queue_all_availability_checks(payload: dict):
+    username = payload.get("username")
+    stores = user_manager.get_selected_stores(username)
+    user_cards = user_manager.load_card_list(username)
+
+    for store in stores:
+        for card in user_cards:
+            # Pass the full card data model, not just the name.
+            task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card.model_dump())
+
+
+HANDLER_MAP = {
+    "availability_request": _handle_availability_request,
+    "queue_all_availability_checks": _handle_queue_all_availability_checks,
+}
 
 class _Scheduler_Listener:
     """
@@ -46,10 +70,11 @@ class _Scheduler_Listener:
         try:
             for message in self.pubsub.listen():
                 data = json.loads(message["data"])
-                event_type = data.get("type")
-
-                if event_type == "availability_request":
-                    all_cards = database.get_all_tracked_cards()
+                type = data.get("type")
+                handler = HANDLER_MAP.get(type)
+                if handler:
+                    payload = data.get("payload", {})
+                    handler(payload)
                     
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,

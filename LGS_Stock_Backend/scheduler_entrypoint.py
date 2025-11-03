@@ -42,7 +42,7 @@ if __name__ == "__main__":
         from managers.flask_manager import scheduler_listener
         from utility import logger
 
-        scheduler_listener.start_scheduler_listener()
+        scheduler_listener.start_scheduler_listener(app)
         logger.info("🎧 Scheduler process is now up and listening for commands.")
         while True:
             time.sleep(1)

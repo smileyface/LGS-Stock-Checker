@@ -37,6 +37,7 @@ def register_task(task_id: str, func: callable):
     TASK_REGISTRY[task_id] = func
     logger.debug(f"✅ Registered task '{task_id}' to function '{func.__name__}'.")
 
+
 def queue_task(task_id: str, *args, **kwargs):
     """
     Queues a task by its ID to be executed by an RQ worker.

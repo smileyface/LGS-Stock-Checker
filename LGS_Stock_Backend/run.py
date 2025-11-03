@@ -25,7 +25,7 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
 
     
     # Start the background thread to listen for worker results
-    flask_manager.start_worker_listener(app)
+    flask_manager.start_server_listener(app)
 
 
     # Use the provided database_url, or fall back to the environment variable.

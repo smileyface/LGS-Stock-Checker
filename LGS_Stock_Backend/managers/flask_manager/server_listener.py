@@ -5,9 +5,25 @@ from managers import redis_manager, availability_manager
 from utility import logger
 
 
-class _WorkerListener:
+def _handle_availability_result(payload: dict):
     """
-    Manages a background thread to listen for results from workers on a Redis Pub/Sub channel.
+    Handler for processing 'availability_result' messages from workers.
+    Caches the availability data.
+    """
+    if all(k in payload for k in ["store", "card", "items"]):
+        logger.info(f"Received availability result for '{payload['card']}' at '{payload['store']}' from worker.")
+        availability_manager.cache_availability_data(payload['store'], payload['card'], payload['items'])
+    else:
+        logger.error(f"Invalid availability result payload: {payload}")
+
+# A map of event types to their corresponding handler functions.
+HANDLER_MAP = {
+    "availability_result": _handle_availability_result,
+}
+
+class _ServerListener:
+    """
+    Manages a background thread on the server to listen for results from workers on a Redis Pub/Sub channel.
     This is implemented as a singleton to ensure only one listener thread is active.
     """
     def __init__(self):
@@ -17,7 +33,7 @@ class _WorkerListener:
     def start(self):
         """Starts the listener thread if it's not already running."""
         if self.thread and self.thread.is_alive():
-            logger.warning("Worker listener thread is already running.")
+            logger.warning("Server listener thread is already running.")
             return
 
         self.thread = threading.Thread(target=self._listen, daemon=True)
@@ -27,41 +43,40 @@ class _WorkerListener:
 
     def stop(self):
         """Signals the listener thread to stop and cleans up resources."""
-        logger.info("🛑 Shutting down worker results listener...")
+        logger.info("🛑 Shutting down server listener...")
         if self.pubsub:
             # This will cause the loop in _listen() to exit.
             self.pubsub.close()
         if self.thread:
             # Wait for the thread to finish cleanly.
             self.thread.join(timeout=5)
-        logger.info("✅ Worker results listener shut down gracefully.")
+        logger.info("✅ Server listener shut down gracefully.")
 
     def _listen(self):
         """The actual listener function that runs in the background thread."""
         self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe("worker-results")
-        logger.info("🎧 Worker results listener started. Subscribed to 'worker-results' channel.")
+        logger.info("🎧 Server listener started. Subscribed to 'worker-results' channel.")
 
         try:
             for message in self.pubsub.listen():
                 data = json.loads(message["data"])
                 event_type = data.get("type")
-
-                if event_type == "availability_result":
+                handler = HANDLER_MAP.get(event_type)
+                
+                if handler:
                     payload = data.get("payload", {})
-                    if all(k in payload for k in ["store", "card", "items"]):
-                        logger.info(f"Received availability result for '{payload['card']}' at '{payload['store']}' from worker.")
-                        availability_manager.cache_availability_data(payload['store'], payload['card'], payload['items'])
-                    else:
-                        logger.error(f"Invalid availability result payload: {payload}")
+                    handler(payload)
+                else:
+                    logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel.")
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,
             # or if there's a connection error.
-            logger.info(f"Worker listener loop exiting: {e}")
+            logger.info(f"Server listener loop exiting: {e}")
 
 # Create a single instance of the listener.
-_listener_instance = _WorkerListener()
+_listener_instance = _ServerListener()
 
-def start_worker_listener(app):
-    """Public function to start the singleton worker listener."""
+def start_server_listener(app):
+    """Public function to start the singleton server listener."""
     _listener_instance.start()

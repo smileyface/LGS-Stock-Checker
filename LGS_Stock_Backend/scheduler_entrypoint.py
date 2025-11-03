@@ -1,4 +1,5 @@
 import os
+import time
 
 def create_app(config_name=None, override_config=None):
 
@@ -34,4 +35,14 @@ if __name__ == "__main__":
     eventlet.monkey_patch()
 
     app = create_app("development")
-    # The host and port are passed here for the dev server run.
+
+    # --- Start the listener for on-demand scheduler commands ---
+    # This must be done within an app context to access extensions.
+    with app.app_context():
+        from managers.flask_manager import scheduler_listener
+        from utility import logger
+
+        scheduler_listener.start_scheduler_listener()
+        logger.info("🎧 Scheduler process is now up and listening for commands.")
+        while True:
+            time.sleep(1)

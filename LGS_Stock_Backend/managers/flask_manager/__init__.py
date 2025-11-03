@@ -4,7 +4,8 @@ from .flask_manager import (
     register_blueprints,
     health_check,
 )
-from .worker_listener import start_worker_listener
+from .server_listener import start_server_listener
+from .scheduler_listener import start_scheduler_listener
 
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "login_manager_init",
     "register_blueprints",
     "health_check",
-    "start_worker_listener",
+    "start_server_listener",
+    "start_scheduler_listener",
 ]

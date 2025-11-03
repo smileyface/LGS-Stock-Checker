@@ -55,6 +55,7 @@ def publish_worker_result(channel: str, payload: dict):
     Publishes a JSON payload to a specified Redis channel using the job connection.
     This abstracts the direct Redis publish operation.
     """
+    logger.info(f"Publishing {payload} to {channel}")
     get_redis_connection().publish(channel, json.dumps(payload))
 
 def health_check():

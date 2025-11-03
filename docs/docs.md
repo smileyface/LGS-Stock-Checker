@@ -22,7 +22,7 @@ This project follows a modern client-server architecture with a decoupled fronte
 
 The backend application is structured into distinct layers to enforce a clear separation of concerns and a unidirectional data flow. This makes the system easier to test, maintain, and reason about.
 
-*   **Data Flow Rule**: The core data flow for asynchronous tasks is: **Backend -> Scheduler -> Worker -> Backend**. The Backend API should never enqueue jobs directly or perform heavy lifting.
+* **Data Flow Rule**: The core data flow for asynchronous tasks is: **Backend -> Scheduler -> Worker -> Backend**. The Backend API should never enqueue jobs directly or perform heavy lifting.
 
 * **Handlers (Controller Layer)**: Located in `managers/socket_manager/socket_handlers.py`. This is the entry point for all client communication via WebSockets. Its responsibilities are to:
   * Receive incoming requests.
@@ -143,57 +143,58 @@ When a check availability has been triggered.
 ```mermaid
 sequenceDiagram
     participant Client as Frontend (Vue.js)
-    participant Backend as Backend API (Flask)
-    participant Redis as Redis (Queue & Cache)
+    participant Server as Server (Backend API)
+    participant Scheduler
+    participant Redis as Redis (Pub/Sub, Queue, Cache)
     participant Worker as RQ Worker
-    participant DB as Database
     participant ExternalStore as External Store
-    
-    Note over Client, Backend: 1. Client requests availability update
-    Client->>Backend: Emit "get_card_availability"
-    activate Backend
-    
-    Note over Backend, Redis: 2. Backend checks cache for each (card, store) pair
+
+    Note over Client, Server: 1. Client requests availability update
+    Client->>Server: Emit "get_card_availability"
+    activate Server
+
+    Note over Server, Redis: 2. Server checks cache for each (card, store) pair
     loop For each (Card, Store) combination
-        Backend->>Redis: availability_storage.get_availability_data(store_slug, card_name)
+        Server->>Redis: availability_storage.get_availability_data(store_slug, card_name)
         activate Redis
-        Redis-->>Backend: Cached Listings (if found)
+        Redis-->>Server: Cached Listings (if found)
         deactivate Redis
-        
+
         alt Data is cached
-            Note over Backend, Client: 3a. Backend immediately sends cached data to client
-            Backend-->>Client: Emits "card_availability_data" {store, card, items}
+            Note over Server, Client: 3a. Server immediately sends cached data to client
+            Server-->>Client: Emits "card_availability_data" {store, card, items}
         else Data is not cached
-            Note over Backend, Client: 3b. Backend notifies client that a check has started
-            Backend-->>Client: Emits "availability_check_started" {store, card}
-            Note over Backend, Redis: 3c. Backend queues a task to fetch the data
-            Backend->>Redis: Enqueue Task "update_availability_single_card" {user, store_slug, card_data}
-            
+            Note over Server, Client: 3b. Server notifies client that a check has started
+            Server-->>Client: Emits "availability_check_started" {store, card}
+            Note over Server, Redis: 3c. Server publishes a command for the Scheduler
+            Server->>Redis: Publishes "queue_task" command for "update_availability_single_card"
         end
     end
-    deactivate Backend
-    
-    Note over Redis, Worker: 4. Worker picks up the queued task
+    deactivate Server
+
+    Note over Redis, Scheduler: 4. Scheduler receives command and enqueues task
+    Redis->>Scheduler: Receives "queue_task" command
+    activate Scheduler
+    Scheduler->>Redis: Enqueues "update_availability_single_card" task to RQ
+    deactivate Scheduler
+
+    Note over Redis, Worker: 5. Worker picks up the queued task
     Redis->>Worker: Pick up Task "update_availability_single_card"
     activate Worker
-    
-    Note over Worker, ExternalStore: 5. Worker scrapes the external store website
+
+    Note over Worker, ExternalStore: 6. Worker scrapes the external store website
     Worker->>ExternalStore: store_instance.fetch_card_availability(card_data)
     activate ExternalStore
     ExternalStore-->>Worker: Scraped Listings
     deactivate ExternalStore
-    
-    Note over Worker, Backend: 6. Worker publishes result to a Redis Pub/Sub channel
-    Worker->>Backend: Publishes "availability_result" to Redis Pub/Sub
-    activate Backend
-    Note over Backend: Backend (listening to Pub/Sub) processes the result
-    Backend->>Redis: Caches the new data
-    deactivate Backend
-    
-    Note over Worker, Client: 7. Worker also emits data directly to client for immediate UI update
-    Backend-->>Client: Emits "card_availability_data" {username, card_name, store_slug, items}
-    Note right of Client: Updates Specific Card's Row in UI
 
+    Note over Worker, Server: 7. Worker publishes result to a Redis Pub/Sub channel
+    Worker->>Redis: Publishes "availability_result" to Pub/Sub
+    Redis->>Server: Server (listening) receives result
+    activate Server
+    Server->>Redis: Caches the new data
+    Server-->>Client: Emits "card_availability_data" {store, card, items}
+    deactivate Server
     deactivate Worker
 ```
 

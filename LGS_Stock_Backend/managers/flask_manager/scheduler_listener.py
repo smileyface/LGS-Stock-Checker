@@ -16,6 +16,10 @@ def _handle_availability_request(payload: dict):
 
 def _handle_queue_all_availability_checks(payload: dict):
     username = payload.get("username")
+    if not username:
+        logger.error(f"Invalid 'queue_all_availability_checks' payload. Missing 'username'. Payload: {payload}")
+        return
+
     stores = user_manager.get_selected_stores(username)
     user_cards = user_manager.load_card_list(username)
 

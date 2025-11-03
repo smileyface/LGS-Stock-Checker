@@ -29,8 +29,6 @@ def emit_from_worker(event: str, data: dict, room: str = None):
     target = f"to room '{room}'" if room else "as a broadcast"
     logger.info(f"📢 Worker emitting event '{event}' {target} via Redis.")
     try:
-        # Create a new SocketIO instance that only knows about the message queue.
-        # This is the correct way for external processes to publish events.
         external_socketio = SocketIO(message_queue=REDIS_URL)
         external_socketio.emit(event, data, room=room)
         logger.info(f"📢 Worker dispatched event '{event}' {target} via Redis.")

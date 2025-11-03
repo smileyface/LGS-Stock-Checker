@@ -21,7 +21,7 @@ HANDLER_MAP = {
     "availability_result": _handle_availability_result,
 }
 
-class _ServerListener:
+class _Server_Listener:
     """
     Manages a background thread on the server to listen for results from workers on a Redis Pub/Sub channel.
     This is implemented as a singleton to ensure only one listener thread is active.
@@ -75,7 +75,7 @@ class _ServerListener:
             logger.info(f"Server listener loop exiting: {e}")
 
 # Create a single instance of the listener.
-_listener_instance = _ServerListener()
+_listener_instance = _Server_Listener()
 
 def start_server_listener(app):
     """Public function to start the singleton server listener."""

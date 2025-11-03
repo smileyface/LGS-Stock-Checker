@@ -59,60 +59,92 @@ class Authority_Games_Mesa_Arizona(Store):
 
         if product_listings:
             for product in product_listings:
-                name = self._get_name(product)
-                set_name = self._get_set(product)
                 product_link_tag = product.select_one("a[itemprop='url']")
                 product_url = product_link_tag.get("href") if product_link_tag else ""
                 full_product_url = urljoin(self.homepage, product_url)
-    
-                # --- New logic to fetch collector number ---
-                collector_number = None
-                if product_url:
-                    product_page_html = self._get_product_page(product_url)
-                    collector_number = self._parse_collector_number(product_page_html)
-    
-                variants = product.select("div.variant-row.in-stock")
-                for variant in variants:
-                    condition_element = variant.select_one(".variant-description")
-                    price_element = variant.select_one(".price")
-                    qty_element = variant.select_one(".variant-qty")
-    
-                    if not all([condition_element, price_element, qty_element]):
-                        continue
-    
-                    condition = condition_element.text.strip().split(",")[0]
-                    price_str = price_element.text.strip().replace("$", "")
-                    qty_text = qty_element.text.strip()
-                    quantity = int(qty_text.split(" ")[0])
-                    finish = "foil" if "foil" in condition_element.text.strip().lower() else "non-foil"
-    
-                    available_products.append({
-                        "name": name,
-                        "price": float(price_str),
-                        "stock": quantity,
-                        "condition": condition,
-                        "finish": finish,
-                        "set": set_name,
-                        "collector_number": collector_number,
+
+                # Fetch the product page once to get all static details.
+                product_page_html = self._get_product_page(product_url)
+                static_details = self._parse_product_page_details(product_page_html)
+
+                # Now, parse the variants from the search result to get price/stock.
+                variants = self._parse_variants(product)
+                for variant_details in variants:
+                    listing = {
                         "url": full_product_url,
-                    })
+                        **static_details,  # Add name, set, collector_number, etc.
+                        **variant_details,  # Add price, stock, condition
+                    }
+                    available_products.append(listing)
 
         return available_products
 
     def _get_product_listings(self, soup: BeautifulSoup) -> List[Any]:
         return soup.find_all('li', class_='product')
 
-    def _get_name(self, listing: BeautifulSoup) -> str:
-        name_element = listing.find('h4', class_='name')
-        name_element = name_element.get_text(strip=True) if name_element else "Unknown"
-        logger.debug(f"Name element: {name_element}")
-        return name_element
-
     def _get_set(self, row: BeautifulSoup) -> str:
         set_element = row.find('span', class_='category')
         set_name = set_element.get_text(strip=True) if set_element else 'Unknown'
         logger.debug(f"Set name: {set_name}")
         return set_code(set_name) or set_name
+
+    def _parse_product_page_details(self, html_content: Optional[str]) -> Dict[str, Any]:
+        """Parses the product detail page to get canonical card information."""
+        if not html_content:
+            return {}
+
+        soup = BeautifulSoup(html_content, "html.parser")
+        details_section = soup.find("div", class_="product-more-info")
+        if not details_section:
+            return {}
+
+        details = {}
+        
+        # Helper to extract text from a detail div
+        def get_detail(class_name):
+            div = details_section.find("div", class_=class_name)
+            if div and div.find("a"):
+                return div.find("a").text.strip()
+            return None
+
+        details["name"] = get_detail("name")
+        details["set"] = set_code(get_detail("set-name"))
+        card_number_raw = get_detail("card-number")
+        details["collector_number"] = card_number_raw.split("/")[0].strip() if card_number_raw else None
+        
+        return details
+
+    def _parse_variants(self, product: BeautifulSoup) -> List[Dict[str, Any]]:
+        """Parses all in-stock variants from a product listing."""
+        variants = []
+        for variant_row in product.select("div.variant-row.in-stock"):
+            try:
+                condition_element = variant_row.select_one(".variant-description")
+                price_element = variant_row.select_one(".price")
+                qty_element = variant_row.select_one(".variant-qty")
+
+                if not all([condition_element, price_element, qty_element]):
+                    continue
+
+                description = condition_element.text.strip()
+                condition = description.split(",")[0].strip()
+                # The finish is now parsed from the product page, so we only need condition here.
+
+                price_str = price_element.text.strip().replace("$", "").replace(",", "")
+                price = float(price_str)
+
+                qty_text = qty_element.text.strip()
+                quantity = int(qty_text.split(" ")[0])
+
+                variants.append({
+                    "price": price,
+                    "stock": quantity,
+                    "condition": condition,
+                })
+            except (ValueError, AttributeError) as e:
+                logger.error(f"Failed to parse a variant: {e}")
+                continue
+        return variants
 
     def __str__(self):
         return self.name

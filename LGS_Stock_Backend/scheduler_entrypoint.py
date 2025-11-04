@@ -40,9 +40,9 @@ if __name__ == "__main__":
     # This must be done within an app context to access extensions.
     with app.app_context():
         from managers.flask_manager import scheduler_listener
+        from managers import redis_manager
         from utility import logger
 
         scheduler_listener.start_scheduler_listener(app)
         logger.info("🎧 Scheduler process is now up and listening for commands.")
-        while True:
-            time.sleep(1)
+        redis_manager.scheduler.

@@ -12,7 +12,7 @@ class EmojiFormatter(logging.Formatter):
     LOG_FORMAT = "%(asctime)s - %(name)s - %(level_emoji)s - %(message)s"
 
     EMOJIS = {
-        "DEBUG": "🔍",
+        "DEBUG": "🐞",
         "INFO": "ℹ️",
         "WARNING": "⚠️",
         "ERROR": "❌",

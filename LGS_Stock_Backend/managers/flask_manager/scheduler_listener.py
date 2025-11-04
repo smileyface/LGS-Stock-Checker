@@ -71,15 +71,17 @@ class _Scheduler_Listener:
         self.pubsub.subscribe("scheduler-requests")
         logger.info("🎧 Scheduler results listener started. Subscribed to 'scheduler-requests' channel.")
 
-        try:
-            for message in self.pubsub.listen():
+        for message in self.pubsub.listen():
+            try:
+            
                 data = json.loads(message["data"])
-                type = data.get("type")
-                handler = HANDLER_MAP.get(type)
+                command_type = data.get("type")
+                handler = HANDLER_MAP.get(command_type)
                 if handler:
                     payload = data.get("payload", {})
-                    handler(payload)
-                    
+                    handler(payload)   
+             except json.JSONDecodeError as e:
+                    logger.error(f"Failed to decode JSON from scheduler-requests message: {e}. Message: {message.get('data')}")
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,
             # or if there's a connection error.

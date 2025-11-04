@@ -60,15 +60,18 @@ class _Server_Listener:
 
         try:
             for message in self.pubsub.listen():
-                data = json.loads(message["data"])
-                event_type = data.get("type")
-                handler = HANDLER_MAP.get(event_type)
-                
-                if handler:
-                    payload = data.get("payload", {})
-                    handler(payload)
-                else:
-                    logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel.")
+                try:
+                    data = json.loads(message["data"])
+                    event_type = data.get("type")
+                    handler = HANDLER_MAP.get(event_type)
+                    
+                    if handler:
+                        payload = data.get("payload", {})
+                        handler(payload)
+                    else:
+                        logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel.")
+                except Exception as e:
+                    logger.error(f"Error processing message in server listener: {e}", exc_info=True)
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,
             # or if there's a connection error.

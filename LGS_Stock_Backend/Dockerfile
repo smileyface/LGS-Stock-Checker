@@ -53,6 +53,5 @@ USER appuser
 # Expose the port the app runs on
 EXPOSE 5000
 
-# Run the app using gunicorn. It will find the 'app' object in the 'run.py' file.
-# The WORKDIR is /app, so gunicorn will find run.py there.
+# Run the app using gunicorn. It will find the 'app' object in the 'server_entrypoint.py' file.
 CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "server_entrypoint:app"]

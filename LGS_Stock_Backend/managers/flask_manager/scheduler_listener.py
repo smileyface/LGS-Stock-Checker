@@ -20,13 +20,8 @@ def _handle_queue_all_availability_checks(payload: dict):
         logger.error(f"Invalid 'queue_all_availability_checks' payload. Missing 'username'. Payload: {payload}")
         return
 
-    stores = user_manager.get_selected_stores(username)
-    user_cards = user_manager.load_card_list(username)
-
-    for store in stores:
-        for card in user_cards:
-            # Pass the full card data model, not just the name.
-            task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card.model_dump())
+    # Delegate the fan-out logic to the existing task to keep the listener non-blocking.
+    task_manager.queue_task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY, username)
 
 
 HANDLER_MAP = {

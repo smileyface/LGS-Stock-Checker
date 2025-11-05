@@ -20,8 +20,13 @@ def _handle_queue_all_availability_checks(payload: dict):
         logger.error(f"Invalid 'queue_all_availability_checks' payload. Missing 'username'. Payload: {payload}")
         return
 
-    # Delegate the fan-out logic to the existing task to keep the listener non-blocking.
-    task_manager.queue_task(task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY, username)
+    stores = user_manager.get_selected_stores(username)
+    user_cards = user_manager.load_card_list(username)
+
+    for store in stores:
+        for card in user_cards:
+            # Pass the full card data model, not just the name.
+            task_manager.queue_task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD, username, store.slug, card.model_dump())
 
 
 HANDLER_MAP = {
@@ -66,18 +71,19 @@ class _Scheduler_Listener:
         self.pubsub.subscribe("scheduler-requests")
         logger.info("🎧 Scheduler results listener started. Subscribed to 'scheduler-requests' channel.")
 
-        for message in self.pubsub.listen():
-            try:
-                data = json.loads(message["data"])
-                command_type = data.get("type")
-                handler = HANDLER_MAP.get(command_type)
-                if handler:
-                    payload = data.get("payload", {})
-                    handler(payload)
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to decode JSON from scheduler-requests message: {e}. Message: {message.get('data')}")
-            except Exception as e:
-                logger.error(f"Error processing message in scheduler listener: {e}", exc_info=True)
+        try:
+            for message in self.pubsub.listen():
+                try:
+                    data = json.loads(message["data"])
+                    command_type = data.get("type")
+                    handler = HANDLER_MAP.get(command_type)
+                    if handler:
+                        payload = data.get("payload", {})
+                        handler(payload)   
+                    else:
+                        logger.warning(f"No handler found for command type '{command_type}' on 'scheduler-requests' channel.")
+                except Exception as e:
+                        logger.error(f"Failed to decode JSON from scheduler-requests message: {e}. Message: {message.get('data')}")
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,
             # or if there's a connection error.

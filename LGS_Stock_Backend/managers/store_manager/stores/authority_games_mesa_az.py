@@ -64,6 +64,8 @@ class Authority_Games_Mesa_Arizona(Store):
                 # First, get the name from the search result to see if it's a match.
                 name_element = product.select_one("h4.name")
                 scraped_card_name = name_element.get("title", "").strip() if name_element else ""
+                #Handle treatment in the card name. i.e., "Ankh of Mishra - Retro Frame" or "Thundering Falls - Foil"
+                scraped_card_name = scraped_card_name.split(" - ")[0]
 
                 # If the name from the search result doesn't match, skip it.
                 # This prevents fetching product pages for irrelevant items (e.g., "Ankh" vs "Ankh of Mishra").
@@ -95,6 +97,7 @@ class Authority_Games_Mesa_Arizona(Store):
                     # Create a unique identifier tuple for deduplication
                     listing_id = (
                         listing.get("name"),
+                        listing.get("set"),
                         listing.get("collector_number"),
                         listing.get("finish"),
                         listing.get("price"),
@@ -108,12 +111,6 @@ class Authority_Games_Mesa_Arizona(Store):
 
     def _get_product_listings(self, soup: BeautifulSoup) -> List[Any]:
         return soup.find_all('li', class_='product')
-
-    def _get_set(self, row: BeautifulSoup) -> str:
-        set_element = row.find('span', class_='category')
-        set_name = set_element.get_text(strip=True) if set_element else 'Unknown'
-        logger.debug(f"Set name: {set_name}")
-        return set_code(set_name) or set_name
 
     def _parse_product_page_details(self, html_content: Optional[str]) -> Dict[str, Any]:
         """Parses the product detail page to get canonical card information."""

@@ -192,13 +192,15 @@ sequenceDiagram
     ExternalStore-->>Worker: Scraped Listings
     deactivate ExternalStore
 
-    Note over Worker, Server: 7. Worker publishes result to a Redis Pub/Sub channel
+    Note over Worker, Server: 7. Worker publishes result for the server to cache
     Worker->>Redis: Publishes "availability_result" to 'worker-results' channel
     Redis->>Server: Server (listening) receives result
     activate Server
     Server->>Redis: Caches the new data
-    Server-->>Client: Emits "card_availability_data" {store, card, items}
     deactivate Server
+
+    Note over Worker, Client: 8. Worker also emits data directly to client for immediate UI update
+    Worker-->>Client: Emits "card_availability_data" {store, card, items}
     deactivate Worker
 ```
 

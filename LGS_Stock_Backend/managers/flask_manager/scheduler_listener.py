@@ -68,15 +68,16 @@ class _Scheduler_Listener:
 
         for message in self.pubsub.listen():
             try:
-            
                 data = json.loads(message["data"])
                 command_type = data.get("type")
                 handler = HANDLER_MAP.get(command_type)
                 if handler:
                     payload = data.get("payload", {})
-                    handler(payload)   
-             except json.JSONDecodeError as e:
-                    logger.error(f"Failed to decode JSON from scheduler-requests message: {e}. Message: {message.get('data')}")
+                    handler(payload)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to decode JSON from scheduler-requests message: {e}. Message: {message.get('data')}")
+            except Exception as e:
+                logger.error(f"Error processing message in scheduler listener: {e}", exc_info=True)
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,
             # or if there's a connection error.

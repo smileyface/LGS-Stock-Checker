@@ -20,12 +20,6 @@ services:
       dockerfile: LGS_Stock_Backend/Dockerfile
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
-    # Allow Gunicorn up to 130s to finish requests and shut down gracefully.
-    stop_grace_period: 130s
-    environment: *common-backend-env
-    # NOTE: Temporarily set to 1 worker to avoid multi-process initialization issues.
-    # The long-term solution is to refactor app initialization using Gunicorn hooks (e.g., post_fork)
-    # to create connections within each worker, rather than in the master process.
     command: >
       gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 --timeout 120 --log-level ${LOG_LEVEL:-info} --access-logfile /dev/null --error-logfile - server_entrypoint:app
     depends_on:
@@ -33,6 +27,8 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+    stop_grace_period: 130s
+    environment: *common-backend-env
     # Add a healthcheck to ensure the Gunicorn server is responsive.
     healthcheck:
       # This check verifies that the Gunicorn process is running and responding to HTTP.

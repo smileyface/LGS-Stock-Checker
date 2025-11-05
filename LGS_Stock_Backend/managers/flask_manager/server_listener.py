@@ -32,7 +32,6 @@ class _Server_Listener:
 
 
     def start(self):
-        """The actual listener function that runs in the background thread."""
 
         """Starts the listener thread if it's not already running."""
         if self.thread and self.thread.is_alive():
@@ -56,6 +55,7 @@ class _Server_Listener:
         logger.info("✅ Server listener shut down gracefully.")
 
     def _listen(self):
+        """The actual listener function that runs in the background thread."""
         self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe("worker-results")
         logger.info("🎧 Server results listener started. Subscribed to 'worker-results' channel.")

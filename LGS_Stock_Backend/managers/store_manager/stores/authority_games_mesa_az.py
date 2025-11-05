@@ -123,7 +123,6 @@ class Authority_Games_Mesa_Arizona(Store):
         soup = BeautifulSoup(html_content, "html.parser")
         details_section = soup.find("div", class_="product-more-info")
         if not details_section:
-            logger.info("")
             return {}
 
         details = {}

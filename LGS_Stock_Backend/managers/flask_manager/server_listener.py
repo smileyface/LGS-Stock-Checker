@@ -53,11 +53,6 @@ class _Server_Listener:
         logger.info("✅ Server listener shut down gracefully.")
 
     def _listen(self):
-        """The actual listener function that runs in the background thread."""
-        self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe("worker-results")
-        logger.info("🎧 Server listener started. Subscribed to 'worker-results' channel.")
-
         try:
             for message in self.pubsub.listen():
                 try:
@@ -70,6 +65,8 @@ class _Server_Listener:
                         handler(payload)
                     else:
                         logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel.")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to decode JSON from worker-results message: {e}. Message: {message.get('data')}")
                 except Exception as e:
                     logger.error(f"Error processing message in server listener: {e}", exc_info=True)
         except Exception as e:

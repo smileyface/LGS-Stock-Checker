@@ -430,7 +430,3 @@ def is_valid_printing_specification(card_name: str, spec: Dict[str, Any], *, ses
         logger.warning(f"Validation failed for '{card_name}' with spec: {spec}")
 
     return exists
-
-@db_query
-def get_all_tracked_cards(session) -> List[str]:
-    return session.query(UserTrackedCards.card_name).all()

@@ -30,7 +30,12 @@ class _Server_Listener:
         self.thread = None
         self.pubsub = None
 
+
     def start(self):
+        """The actual listener function that runs in the background thread."""
+        self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
+        self.pubsub.subscribe("worker-results")
+        logger.info("🎧 Server results listener started. Subscribed to 'worker-results' channel.")
         """Starts the listener thread if it's not already running."""
         if self.thread and self.thread.is_alive():
             logger.warning("Server listener thread is already running.")
@@ -59,12 +64,12 @@ class _Server_Listener:
                     data = json.loads(message["data"])
                     event_type = data.get("type")
                     handler = HANDLER_MAP.get(event_type)
-                    
+                    logger.debug(f"Server recieved message from worker: {data}")
                     if handler:
                         payload = data.get("payload", {})
                         handler(payload)
                     else:
-                        logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel.")
+                        logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel. Payload: {data}")
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to decode JSON from worker-results message: {e}. Message: {message.get('data')}")
                 except Exception as e:
@@ -74,9 +79,8 @@ class _Server_Listener:
             # or if there's a connection error.
             logger.info(f"Server listener loop exiting: {e}")
 
-# Create a single instance of the listener.
 _listener_instance = _Server_Listener()
-
+# Create a single instance of the listener.
 def start_server_listener(app):
     """Public function to start the singleton server listener."""
     _listener_instance.start()

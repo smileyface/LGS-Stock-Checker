@@ -4,8 +4,8 @@ from typing import Dict
 from . import availability_storage
 
 # Manager package imports
-from managers import user_manager, redis_manager
-from managers import task_manager, socket_manager
+from managers import user_manager
+from managers import redis_manager
 
 # Project package imports
 from data import database

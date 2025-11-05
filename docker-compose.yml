@@ -4,7 +4,7 @@ x-common-backend-env:
   # The deploy.sh script sets and exports this variable.
   # Add the path where pip installs executables to the container's PATH
   &common-backend-env
-  LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
   REDIS_HOST: redis
   FLASK_CONFIG: production
   REDIS_PORT: 6379

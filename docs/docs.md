@@ -171,7 +171,7 @@ sequenceDiagram
             Note over Server, Client: 3b. Server notifies client that a check has started
             Server-->>Client: Emits "availability_check_started" {store, card}
             Note over Server, Redis: 3c. Server publishes a command for the Scheduler
-            Server->>Redis: Publishes "queue_task" command for "update_availability_single_card"
+            Server->>Redis: Publishes "availability_request" command to 'scheduler-requests' channel
         end
     end
     deactivate Server

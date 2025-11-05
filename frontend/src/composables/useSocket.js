@@ -12,7 +12,7 @@ const availabilityMap = ref({});
 // you might use an environment variable for this (e.g., import.meta.env.VITE_API_URL).
 // For this setup, we'll hardcode it to the backend's exposed port.
 const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-const socket = io(VITE_SOCKET_URL, {
+const socket = io({
     withCredentials: true,
     autoConnect: false // We will connect manually when the composable is first used.
 });

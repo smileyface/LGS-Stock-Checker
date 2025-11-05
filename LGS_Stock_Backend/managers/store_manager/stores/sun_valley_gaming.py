@@ -105,7 +105,7 @@ class SunValleyGaming(Store):
             return None
 
         details["name"] = get_detail("name")
-        details["set"] = set_code(get_detail("set-name"))
+        details["set_code"] = set_code(get_detail("set-name"))
         card_number_raw = get_detail("card-number")
         details["collector_number"] = card_number_raw.split("/")[0].strip() if card_number_raw else None
         finish_raw = get_detail("finish")

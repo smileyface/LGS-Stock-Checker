@@ -29,9 +29,12 @@ SEARCH_RESULTS_HTML = """
 
 # This is a simplified version of the individual product page HTML.
 PRODUCT_PAGE_HTML = """
-<div class="product-details">
-    <div class="card-number">
-        <a href="/products/search?collector_number=123">123/456</a>
+<div class="product-more-info">
+    <div class="name"><a>Test Card</a></div>
+    <div class="set-name"><a>Magic The Gathering: Test Set</a></div>
+    <div class="card-number"><a>123/456</a></div>
+    <div class="finish">
+        <!-- The presence or absence of this div determines the finish -->
     </div>
 </div>
 """

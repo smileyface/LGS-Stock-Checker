@@ -57,7 +57,6 @@ def test_get_card_availability_with_cached_data(
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
     cached_data = [{"price": "1.00"}]
     mock_storage.get_cached_availability_data.return_value = cached_data
-    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
     cached_results = get_cached_availability_or_trigger_check(username)
@@ -129,7 +128,6 @@ def test_get_card_availability_handles_invalid_store(
         mock_store_valid,
     ]
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
-    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
     get_cached_availability_or_trigger_check(username)

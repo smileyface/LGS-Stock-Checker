@@ -156,7 +156,9 @@ class Authority_Games_Mesa_Arizona(Store):
 
                 description = condition_element.text.strip()
                 condition = description.split(",")[0].strip()
-                # The finish is now parsed from the product page, so we only need condition here.
+                # The finish is parsed from the product page as a default, but we check
+                # the variant description here to see if it's a foil variant.
+                finish = "foil" if "foil" in description.lower() else "non-foil"
 
                 price_str = price_element.text.strip().replace("$", "").replace(",", "")
                 price = float(price_str)
@@ -165,6 +167,7 @@ class Authority_Games_Mesa_Arizona(Store):
                 quantity = int(qty_text.split(" ")[0])
 
                 variants.append({
+                    "finish": finish,
                     "price": price,
                     "stock": quantity,
                     "condition": condition,

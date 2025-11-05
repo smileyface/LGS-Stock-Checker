@@ -80,8 +80,7 @@ class _Scheduler_Listener:
                     if handler:
                         payload = data.get("payload", {})
                         handler(payload)   
-                    else:
-                        logger.warning(f"No handler found for command type '{command_type}' on 'scheduler-requests' channel.")
+                        raise ValueError(f"No handler found for command type '{command_type}' on 'scheduler-requests' channel.")
                 except Exception as e:
                     logger.error(f"Failed to process scheduler-requests message: {e}. Message: {message.get('data')}")
                     try:

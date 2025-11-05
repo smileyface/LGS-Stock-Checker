@@ -207,7 +207,7 @@ Sends real-time stock information for a specific card from a specific store. Thi
   [{
     store: "store-slug",
     card: "Card Name",
-    items: [ { price: 1.99, set: "M21", quantity: 4}, ... ]
+    items: [ { price: 1.99, set_code: "M21", stock: 4}, ... ]
   } ...]
   `  on find. `[]` on not found.
 

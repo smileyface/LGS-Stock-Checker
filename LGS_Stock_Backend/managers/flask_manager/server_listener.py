@@ -71,10 +71,13 @@ class _Server_Listener:
                         handler(payload)
                     else:
                         logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel. Payload: {data}")
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to decode JSON from worker-results message: {e}. Message: {message.get('data')}")
                 except Exception as e:
                     logger.error(f"Error processing message in server listener: {e}", exc_info=True)
+                    try:
+                        # Move the failed message to a dead-letter queue for worker results
+                        redis_manager.get_redis_connection().rpush('worker-results-dlq', message.get('data'))
+                    except Exception as dlq_e:
+                        logger.error(f"Failed to push message to DLQ: {dlq_e}")
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,
             # or if there's a connection error.

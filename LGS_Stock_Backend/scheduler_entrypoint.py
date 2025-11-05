@@ -45,4 +45,4 @@ if __name__ == "__main__":
 
         scheduler_listener.start_scheduler_listener(app)
         logger.info("🎧 Scheduler process is now up and listening for commands.")
-        redis_manager.scheduler.
+        redis_manager.scheduler.run()

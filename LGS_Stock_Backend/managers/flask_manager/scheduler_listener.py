@@ -83,11 +83,11 @@ class _Scheduler_Listener:
                         raise ValueError(f"No handler found for command type '{command_type}' on 'scheduler-requests' channel.")
                 except Exception as e:
                     logger.error(f"Failed to process scheduler-requests message: {e}. Message: {message.get('data')}")
-                try:
-                    # Move the failed message to a dead-letter queue
-                    redis_manager.get_redis_connection().rpush('scheduler-requests-dlq', message.get('data'))
-                except Exception as dlq_e:
-                    logger.error(f"Failed to push message to DLQ: {dlq_e}")
+                    try:
+                        # Move the failed message to a dead-letter queue
+                        redis_manager.get_redis_connection().rpush('scheduler-requests-dlq', message.get('data'))
+                    except Exception as dlq_e:
+                        logger.error(f"Failed to push message to DLQ: {dlq_e}")
                         
         except Exception as e:
             # This block will be reached when self.pubsub.close() is called,

@@ -9,8 +9,8 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 try:
-    from LGS_Stock_Backend.data.database.db_config import SessionLocal, engine
-    from LGS_Stock_Backend.data.database.models.orm_models import User, Base
+    from backend.data.database.db_config import SessionLocal, engine
+    from backend.data.database.models.orm_models import User, Base
 except ImportError as e:
     print("❌ Error: Could not import application modules.")
     print("Please ensure you run this script from the 'LGS_Stock_Backend' directory.")

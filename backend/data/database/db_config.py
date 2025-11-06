@@ -13,6 +13,7 @@ from sqlalchemy.pool import StaticPool
 
 from managers.store_manager.stores import STORE_REGISTRY
 from utility import logger
+
 from .models.orm_models import Store, Base
 from .session_manager import db_query, init_session
 

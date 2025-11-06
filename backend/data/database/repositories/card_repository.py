@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
-from utility import logger
+from ../..utility import logger
 
 # Internal package imports
 
@@ -79,7 +79,7 @@ def add_user_card(
 
     if tracked_card:
         logger.info(
-            f"🔄 User '{username}' is already tracking '{card_name}'. Adding new specifications if any."
+        f"🔄 User '{username}' is already tracking '{card_name}'. Adding new specifications if any."
         )
         # Amount is not updated here; use `update_user_tracked_card_preferences` for that.
     else:
@@ -154,7 +154,8 @@ def search_card_names(query: str, *, session, limit: int = 10) -> List[str]:
 @db_query
 def delete_user_card(username: str, card_name: str, *, session) -> None:
     """
-    Deletes a tracked card for a user, ensuring related specifications are also deleted via ORM cascades.
+    Deletes a tracked card for a user, ensuring related
+    specifications are also deleted via ORM cascades.
     """
     logger.info(
         f"🗑️ Attempting to delete tracked card '{card_name}' for user '{username}'."
@@ -389,6 +390,10 @@ def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
 
 @db_query
 def get_all_printings_map(*, session) -> Dict[tuple, int]:
+    """
+    Retrieves a map of (card_name, set_code, collector_number) to CardPrinting.id for all printings.
+    This is used to efficiently look up printing IDs during bulk operations.
+    """
 
     results = session.query(
         CardPrinting.id,
@@ -401,6 +406,9 @@ def get_all_printings_map(*, session) -> Dict[tuple, int]:
 
 @db_query
 def get_all_finishes_map(*, session) -> Dict[str, int]:
+    """
+    Retrieves a map of finish names to their IDs.
+    """
     results = session.query(Finish.id, Finish.name).all()
     return {r.name: r.id for r in results}
 

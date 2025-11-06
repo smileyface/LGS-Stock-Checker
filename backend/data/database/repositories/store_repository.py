@@ -1,7 +1,16 @@
+"""
+Store repository functions for managing store data in the database.
+
+Includes operations to fetch store metadata and retrieve all available stores.
+Utilizes internal schema models and database session management patterns.
+"""
+
 from typing import Optional
-from data.database import schema
-from data.database.session_manager import db_query
-from data.database.models.orm_models import Store
+
+# Internal package imports (relative to the data.database package)
+from .. import schema
+from ..session_manager import db_query
+from ..models.orm_models import Store
 
 
 @db_query

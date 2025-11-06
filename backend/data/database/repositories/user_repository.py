@@ -9,19 +9,22 @@ models and database session management patterns.
 from typing import List, Optional
 from sqlalchemy.orm import joinedload
 
+# Project package imports
+from utility import logger
+
 # Internal package imports (relative to the data.database package)
 from .. import schema
 from ..session_manager import db_query
-from ..models.orm_models import User, UserTrackedCards, Store, user_store_preferences
+from ..models.orm_models import User, UserTrackedCards, Store
 
-# Project package imports
-from utility import logger
+
 
 
 @db_query
 def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema]:
     """
-    Retrieve a user by username from the database, including sensitive fields, and return as a UserDBSchema instance.
+    Retrieve a user by username from the database, including sensitive fields,
+    and return as a UserDBSchema instance.
 
     Args:
         username (str): The unique username of the user to fetch.
@@ -51,7 +54,8 @@ def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema
 def get_user_orm_by_username(username: str, session) -> Optional[User]:
     """
     Retrieve a user ORM object by username from the database.
-    This is intended for internal use where the ORM object's methods are needed (e.g., authentication).
+    This is intended for internal use where the ORM object's
+    methods are needed (e.g., authentication).
 
     Args:
         username (str): The unique username of the user to fetch.
@@ -119,7 +123,8 @@ def add_user(
     logger.info(f"➕ Adding user '{username}' to the database.")
     new_user = User(username=username, password_hash=password_hash)
     session.add(new_user)
-    session.flush()  # Flush to assign an ID and ensure the object is persisted before the session closes.
+    # Flush to assign an ID and ensure the object is persisted before the session closes.
+    session.flush()
     logger.info(f"✅ User {username} added to the database")
     return schema.UserPublicSchema.model_validate(new_user)
 
@@ -181,7 +186,8 @@ def get_user_stores(username: str, session) -> List[schema.StoreSchema]:
         username (str): The username of the user.
 
     Returns:
-        List[schema.StoreSchema]: A list of StoreSchema objects representing the user's selected stores.
+        List[schema.StoreSchema]: A list of StoreSchema objects
+        representing the user's selected stores.
 
     Logs:
         Success or failure of the store retrieval operation.
@@ -305,7 +311,7 @@ def set_user_stores(username: str, store_slugs: List[str], session) -> None:
     else:
         valid_stores = []
         logger.info(
-            f"Empty store list provided for user '{username}'. All store preferences will be cleared."
+        f"Empty store list provided for user '{username}'. All store preferences will be cleared."
         )
 
     # The user's selected_stores relationship will now point to this new list.
@@ -321,7 +327,8 @@ def set_user_stores(username: str, store_slugs: List[str], session) -> None:
 @db_query
 def get_user_for_display(username: str, session) -> Optional[schema.UserPublicSchema]:
     """
-    Retrieve a user by username from the database, excluding sensitive fields, and return as a UserPublicSchema instance.
+    Retrieve a user by username from the database, excluding sensitive fields, 
+    and return as a UserPublicSchema instance.
 
     Args:
         username (str): The unique username of the user to fetch.
@@ -395,7 +402,8 @@ def get_tracking_users_for_cards(
         card_names (list[str]): A list of card names to check.
 
     Returns:
-        dict[str, list[schema.UserPublicSchema]]: A dictionary mapping each card name to a list of User schemas.
+        dict[str, list[schema.UserPublicSchema]]: A dictionary mapping 
+        each card name to a list of User schemas.
     """
     if not card_names:
         return {}

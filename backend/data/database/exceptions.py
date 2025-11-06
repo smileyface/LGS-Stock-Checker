@@ -3,5 +3,4 @@
 
 class InvalidSpecificationError(ValueError):
     """Raised when an invalid card specification is provided."""
-
     pass

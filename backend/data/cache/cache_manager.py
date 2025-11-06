@@ -2,6 +2,7 @@
 Provides a simplified interface for saving, loading, and deleting data from Redis.
 Handles both simple key-value pairs and hash fields, with JSON serialization.
 """
+
 import json
 from typing import Any, Dict, Optional
 import redis
@@ -9,7 +10,9 @@ from managers import redis_manager
 from utility import logger
 
 
-def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[int] = None) -> None:
+def save_data(
+    key: str, value: Any, field: Optional[str] = None, ex: Optional[int] = None
+) -> None:
     """
     Save data to Redis with optional expiration.
 
@@ -27,7 +30,9 @@ def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[in
         else:
             if ex:
                 redis_conn.set(key, value_json, ex=ex)  # ✅ Now supports expiration!
-                logger.info(f"💾 Saved data to Redis Key {key} with expiration: {ex} seconds")
+                logger.info(
+                    f"💾 Saved data to Redis Key {key} with expiration: {ex} seconds"
+                )
             else:
                 redis_conn.set(key, value_json)
                 logger.info(f"💾 Saved data to Redis Key {key} (No Expiration)")
@@ -47,7 +52,7 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
         if data:
             logger.info(f"🔍 Redis GET [{key}]: {len(data)} bytes")
             return json.loads(data)
-        
+
         logger.debug(f"⚠️ Redis key {key} is empty or missing.")
         return None
     except (redis.RedisError, TypeError, json.JSONDecodeError) as e:
@@ -56,9 +61,10 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
 
 
 def get_all_hash_fields(key: str) -> Dict[str, Any]:
-
     """Retrieve all fields and values from a Redis hash."""
-    redis_conn = redis_manager.get_redis_connection(decode_responses=False) # hgetall returns bytes
+    redis_conn = redis_manager.get_redis_connection(
+        decode_responses=False
+    )  # hgetall returns bytes
     data = redis_conn.hgetall(key)
     return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
 
@@ -79,6 +85,5 @@ def delete_data(key: str, field=None) -> None:
             redis_conn.delete(key)
             logger.info(f"🗑️ Deleted Redis Key {key}")
 
-    except Exception as e:
     except redis.RedisError as e:
         logger.error(f"❌ Error deleting data from Redis: {e}")

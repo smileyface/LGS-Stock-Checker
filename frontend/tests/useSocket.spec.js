@@ -47,7 +47,6 @@ function invokeSocketOn(eventName, data) {
 }
 
 describe('useSocket Composable', () => {
-    // 💡 FIX 2: Declare variables for the dynamically imported exports
     let trackedCards;
     let availabilityMap;
     let deleteCard;
@@ -56,8 +55,8 @@ describe('useSocket Composable', () => {
 
     // Variables that hold the module exports, which we must assign in beforeAll
     let socket;
-    let _internal;
     let useSocket;
+    let _internal;
 
     beforeAll(async () => {
         // 💡 FIX 3: DYNAMICALLY IMPORT the composable module AFTER the mock is stable.
@@ -65,8 +64,9 @@ describe('useSocket Composable', () => {
 
         // Assign module exports to our local variables
         useSocket = composableModule.useSocket;
-        socket = composableModule._socket;
+        socket = composableModule.socket;
         _internal = composableModule._internal;
+
 
         // Call useSocket() ONCE to execute the module-level singleton logic
         const composable = useSocket();
@@ -77,6 +77,7 @@ describe('useSocket Composable', () => {
         deleteCard = composable.deleteCard;
         saveCard = composable.saveCard;
         updateCard = composable.updateCard;
+
 
         // Safety delay
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -140,8 +141,7 @@ describe('useSocket Composable', () => {
 
         expect(availabilityMap.value['Brainstorm']).toEqual({
             status: 'completed',
-            items: [{ price: 1.99 }],
-            store: 'StoreA',
+            items: [{ price: 1.99, store_slug: 'StoreA' }]
         });
     });
 

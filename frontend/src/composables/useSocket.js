@@ -13,7 +13,7 @@ const availabilityMap = ref({});
 // For this setup, we'll hardcode it to the backend's exposed port.
 const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const socket = io({
-    withCredentials: true,
+    withCredentials: true, 
     autoConnect: false // We will connect manually when the composable is first used.
 });
 
@@ -57,34 +57,19 @@ socket.on('card_availability_data', (data) => {
         availabilityMap.value[cardName] = { status: 'completed', items: [] };
     }
 
-    // Get the existing items for this card.
-    const existingItems = availabilityMap.value[cardName].items;
+    // Get the existing items for this card, or an empty array if none.
+    const existingItems = availabilityMap.value[cardName]?.items || [];
 
-    // Create a Set of unique identifiers for the new items for efficient lookup.
-    const newItemKeys = new Set(newItems.map(item => `${item.set_code}-${item.collector_number}-${item.finish}`));
+    // 1. Filter out all items from the store that sent the update.
+    const otherStoreItems = existingItems.filter(
+        item => item.store_slug !== data.store
+    );
 
-    // 1. Filter out items from the same store that are no longer in stock.
-    const updatedItems = existingItems.filter(item => {
-        const itemKey = `${item.set_code}-${item.collector_number}-${item.finish}`;
-        // Keep the item if it's from a different store, OR if it's from the same store and is still in the new list.
-        return item.store_slug !== data.store || newItemKeys.has(itemKey);
-    });
+    // 2. Add the new items, ensuring they have the store slug for future identification.
+    const itemsForCurrentStore = newItems.map(item => ({ ...item, store_slug: data.store }));
 
-    // 2. Upsert (Update or Insert) new items.
-    newItems.forEach(newItem => {
-        const itemKey = `${newItem.set_code}-${newItem.collector_number}-${newItem.finish}`;
-        const existingItemIndex = updatedItems.findIndex(
-            item => item.store_slug === data.store && `${item.set_code}-${item.collector_number}-${item.finish}` === itemKey
-        );
-
-        if (existingItemIndex !== -1) {
-            // Update price of existing item.
-            updatedItems[existingItemIndex].price = newItem.price;
-        } else {
-            // Add new item, including the store slug for identification.
-            updatedItems.push({ ...newItem, store_slug: data.store });
-        }
-    });
+    // 3. Combine the lists.
+    const updatedItems = [...otherStoreItems, ...itemsForCurrentStore];
 
     availabilityMap.value[cardName].items = updatedItems;
     availabilityMap.value[cardName].status = 'completed';
@@ -155,3 +140,10 @@ export function useSocket() {
         getStockData
     };
 }
+
+// Export for testing purposes only
+export { socket };
+export const _internal = {
+    trackedCards,
+    availabilityMap,
+};

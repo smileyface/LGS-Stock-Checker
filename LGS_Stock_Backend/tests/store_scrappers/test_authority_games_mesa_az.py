@@ -132,7 +132,7 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
         self.assertEqual(listing1['stock'], 2)
         self.assertEqual(listing1['condition'], "Near Mint")
         self.assertEqual(listing1['finish'], "non-foil")
-        self.assertEqual(listing1['set'], "tst") # Assuming set_code maps 'Test Set' to 'tst'
+        self.assertEqual(listing1['set_code'], "tst") # Assuming set_code maps 'Test Set' to 'tst'
         self.assertEqual(listing1['collector_number'], "123")
         self.assertIn("/products/1234-test-card", listing1['url'])
 

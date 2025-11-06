@@ -1,14 +1,24 @@
-import os
-from sqlalchemy import create_engine
+"""
+Database configuration and initialization for the application.
+
+This module handles the setup of the SQLAlchemy engine and session factory,
+and ensures that the database schema is created and synchronized with the
+application's store registry. It provides functions for initializing the
+database connection, retrieving the engine, and performing startup tasks
+like populating the `stores` table.
+"""
+
+from sqlalchemy import create_engine, exc
 from sqlalchemy.pool import StaticPool
 
+from managers.store_manager.stores import STORE_REGISTRY
 from utility import logger
 from .models.orm_models import Store, Base
 from .session_manager import db_query, init_session
-from managers.store_manager.stores import STORE_REGISTRY
 
 # These will be initialized by the app factory or test setup.
-engine = None
+ENGINE = None
+
 
 def initialize_database(database_url: str, for_testing: bool = False):
     """
@@ -16,9 +26,10 @@ def initialize_database(database_url: str, for_testing: bool = False):
     In testing, uses a StaticPool to ensure a single connection for in-memory DB.
     """
 
-    global engine
+    # pylint: disable=global-statement
+    global ENGINE
 
-    if engine:
+    if ENGINE:
         # Avoid re-initialization.
         logger.info("⛃ Database already initialized. Skipping.")
         return
@@ -26,27 +37,30 @@ def initialize_database(database_url: str, for_testing: bool = False):
     logger.info(f"⛃ Initializing database with URL: {database_url}")
     try:
         if for_testing:
-            engine = create_engine(
+            ENGINE = create_engine(
                 database_url,
                 connect_args={"check_same_thread": False},
                 poolclass=StaticPool,
             )
         else:
-            engine = create_engine(database_url)
-    except Exception as e:
+            ENGINE = create_engine(database_url)
+    except exc.SQLAlchemyError as e:
         logger.error(f"❌ Error initializing database: {e}")
         return
-        
-    init_session(engine)
+
+    init_session(ENGINE)
     logger.info("🔄 Creating database tables...")
     Base.metadata.create_all(bind=get_engine())
 
 
 def get_engine():
     """Provides the database engine."""
-    if not engine:
-        raise RuntimeError("Database not initialized. Call initialize_database() first.")
-    return engine
+    if not ENGINE:
+        raise RuntimeError(
+            "Database not initialized. Call initialize_database() first."
+        )
+    return ENGINE
+
 
 def startup_database():
     """
@@ -60,11 +74,13 @@ def startup_database():
     def _sync(session):
         logger.info("🔄 Synchronizing stores from code registry to database...")
         db_store_slugs = {s[0] for s in session.query(Store.slug).all()}
-        
+
         new_stores_added = 0
         for slug, store_instance in STORE_REGISTRY.items():
             if slug not in db_store_slugs:
-                logger.info(f"➕ Adding new store to database: {store_instance.name} (slug: {slug})")
+                logger.info(
+                    f"➕ Adding new store to database: {store_instance.name} (slug: {slug})"
+                )
                 new_store = Store(
                     name=store_instance.name,
                     slug=store_instance.slug,
@@ -78,5 +94,8 @@ def startup_database():
         if new_stores_added > 0:
             logger.info(f"✅ Added {new_stores_added} new stores to the database.")
         else:
-            logger.info("✅ Database stores are already up-to-date with the code registry.")
-    _sync()
+            logger.info(
+                "✅ Database stores are already up-to-date with the code registry."
+            )
+
+    _sync(None)

@@ -363,6 +363,9 @@ def filter_existing_card_names(card_names: List[str], *, session) -> set:
 
 @db_query
 def bulk_add_finishes(finish_names: List[str], *, session):
+    """
+    Adds a list of finish names to the finishes table, ignoring any duplicates.
+    """
     if not finish_names:
         return
     stmt = insert(Finish).values([{"name": name} for name in finish_names])
@@ -373,6 +376,9 @@ def bulk_add_finishes(finish_names: List[str], *, session):
 
 @db_query
 def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
+    """
+    Adds a list of card printings to the card_printings table, ignoring any duplicates.
+    """
     if not printings:
         return
     stmt = insert(CardPrinting).values(printings)
@@ -383,6 +389,7 @@ def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
 
 @db_query
 def get_all_printings_map(*, session) -> Dict[tuple, int]:
+
     results = session.query(
         CardPrinting.id,
         CardPrinting.card_name,

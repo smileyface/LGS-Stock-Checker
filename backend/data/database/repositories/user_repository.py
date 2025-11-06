@@ -5,6 +5,7 @@ Includes operations to fetch user details, add new users, update usernames and p
 retrieve selected stores, and manage user store preferences. Utilizes internal schema
 models and database session management patterns.
 """
+
 from typing import List, Optional
 from sqlalchemy.orm import joinedload
 
@@ -32,7 +33,10 @@ def get_user_by_username(username: str, session) -> Optional[schema.UserDBSchema
     # Eagerly load the 'selected_stores' relationship to ensure the Pydantic
     # schema can be created without causing a DetachedInstanceError.
     user_orm = (
-        session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .filter(User.username == username)
+        .first()
     )
     if user_orm:
         logger.debug(f"✅ Found user '{username}'.")
@@ -57,7 +61,11 @@ def get_user_orm_by_username(username: str, session) -> Optional[User]:
     """
     logger.debug(f"📖 Querying for user ORM object '{username}'.")
     user_orm = session.query(User).filter(User.username == username).first()
-    logger.debug(f"✅ Found user ORM object for '{username}'." if user_orm else f"❌ User ORM object for '{username}' not found.")
+    logger.debug(
+        f"✅ Found user ORM object for '{username}'."
+        if user_orm
+        else f"❌ User ORM object for '{username}' not found."
+    )
     return user_orm
 
 
@@ -78,14 +86,23 @@ def get_user_orm_by_id(user_id: int, session) -> Optional[User]:
     # This prevents a DetachedInstanceError when current_user.to_dict() is called
     # later, as the stores will already be loaded and won't require a lazy load.
     user_orm = (
-        session.query(User).options(joinedload(User.selected_stores)).filter(User.id == user_id).first()
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .filter(User.id == user_id)
+        .first()
     )
-    logger.debug(f"✅ Found user ORM object for ID '{user_id}'." if user_orm else f"❌ User ORM object for ID '{user_id}' not found.")
+    logger.debug(
+        f"✅ Found user ORM object for ID '{user_id}'."
+        if user_orm
+        else f"❌ User ORM object for ID '{user_id}' not found."
+    )
     return user_orm
 
 
 @db_query
-def add_user(username: str, password_hash: str, session) -> Optional[schema.UserPublicSchema]:
+def add_user(
+    username: str, password_hash: str, session
+) -> Optional[schema.UserPublicSchema]:
     """
     Add a new user to the database with the given username and password hash.
 
@@ -170,13 +187,21 @@ def get_user_stores(username: str, session) -> List[schema.StoreSchema]:
         Success or failure of the store retrieval operation.
     """
     logger.debug(f"🛍️ Fetching selected stores for user '{username}'.")
-    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    user = (
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .filter(User.username == username)
+        .first()
+    )
     if not user:
         logger.warning(f"🚨 User '{username}' not found. Cannot retrieve stores.")
         return []
     # Convert ORM objects to DTOs before returning
     logger.debug(f"✅ Found {len(user.selected_stores)} stores for user '{username}'.")
-    return [schema.StoreSchema.model_validate(store_orm) for store_orm in user.selected_stores]
+    return [
+        schema.StoreSchema.model_validate(store_orm)
+        for store_orm in user.selected_stores
+    ]
 
 
 @db_query
@@ -192,19 +217,28 @@ def add_user_store(username: str, store_slug: str, session) -> None:
         Success or failure of the store addition operation.
     """
     # Use joinedload to fetch the user and their selected stores in one query
-    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    user = (
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .filter(User.username == username)
+        .first()
+    )
     if not user:
         logger.warning(f"User '{username}' not found. Cannot add store preference.")
         return
 
     # Check if the store is already in the user's preferences to prevent duplicates
     if any(s.slug == store_slug for s in user.selected_stores):
-        logger.info(f"User '{username}' already has preference for store '{store_slug}'.")
+        logger.info(
+            f"User '{username}' already has preference for store '{store_slug}'."
+        )
         return
 
     store_obj = session.query(Store).filter(Store.slug == store_slug).first()
     if not store_obj:
-        logger.warning(f"Store with slug '{store_slug}' not found. Cannot add store preference.")
+        logger.warning(
+            f"Store with slug '{store_slug}' not found. Cannot add store preference."
+        )
         return
 
     # Add the store to the user's preferences
@@ -224,19 +258,28 @@ def remove_user_store(username: str, store_slug: str, session) -> None:
     Logs:
         Success or failure of the store removal operation.
     """
-    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    user = (
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .filter(User.username == username)
+        .first()
+    )
     if not user:
         logger.warning(f"User '{username}' not found. Cannot remove store preference.")
         return
 
     # Find the specific store object in the user's collection to remove it
-    store_to_remove = next((s for s in user.selected_stores if s.slug == store_slug), None)
+    store_to_remove = next(
+        (s for s in user.selected_stores if s.slug == store_slug), None
+    )
 
     if store_to_remove:
         user.selected_stores.remove(store_to_remove)
         logger.info(f"✅ Removed '{store_slug}' from user '{username}' preferences.")
     else:
-        logger.warning(f"User '{username}' does not have preference for store '{store_slug}'. Cannot remove.")
+        logger.warning(
+            f"User '{username}' does not have preference for store '{store_slug}'. Cannot remove."
+        )
 
 
 @db_query
@@ -245,7 +288,12 @@ def set_user_stores(username: str, store_slugs: List[str], session) -> None:
     Sets the user's selected stores to the exact list provided,
     adding new ones and removing old ones.
     """
-    user = session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+    user = (
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .filter(User.username == username)
+        .first()
+    )
     if not user:
         logger.warning(f"User '{username}' not found. Cannot set store preferences.")
         return
@@ -256,14 +304,18 @@ def set_user_stores(username: str, store_slugs: List[str], session) -> None:
         valid_stores = session.query(Store).filter(Store.slug.in_(store_slugs)).all()
     else:
         valid_stores = []
-        logger.info(f"Empty store list provided for user '{username}'. All store preferences will be cleared.")
+        logger.info(
+            f"Empty store list provided for user '{username}'. All store preferences will be cleared."
+        )
 
     # The user's selected_stores relationship will now point to this new list.
     # SQLAlchemy's ORM is smart enough to figure out which entries to add and
     # remove from the user_store_preferences association table.
     user.selected_stores = valid_stores
 
-    logger.info(f"✅ Set preferred stores for user '{username}' to: {[s.slug for s in valid_stores]}")
+    logger.info(
+        f"✅ Set preferred stores for user '{username}' to: {[s.slug for s in valid_stores]}"
+    )
 
 
 @db_query
@@ -283,7 +335,10 @@ def get_user_for_display(username: str, session) -> Optional[schema.UserPublicSc
     # Eagerly load the 'selected_stores' relationship to ensure the Pydantic
     # schema can be created without causing a DetachedInstanceError.
     user_orm = (
-        session.query(User).options(joinedload(User.selected_stores)).filter(User.username == username).first()
+        session.query(User)
+        .options(joinedload(User.selected_stores))
+        .filter(User.username == username)
+        .first()
     )
     if user_orm:
         logger.info(f"✅ User '{username}' retrieved successfully.")
@@ -310,7 +365,7 @@ def get_all_users(session) -> List[schema.UserPublicSchema]:
 def get_users_tracking_card(card_name: str, session) -> list[schema.UserPublicSchema]:
     """
     Finds all users who are tracking a specific card.
-    
+
     Args:
         card_name (str): The name of the card to search for.
 
@@ -330,7 +385,9 @@ def get_users_tracking_card(card_name: str, session) -> list[schema.UserPublicSc
 
 
 @db_query
-def get_tracking_users_for_cards(card_names: list[str], session) -> dict[str, list[schema.UserPublicSchema]]:
+def get_tracking_users_for_cards(
+    card_names: list[str], session
+) -> dict[str, list[schema.UserPublicSchema]]:
     """
     Efficiently finds all users tracking any of the given card names.
 

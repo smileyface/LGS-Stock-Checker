@@ -1,6 +1,10 @@
+"""
+Provides a simplified interface for saving, loading, and deleting data from Redis.
+Handles both simple key-value pairs and hash fields, with JSON serialization.
+"""
 import json
 from typing import Any, Dict, Optional
-
+import redis
 from managers import redis_manager
 from utility import logger
 
@@ -27,8 +31,8 @@ def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[in
             else:
                 redis_conn.set(key, value_json)
                 logger.info(f"💾 Saved data to Redis Key {key} (No Expiration)")
-
-    except Exception as e:
+    # Catch specific Redis errors or JSON errors
+    except (redis.RedisError, TypeError, json.JSONDecodeError) as e:
         logger.error(f"❌ Error saving data to Redis: {e}")
 
 
@@ -43,10 +47,10 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
         if data:
             logger.info(f"🔍 Redis GET [{key}]: {len(data)} bytes")
             return json.loads(data)
-        else:
-            logger.debug(f"⚠️ Redis key {key} is empty or missing.")
-            return None
-    except Exception as e:
+        
+        logger.debug(f"⚠️ Redis key {key} is empty or missing.")
+        return None
+    except (redis.RedisError, TypeError, json.JSONDecodeError) as e:
         logger.error(f"❌ Error loading data from Redis: {e}")
         return None
 
@@ -76,4 +80,5 @@ def delete_data(key: str, field=None) -> None:
             logger.info(f"🗑️ Deleted Redis Key {key}")
 
     except Exception as e:
+    except redis.RedisError as e:
         logger.error(f"❌ Error deleting data from Redis: {e}")

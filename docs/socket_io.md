@@ -204,11 +204,21 @@ Sends real-time stock information for a specific card from a specific store. Thi
 
 * **Payload:** 
   `
-  [{
-    store: "store-slug",
-    card: "Card Name",
-    items: [ { price: 1.99, set_code: "M21", stock: 4}, ... ]
-  } ...]
+{
+  "store": "store-slug",
+  "card": "Card Name",
+  "items": [
+    {
+      "price": 1.99,
+      "stock": 4,
+      "condition": "Near Mint",
+      "set": "tst",
+      "collector_number": "123",
+      "finish": "non-foil",
+      "url": "http://example.com/product/123"
+    }
+  ]
+}
   `  on find. `[]` on not found.
 
 ## Server-to-Scheduler Events

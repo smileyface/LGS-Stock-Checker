@@ -1,0 +1,5 @@
+[tool.pylint.main]
+# This tells Pylint to add the 'LGS_Stock_Backend' directory to Python's path.
+# When Pylint analyzes a file, it will now be able to find top-level packages
+# like 'utility', 'managers', and 'data' that live inside 'LGS_Stock_Backend'.
+source-roots = ["LGS_Stock_Backend/"]

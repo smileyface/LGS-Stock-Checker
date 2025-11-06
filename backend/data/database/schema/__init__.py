@@ -4,4 +4,12 @@ from .store_schema import StoreSchema
 from .catalog_schema import FinishSchema, CardPrintingSchema
 
 
-__all__ = ["CardSpecificationSchema", "UserPublicSchema", "UserDBSchema", "StoreSchema", "UserTrackedCardSchema", "FinishSchema", "CardPrintingSchema"]
+__all__ = [
+    "CardSpecificationSchema",
+    "UserPublicSchema",
+    "UserDBSchema",
+    "StoreSchema",
+    "UserTrackedCardSchema",
+    "FinishSchema",
+    "CardPrintingSchema",
+]

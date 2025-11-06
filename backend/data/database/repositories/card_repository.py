@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
-from ../..utility import logger
+from utility import logger
 
 # Internal package imports
 

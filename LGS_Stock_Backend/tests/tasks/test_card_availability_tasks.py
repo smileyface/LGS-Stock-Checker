@@ -8,12 +8,12 @@ from tasks.card_availability_tasks import (
 
 
 @pytest.fixture
-def mock_publish_worker_result(mocker):
+def mock_publish_pubsub(mocker):
     """Mocks the redis_manager.publish_worker_result function."""
-    return mocker.patch("managers.redis_manager.publish_worker_result")
+    return mocker.patch("managers.redis_manager.publish_pubsub")
 
 
-def test_update_availability_single_card_success(mock_store, mock_publish_worker_result, mock_socket_emit):
+def test_update_availability_single_card_success(mock_store, mock_publish_pubsub, mock_socket_emit):
     """
     GIVEN a card and store
     WHEN update_availability_single_card is called and finds available items
@@ -38,7 +38,7 @@ def test_update_availability_single_card_success(mock_store, mock_publish_worker
     mock_store_instance.fetch_card_availability.assert_called_once_with("Sol Ring", [])
 
     # Verify result publishing
-    mock_publish_worker_result.assert_called_once_with(
+    mock_publish_pubsub.assert_called_once_with(
         "worker-results",
         {"type": "availability_result", "payload": {"store": store_name, "card": "Sol Ring", "items": available_items}},
     )
@@ -96,7 +96,7 @@ def test_update_all_tracked_cards_availability(mocker):
     assert mock_update_for_user.call_count == 2
 
 
-def test_update_availability_single_card_no_items_found(mock_store, mock_publish_worker_result, mock_socket_emit): # noqa
+def test_update_availability_single_card_no_items_found(mock_store, mock_publish_pubsub, mock_socket_emit): # noqa
     """
     GIVEN a card and store
     WHEN update_availability_single_card finds no available items
@@ -116,7 +116,7 @@ def test_update_availability_single_card_no_items_found(mock_store, mock_publish
 
     # Assert
     assert result is True
-    mock_publish_worker_result.assert_called_once_with(
+    mock_publish_pubsub.assert_called_once_with(
         "worker-results",
         {"type": "availability_result", "payload": {"store": store_name, "card": "Obscure Card", "items": []}}
     )

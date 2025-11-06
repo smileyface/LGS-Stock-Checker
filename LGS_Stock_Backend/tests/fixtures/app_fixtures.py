@@ -18,7 +18,7 @@ def app(mocker, db_session):
         "SOCKETIO_MESSAGE_QUEUE": None,
     }
     # Patch the worker listener to prevent the background thread from starting during tests.
-    mocker.patch("managers.flask_manager.worker_listener.start_worker_listener")
+    mocker.patch("managers.flask_manager.server_listener.start_server_listener")
 
     # Pass the overrides and the test database URL to the app factory.
     _app = create_app("testing", override_config=test_config, database_url=TEST_DATABASE_URL)

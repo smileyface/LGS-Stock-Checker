@@ -8,8 +8,12 @@ const availabilityMap = ref({});
 
 // --- Socket Connection (Singleton pattern) ---
 // Create the socket instance once. It will be shared across the application.
+// The backend URL is explicitly provided. In a production environment,
+// you might use an environment variable for this (e.g., import.meta.env.VITE_API_URL).
+// For this setup, we'll hardcode it to the backend's exposed port.
+const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const socket = io({
-    withCredentials: true,
+    withCredentials: true, 
     autoConnect: false // We will connect manually when the composable is first used.
 });
 
@@ -51,16 +55,23 @@ socket.on('card_availability_data', (data) => {
     // Ensure the entry for the card exists.
     if (!availabilityMap.value[cardName]) {
         availabilityMap.value[cardName] = { status: 'completed', items: [] };
-    } else {
-        // Filter out any old items from the same store before adding new ones.
-        availabilityMap.value[cardName].items = availabilityMap.value[cardName].items.filter(
-            item => item.store !== data.store
-        );
     }
 
-    // Add the new items from the current store and mark the check as completed.
-    availabilityMap.value[cardName].items.push(...newItems);
-    availabilityMap.value[cardName].store = data.store;
+    // Get the existing items for this card, or an empty array if none.
+    const existingItems = availabilityMap.value[cardName]?.items || [];
+
+    // 1. Filter out all items from the store that sent the update.
+    const otherStoreItems = existingItems.filter(
+        item => item.store_slug !== data.store
+    );
+
+    // 2. Add the new items, ensuring they have the store slug for future identification.
+    const itemsForCurrentStore = newItems.map(item => ({ ...item, store_slug: data.store }));
+
+    // 3. Combine the lists.
+    const updatedItems = [...otherStoreItems, ...itemsForCurrentStore];
+
+    availabilityMap.value[cardName].items = updatedItems;
     availabilityMap.value[cardName].status = 'completed';
 });
 
@@ -130,12 +141,9 @@ export function useSocket() {
     };
 }
 
-// Export the socket instance for testing purposes
-export const _socket = import.meta.env.TEST
-    ? socket
-    : null;
-
-// Export internal state for testing purposes ONLY
-export const _internal = import.meta.env.TEST
-    ? { trackedCards, availabilityMap }
-    : null;
+// Export for testing purposes only
+export { socket };
+export const _internal = {
+    trackedCards,
+    availabilityMap,
+};

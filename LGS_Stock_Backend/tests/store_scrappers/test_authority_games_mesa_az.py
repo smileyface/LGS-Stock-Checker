@@ -29,11 +29,53 @@ SEARCH_RESULTS_HTML = """
 
 # This is a simplified version of the individual product page HTML.
 PRODUCT_PAGE_HTML = """
-<div class="product-details">
-    <div class="card-number">
-        <a href="/products/search?collector_number=123">123/456</a>
+<div class="product-more-info">
+    <div class="name"><a>Test Card</a></div>
+    <div class="set-name"><a>Magic The Gathering: Test Set</a></div>
+    <div class="card-number"><a>123/456</a></div>
+    <div class="finish">
+        <!-- The presence or absence of this div determines the finish -->
     </div>
 </div>
+"""
+
+# This HTML contains two identical variants to test the deduplication logic.
+SEARCH_RESULTS_HTML_WITH_DUPLICATES = """
+<ul class="products">
+  <li class="product">
+    <a itemprop="url" href="/products/1234-test-card"></a>
+    <h4 class="name" title="Test Card">Test Card</h4>
+    <span class="category">Magic The Gathering: Test Set</span>
+    <div class="variants">
+      <div class="variant-row in-stock"><div class="variant-description">Near Mint</div><div class="price">$10.00</div><div class="variant-qty">2 In Stock</div></div>
+      <div class="variant-row in-stock"><div class="variant-description">Near Mint</div><div class="price">$10.00</div><div class="variant-qty">2 In Stock</div></div>
+      <div class="variant-row in-stock"><div class="variant-description">Lightly Played</div><div class="price">$8.00</div><div class="variant-qty">1 In Stock</div></div>
+    </div>
+  </li>
+</ul>
+"""
+
+# This HTML tests the early-exit logic. It has a valid card, then a non-matching card,
+# then another valid card. The scraper should stop after the non-matching card.
+SEARCH_RESULTS_WITH_NON_MATCHING_HTML = """
+<ul class="products">
+  <li class="product">
+    <a itemprop="url" href="/products/1234-test-card-1"></a>
+    <h4 class="name" title="Test Card">Test Card</h4>
+    <span class="category">Magic The Gathering: Test Set</span>
+    <div class="variants">
+      <div class="variant-row in-stock"><div class="variant-description">Near Mint</div><div class="price">$10.00</div><div class="variant-qty">2 In Stock</div></div>
+    </div>
+  </li>
+  <li class="product">
+    <a itemprop="url" href="/products/5678-wrong-card"></a>
+    <h4 class="name" title="Wrong Card">Wrong Card</h4>
+  </li>
+  <li class="product">
+    <a itemprop="url" href="/products/9012-test-card-2"></a>
+    <h4 class="name" title="Test Card">Test Card</h4>
+  </li>
+</ul>
 """
 
 class TestAuthorityGamesMesaArizona(unittest.TestCase):
@@ -90,7 +132,7 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
         self.assertEqual(listing1['stock'], 2)
         self.assertEqual(listing1['condition'], "Near Mint")
         self.assertEqual(listing1['finish'], "non-foil")
-        self.assertEqual(listing1['set'], "tst") # Assuming set_code maps 'Test Set' to 'tst'
+        self.assertEqual(listing1['set_code'], "tst") # Assuming set_code maps 'Test Set' to 'tst'
         self.assertEqual(listing1['collector_number'], "123")
         self.assertIn("/products/1234-test-card", listing1['url'])
 
@@ -116,6 +158,69 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
         
         # Verify that set_code was called with the correct set name from the HTML
         mock_set_code.assert_called_with("Magic The Gathering: Test Set")
+
+    @patch('managers.store_manager.stores.authority_games_mesa_az.requests.get')
+    @patch('managers.store_manager.stores.authority_games_mesa_az.set_code')
+    def test_scrape_listings_deduplicates_results(self, mock_set_code, mock_get):
+        """
+        Test that the scraper correctly deduplicates listings when the source HTML
+        contains identical variants.
+        """
+        # --- Arrange ---
+        # Mock the response for the search page to return the HTML with duplicates.
+        mock_search_response = MagicMock()
+        mock_search_response.raise_for_status.return_value = None
+        mock_search_response.text = SEARCH_RESULTS_HTML_WITH_DUPLICATES
+
+        # Mock the response for the product detail page.
+        mock_product_response = MagicMock()
+        mock_product_response.raise_for_status.return_value = None
+        mock_product_response.text = PRODUCT_PAGE_HTML
+
+        # Set the side_effect to return the correct mock response based on the URL.
+        mock_get.side_effect = [mock_search_response, mock_product_response]
+        mock_set_code.return_value = "tst"
+
+        # --- Execute ---
+        card_name = "Test Card"
+        listings = self.scraper._scrape_listings(card_name)
+
+        # --- Assert ---
+        # The source HTML has 3 variants, but 2 are identical.
+        # The scraper should return only 2 unique listings.
+        self.assertEqual(len(listings), 2, "Should find 2 unique listings after deduplication")
+
+    @patch('managers.store_manager.stores.authority_games_mesa_az.requests.get')
+    @patch('managers.store_manager.stores.authority_games_mesa_az.set_code')
+    def test_scrape_listings_stops_on_non_matching_card(self, mock_set_code, mock_get):
+        """
+        Test that the scraper stops processing once it encounters a card that
+        does not match the search term.
+        """
+        # --- Arrange ---
+        mock_search_response = MagicMock()
+        mock_search_response.raise_for_status.return_value = None
+        mock_search_response.text = SEARCH_RESULTS_WITH_NON_MATCHING_HTML
+
+        mock_product_response = MagicMock()
+        mock_product_response.raise_for_status.return_value = None
+        mock_product_response.text = PRODUCT_PAGE_HTML
+
+        # The scraper should only request the first product page, then stop.
+        mock_get.side_effect = [mock_search_response, mock_product_response]
+        mock_set_code.return_value = "tst"
+
+        # --- Execute ---
+        card_name = "Test Card"
+        listings = self.scraper._scrape_listings(card_name)
+
+        # --- Assert ---
+        # It should only find the one listing from the first product.
+        self.assertEqual(len(listings), 1, "Should only process listings before the non-matching card")
+
+        # It should have made one call for the search page and one for the first product page.
+        # It should NOT have made a call for the second "Test Card" after the "Wrong Card".
+        self.assertEqual(mock_get.call_count, 2, "Should stop making requests after a non-match")
 
     @patch('managers.store_manager.stores.authority_games_mesa_az.logger')
     @patch('managers.store_manager.stores.authority_games_mesa_az.requests.get')

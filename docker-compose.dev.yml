@@ -13,9 +13,6 @@ services:
     volumes:
       # Mount the source code into the container.
       - ./LGS_Stock_Backend:/app
-    ports:
-      # Expose the backend port for direct access/debugging.
-      - "5000:5000"
     environment:
       <<: *common-backend-env
 

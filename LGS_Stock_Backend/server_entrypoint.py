@@ -14,3 +14,4 @@ from run import create_app
 # The factory handles all configuration, blueprint registration, and extension initialization.
 logger.info("🚀 Creating app context for server...")
 app = create_app()
+

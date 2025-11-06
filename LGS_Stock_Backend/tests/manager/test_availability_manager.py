@@ -17,24 +17,26 @@ class MockCard:
         return {"card_name": self.card_name}
 
 
-@patch("managers.availability_manager.availability_manager.task_manager.queue_task")
-def test_check_availability(mock_queue_task):
+@patch("managers.availability_manager.availability_manager.redis_manager.publish_pubsub")
+def test_check_availability(mock_publish_pubsub):
     """
-    Verifies check_availability queues an update task for the specified user.
+    Verifies check_availability publishes a command to the scheduler.
     """
     # Arrange
     username = "testuser"
+    expected_command = {
+        "type": "queue_all_availability_checks",
+        "payload": {"username": username}
+    }
 
     # Act
     result = check_availability(username)
 
     # Assert
-    mock_queue_task.assert_called_once_with(
-        task_manager.task_definitions.UPDATE_WANTED_CARDS_AVAILABILITY, username
-    )
+    mock_publish_pubsub.assert_called_once_with("scheduler-requests", expected_command)
     assert result == {
-        "status": "queued",
-        "message": "Availability update has been triggered.",
+        "status": "requested",
+        "message": "Availability update has been requested.",
     }
 
 
@@ -55,7 +57,6 @@ def test_get_card_availability_with_cached_data(
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
     cached_data = [{"price": "1.00"}]
     mock_storage.get_cached_availability_data.return_value = cached_data
-    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
     cached_results = get_cached_availability_or_trigger_check(username)
@@ -65,12 +66,12 @@ def test_get_card_availability_with_cached_data(
     assert cached_results == {"test-store": {"Test Card": cached_data}} # noqa
 
 
-@patch("managers.availability_manager.availability_manager.task_manager.queue_task")
+@patch("managers.availability_manager.availability_manager.redis_manager.publish_pubsub")
 @patch("managers.availability_manager.availability_manager.availability_storage")
 @patch("managers.availability_manager.availability_manager.user_manager")
 @patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_with_no_cached_data(
-    mock_database, mock_user_manager, mock_storage, mock_queue_task, mocker
+    mock_database, mock_user_manager, mock_storage, mock_publish_pubsub, mocker
 ):
     """
     Verifies get_cached_availability_or_trigger_check queues a fetch task if data is not cached.
@@ -83,18 +84,21 @@ def test_get_card_availability_with_no_cached_data(
     mock_card = MockCard("Test Card")
     mock_user_manager.load_card_list.return_value = [mock_card]
     mock_storage.get_cached_availability_data.return_value = None
-    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
+    expected_command = {
+        "type": "availability_request",
+        "payload": {
+            "username": username, "store": "test-store", "card_data": mock_card.model_dump()
+        }
+    }
 
     # Act
     cached_results = get_cached_availability_or_trigger_check(username)
 
     # Assert
     mock_storage.get_cached_availability_data.assert_called_once_with("test-store", "Test Card")
-    mock_queue_task.assert_called_once_with(
-        task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD,
-        username,
-        "test-store",
-        mock_card.model_dump(),
+    # Verify that a command was published to the scheduler instead of a task being queued directly.
+    mock_publish_pubsub.assert_called_once_with(
+        "scheduler-requests", expected_command
     )
     assert cached_results == {}
 
@@ -124,7 +128,6 @@ def test_get_card_availability_handles_invalid_store(
         mock_store_valid,
     ]
     mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
-    mocker.patch("managers.availability_manager.availability_manager.socket_manager.socketio.emit")
 
     # Act
     get_cached_availability_or_trigger_check(username)

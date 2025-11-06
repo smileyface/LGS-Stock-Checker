@@ -44,7 +44,7 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
             logger.info(f"🔍 Redis GET [{key}]: {len(data)} bytes")
             return json.loads(data)
         else:
-            logger.warning(f"⚠️ Redis key {key} is empty or missing.")
+            logger.debug(f"⚠️ Redis key {key} is empty or missing.")
             return None
     except Exception as e:
         logger.error(f"❌ Error loading data from Redis: {e}")

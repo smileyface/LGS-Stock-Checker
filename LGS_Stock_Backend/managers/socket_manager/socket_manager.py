@@ -22,10 +22,15 @@ def register_socket_handlers():
 
 def configure_socket_io(app):
 
-        # --- Configure CORS and SocketIO ---
-    cors_origins_str = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:8000")
+    # --- Configure CORS and SocketIO ---
+    # In development/debug mode, allow all origins for flexibility (e.g., mobile testing).
+    # In production, use the strict list from the environment variable.
+    if app.debug:
+        allowed_origins = "*"
+    else:
+        cors_origins_str = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:8000")
+        allowed_origins = [origin.strip() for origin in cors_origins_str.split(",")]
 
-    allowed_origins = [origin.strip() for origin in cors_origins_str.split(",")]
     logger.info(f"🔌 CORS allowed origins configured: {allowed_origins}")
 
     message_queue_url = app.config.get(

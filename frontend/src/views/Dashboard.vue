@@ -1,7 +1,13 @@
 <template>
     <BaseLayout :title="pageTitle">
-        <AddCardModal v-if="isAddModalVisible" @save-card="saveCard" @close="isAddModalVisible = false" />
-        <EditCardModal v-if="cardToEdit" :card-to-edit="cardToEdit" ref="editCardModalRef" @update-card="updateCard" /> 
+        <AddCardModal v-if="isAddModalVisible" 
+            ref="addCardModalRef" 
+            @save-card="saveCard" 
+            @close="isAddModalVisible = false" />
+        <EditCardModal v-if="cardToEdit" 
+            :card-to-edit="cardToEdit" 
+            ref="editCardModalRef" 
+            @update-card="updateCard" /> 
         <InStockModal 
             ref="inStockModalRef"
             :card-name="selectedCardForStock"
@@ -44,13 +50,6 @@
             <button class="btn btn-success mt-3" @click="isAddModalVisible = true">
                 Add Card
             </button>
-            
-            <div class="mb-3">
-                <div class="form-check form-check-inline" v-for="store in allStores" :key="store">
-                    <input class="form-check-input" type="checkbox" name="storeFilter" :value="store" :id="'store_' + store">
-                    <label class="form-check-label" :for="'store_' + store">{{ store }}</label>
-                </div>
-            </div>
         </div>
     </BaseLayout>
 </template>
@@ -66,14 +65,12 @@ import { useSocket } from '../composables/useSocket';
 
 const username = computed(() => authStore.user?.username || '');
 const pageTitle = ref('Dashboard');
-const allStores = computed(() => authStore.user?.stores || []);
 
 // --- Modal State ---
 const inStockModalRef = ref(null);
+const editCardModalRef = ref(null);
 const selectedCardForStock = ref('');
 const availableItemsForModal = ref([]);
-
-const editCardModalRef = ref(null);
 const cardToEdit = ref(null);
 const isAddModalVisible = ref(false);
 

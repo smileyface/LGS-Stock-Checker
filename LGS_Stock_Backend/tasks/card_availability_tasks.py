@@ -1,7 +1,7 @@
 import time
 import json
 
-from data import database, cache # Keep cache for now, though not used in this file
+from data import database
 from managers import store_manager, user_manager, task_manager, redis_manager
 from managers.socket_manager import socket_emit
 from utility import logger
@@ -72,7 +72,14 @@ def update_availability_for_user(username: str):
 
     for card in user_cards:
         for store in user_stores:
-            update_availability_single_card(username, store.slug, card.model_dump())
+            # Instead of a worker enqueuing another task directly, it commands the scheduler to do it.
+            # This centralizes all task queuing logic within the scheduler process.
+            command = {
+                "type": "availability_request",
+                "payload": {"username": username, "store": store.slug, "card_data": card.model_dump()}
+            }
+            redis_manager.publish_pubsub("scheduler-requests", command)
+            logger.debug(f"📢 Published 'availability_request' command for '{card.card_name}' at '{store.slug}'.")
 
 
 @task_manager.task(task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD)
@@ -123,7 +130,7 @@ def update_availability_single_card(username, store_name, card):
             "items": available_items or [],
         }
     }
-    redis_manager.publish_worker_result("worker-results", result_payload)
+    redis_manager.publish_pubsub("worker-results", result_payload)
 
     # --- Emit results to the client ---
     # The worker still emits directly to the client for real-time UI updates.

@@ -8,8 +8,8 @@ effectively indicating that no listings can be found for such stores.
 """
 from typing import Any, Dict, List
 
-from LGS_Stock_Backend.managers.store_manager.stores.store import Store
-from LGS_Stock_Backend.utility import logger
+from managers.store_manager.stores.store import Store
+from utility import logger
 
 
 class DefaultStore(Store):

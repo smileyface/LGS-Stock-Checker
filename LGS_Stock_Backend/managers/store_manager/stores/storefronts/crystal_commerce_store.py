@@ -11,9 +11,9 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from LGS_Stock_Backend.managers.set_manager import set_code
-from LGS_Stock_Backend.managers.store_manager.stores.store import Store
-from LGS_Stock_Backend.utility import logger
+from managers.set_manager import set_code
+from managers.store_manager.stores.store import Store
+from utility import logger
 
 
 class CrystalCommerceStore(Store):

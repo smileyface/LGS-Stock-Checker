@@ -7,7 +7,6 @@ instantiates an object for each one. The resulting instances are stored in
 the `STORE_REGISTRY`, making them available to the rest of the application.
 """
 from utility import logger
-from .game_kastle_santa_clara import Game_Kastle_Santa_Clara # type: ignore
 from .storefronts.crystal_commerce_store import CrystalCommerceStore # type: ignore
 
 class LazyStoreRegistry:
@@ -22,7 +21,6 @@ class LazyStoreRegistry:
         self._registry = None
         self._strategy_map = {
             "crystal_commerce": CrystalCommerceStore,
-            "default": Game_Kastle_Santa_Clara,
         }
     
     @property
@@ -42,13 +40,9 @@ class LazyStoreRegistry:
             strategy = store_model.fetch_strategy
             if strategy in self._strategy_map:
                 StoreClass = self._strategy_map[strategy]
-                # For "default" strategy, we instantiate without arguments as it's a singleton-like class
-                if strategy == "default":
-                    instance = StoreClass()
-                else:
-                    instance = StoreClass(
-                        name=store_model.name, slug=store_model.slug, homepage=store_model.homepage
-                    )
+                instance = StoreClass(
+                    name=store_model.name, slug=store_model.slug, homepage=store_model.homepage
+                )
                 self._registry[instance.slug] = instance
         logger.info(f"✅ Store registry loaded with {len(self._registry)} stores.")
     

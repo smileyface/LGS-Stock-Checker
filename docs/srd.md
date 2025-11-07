@@ -53,6 +53,21 @@ These requirements define how store information is managed and retrieved.
 - **[2.1.3]** The system shall be able to retrieve a list of all available stores.
 - **[2.1.4]** The system shall return an empty list when retrieving all stores if none exist.
 
+### 2.2 Crystal Commerce Scraper Interface
+
+These requirements define a standardized, reusable interface for scraping stores that use the Crystal Commerce platform.
+
+- **[2.2.1]** The system shall provide a `CrystalCommerceStore` base class that inherits from the generic `Store` class to encapsulate common scraping logic.
+- **[2.2.2]** The base class shall implement a method to perform a product search on a Crystal Commerce site using a card name.
+- **[2.2.3]** The base class shall provide a method to fetch the HTML content of an individual product page given its URL.
+- **[2.2.4]** The system shall parse search result pages to identify and iterate through all product listings (e.g., `<li>` elements with class `product`).
+- **[2.2.5]** For each product listing, the system shall parse all "in-stock" variants to extract Condition, Price, Stock Quantity, and Finish.
+- **[2.2.6]** The system shall parse the product detail page to extract canonical information: Card Name, Set Name, and Collector Number.
+- **[2.2.7]** The scraper shall stop processing search results for a given card name as soon as it encounters a result that does not match the target card name to improve efficiency.
+- **[2.2.8]** The scraper shall prevent duplicate listings from being returned for the same card variant (based on a unique combination of its attributes).
+- **[2.2.9]** The scraper shall gracefully handle and log network errors (e.g., timeouts, HTTP errors), returning an empty list of results without crashing.
+- **[2.2.10]** The scraper shall gracefully handle and log parsing errors for individual variants, skipping the malformed variant while continuing to process others.
+
 ## 3. Card Tracking Management
 
 These requirements define how users manage the list of cards they want to track.

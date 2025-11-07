@@ -6,6 +6,7 @@ This class encapsulates the common logic for fetching and parsing product data,
 allowing new Crystal Commerce stores to be added with minimal code.
 """
 from typing import Any, Dict, List, Optional
+import time
 from urllib.parse import urljoin
 
 import requests
@@ -14,6 +15,38 @@ from bs4 import BeautifulSoup
 from managers.set_manager import set_code
 from managers.store_manager.stores.store import Store
 from utility import logger
+
+def _make_request_with_retries(
+    url: str, retries: int = 3, backoff_factor: float = 0.5, **kwargs
+) -> Optional[requests.Response]:
+    """
+    Makes an HTTP request with a retry mechanism and exponential backoff.
+    This is specifically designed to handle Crystal Commerce's rate limiting.
+    """
+    for i in range(retries):
+        try:
+            response = requests.get(url, **kwargs)
+            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+
+            # Crystal Commerce returns a 200 OK with an error message in the body for rate limits.
+            if "too many searches" in response.text:
+                raise requests.exceptions.HTTPError("Rate limit detected by custom check.")
+
+            return response
+
+        except requests.exceptions.RequestException as e:
+            if i < retries - 1:
+                # Calculate wait time: 0.5s, 1s, 2s for successive retries
+                wait_time = backoff_factor * (2**i)
+                logger.warning(
+                    f"Request failed for {url} with error: {e}. "
+                    f"Retrying in {wait_time:.2f} seconds... (Attempt {i + 1}/{retries})"
+                )
+                time.sleep(wait_time)
+            else:
+                logger.error(f"Request failed for {url} after {retries} attempts. Error: {e}")
+                return None
+    return None
 
 
 class CrystalCommerceStore(Store):
@@ -25,33 +58,26 @@ class CrystalCommerceStore(Store):
     to provide their specific metadata (name, slug, URLs).
     """
 
-    def _get_product_page(self, product_url: str) -> Optional[str]:
+    def _get_product_page(self, product_url: str) -> Optional[BeautifulSoup]:
         """Fetches the individual product page to find the collector number."""
         full_url = urljoin(self.homepage, product_url)
         logger.debug(f"Fetching product page for {self.name}. URL: {full_url}")
-        try:
-            response = requests.get(full_url, timeout=10)
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            logger.error(
-                f"Failed to fetch product page for {self.name}. URL: {full_url}, Error: {e}"
-            )
-            return None
+        response = _make_request_with_retries(full_url, timeout=10)
+        if response:
+            return BeautifulSoup(response.text, "html.parser")
+        return None
 
     def _scrape_listings(self, card_name: str) -> List[Dict[str, Any]]:
         """Scrapes the store's website for raw card listings."""
-        try:
-            search_params = {"q": card_name, "c": 1}
-            response = requests.get(self.search_url, params=search_params, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
-        except requests.RequestException as e:
-            logger.error(
-                f"Failed to fetch search results for {self.name}. Card: {card_name}, Error: {e}"
-            )
+        search_params = {"q": card_name, "c": 1}
+        response = _make_request_with_retries(
+            self.search_url, params=search_params, timeout=10
+        )
+
+        if not response:
             return []
 
+        soup = BeautifulSoup(response.text, "html.parser")
         product_listings = self._get_product_listings(soup)
         available_products = []
         seen_listings = set()  # To track and prevent duplicate listings
@@ -74,8 +100,8 @@ class CrystalCommerceStore(Store):
                 product_url = product_link_tag.get("href") if product_link_tag else ""
                 full_product_url = urljoin(self.homepage, product_url)
 
-                product_page_html = self._get_product_page(product_url)
-                static_details = self._parse_product_page_details(product_page_html)
+                product_page_soup = self._get_product_page(product_url)
+                static_details = self._parse_product_page_details(product_page_soup)
 
                 variants = self._parse_variants(product)
                 for variant_details in variants:
@@ -104,13 +130,12 @@ class CrystalCommerceStore(Store):
         return soup.find_all("li", class_="product")
 
     def _parse_product_page_details(
-        self, html_content: Optional[str]
+        self, soup: Optional[BeautifulSoup]
     ) -> Dict[str, Any]:
         """Parses the product detail page to get canonical card information."""
-        if not html_content:
+        if not soup:
             return {}
 
-        soup = BeautifulSoup(html_content, "html.parser")
         details_section = soup.find("div", class_="product-more-info")
         if not details_section:
             return {}
@@ -124,7 +149,10 @@ class CrystalCommerceStore(Store):
             return None
 
         details["name"] = get_detail("name")
-        details["set_code"] = set_code(get_detail("set-name"))
+        # Handle cases where the set name might not be found.
+        raw_set_name = get_detail("set-name")
+        details["set_code"] = set_code(raw_set_name) if raw_set_name else None
+
         card_number_raw = get_detail("card-number")
         details["collector_number"] = (
             card_number_raw.split("/")[0].strip() if card_number_raw else None

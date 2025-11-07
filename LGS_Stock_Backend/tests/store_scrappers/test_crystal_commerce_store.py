@@ -1,10 +1,12 @@
 """
-Unit tests for the CrystalCommerceStore base class.
+Unit tests for the CrystalCommerceStore base scraper.
 """
 import unittest
 from unittest.mock import patch, MagicMock
 import requests
-from LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore
+from bs4 import BeautifulSoup
+
+from managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore
 
 # --- Sample HTML Payloads ---
 # This is a simplified version of the search results page HTML.
@@ -80,13 +82,22 @@ SEARCH_RESULTS_WITH_NON_MATCHING_HTML = """
   </li>
 </ul>
 """
+# This HTML is missing the 'variants' div entirely.
+SEARCH_RESULTS_NO_VARIANTS = """
+<ul class="products">
+  <li class="product">
+    <a itemprop="url" href="/products/1234-test-card"></a>
+    <h4 class="name" title="Test Card">Test Card</h4>
+    <span class="category">Magic The Gathering: Test Set</span>
+  </li>
+</ul>
+"""
 
-class TestCrystalCommerceStore(unittest.TestCase):
-    """Tests for the CrystalCommerceStore base scraper."""
+class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityGamesMesaArizona
+    """Tests for the CrystalCommerceStore base scraper.""" # Docstring updated
     def setUp(self):
         """Set up the test case."""
-        # Instantiate the base class directly for testing its logic
-        self.scraper = CrystalCommerceStore(
+        self.scraper = CrystalCommerceStore( # This was already correct
             name="Test Crystal Commerce Store",
             slug="test-cc-store",
             homepage="https://test-store.crystalcommerce.com/",
@@ -117,14 +128,14 @@ class TestCrystalCommerceStore(unittest.TestCase):
 
         return mock_response
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
-    def test_scrape_listings_success(self, mock_set_code, mock_get):
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
+    def test_scrape_listings_success(self, mock_set_code, mock_make_request):
         """
         Test the full scraping process for a card, mocking both network calls.
         """
         # Configure the mock to use our side_effect function
-        mock_get.side_effect = self.mock_requests_get
+        mock_make_request.side_effect = self.mock_requests_get
         # Configure mock_set_code to return the expected 'tst' for any input
         mock_set_code.return_value = "tst"
         
@@ -156,22 +167,22 @@ class TestCrystalCommerceStore(unittest.TestCase):
         self.assertEqual(listing2['collector_number'], "123") # Both variants share the collector number
 
         # Verify that requests.get was called correctly
-        self.assertEqual(mock_get.call_count, 2, "Should make one call for search and one for the product page")
+        self.assertEqual(mock_make_request.call_count, 2, "Should make one call for search and one for the product page")
         
         # Check the first call (search)
-        search_call_args = mock_get.call_args_list[0]
+        search_call_args = mock_make_request.call_args_list[0]
         self.assertEqual(search_call_args.kwargs['params'], {'q': 'Test Card', 'c': 1})
         
         # Check the second call (product page)
-        product_page_call_args = mock_get.call_args_list[1]
+        product_page_call_args = mock_make_request.call_args_list[1]
         self.assertIn('/products/1234-test-card', product_page_call_args.args[0])
         
         # Verify that set_code was called with the correct set name from the HTML
         mock_set_code.assert_called_with("Magic The Gathering: Test Set")
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
-    def test_scrape_listings_deduplicates_results(self, mock_set_code, mock_get):
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
+    def test_scrape_listings_deduplicates_results(self, mock_set_code, mock_make_request):
         """
         Test that the scraper correctly deduplicates listings when the source HTML
         contains identical variants.
@@ -188,7 +199,7 @@ class TestCrystalCommerceStore(unittest.TestCase):
         mock_product_response.text = PRODUCT_PAGE_HTML
 
         # Set the side_effect to return the correct mock response based on the URL.
-        mock_get.side_effect = [mock_search_response, mock_product_response]
+        mock_make_request.side_effect = [mock_search_response, mock_product_response]
         mock_set_code.return_value = "tst"
 
         # --- Execute ---
@@ -200,9 +211,9 @@ class TestCrystalCommerceStore(unittest.TestCase):
         # The scraper should return only 2 unique listings.
         self.assertEqual(len(listings), 2, "Should find 2 unique listings after deduplication")
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
-    def test_scrape_listings_stops_on_non_matching_card(self, mock_set_code, mock_get):
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
+    def test_scrape_listings_stops_on_non_matching_card(self, mock_set_code, mock_make_request):
         """
         Test that the scraper stops processing once it encounters a card that
         does not match the search term.
@@ -217,7 +228,7 @@ class TestCrystalCommerceStore(unittest.TestCase):
         mock_product_response.text = PRODUCT_PAGE_HTML
 
         # The scraper should only request the first product page, then stop.
-        mock_get.side_effect = [mock_search_response, mock_product_response]
+        mock_make_request.side_effect = [mock_search_response, mock_product_response]
         mock_set_code.return_value = "tst"
 
         # --- Execute ---
@@ -230,30 +241,84 @@ class TestCrystalCommerceStore(unittest.TestCase):
 
         # It should have made one call for the search page and one for the first product page.
         # It should NOT have made a call for the second "Test Card" after the "Wrong Card".
-        self.assertEqual(mock_get.call_count, 2, "Should stop making requests after a non-match")
+        self.assertEqual(mock_make_request.call_count, 2, "Should stop making requests after a non-match")
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.logger')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    def test_scrape_listings_search_network_failure(self, mock_get, mock_logger):
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    def test_scrape_listings_search_network_failure(self, mock_make_request):
         """
         Test that _scrape_listings handles a network error during the initial search
         and returns an empty list without crashing.
         """
         # --- Arrange ---
         # Configure the mock to raise a RequestException, simulating a network failure.
-        mock_get.side_effect = requests.exceptions.RequestException("Network error")
+        mock_make_request.return_value = None
         card_name = "Test Card"
 
         # --- Execute ---
         listings = self.scraper._scrape_listings(card_name)
 
         # --- Assert ---
-        # 1. The function should return an empty list.
         self.assertEqual(listings, [])
+        mock_make_request.assert_called_once()
 
-        # 2. An error should have been logged.
-        mock_logger.error.assert_called_once()
-        self.assertIn("Failed to fetch search results", mock_logger.error.call_args[0][0])
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    def test_scrape_listings_product_page_network_failure(self, mock_make_request):
+        """
+        Test that _scrape_listings handles a network failure when fetching the
+        individual product page and still processes the variant data it has.
+        """
+        # --- Arrange ---
+        mock_search_response = MagicMock()
+        mock_search_response.text = SEARCH_RESULTS_HTML
+
+        # First call (search) succeeds, second call (product page) fails.
+        mock_make_request.side_effect = [mock_search_response, None]
+
+        # --- Execute ---
+        listings = self.scraper._scrape_listings("Test Card")
+
+        # --- Assert ---
+        self.assertEqual(len(listings), 2, "Should still find 2 variants even if product page fails")
+        # Check that details from the failed page are missing
+        self.assertIsNone(listings[0].get('set_code'))
+        self.assertIsNone(listings[0].get('collector_number'))
+        # Check that details from the variant parsing are still present
+        self.assertEqual(listings[0]['price'], 10.00)
+
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    def test_scrape_listings_no_variants_found(self, mock_make_request):
+        """
+        Test that the scraper returns an empty list when a product is found
+        but has no 'variants' div.
+        """
+        # --- Arrange ---
+        mock_search_response = MagicMock()
+        mock_search_response.text = SEARCH_RESULTS_NO_VARIANTS
+
+        mock_product_response = MagicMock()
+        mock_product_response.text = PRODUCT_PAGE_HTML
+
+        mock_make_request.side_effect = [mock_search_response, mock_product_response]
+
+        # --- Execute ---
+        listings = self.scraper._scrape_listings("Test Card")
+
+        # --- Assert ---
+        self.assertEqual(len(listings), 0, "Should return an empty list if no variants are found")
+
+    def test_parse_variants_handles_malformed_data(self):
+        """
+        Test that _parse_variants can handle a row with missing price/qty and not crash.
+        """
+        # --- Arrange ---
+        malformed_html = """<div class="product"><div class="variant-row in-stock"><div class="variant-description">Near Mint</div></div></div>"""
+        soup = BeautifulSoup(malformed_html, "html.parser")
+        product_element = soup.find("div", class_="product")
+
+        # --- Execute & Assert ---
+        # The function should run without raising an exception and return an empty list.
+        variants = self.scraper._parse_variants(product_element)
+        self.assertEqual(variants, [])
 
 
 if __name__ == '__main__':

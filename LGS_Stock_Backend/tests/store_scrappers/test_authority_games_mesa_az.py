@@ -228,28 +228,25 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
         # It should NOT have made a call for the second "Test Card" after the "Wrong Card".
         self.assertEqual(mock_get.call_count, 2, "Should stop making requests after a non-match")
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.logger')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    def test_scrape_listings_search_network_failure(self, mock_get, mock_logger):
+    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    def test_scrape_listings_search_network_failure(self, mock_make_request):
         """
         Test that _scrape_listings handles a network error during the initial search
         and returns an empty list without crashing.
         """
         # --- Arrange ---
-        # Configure the mock to raise a RequestException, simulating a network failure.
-        mock_get.side_effect = requests.exceptions.RequestException("Network error")
+        # Simulate a total network failure where _make_request_with_retries returns None.
+        mock_make_request.return_value = None
         card_name = "Test Card"
 
         # --- Execute ---
         listings = self.scraper._scrape_listings(card_name)
 
         # --- Assert ---
-        # 1. The function should return an empty list.
+        # The function should gracefully handle the None response and return an empty list.
         self.assertEqual(listings, [])
 
-        # 2. An error should have been logged.
-        mock_logger.error.assert_called_once()
-        self.assertIn("Failed to fetch search results", mock_logger.error.call_args[0][0])
+        mock_make_request.assert_called_once()
 
 
 if __name__ == '__main__':

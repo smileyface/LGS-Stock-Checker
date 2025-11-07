@@ -8,6 +8,7 @@ the `STORE_REGISTRY`, making them available to the rest of the application.
 """
 from utility import logger
 from .storefronts.crystal_commerce_store import CrystalCommerceStore # type: ignore
+from .storefronts.default import DefaultStore # type: ignore
 
 class LazyStoreRegistry:
     """
@@ -21,6 +22,7 @@ class LazyStoreRegistry:
         self._registry = None
         self._strategy_map = {
             "crystal_commerce": CrystalCommerceStore,
+            "default": DefaultStore,
         }
     
     @property
@@ -41,7 +43,10 @@ class LazyStoreRegistry:
             if strategy in self._strategy_map:
                 StoreClass = self._strategy_map[strategy]
                 instance = StoreClass(
-                    name=store_model.name, slug=store_model.slug, homepage=store_model.homepage
+                    name=store_model.name,
+                    slug=store_model.slug,
+                    homepage=store_model.homepage,
+                    search_url=store_model.search_url,
                 )
                 self._registry[instance.slug] = instance
         logger.info(f"✅ Store registry loaded with {len(self._registry)} stores.")

@@ -5,7 +5,7 @@ import importlib
 from unittest.mock import MagicMock, patch
 
 
-@patch('LGS_Stock_Backend.data.database')
+@patch('data.database')
 def test_store_registry_loads_from_db(mock_database):
     """
     GIVEN a mock database that returns store data
@@ -18,6 +18,7 @@ def test_store_registry_loads_from_db(mock_database):
     mock_store_1.name = "Authority Games (Mesa, AZ)"
     mock_store_1.slug = "authority_games_mesa_az"
     mock_store_1.homepage = "https://authoritygames.crystalcommerce.com/"
+    mock_store_1.search_url = "https://authoritygames.crystalcommerce.com/products/search"
     mock_store_1.fetch_strategy = "crystal_commerce"
 
     mock_database.get_all_stores.return_value = [mock_store_1]

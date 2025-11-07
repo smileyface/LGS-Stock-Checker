@@ -90,4 +90,4 @@ def startup_database():
             logger.info(f"✅ Added {new_stores_added} new stores to the database.")
         else:
             logger.info("✅ Database stores are already up-to-date with config file.")
-    _sync(None)
+    _sync()

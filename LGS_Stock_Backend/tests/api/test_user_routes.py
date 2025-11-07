@@ -20,7 +20,10 @@ def test_get_all_stores_success(client, seeded_user, seeded_stores):
     assert response.status_code == 200
     assert isinstance(response.json, list)
     # A default store from the registry should be present
-    assert "authority_games_mesa_az" in response.json
+    assert "test_store" in response.json
+    assert "another_store" in response.json
+
+# --- Security Test for Unauthorized Access ---
 
 def test_get_all_stores_unauthorized(client, db_session):
     """

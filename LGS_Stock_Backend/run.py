@@ -27,6 +27,10 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     print("--- CREATE_APP: Configuring Socket.IO ---")
     socket_manager.configure_socket_io(app)
 
+    # Start the background thread to listen for worker results
+    print("--- CREATE_APP: Starting Server Listener ---")
+    flask_manager.start_server_listener(app)
+
 
     # Use the provided database_url, or fall back to the environment variable.
     # This allows tests to inject a different database URL.

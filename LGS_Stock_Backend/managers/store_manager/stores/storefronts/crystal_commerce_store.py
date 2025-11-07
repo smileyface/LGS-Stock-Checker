@@ -107,6 +107,7 @@ class CrystalCommerceStore(Store):
                 for variant_details in variants:
                     listing = {
                         "url": full_product_url,
+                        "name": scraped_card_name,
                         **static_details,
                         **variant_details,
                     }
@@ -169,13 +170,24 @@ class CrystalCommerceStore(Store):
                 qty_element = variant_row.select_one(".variant-qty")
 
                 if not all([condition_element, price_element, qty_element]):
+                    # Price element is now optional as we prioritize data-price
                     continue
 
                 description = condition_element.text.strip()
                 condition = description.split(",")[0].strip()
                 finish = "foil" if "foil" in description.lower() else "non-foil"
-                price_str = price_element.text.strip().replace("$", "").replace(",", "")
-                price = float(price_str)
+                
+                price_str = None
+                # Prioritize getting the price from the form's data attribute.
+                form_element = variant_row.find("form", class_="add-to-cart-form")
+                if form_element and form_element.get("data-price"):
+                    price_str = form_element["data-price"]
+                elif price_element:
+                    # Fallback to the text inside the price element if data-price is not found.
+                    price_str = price_element.text.strip()
+
+                price = float(price_str.replace("$", "").replace(",", "")) if price_str else 0.0
+
                 qty_text = qty_element.text.strip()
                 quantity = int(qty_text.split(" ")[0])
 

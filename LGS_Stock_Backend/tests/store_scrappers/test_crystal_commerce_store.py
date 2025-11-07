@@ -93,6 +93,24 @@ SEARCH_RESULTS_NO_VARIANTS = """
 </ul>
 """
 
+# This HTML tests that the scraper prioritizes the `data-price` attribute on the form
+# over the text inside the `span.price` element.
+SEARCH_RESULTS_WITH_DATA_PRICE = """
+<ul class="products">
+  <li class="product">
+    <div class="variants">
+      <div class="variant-row in-stock">
+        <form class="add-to-cart-form" data-price="$12.34">
+            <div class="variant-description">Near Mint</div>
+            <span class="price">$99.99</span> <!-- This is a decoy price -->
+            <div class="variant-qty">5 In Stock</div>
+        </form>
+      </div>
+    </div>
+  </li>
+</ul>
+"""
+
 class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityGamesMesaArizona
     """Tests for the CrystalCommerceStore base scraper.""" # Docstring updated
     def setUp(self):
@@ -319,6 +337,26 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         # The function should run without raising an exception and return an empty list.
         variants = self.scraper._parse_variants(product_element)
         self.assertEqual(variants, [])
+
+    def test_parse_variants_uses_data_price_attribute(self):
+        """
+        Test that _parse_variants correctly prioritizes the `data-price` attribute
+        from the form tag over the text in the price span.
+        """
+        # --- Arrange ---
+        soup = BeautifulSoup(SEARCH_RESULTS_WITH_DATA_PRICE, "html.parser")
+        product_element = soup.find("li", class_="product")
+
+        # --- Execute ---
+        variants = self.scraper._parse_variants(product_element)
+
+        # --- Assert ---
+        self.assertEqual(len(variants), 1, "Should find one variant.")
+        
+        # The price should be from `data-price="$12.34"`, not from `<span class="price">$99.99</span>`.
+        self.assertEqual(variants[0]['price'], 12.34, "Price should be parsed from the data-price attribute.")
+        self.assertEqual(variants[0]['stock'], 5)
+        self.assertEqual(variants[0]['condition'], "Near Mint")
 
 
 if __name__ == '__main__':

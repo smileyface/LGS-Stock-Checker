@@ -4,7 +4,7 @@ from data.database.models.orm_models import User
 
 # --- Tests for /api/stores ---
 
-def test_get_all_stores_success(client, seeded_user):
+def test_get_all_stores_success(client, seeded_user, seeded_stores):
     """
     GIVEN a logged-in user
     WHEN a GET request is made to /api/stores

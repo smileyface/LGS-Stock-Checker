@@ -1,3 +1,6 @@
+"""
+Unit tests for the CrystalCommerceStore base class.
+"""
 import unittest
 from unittest.mock import patch, MagicMock
 import requests
@@ -78,17 +81,18 @@ SEARCH_RESULTS_WITH_NON_MATCHING_HTML = """
 </ul>
 """
 
-class TestAuthorityGamesMesaArizona(unittest.TestCase):
+class TestCrystalCommerceStore(unittest.TestCase):
+    """Tests for the CrystalCommerceStore base scraper."""
     def setUp(self):
         """Set up the test case."""
-        # This store is an instance of CrystalCommerceStore, so we test the base class logic.
+        # Instantiate the base class directly for testing its logic
         self.scraper = CrystalCommerceStore(
-            name="Authority Games (Mesa, AZ)",
-            slug="authority_games_mesa_az",
-            homepage="https://authoritygames.crystalcommerce.com/",
-            search_url="https://authoritygames.crystalcommerce.com/products/search"
+            name="Test Crystal Commerce Store",
+            slug="test-cc-store",
+            homepage="https://test-store.crystalcommerce.com/",
+            search_url="https://test-store.crystalcommerce.com/products/search"
         )
-
+        
     def mock_requests_get(self, url, params=None, timeout=None):
         """
         A custom mock function for requests.get.
@@ -138,7 +142,7 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
         self.assertEqual(listing1['stock'], 2)
         self.assertEqual(listing1['condition'], "Near Mint")
         self.assertEqual(listing1['finish'], "non-foil")
-        self.assertEqual(listing1['set_code'], "tst") # Assuming set_code maps 'Test Set' to 'tst'
+        self.assertEqual(listing1['set_code'], "tst")
         self.assertEqual(listing1['collector_number'], "123")
         self.assertIn("/products/1234-test-card", listing1['url'])
 

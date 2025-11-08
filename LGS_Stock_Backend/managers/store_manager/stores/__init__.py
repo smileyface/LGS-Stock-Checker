@@ -7,8 +7,8 @@ instantiates an object for each one. The resulting instances are stored in
 the `STORE_REGISTRY`, making them available to the rest of the application.
 """
 from utility import logger
-from .storefronts.crystal_commerce_store import CrystalCommerceStore # type: ignore
-from .storefronts.default import DefaultStore # type: ignore
+from .storefronts.crystal_commerce_store import CrystalCommerceStore
+from .storefronts.default import DefaultStore
 
 class LazyStoreRegistry:
     """

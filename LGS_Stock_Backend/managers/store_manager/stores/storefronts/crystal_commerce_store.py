@@ -12,9 +12,10 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from managers.set_manager import set_code
-from managers.store_manager.stores.store import Store
+from managers import set_manager
 from utility import logger
+
+from ..store import Store
 
 def _make_request_with_retries(
     url: str, retries: int = 3, backoff_factor: float = 0.5, **kwargs
@@ -152,7 +153,7 @@ class CrystalCommerceStore(Store):
         details["name"] = get_detail("name")
         # Handle cases where the set name might not be found.
         raw_set_name = get_detail("set-name")
-        details["set_code"] = set_code(raw_set_name) if raw_set_name else None
+        details["set_code"] = set_manager.set_code(raw_set_name) if raw_set_name else None
 
         card_number_raw = get_detail("card-number")
         details["collector_number"] = (

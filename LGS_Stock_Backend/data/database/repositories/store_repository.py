@@ -2,6 +2,7 @@ from typing import Optional
 from data.database import schema
 from data.database.session_manager import db_query
 from data.database.models.orm_models import Store
+from utility import logger
 
 
 @db_query
@@ -17,4 +18,5 @@ def get_store_metadata(slug: str, session) -> Optional[schema.StoreSchema]:
 def get_all_stores(session) -> list[schema.StoreSchema]:
     """Fetch all available stores."""
     stores = session.query(Store).all()
+    logger.debug(f"Found {len(stores)} stores in the database.")
     return [schema.StoreSchema.model_validate(store) for store in stores]

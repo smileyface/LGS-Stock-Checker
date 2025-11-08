@@ -3,6 +3,7 @@ import inspect
 import pkgutil
 import warnings
 import typing
+import logging
 from unittest.mock import MagicMock
 
 from datetime import datetime
@@ -77,6 +78,8 @@ def _get_arg_from_type_hint(param, live_user, live_store):
         return live_user
     if annotation is Store:
         return live_store
+    if annotation is logging.Logger:
+        return MagicMock()
 
     # Handle common non-trivial types
     if annotation is callable:
@@ -121,8 +124,8 @@ def _generate_test_args(func, params, live_user, live_store):
         if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
             continue
 
-        # Skip dependency-injected database sessions
-        if "session" in param_name:
+        # Skip dependency-injected database sessions provided by the @db_query decorator.
+        if param_name == "session":
             continue  # The @db_query decorator injects the session; skip.
 
         # --- Argument Generation Strategy ---
@@ -141,8 +144,9 @@ def _generate_test_args(func, params, live_user, live_store):
 
         if is_kw_only:
             kw_args[param_name] = arg_value
-        else: pos_args.append(arg_value)
-        
+        else:
+            pos_args.append(arg_value)
+            
     return pos_args, kw_args
 
 

@@ -30,17 +30,16 @@ class EmojiFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_logger():
+def setup_logger() -> logging.Logger:
     """
     Configures and returns the main application logger.
     This function is designed to be called once. The check for existing
     handlers prevents re-configuration on subsequent imports.
     """
-    log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
-    log_level = getattr(logging, log_level_name, logging.INFO)
 
     log = logging.getLogger("LGS_Stock_Checker")
-    log.setLevel(log_level)
+
+    log_level_name = set_log_level(log)
 
     # If handlers already exist, don't add more.
     # This prevents duplicate log messages if this function is called again.
@@ -52,6 +51,16 @@ def setup_logger():
     log.info(f"✅ Logger configured with log level: {log_level_name}")
 
     return log
+
+def set_log_level(log: logging.Logger) -> str:
+    log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+    log_level = getattr(logging, log_level_name, logging.INFO)
+    
+    log.setLevel(log_level)
+
+    return log_level_name
+
+
 
 # Create the logger instance that will be imported by other modules
 logger = setup_logger()

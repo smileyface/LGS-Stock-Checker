@@ -26,7 +26,17 @@ This document provides a mapping from the software requirements defined in `srd.
 | Requirement ID | Requirement Description | Implementation Artifact(s) | Test Case(s) |
 | :--- | :--- | :--- | :--- |
 | **[2.1.1]** | Retrieve a specific store's metadata using its unique slug. | `LGS_Stock_Backend/managers/store_manager/store_manager.py` (`get_store`) | `LGS_Stock_Backend/tests/test_store_manager.py` (`test_get_store_by_slug`) |
-| **[2.1.3]** | Retrieve a list of all available stores. | `LGS_Stock_Backend/managers/store_manager/store_manager.py` (`get_store`) | `LGS_Stock_Backend/tests/test_store_manager.py` (`test_get_all_stores`)<br>`frontend/tests/account_page.spec.js` (`test_display_all_stores`) |
+| **[2.1.3]** | Retrieve a list of all available stores. | `LGS_Stock_Backend/managers/store_manager/stores/__init__.py` (`_load_stores_from_db`) | `LGS_Stock_Backend/tests/manager/test_store_manager.py` (`test_store_registry_loads_from_db`)<br>`frontend/tests/account_page.spec.js` (`test_display_all_stores`) |
+| **[2.2.1]** | Provide a `CrystalCommerceStore` base class. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` |
+| **[2.2.2]** | Base class shall perform a product search. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_scrape_listings`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_success`) |
+| **[2.2.3]** | Base class shall fetch an individual product page. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_get_product_page`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_success`) |
+| **[2.2.4]** | Parse search result pages for product listings. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_get_product_listings`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_success`) |
+| **[2.2.5]** | Parse in-stock variants for condition, price, etc. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_parse_variants`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_success`) |
+| **[2.2.6]** | Parse product detail page for canonical info. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_parse_product_page_details`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_success`) |
+| **[2.2.7]** | Scraper shall stop on non-matching results. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_scrape_listings`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_stops_on_non_matching_card`) |
+| **[2.2.8]** | Scraper shall prevent duplicate listings. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_scrape_listings`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_deduplicates_results`) |
+| **[2.2.9]** | Scraper shall handle network errors. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_get_product_page`, `_scrape_listings`) | `LGS_Stock_Backend/tests/store_scrappers/test_crystal_commerce_store.py` (`test_scrape_listings_search_network_failure`) |
+| **[2.2.10]**| Scraper shall handle parsing errors. | `LGS_Stock_Backend/managers/store_manager/stores/crystal_commerce_store.py` (`_parse_variants`) | *(Implicitly covered by individual parsing tests)* |
 
 ## 3. Card Tracking Management
 

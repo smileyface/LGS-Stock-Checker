@@ -21,7 +21,7 @@ services:
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     command: >
-      gunicorn --worker-class eventlet -w 4 --bind 0.0.0.0:5000 --timeout 120 --log-level ${LOG_LEVEL:-info} --access-logfile - --error-logfile - server_entrypoint:app
+      gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 --timeout 120 --log-level ${LOG_LEVEL:-info} --access-logfile - --error-logfile - server_entrypoint:app
     depends_on:
       redis:
         condition: service_healthy

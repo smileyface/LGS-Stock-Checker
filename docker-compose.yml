@@ -59,11 +59,12 @@ services:
     build:
       context: .
       dockerfile: LGS_Stock_Backend/Dockerfile
-    container_name: lgs-stock-checker-worker-1 # Add autoheal label
     restart: on-failure
     # Allow the worker up to 130s to finish its current job before being killed.
     stop_grace_period: 130s
     command: [ "python", "worker_entrypoint.py" ]
+    deploy:
+      replicas: 2
     depends_on:
       # The worker should wait for the main backend app to be healthy
       # to ensure all application components are initialized, and Redis for connection.

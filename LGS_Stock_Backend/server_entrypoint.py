@@ -10,8 +10,10 @@ eventlet.monkey_patch()
 from utility import logger
 from run import create_app
 
-# Create the app instance using the factory.
-# The factory handles all configuration, blueprint registration, and extension initialization.
-logger.info("🚀 Creating app context for server...")
-app = create_app()
+app = None
 
+# Gunicorn can import this file multiple times. This check ensures that
+# the app is only created once, preventing resource conflicts.
+if not app:
+    logger.info("🚀 Creating app context for server...")
+    app = create_app()

@@ -1,30 +1,44 @@
 import os
-import logging
 
 def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
+
+    
+    from utility import (
+        logger,
+        set_log_level,
+    )
+
+    logger.info(f"--- CREATE_APP: START (config: {config_name}) ---")
 
     from managers import flask_manager
     app = flask_manager.initalize_flask_app(override_config, config_name)
     flask_manager.login_manager_init(app)
     flask_manager.register_blueprints(app)
 
-    # --- Logger Configuration (MUST happen after config, before other imports) ---
     if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
         os.environ["LOG_LEVEL"] = "DEBUG"
+    
+    set_log_level(logger)
+
+
+    # --- Logger Configuration (MUST happen after config, before other imports) ---
+
+    print(f"--- CREATE_APP: LOG_LEVEL is {os.environ.get('LOG_LEVEL')} ---")
 
     # --- Move imports inside the factory to prevent side effects ---
     from managers import socket_manager
     from managers import flask_manager
     from managers import task_manager
     from data import database
-    from utility import logger
 
+    print("--- CREATE_APP: Initializing Task Manager ---")
     task_manager.init_task_manager()
 
+    print("--- CREATE_APP: Configuring Socket.IO ---")
     socket_manager.configure_socket_io(app)
 
-    
     # Start the background thread to listen for worker results
+    print("--- CREATE_APP: Starting Server Listener ---")
     flask_manager.start_server_listener(app)
 
 
@@ -33,6 +47,7 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     db_url = database_url or os.environ.get("DATABASE_URL")
 
     if db_url:
+        print(f"--- CREATE_APP: Initializing Database (URL exists) ---")
         database.initialize_database(db_url)
         # The startup_database function syncs stores, which requires tables to exist.
         # In a test environment, tables are created by fixtures, so we skip this.
@@ -44,6 +59,7 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
         database.remove_session()
 
     logger.info("✅ Flask app created successfully")
+    print("--- CREATE_APP: FINISHED ---")
     return app
 
 # This block is only for running the local development server directly via `python run.py`.

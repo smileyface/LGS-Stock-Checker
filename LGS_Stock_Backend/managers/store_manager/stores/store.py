@@ -10,12 +10,11 @@ from utility import logger
 class Store(ABC):
     """Abstract base class for all store implementations."""
 
-    def __init__(self, name: str, slug: str, homepage: str, search_url: str, fetch_strategy: str):
+    def __init__(self, name: str, slug: str, homepage: str, search_url: str):
         self.name = name
         self.slug = slug
         self.homepage = homepage
         self.search_url = search_url
-        self.fetch_strategy = fetch_strategy
 
     @abstractmethod
     def _scrape_listings(self, card_name: str) -> List[Dict[str, Any]]:

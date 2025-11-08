@@ -73,13 +73,15 @@ class _Scheduler_Listener:
 
         try:
             for message in self.pubsub.listen():
+                logger.debug(f"Scheduler recieved message: {message.get('data')}")
                 try:
                     data = json.loads(message["data"])
                     command_type = data.get("type")
                     handler = HANDLER_MAP.get(command_type)
                     if handler:
                         payload = data.get("payload", {})
-                        handler(payload)   
+                        handler(payload)
+                    else:
                         raise ValueError(f"No handler found for command type '{command_type}' on 'scheduler-requests' channel.")
                 except Exception as e:
                     logger.error(f"Failed to process scheduler-requests message: {e}. Message: {message.get('data')}")

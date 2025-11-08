@@ -26,6 +26,7 @@ Imports should be grouped in the following order:
 1. Standard library imports (e.g., `os`, `sys`, `datetime`).
 2. Third-party library imports (e.g., `pytest`, `requests`, `sqlalchemy`).
 3. Internal application imports (e.g., `from managers import ...`, `from utility import ...`).
+4. Internal module imports (e.g., `from .<package> import ...`).
 
 ### Internal Imports
 

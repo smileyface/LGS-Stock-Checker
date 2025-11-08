@@ -1,7 +1,13 @@
 import os
-import logging
 
 def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
+
+    
+    from utility import (
+        logger,
+        set_log_level,
+    )
+
     logger.info(f"--- CREATE_APP: START (config: {config_name}) ---")
 
     from managers import flask_manager
@@ -9,9 +15,14 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     flask_manager.login_manager_init(app)
     flask_manager.register_blueprints(app)
 
-    # --- Logger Configuration (MUST happen after config, before other imports) ---
     if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
         os.environ["LOG_LEVEL"] = "DEBUG"
+    
+    set_log_level(logger)
+
+
+    # --- Logger Configuration (MUST happen after config, before other imports) ---
+
     print(f"--- CREATE_APP: LOG_LEVEL is {os.environ.get('LOG_LEVEL')} ---")
 
     # --- Move imports inside the factory to prevent side effects ---
@@ -19,7 +30,6 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     from managers import flask_manager
     from managers import task_manager
     from data import database
-    from utility import logger
 
     print("--- CREATE_APP: Initializing Task Manager ---")
     task_manager.init_task_manager()

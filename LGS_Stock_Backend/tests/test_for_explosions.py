@@ -3,6 +3,7 @@ import inspect
 import pkgutil
 import warnings
 import typing
+import logging
 from unittest.mock import MagicMock
 
 from datetime import datetime
@@ -77,6 +78,8 @@ def _get_arg_from_type_hint(param, live_user, live_store):
         return live_user
     if annotation is Store:
         return live_store
+    if annotation is logging.Logger:
+        return MagicMock()
 
     # Handle common non-trivial types
     if annotation is callable:

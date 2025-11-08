@@ -2,7 +2,7 @@ import os
 import logging
 
 def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
-    print(f"--- CREATE_APP: START (config: {config_name}) ---")
+    logger.info(f"--- CREATE_APP: START (config: {config_name}) ---")
 
     from managers import flask_manager
     app = flask_manager.initalize_flask_app(override_config, config_name)

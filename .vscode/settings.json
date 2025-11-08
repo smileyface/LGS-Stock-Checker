@@ -1,9 +1,0 @@
-{
-    "CodeGPT.apiKey": "CodeGPT Plus Beta",
-    "python.testing.pytestArgs": [
-        "LGS_Stock_Backend"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.envFile": "${workspaceFolder}/.env"
-}

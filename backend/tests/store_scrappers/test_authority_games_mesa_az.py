@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import requests
-from LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore
+from managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore
 
 # --- Sample HTML Payloads ---
 # This is a simplified version of the search results page HTML.

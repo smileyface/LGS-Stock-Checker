@@ -17,12 +17,12 @@ def mock_redis_manager_objects(mocker):
     """
     global _global_mock_redis_instance
 
-    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.get_redis_connection", _global_mock_redis_instance)
+    mocker.patch("managers.redis_manager.redis_manager.get_redis_connection", _global_mock_redis_instance)
 
     mock_queue = MagicMock()
     mock_queue.task.side_effect = lambda func: func
-    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.queue", mock_queue)
-    mocker.patch("LGS_Stock_Backend.managers.redis_manager.redis_manager.scheduler", MagicMock())
+    mocker.patch("managers.redis_manager.redis_manager.queue", mock_queue)
+    mocker.patch("managers.redis_manager.redis_manager.scheduler", MagicMock())
 
 
 @pytest.fixture(autouse=True)

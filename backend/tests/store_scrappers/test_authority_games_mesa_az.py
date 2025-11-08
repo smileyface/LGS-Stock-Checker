@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 import requests
 from managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore
+from managers.store_manager.stores.listing import Listing
 
 # --- Sample HTML Payloads ---
 # This is a simplified version of the search results page HTML.
@@ -113,60 +114,60 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
 
         return mock_response
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
-    def test_scrape_listings_success(self, mock_set_code, mock_get):
-        """
-        Test the full scraping process for a card, mocking both network calls.
-        """
-        # Configure the mock to use our side_effect function
-        mock_get.side_effect = self.mock_requests_get
-        # Configure mock_set_code to return the expected 'tst' for any input
-        mock_set_code.return_value = "tst"
-        
-        # --- Execute ---
-        card_name = "Test Card"
-        listings = self.scraper._scrape_listings(card_name)
+    @patch('requests.get')
+    @patch('managers.store_manager.stores.listing.Listing.set_code')
+    def test_scrape_listings_success(self, mock_get_set_code, mock_get):
+      """
+      Test the full scraping process for a card, mocking both network calls.
+      """
+      # Configure the mock to use our side_effect function
+      mock_get.side_effect = self.mock_requests_get
+      # Configure get_set_code (now a method) to return the expected 'tst' for any input
+      mock_get_set_code.return_value = "tst"
+      
+      # --- Execute ---
+      card_name = "Test Card"
+      listings = self.scraper._scrape_listings(card_name)
 
-        # --- Assert ---
-        self.assertEqual(len(listings), 2, "Should find two listings (one regular, one foil)")
+      # --- Assert ---
+      self.assertEqual(len(listings), 2, "Should find two listings (one regular, one foil)")
 
-        # Verify the first listing (Non-Foil)
-        listing1 = listings[0]
-        self.assertEqual(listing1['name'], "Test Card")
-        self.assertEqual(listing1['price'], 10.00)
-        self.assertEqual(listing1['stock'], 2)
-        self.assertEqual(listing1['condition'], "Near Mint")
-        self.assertEqual(listing1['finish'], "non-foil")
-        self.assertEqual(listing1['set_code'], "tst") # Assuming set_code maps 'Test Set' to 'tst'
-        self.assertEqual(listing1['collector_number'], "123")
-        self.assertIn("/products/1234-test-card", listing1['url'])
+      # Verify the first listing (Non-Foil)
+      listing1 = listings[0]
+      self.assertEqual(listing1.name, "Test Card")
+      self.assertEqual(listing1.price, 10.00)
+      self.assertEqual(listing1.stock, 2)
+      self.assertEqual(listing1.condition, "Near Mint")
+      self.assertEqual(listing1.finish, "non-foil")
+      self.assertEqual(listing1.set_code, "tst") # Assuming set_code maps 'Test Set' to 'tst'
+      self.assertEqual(listing1.collector_number, "123")
+      self.assertIn("/products/1234-test-card", listing1.url)
 
-        # Verify the second listing (Foil)
-        listing2 = listings[1]
-        self.assertEqual(listing2['name'], "Test Card")
-        self.assertEqual(listing2['price'], 25.00)
-        self.assertEqual(listing2['stock'], 1)
-        self.assertEqual(listing2['condition'], "Near Mint")
-        self.assertEqual(listing2['finish'], "foil")
-        self.assertEqual(listing2['collector_number'], "123") # Both variants share the collector number
+      # Verify the second listing (Foil)
+      listing2 = listings[1]
+      self.assertEqual(listing2.name, "Test Card")
+      self.assertEqual(listing2.price, 25.00)
+      self.assertEqual(listing2.stock, 1)
+      self.assertEqual(listing2.condition, "Near Mint")
+      self.assertEqual(listing2.finish, "foil")
+      self.assertEqual(listing2.collector_number, "123") # Both variants share the collector number
 
-        # Verify that requests.get was called correctly
-        self.assertEqual(mock_get.call_count, 2, "Should make one call for search and one for the product page")
-        
-        # Check the first call (search)
-        search_call_args = mock_get.call_args_list[0]
-        self.assertEqual(search_call_args.kwargs['params'], {'q': 'Test Card', 'c': 1})
-        
-        # Check the second call (product page)
-        product_page_call_args = mock_get.call_args_list[1]
-        self.assertIn('/products/1234-test-card', product_page_call_args.args[0])
-        
-        # Verify that set_code was called with the correct set name from the HTML
-        mock_set_code.assert_called_with("Magic The Gathering: Test Set")
+      # Verify that requests.get was called correctly
+      self.assertEqual(mock_get.call_count, 2, "Should make one call for search and one for the product page")
+      
+      # Check the first call (search)
+      search_call_args = mock_get.call_args_list[0]
+      self.assertEqual(search_call_args.kwargs['params'], {'q': 'Test Card', 'c': 1})
+      
+      # Check the second call (product page)
+      product_page_call_args = mock_get.call_args_list[1]
+      self.assertIn('/products/1234-test-card', product_page_call_args.args[0])
+      
+      # Verify that the get_set_code method was called with the scraper instance and correct set name
+      mock_get_set_code.assert_called_once_with(self.scraper, "Magic The Gathering: Test Set")
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
     def test_scrape_listings_deduplicates_results(self, mock_set_code, mock_get):
         """
         Test that the scraper correctly deduplicates listings when the source HTML
@@ -196,8 +197,8 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
         # The scraper should return only 2 unique listings.
         self.assertEqual(len(listings), 2, "Should find 2 unique listings after deduplication")
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.requests.get')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.set_code')
     def test_scrape_listings_stops_on_non_matching_card(self, mock_set_code, mock_get):
         """
         Test that the scraper stops processing once it encounters a card that
@@ -228,7 +229,7 @@ class TestAuthorityGamesMesaArizona(unittest.TestCase):
         # It should NOT have made a call for the second "Test Card" after the "Wrong Card".
         self.assertEqual(mock_get.call_count, 2, "Should stop making requests after a non-match")
 
-    @patch('LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
     def test_scrape_listings_search_network_failure(self, mock_make_request):
         """
         Test that _scrape_listings handles a network error during the initial search

@@ -16,6 +16,7 @@ from managers import set_manager
 from utility import logger
 
 from ..store import Store
+from ..listing import Listing
 
 def _make_request_with_retries(
     url: str, retries: int = 3, backoff_factor: float = 0.5, **kwargs
@@ -50,13 +51,25 @@ def _make_request_with_retries(
     return None
 
 
+
 class CrystalCommerceStore(Store):
     """
-    A base class for scraping stores built on the Crystal Commerce platform.
+    CrystalCommerceStore is a base class for scraping stores built on the Crystal Commerce platform.
+    This class implements common scraping logic for searching products, parsing variants, and extracting
+    details from product pages. Subclasses are required to provide specific metadata such as name, slug,
+    and URLs.
 
-    It implements the common scraping logic for searching products, parsing
-    variants, and extracting details from product pages. Subclasses only need
-    to provide their specific metadata (name, slug, URLs).
+    Methods:
+        _get_product_page(product_url: str) -> Optional[BeautifulSoup]:
+            Fetches the individual product page to find the collector number.
+        _scrape_listings(card_name: str) -> List[Dict[str, Any]]:
+            Scrapes the store's website for raw card listings based on the provided card name.
+        _get_product_listings(soup: BeautifulSoup) -> List[Any]:
+            Finds all product listing elements on a search results page.
+        _parse_product_page_details(soup: Optional[BeautifulSoup]) -> Dict[str, Any]:
+            Parses the product detail page to extract canonical card information.
+        _parse_variants(product: BeautifulSoup) -> List[Dict[str, Any]]:
+            Parses all in-stock variants from a product listing element.
     """
 
     def _get_product_page(self, product_url: str) -> Optional[BeautifulSoup]:
@@ -68,8 +81,18 @@ class CrystalCommerceStore(Store):
             return BeautifulSoup(response.text, "html.parser")
         return None
 
-    def _scrape_listings(self, card_name: str) -> List[Dict[str, Any]]:
-        """Scrapes the store's website for raw card listings."""
+    def _scrape_listings(self, card_name: str) -> List[Listing]:
+        """
+        Scrapes the store's website for raw card listings based on the provided card name.
+
+        Args:
+            card_name (str): The name of the card to search for in the store's listings.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing details of available products,
+                                  including their URLs, names, and other relevant attributes.
+                                  If no listings are found or if the response is empty, an empty list is returned.
+        """
         search_params = {"q": card_name, "c": 1}
         response = _make_request_with_retries(
             self.search_url, params=search_params, timeout=10
@@ -112,18 +135,21 @@ class CrystalCommerceStore(Store):
                         **static_details,
                         **variant_details,
                     }
+                    listing = Listing()
+                    listing.id = {
+                        "url": full_product_url,
+                        "name": scraped_card_name,
+                        "price": variant_details.get("price", 0.0),
+                        "condition": variant_details.get("condition", ""),
+                    }
+                    listing.details = static_details
 
-                    listing_id = (
-                        listing.get("name"),
-                        listing.get("set_code"),
-                        listing.get("collector_number"),
-                        listing.get("finish"),
-                        listing.get("price"),
-                        listing.get("condition"),
-                    )
-                    if listing_id not in seen_listings:
+                    listing.finish = variant_details.get("finish", "")
+                    listing.stock = variant_details.get("qty", 0)
+
+                    if listing not in seen_listings:
                         available_products.append(listing)
-                        seen_listings.add(listing_id)
+                        seen_listings.add(listing)
 
         return available_products
 

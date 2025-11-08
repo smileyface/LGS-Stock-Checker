@@ -8,7 +8,7 @@ def mock_socketio_context(mocker):
     network calls during tests. The necessary request/session context
     is provided by the 'app_context' fixture.
     """
-    mocker.patch("LGS_Stock_Backend.managers.socket_manager.socket_emit.socketio.emit")
+    mocker.patch("managers.socket_manager.socket_emit.socketio.emit")
 
 @pytest.fixture
 def mock_store():

@@ -332,7 +332,7 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         # --- Assert ---
         self.assertEqual(len(listings), 0, "Should return an empty list if no variants are found")
 
-    def test_parse_variants_handles_malformed_data(self):
+    def test_parse_variants_handles_missing_data(self):
         """
         Test that _parse_variants can handle a row with missing price/qty and not crash.
         """
@@ -345,6 +345,29 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         # The function should run without raising an exception and return an empty list.
         variants = self.scraper._parse_variants(product_element)
         self.assertEqual(variants, [])
+
+    def test_parse_variants_malformed_price(self):
+        """
+        Test that _parse_variants can handle a malformed price string gracefully.
+        """
+        # --- Arrange ---
+        malformed_price_html = """
+        <div class="product">
+          <div class="variant-row in-stock">
+            <div class="variant-description">Near Mint</div>
+            <div class="price">Ten Dollars</div>
+            <div class="variant-qty">3 In Stock</div>
+          </div>
+        </div>
+        """
+        soup = BeautifulSoup(malformed_price_html, "html.parser")
+        product_element = soup.find("div", class_="product")
+
+        # --- Execute ---
+        variants = self.scraper._parse_variants(product_element)
+
+        # --- Assert ---
+        self.assertEqual(len(variants), 0, "Should skip variants with malformed price.")
 
     def test_parse_variants_uses_data_price_attribute(self):
         """

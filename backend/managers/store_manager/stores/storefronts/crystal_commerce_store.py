@@ -145,7 +145,7 @@ class CrystalCommerceStore(Store):
                     listing.details = static_details
 
                     listing.finish = variant_details.get("finish", "")
-                    listing.stock = variant_details.get("qty", 0)
+                    listing.stock = variant_details.get("stock", 0)
 
                     if listing not in seen_listings:
                         available_products.append(listing)

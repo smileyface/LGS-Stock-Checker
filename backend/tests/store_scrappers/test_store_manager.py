@@ -25,8 +25,8 @@ def test_store_registry_loads_from_db(mock_database):
 
     # --- Act ---
     # We need to reload the module to trigger the dynamic loading logic again
-    from LGS_Stock_Backend.managers.store_manager import stores
-    from LGS_Stock_Backend.managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore
+    from managers.store_manager import stores
+    from managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore, _make_request_with_retries
     importlib.reload(stores)
     STORE_REGISTRY = stores.STORE_REGISTRY
 

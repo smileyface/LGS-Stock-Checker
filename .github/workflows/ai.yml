@@ -1,0 +1,47 @@
+name: Gemini AI Traceability Check
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [ master ]
+
+permissions:
+  contents: read      # To read the code
+  pull-requests: write # To post a comment
+
+jobs:
+  traceability-check:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Check out the code
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches full history for a better diff
+
+      # 2. Use a Marketplace Action to call the Gemini API
+      - name: Run Gemini AI Review
+        # This is an example of a popular, simple-to-use action
+        uses: adrian-pr-reviewer/gemini-pr-reviewer@v1
+        with:
+          # 3. Provide the API key from your secrets
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          
+          # 4. Provide the GitHub token so it can post comments
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # 5. This is your custom prompt!
+          # We tell it exactly what to do and inject the PR body as the requirement
+          prompt: |
+            You are a senior software engineer performing a Requirements Traceability check. 
+            Your SOLE task is to validate that the code and tests in this PR 
+            directly satisfy the requirements listed in the pull request body.
+            
+            - First, identify the requirement in the PR body.
+            - Second, analyze the code diff to see if it implements the requirement.
+            - Third, check the test files to see if there is a test case for the requirement.
+            
+            Provide a clear "Traceability Analysis" in your comment.
+            - Start with "✅ **Traceability Satisfied**" if the code AND tests map to the requirement.
+            - Start with "❌ **Traceability Not Satisfied**" if the code or tests are missing.
+            - Clearly state *which* files implement the requirement and *which* files test it.

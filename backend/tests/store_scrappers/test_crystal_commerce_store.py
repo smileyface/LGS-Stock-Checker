@@ -2,7 +2,7 @@
 Unit tests for the CrystalCommerceStore base scraper.
 """
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, PropertyMock
 import requests
 from bs4 import BeautifulSoup
 
@@ -147,20 +147,21 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
 
         return mock_response
 
+    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.set_manager.set_code')
     @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
-    @patch.object(Listing, 'set_code', autospec=True)
-    def test_scrape_listings_success(self, mock_set_code, mock_make_request):
+    @patch.object(Listing, 'set_code', new_callable=PropertyMock)
+    def test_scrape_listings_success(self, mock_set_code, 
+                                     mock_make_request,
+                                     mock_set_manager_set_code):
         """
         Test the full scraping process for a card, mocking both network calls.
         """
 
         # --- Arrange ---
-        def set_code_side_effect(listing_instance, set_name):
-            listing_instance.set_code = set_name
         # Configure the mock to use our side_effect function
         mock_make_request.side_effect = self.mock_requests_get
-        # Configure mock_set_code to return the expected 'tst' for any input
-        mock_set_code.side_effect = set_code_side_effect
+        mock_set_code.return_value = "tst"
+        mock_set_manager_set_code.return_value = "tst"
         
         # --- Execute ---
         card_name = "Test Card"
@@ -200,8 +201,10 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         product_page_call_args = mock_make_request.call_args_list[1]
         self.assertIn('/products/1234-test-card', product_page_call_args.args[0])
         
-        # Verify that set_code was called with the correct set name from the HTML
-        mock_set_code.assert_called_with("Magic The Gathering: Test Set")
+        # 1. Assert that the SET MANAGER was called with the RAW NAME from the HTML
+        mock_set_manager_set_code.assert_any_call("Magic The Gathering: Test Set")
+        # 2. Assert that the LISTING was set with the SET CODE from the SET MANAGER
+        mock_set_code.assert_any_call("tst")
 
     @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
     @patch.object(Listing, 'set_code')
@@ -303,10 +306,10 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         # --- Assert ---
         self.assertEqual(len(listings), 2, "Should still find 2 variants even if product page fails")
         # Check that details from the failed page are missing
-        self.assertIsNone(listings[0].get('set_code'))
-        self.assertIsNone(listings[0].get('collector_number'))
+        self.assertEqual(listings[0].set_code, "")
+        self.assertEqual(listings[0].collector_number, "")
         # Check that details from the variant parsing are still present
-        self.assertEqual(listings[0]['price'], 10.00)
+        self.assertEqual(listings[0].price, 10.00)
 
     @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
     def test_scrape_listings_no_variants_found(self, mock_make_request):

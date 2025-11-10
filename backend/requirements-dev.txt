@@ -5,6 +5,9 @@
 -r requirements.txt
 
 # Testing-specific packages
+black==24.4.2
+flake8==7.1.0
 pytest==8.3.4
 pytest-cov==5.0.0
 pytest-mock==3.14.0
+pytest-xdist==3.3.1  # Moved from requirements.txt

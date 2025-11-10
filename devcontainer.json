@@ -12,7 +12,7 @@
 
   // This is the most important part!
   // Automatically install dev requirements AFTER the container is built.
-  "postCreateCommand": "pip install -r backend/requirements.txt",
+  "postCreateCommand": "pip install -r backend/requirements-dev.txt",
 
   // Automatically install helpful VSCode extensions
   "customizations": {

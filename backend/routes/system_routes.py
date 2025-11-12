@@ -1,7 +1,6 @@
-from flask import Blueprint, request, session, jsonify
+from flask import Blueprint
 
 from data import database
-from managers import user_manager
 from managers import socket_manager
 from managers import redis_manager
 from managers import flask_manager
@@ -17,13 +16,15 @@ system_bp = Blueprint("system_bp", __name__)
 def health_check():
     """
     Health check endpoint that verifies connectivity to critical services.
-    Used by Docker's healthcheck to ensure the application is fully operational.
+    Used by Docker's healthcheck to ensure the application is fully
+    operational.
     """
     try:
         # Add a guard to ensure the database has been initialized.
         if not database.get_session():
             logger.error(
-                "❌ Health check failed: Database is not initialized (SessionLocal is None)."
+                "❌ Health check failed: Database is not initialized "
+                "(SessionLocal is None)."
             )
             return "Service Unavailable: DB not configured", 503
 
@@ -53,7 +54,8 @@ def health_check():
 
         return "OK", 200
     except Exception as e:
-        # Use the application's configured logger to report the health check failure.
+        # Use the application's configured logger to report the
+        # health check failure.
         logger.error(
             f"❌ Health check failed: {e}", exc_info=False
         )  # exc_info=False to keep logs clean

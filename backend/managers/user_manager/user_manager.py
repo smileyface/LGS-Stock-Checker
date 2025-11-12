@@ -10,12 +10,14 @@ def get_public_user_profile(
     username: str,
 ) -> Optional[database.schema.UserPublicSchema]:
     """
-    Retrieve a user's public profile by username, excluding sensitive fields, and return as a UserPublicSchema instance.
+    Retrieve a user's public profile by username, excluding sensitive fields,
+      and return as a UserPublicSchema instance.
     Args:
         username (str): The unique username of the user to fetch.
 
     Returns:
-        Optional[database.schema.UserPublicSchema]: The user data as a UserPublicSchema if found, otherwise None.
+        Optional[database.schema.UserPublicSchema]: The user data as a
+        UserPublicSchema if found, otherwise None.
     """
     return database.get_user_for_display(username)
 
@@ -76,7 +78,7 @@ def update_username(old_username: str, new_username: str) -> bool:
         return False
     if user_exists(old_username):
         database.update_username(old_username, new_username)
-        logger.info(f"✅ Username updated successfully.")
+        logger.info("✅ Username updated successfully.")
         return True
     else:
         logger.warning(f"🚨 User '{old_username}' not found. Cannot rename.")

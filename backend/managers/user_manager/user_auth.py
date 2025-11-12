@@ -9,7 +9,6 @@ from typing import Optional
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from data import database
-from data.database.schema.user_schema import UserDBSchema
 from data.database.models.orm_models import User
 from utility import logger
 
@@ -49,7 +48,8 @@ def update_password(
     Update the password for a user identified by username.
 
     Args:
-        username (str): The username of the user whose password is to be updated.
+        username (str): The username of the user whose password
+          is to be updated.
         old_password (str): The current hashed password.
         new_password (str): The new hashed password.
 
@@ -65,7 +65,8 @@ def update_password(
         user_data.password_hash, old_password
     ):
         logger.warning(
-            f"❌ Password update failed for {username}. Incorrect current password."
+            f"❌ Password update failed for {username}. Incorrect current"
+            f" password."
         )
         return False
 
@@ -86,6 +87,6 @@ def load_user_by_id(user_id: str) -> User:
     Returns:
         User: The user object if found, otherwise None.
     """
-    # The user_id from the session is a string, so it must be cast to an integer.
-    # This now correctly uses the repository layer.
+    # The user_id from the session is a string, so it must be
+    # cast to an integer.
     return database.get_user_orm_by_id(int(user_id))

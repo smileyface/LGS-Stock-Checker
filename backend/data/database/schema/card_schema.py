@@ -14,5 +14,6 @@ class CardSpecificationSchema(BaseModel):
     )
     finish: Optional[str] = Field(
         "normal",
-        description="The card's finish ('normal', 'foil', 'etched'). Defaults to 'normal'.",
+        description="The card's finish ('normal', 'foil', 'etched'). "
+        "Defaults to 'normal'.",
     )

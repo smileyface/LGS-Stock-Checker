@@ -25,7 +25,7 @@ def db_query(func):
             logger.error(f"❌ Database query failed: {str(e)}")
             raise
         finally:
-            remove_session()  # Ensure the session is closed and returned to the pool
+            remove_session()
             logger.debug(
                 "🔍 Database session scope finished for db_query decorator."
             )
@@ -51,8 +51,10 @@ def init_session(engine):
         logger.error(f"❌ Error initializing database session factory: {e}")
         return
 
-    # This check is unlikely to ever be true, as scoped_session raises exceptions on failure.
-    # It's kept as a safeguard, but the real issue is likely an exception or early return.
+    # This check is unlikely to ever be true, as scoped_session
+    # raises exceptions on failure.
+    # It's kept as a safeguard, but the real issue is likely an
+    # exception or early return.
     if not SessionLocal:
         logger.error("❌ Database not initialized.")
         return

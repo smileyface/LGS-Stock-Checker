@@ -1,6 +1,4 @@
 from managers import redis_manager
-from managers import availability_manager
-from . import task_definitions
 from utility import logger
 
 # --- Task Registry ---
@@ -11,7 +9,8 @@ TASK_REGISTRY = {}
 
 def task(task_id: str = None):
     """
-    A decorator that registers a function as a background task with both RQ and our internal task manager.
+    A decorator that registers a function as a background task with both
+    RQ and our internal task manager.
     This replaces the need for separate `register_task` calls.
 
     Usage:
@@ -20,7 +19,8 @@ def task(task_id: str = None):
             # ...
 
     Args:
-        task_id (str, optional): The ID to register the task with. If None, the function's name is used.
+        task_id (str, optional): The ID to register the task with. If None,
+        the function's name is used.
     """
 
     def decorator(func):
@@ -28,17 +28,21 @@ def task(task_id: str = None):
         _task_id = task_id or func.__name__
         # 1. Register with our internal registry for queuing by ID
         register_task(_task_id, func)
-        # 2. Return the original function, as RQ does not require pre-decoration.
+        # 2. Return the original function, as RQ does not require
+        # pre-decoration.
         return func
 
     return decorator
 
 
 def register_task(task_id: str, func: callable):
-    """Allows task modules to register their functions with the task manager."""
+    """
+    Allows task modules to register their functions with the task manager.
+    """
     if task_id in TASK_REGISTRY:
         logger.warning(
-            f"⚠️ Task ID '{task_id}' is being re-registered. This may be unintentional."
+            f"⚠️ Task ID '{task_id}' is being re-registered. "
+            f"This may be unintentional."
         )
     TASK_REGISTRY[task_id] = func
     logger.debug(
@@ -51,7 +55,8 @@ def queue_task(task_id: str, *args, **kwargs):
     Queues a task by its ID to be executed by an RQ worker.
 
     Args:
-        task_id (str): The ID of the task to execute, as defined in the TASK_REGISTRY.
+        task_id (str): The ID of the task to execute,
+            as defined in the TASK_REGISTRY.
         *args: Positional arguments to pass to the function.
         **kwargs: Keyword arguments to pass to the function.
     """
@@ -93,5 +98,8 @@ def trigger_scheduled_task(task_id: str):
 
 def init_task_manager():
     # Import task modules to ensure they register themselves on startup.
-    import tasks.card_availability_tasks
-    import tasks.catalog_tasks
+    # Use importlib.import_module so the import is an explicit runtime action
+    # and does not trigger an "imported but unused" lint error.
+    import importlib
+    importlib.import_module('tasks.card_availability_tasks')
+    importlib.import_module('tasks.catalog_tasks')

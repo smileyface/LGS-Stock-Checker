@@ -14,7 +14,7 @@ user_bp = Blueprint("user_bp", __name__)
 @login_required
 def get_all_stores():
     """Returns a list of all available store slugs from the registry."""
-    logger.info(f"Getting list of stores.")
+    logger.info("Getting list of stores.")
     return jsonify(list(store_manager.STORE_REGISTRY.get_registry().keys()))
 
 
@@ -33,7 +33,8 @@ def change_username():
     if not new_username:
         return jsonify({"error": "New username is required"}), 400
     # Note: Changing username with Flask-Login requires re-logging in the user
-    # for the session to reflect the change immediately. This is a simplified version.
+    # for the session to reflect the change immediately.
+    # This is a simplified version.
     status = user_manager.update_username(current_user.username, new_username)
     if not status:
         return jsonify({"error": "Username already exists"}), 400

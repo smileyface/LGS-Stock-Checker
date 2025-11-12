@@ -5,7 +5,8 @@ from data.database.schema import CardSpecificationSchema
 from data.database.schema.store_schema import StoreSchema
 
 
-# Schema for User data including sensitive password_hash, used internally by backend.
+# Schema for User data including sensitive password_hash,
+# used internally by backend.
 class UserDBSchema(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
@@ -37,13 +38,15 @@ class UserPublicSchema(BaseModel):
 
 
 class UserTrackedCardSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)  # <--- Needs to be here too
+    model_config = ConfigDict(from_attributes=True)
 
     card_name: str = Field(
         ..., description="The name of the card being tracked."
     )
     amount: int = Field(
-        1, ge=1, description="The quantity of the card the user wants to track."
+        1,
+        ge=1,
+        description="The quantity of the card the user wants to track."
     )
     specifications: List[CardSpecificationSchema] = Field(
         [], description="List of specific versions of the card."

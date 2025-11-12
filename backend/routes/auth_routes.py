@@ -5,9 +5,6 @@ from managers import user_manager
 from managers import socket_manager
 
 
-from flask import jsonify
-
-
 auth_bp = Blueprint("auth_bp", __name__)
 
 
@@ -27,8 +24,8 @@ def login():
     user = user_manager.authenticate_user(username, password)
 
     if user:
-        # The user object returned from a successful authentication is the ORM object
-        # that Flask-Login needs.
+        # The user object returned from a successful authentication
+        # is the ORM object that Flask-Login needs.
         login_user(user)
 
         # Optional cleanup of old session key
@@ -72,7 +69,8 @@ def register():
     else:
         socket_manager.log_and_emit(
             "warning",
-            f"⚠️ Failed registration attempt for username '{username}' (already exists).",
+            f"⚠️ Failed registration attempt for username '{username}'"
+            f" (already exists).",
         )
         return (
             jsonify({"error": "Username already exists"}),
@@ -105,6 +103,7 @@ def user_data():
     return a 401 Unauthorized error, which the frontend handles.
     """
     # The `current_user` proxy from Flask-Login holds the ORM object.
-    # The `to_dict()` method on the User model is designed to serialize the user's
-    # data, including a simple list of store slugs, which is exactly what the frontend needs.
+    # The `to_dict()` method on the User model is designed to serialize
+    # the user's data, including a simple list of store slugs, which is
+    # exactly what the frontend needs.
     return jsonify(current_user.to_dict())

@@ -2,21 +2,21 @@
 This package provides the primary interface for database operations.
 
 It initializes the database connection and aggregates repository functions
-into the `data.database` namespace for convenient access throughout the application.
+into the `data.database` namespace for convenient access throughout the
+application.
 e.g., `from data.database import get_user_by_username`
 
 The import order here is critical to avoid circular dependencies.
 """
 
-# To resolve a circular dependency, we must import modules that the repositories
-# depend on *before* we import the repositories themselves.
+# To resolve a circular dependency, we must import modules that the
+# repositories depend on *before* we import the repositories themselves.
 # The repositories depend on `schema`, so we import it first.
 from . import schema
-from .db_config import initialize_database, startup_database
+from .db_config import initialize_database
 
-from .session_manager import db_query, get_session, remove_session, health_check
+from .session_manager import get_session, remove_session, health_check
 
-# Now that `data.database.schema` is available, we can safely import the repositories.
 from .repositories.card_repository import (
     get_users_cards,
     add_user_card,

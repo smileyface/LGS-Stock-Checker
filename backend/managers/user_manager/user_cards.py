@@ -42,11 +42,15 @@ def _send_updated_card_list(username: str):
 
     socketio.emit("cards_data", {"tracked_cards": card_list}, room=username)
     logger.info(
-        f"📡 Sent updated card list to room '{username}' with {len(card_list)} items."
+        f"📡 Sent updated card list to room '{username}' "
+        f"with {len(card_list)} items."
     )
 
 
-def add_user_card(username: str, card_name: str, amount: int, card_specs: dict):
+def add_user_card(username: str,
+                  card_name: str,
+                  amount: int,
+                  card_specs: dict):
     """Adds a card to a user's list and sends an update."""
     logger.info(f"Adding card '{card_name}' for user '{username}'.")
     # Pass the arguments individually to the data layer function.

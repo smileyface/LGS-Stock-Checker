@@ -171,7 +171,9 @@ class Store(Base):
     )  # Short identifier, unique
     homepage = Column(String, nullable=False)  # Store website
     search_url = Column(String, nullable=False)  # Search page URL
-    fetch_strategy = Column(String, nullable=False)  # Type of fetching strategy
+    fetch_strategy = Column(String, nullable=False)
 
     def __repr__(self):
-        return f"<Store(name={self.name}, slug={self.slug}, strategy={self.fetch_strategy})>"
+        return f"<Store(name={self.name},\
+                slug={self.slug}, \
+                strategy={self.fetch_strategy})>"

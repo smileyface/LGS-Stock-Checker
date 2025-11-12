@@ -83,7 +83,8 @@ def fetch_all_card_data() -> Generator[Dict[str, Any], None, None]:
 
         if not default_cards_url:
             logger.error(
-                "Could not find 'default_cards' download URI in Scryfall bulk data response."
+                "Could not find 'default_cards' download "
+                "URI in Scryfall bulk data response."
             )
             return []
 

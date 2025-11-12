@@ -1,5 +1,4 @@
 import os
-import time
 
 
 def create_app(config_name=None, override_config=None):
@@ -10,11 +9,11 @@ def create_app(config_name=None, override_config=None):
     flask_manager.login_manager_init(app)
     flask_manager.register_blueprints(app)
 
-    # --- Logger Configuration (MUST happen after config, before other imports) ---
+    # Logger Configuration (MUST happen after config, before other imports)
     if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
         os.environ["LOG_LEVEL"] = "DEBUG"
 
-    # --- Move imports inside the factory to prevent side effects ---
+    # Move imports inside the factory to prevent side effects
     from managers import socket_manager
     from managers import task_manager
     from tasks import scheduler_setup

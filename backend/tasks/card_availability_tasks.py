@@ -1,5 +1,32 @@
-import time
-import json
+"""
+Module: backend.tasks.card_availability_tasks
+
+High-level overview
+-------------------
+Background task definitions used to orchestrate availability checks for trading
+cards across user-tracked card lists and configured stores. Tasks interact with
+the database, user and store managers, a Redis pub/sub channel for
+inter-process coordination, and a socket emitter to notify clients in real
+time.
+
+Key responsibilities
+- Aggregate wanted cards across users.
+- Fan-out availability check requests for all users or a single user.
+- Execute a worker task to fetch availability for a single card/store pair,
+    publish results for backend consumption, and emit live updates to clients.
+
+Important side-effects
+- Publishes commands and results to Redis topics (e.g. "scheduler-requests",
+    "worker-results") to coordinate work between scheduler, workers,
+    and the main application.
+- Emits socket events (via socket_emit.emit_from_worker) to notify clients
+    about the start and results of availability checks.
+- Reads user, card, and store configuration from persistent managers and the
+    database; relies on store implementations to perform remote availability
+    lookups.
+
+This module fulfills requirements [5.1.7] and related functionality.
+    """
 
 from data import database
 from managers import store_manager, user_manager, task_manager, redis_manager
@@ -27,14 +54,16 @@ def get_wanted_cards(users: list):
             card_name = card.card_name
             if not card_name:
                 logger.warning(
-                    f"❌ Card '{card_name}' in user '{username}' has a null card name. Skipping."
+                    f"❌ Card '{card_name}' in user '{username}' has a "
+                    f"null card name. Skipping."
                 )
                 continue
             wanted_cards.add(card_name)
             logger.debug(f"➕ Added '{card_name}' to wanted cards set.")
 
     logger.info(
-        f"✅ Aggregation complete. Total unique wanted cards: {len(wanted_cards)}"
+        f"✅ Aggregation complete. Total unique wanted cards: "
+        f"{len(wanted_cards)}"
     )
     return list(wanted_cards)
 
@@ -42,8 +71,9 @@ def get_wanted_cards(users: list):
 @task_manager.task()
 def update_all_tracked_cards_availability():
     """
-    System-wide task to re-check availability for all tracked cards for all users.
-    This acts as a fan-out task, enqueuing specific checks for each user/card/store combo.
+    System-wide task to re-check availability for all tracked cards for
+    all users. This acts as a fan-out task, enqueuing specific checks for each
+    user/card/store combo.
     This fulfills requirement [5.1.7].
     """
     logger.info(
@@ -76,8 +106,9 @@ def update_all_tracked_cards_availability():
 )
 def update_availability_for_user(username: str):
     """
-    Checks availability for all tracked cards for a *specific user* against their
-    preferred stores. This is triggered on-demand (e.g., after login).
+    Checks availability for all tracked cards for a *specific user*
+    against their preferred stores. This is triggered on-demand
+    (e.g., after login).
     """
     logger.info(f"🔄 Starting availability check for user: {username}")
     user_cards = user_manager.load_card_list(username)
@@ -91,8 +122,6 @@ def update_availability_for_user(username: str):
 
     for card in user_cards:
         for store in user_stores:
-            # Instead of a worker enqueuing another task directly, it commands the scheduler to do it.
-            # This centralizes all task queuing logic within the scheduler process.
             command = {
                 "type": "availability_request",
                 "payload": {
@@ -103,7 +132,8 @@ def update_availability_for_user(username: str):
             }
             redis_manager.publish_pubsub("scheduler-requests", command)
             logger.debug(
-                f"📢 Published 'availability_request' command for '{card.card_name}' at '{store.slug}'."
+                f"📢 Published 'availability_request' command for"
+                f" '{card.card_name}' at '{store.slug}'."
             )
 
 
@@ -111,8 +141,9 @@ def update_availability_for_user(username: str):
     task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD
 )
 def update_availability_single_card(username, store_name, card):
-    """Background task to update the availability for a single card at a store."""
-    # Validate store_name
+    """
+    Background task to update the availability for a single card at a store.
+    """
     if not store_name:
         logger.warning(f"🚨 Invalid store name: {store_name}. Task aborted.")
         return False
@@ -120,12 +151,11 @@ def update_availability_single_card(username, store_name, card):
     card_name = card.get("card_name")
     if not card_name:
         logger.error(
-            f"❌ Task received card data without a 'card_name'. Aborting. Data: {card}"
+            f"❌ Task received card data without a 'card_name'. "
+            f"Aborting. Data: {card}"
         )
         return False
-
-    # Emit an event to notify the client that the check is actively starting now.
-    # This is more accurate than emitting from the manager before the task is picked up.
+    # --- Emit start event to client ---
     socket_emit.emit_from_worker(
         "availability_check_started",
         {"store": store_name, "card": card_name},
@@ -133,14 +163,16 @@ def update_availability_single_card(username, store_name, card):
     )
 
     logger.info(
-        f"📌 Task started: Updating availability for {card_name} at {store_name} (User: {username})"
+        f"📌 Task started: Updating availability for {card_name} "
+        f"at {store_name} (User: {username})"
     )
 
     # Ensure store_name is in the correct format
     store = store_manager.get_store(store_name)
     if not store:
         logger.warning(
-            f"🚨 Store '{store_name}' is not configured or missing from STORE_REGISTRY. Task aborted."
+            f"🚨 Store '{store_name}' is not configured or missing "
+            f"from STORE_REGISTRY. Task aborted."
         )
         return False
 
@@ -152,16 +184,20 @@ def update_availability_single_card(username, store_name, card):
 
     if available_items:
         logger.info(
-            f"✅ Found {len(available_items)} listings for {card_name} at {store_name}. Caching and emitting."
+            f"✅ Found {len(available_items)} listings for {card_name} "
+            f"at {store_name}. Caching and emitting."
         )
     else:
         logger.info(
-            f"ℹ️ No available listings found for {card_name} at {store_name}. Caching empty result."
+            f"ℹ️ No available listings found for {card_name} "
+            f"at {store_name}. Caching empty result."
         )
 
     # --- Report results back to the backend ---
-    # Publish the results to a dedicated Redis channel for the backend to process.
-    # This is the correct way for a worker to report back to the main application.
+    # Publish the results to a dedicated Redis channel for
+    # the backend to process.
+    # This is the correct way for a worker to report back to the
+    # main application.
     result_payload = {
         "type": "availability_result",
         "payload": {

@@ -26,24 +26,24 @@ def create_app(
 
     set_log_level(logger)
 
-    # --- Logger Configuration (MUST happen after config, before other imports) ---
+    # Logger Configuration (MUST happen after config, before other imports)
 
-    print(f"--- CREATE_APP: LOG_LEVEL is {os.environ.get('LOG_LEVEL')} ---")
+    logger.info(f"CREATE_APP: LOG_LEVEL is {os.environ.get('LOG_LEVEL')}")
 
-    # --- Move imports inside the factory to prevent side effects ---
+    # Move imports inside the factory to prevent side effects
     from managers import socket_manager
     from managers import flask_manager
     from managers import task_manager
     from data import database
 
-    print("--- CREATE_APP: Initializing Task Manager ---")
+    logger.info("--- CREATE_APP: Initializing Task Manager ---")
     task_manager.init_task_manager()
 
-    print("--- CREATE_APP: Configuring Socket.IO ---")
+    logger.info("--- CREATE_APP: Configuring Socket.IO ---")
     socket_manager.configure_socket_io(app)
 
     # Start the background thread to listen for worker results
-    print("--- CREATE_APP: Starting Server Listener ---")
+    logger.info("--- CREATE_APP: Starting Server Listener ---")
     flask_manager.start_server_listener(app)
 
     # Use the provided database_url, or fall back to the environment variable.
@@ -51,10 +51,8 @@ def create_app(
     db_url = database_url or os.environ.get("DATABASE_URL")
 
     if db_url:
-        print(f"--- CREATE_APP: Initializing Database (URL exists) ---")
+        logger.info("--- CREATE_APP: Initializing Database (URL exists) ---")
         database.initialize_database(db_url)
-        # The startup_database function syncs stores, which requires tables to exist.
-        # In a test environment, tables are created by fixtures, so we skip this.
         if config_name != "testing":
             database.startup_database()
 
@@ -67,7 +65,8 @@ def create_app(
     return app
 
 
-# This block is only for running the local development server directly via `python run.py`.
+# This block is only for running the local development server
+# directly via `python run.py`.
 # It is the entrypoint used by `docker-compose.dev.yml`.
 if __name__ == "__main__":
     # Monkey patch for the development server when run directly.

@@ -13,7 +13,9 @@ def mock_publish_pubsub(mocker):
     return mocker.patch("managers.redis_manager.publish_pubsub")
 
 
-def test_update_availability_single_card_success(mock_store, mock_publish_pubsub, mock_socket_emit):
+def test_update_availability_single_card_success(
+    mock_store, mock_publish_pubsub, mock_socket_emit
+):
     """
     GIVEN a card and store
     WHEN update_availability_single_card is called and finds available items
@@ -35,18 +37,31 @@ def test_update_availability_single_card_success(mock_store, mock_publish_pubsub
     # Assert
     assert result is True
     mock_store.get_store.assert_called_once_with(store_name)
-    mock_store_instance.fetch_card_availability.assert_called_once_with("Sol Ring", [])
+    mock_store_instance.fetch_card_availability.assert_called_once_with(
+        "Sol Ring", []
+    )
 
     # Verify result publishing
     mock_publish_pubsub.assert_called_once_with(
         "worker-results",
-        {"type": "availability_result", "payload": {"store": store_name, "card": "Sol Ring", "items": available_items}},
+        {
+            "type": "availability_result",
+            "payload": {
+                "store": store_name,
+                "card": "Sol Ring",
+                "items": available_items,
+            },
+        },
     )
 
     # Verify socket emission
     # The task should emit two events: one when it starts, one when it finishes.
     expected_calls = [
-        call("availability_check_started", {"store": store_name, "card": "Sol Ring"}, room=username),
+        call(
+            "availability_check_started",
+            {"store": store_name, "card": "Sol Ring"},
+            room=username,
+        ),
         call(
             "card_availability_data",
             {
@@ -96,7 +111,9 @@ def test_update_all_tracked_cards_availability(mocker):
     assert mock_update_for_user.call_count == 2
 
 
-def test_update_availability_single_card_no_items_found(mock_store, mock_publish_pubsub, mock_socket_emit): # noqa
+def test_update_availability_single_card_no_items_found(
+    mock_store, mock_publish_pubsub, mock_socket_emit
+):  # noqa
     """
     GIVEN a card and store
     WHEN update_availability_single_card finds no available items
@@ -118,15 +135,31 @@ def test_update_availability_single_card_no_items_found(mock_store, mock_publish
     assert result is True
     mock_publish_pubsub.assert_called_once_with(
         "worker-results",
-        {"type": "availability_result", "payload": {"store": store_name, "card": "Obscure Card", "items": []}}
+        {
+            "type": "availability_result",
+            "payload": {
+                "store": store_name,
+                "card": "Obscure Card",
+                "items": [],
+            },
+        },
     )
 
     # Verify socket emission still happens, but with an empty items list
     expected_calls = [
-        call("availability_check_started", {"store": store_name, "card": "Obscure Card"}, room=username),
+        call(
+            "availability_check_started",
+            {"store": store_name, "card": "Obscure Card"},
+            room=username,
+        ),
         call(
             "card_availability_data",
-            {"username": username, "store": store_name, "card": "Obscure Card", "items": []},
+            {
+                "username": username,
+                "store": store_name,
+                "card": "Obscure Card",
+                "items": [],
+            },
             room=username,
         ),
     ]

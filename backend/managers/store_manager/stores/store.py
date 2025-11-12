@@ -25,22 +25,26 @@ class Store(ABC):
         pass  # pragma: no cover
 
     def fetch_card_availability(
-            self,
-            card_name: str,
-            specifications: List[Dict[str, Any]] = None
+        self, card_name: str, specifications: List[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """Fetches and filters card availability from the store."""
-        logger.info(f"🔄 Starting availability check for '{card_name}' at"
-                    f"{self.name}")
+        logger.info(
+            f"🔄 Starting availability check for '{card_name}' at"
+            f"{self.name}"
+        )
         try:
             raw_listings = self._scrape_listings(card_name)
-            logger.info(f"✅ Found {len(raw_listings)} raw listings for "
-                        f"'{card_name}' at {self.name}")
+            logger.info(
+                f"✅ Found {len(raw_listings)} raw listings for "
+                f"'{card_name}' at {self.name}"
+            )
             return filter_listings(card_name, raw_listings, specifications)
         except requests.exceptions.RequestException as e:
             logger.error(f"❌ Error connecting to {self.name}: {e}")
             return []
         except Exception as e:
-            logger.error(f"❌ An error occurred while checking availability for"
-                         f"'{card_name}' at {self.name}: {e}")
+            logger.error(
+                f"❌ An error occurred while checking availability for"
+                f"'{card_name}' at {self.name}: {e}"
+            )
             return []

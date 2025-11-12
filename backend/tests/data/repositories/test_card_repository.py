@@ -2,7 +2,10 @@ import pytest
 
 import data.database as data
 from data.database.models.orm_models import CardSpecification, UserTrackedCards
-from data.database.repositories.card_repository import is_valid_printing_specification
+from data.database.repositories.card_repository import (
+    is_valid_printing_specification,
+)
+
 
 def test_add_and_get_user_card(seeded_user, seeded_printings):
     # Initially, no cards
@@ -28,7 +31,9 @@ def test_add_user_card_user_not_found(db_session):
     assert db_session.query(UserTrackedCards).count() == 0
 
 
-def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(seeded_user, seeded_printings):
+def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
+    seeded_user, seeded_printings
+):
     """
     Test that calling add_user_card for a card that is already tracked:
     1. Adds new specifications.
@@ -45,11 +50,15 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(seeded_us
 
     # Assert
     cards = data.get_users_cards("testuser")
-    assert len(cards) == 1, "Should not create a duplicate UserTrackedCards entry"
+    assert (
+        len(cards) == 1
+    ), "Should not create a duplicate UserTrackedCards entry"
 
     tracked_card = cards[0]
     assert tracked_card.card_name == "Thoughtseize"
-    assert tracked_card.amount == 1, "Amount should NOT be updated by add_user_card"
+    assert (
+        tracked_card.amount == 1
+    ), "Amount should NOT be updated by add_user_card"
 
     # Verify both old and new specifications are present
     specs = tracked_card.specifications
@@ -72,7 +81,9 @@ def test_delete_user_card(seeded_user):
     assert len(data.get_users_cards(username)) == 0
 
 
-def test_delete_user_card_cascades_specifications(seeded_user, seeded_printings, db_session):
+def test_delete_user_card_cascades_specifications(
+    seeded_user, seeded_printings, db_session
+):
     """
     Tests that deleting a UserTrackedCards object also deletes its child
     CardSpecification objects due to the cascade="all, delete-orphan" setting.
@@ -84,7 +95,12 @@ def test_delete_user_card_cascades_specifications(seeded_user, seeded_printings,
     # Verify everything was created correctly
     tracked_card = db_session.query(UserTrackedCards).one()
     assert tracked_card is not None
-    assert db_session.query(CardSpecification).filter_by(user_card_id=tracked_card.id).count() == 1
+    assert (
+        db_session.query(CardSpecification)
+        .filter_by(user_card_id=tracked_card.id)
+        .count()
+        == 1
+    )
 
     # Act: Delete the card
     data.delete_user_card("testuser", "Ugin, the Spirit Dragon")
@@ -92,6 +108,7 @@ def test_delete_user_card_cascades_specifications(seeded_user, seeded_printings,
     # Assert: Verify both the card and its specifications are gone
     assert db_session.query(UserTrackedCards).count() == 0
     assert db_session.query(CardSpecification).count() == 0
+
 
 def test_delete_user_card_for_nonexistent_user(db_session):
     """Test that attempting to delete a card for a non-existent user does nothing."""
@@ -147,7 +164,9 @@ def test_update_user_tracked_cards_list_for_nonexistent_user(db_session):
 
 def test_update_user_tracked_card_preferences(seeded_user):
     data.add_user_card("testuser", "Swords to Plowshares", 1, {})
-    data.update_user_tracked_card_preferences("testuser", "Swords to Plowshares", {"amount": 4})
+    data.update_user_tracked_card_preferences(
+        "testuser", "Swords to Plowshares", {"amount": 4}
+    )
 
     card = data.get_users_cards("testuser")[0]
     assert card.amount == 4
@@ -156,7 +175,9 @@ def test_update_user_tracked_card_preferences(seeded_user):
 def test_update_user_tracked_card_preferences_user_not_found(db_session):
     """Test updating preferences for a card when the user does not exist."""
     # This should run without error
-    data.update_user_tracked_card_preferences("nonexistent_user", "any_card", {"amount": 10})
+    data.update_user_tracked_card_preferences(
+        "nonexistent_user", "any_card", {"amount": 10}
+    )
     # And no cards should be in the DB
     assert db_session.query(UserTrackedCards).count() == 0
 
@@ -164,7 +185,9 @@ def test_update_user_tracked_card_preferences_user_not_found(db_session):
 def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
     """Test updating preferences for a card the user is not tracking."""
     data.add_user_card("testuser", "Lightning Bolt", 1, {})
-    data.update_user_tracked_card_preferences("testuser", "Fireball", {"amount": 10})
+    data.update_user_tracked_card_preferences(
+        "testuser", "Fireball", {"amount": 10}
+    )
     card = data.get_users_cards("testuser")[0]
     assert card.card_name == "Lightning Bolt"
     assert card.amount == 1
@@ -174,30 +197,54 @@ def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
     "card_name, spec, expected",
     [
         # --- Full, Valid Specifications ---
-        ("Sol Ring", {"set_code": "C21", "collector_number": "125", "finish": "foil"}, True),
-        ("Sol Ring", {"set_code": "LTC", "collector_number": "3", "finish": "etched"}, True),
-
+        (
+            "Sol Ring",
+            {"set_code": "C21", "collector_number": "125", "finish": "foil"},
+            True,
+        ),
+        (
+            "Sol Ring",
+            {"set_code": "LTC", "collector_number": "3", "finish": "etched"},
+            True,
+        ),
         # --- Full, Invalid Specifications ---
-        ("Sol Ring", {"set_code": "C21", "collector_number": "125", "finish": "etched"}, False), # Wrong finish for printing
-        ("Sol Ring", {"set_code": "C21", "collector_number": "999", "finish": "foil"}, False),   # Wrong collector number
-        ("Sol Ring", {"set_code": "XYZ", "collector_number": "125", "finish": "foil"}, False),   # Wrong set
-        ("Nonexistent Card", {"set_code": "C21", "collector_number": "125", "finish": "foil"}, False), # Wrong card name
-
+        (
+            "Sol Ring",
+            {"set_code": "C21", "collector_number": "125", "finish": "etched"},
+            False,
+        ),  # Wrong finish for printing
+        (
+            "Sol Ring",
+            {"set_code": "C21", "collector_number": "999", "finish": "foil"},
+            False,
+        ),  # Wrong collector number
+        (
+            "Sol Ring",
+            {"set_code": "XYZ", "collector_number": "125", "finish": "foil"},
+            False,
+        ),  # Wrong set
+        (
+            "Nonexistent Card",
+            {"set_code": "C21", "collector_number": "125", "finish": "foil"},
+            False,
+        ),  # Wrong card name
         # --- Partial, Valid Specifications (Wildcards) ---
         ("Sol Ring", {"set_code": "C21"}, True),
         ("Sol Ring", {"collector_number": "3"}, True),
         ("Sol Ring", {"finish": "foil"}, True),
         ("Sol Ring", {"set_code": "LTC", "collector_number": "3"}, True),
         ("Sol Ring", {"set_code": "C21", "finish": "nonfoil"}, True),
-
         # --- Partial, Invalid Specifications ---
-        ("Sol Ring", {"set_code": "LTC", "finish": "foil"}, False), # This combo doesn't exist
+        (
+            "Sol Ring",
+            {"set_code": "LTC", "finish": "foil"},
+            False,
+        ),  # This combo doesn't exist
         ("Sol Ring", {"set_code": "XYZ"}, False),
         ("Sol Ring", {"finish": "holographic"}, False),
-
         # --- Empty Specification (Wildcard for everything) ---
         ("Sol Ring", {}, True),
-        ("Nonexistent Card", {}, True), # Valid because it means "any printing"
+        ("Nonexistent Card", {}, True),  # Valid because it means "any printing"
     ],
     ids=[
         "full_valid_spec",
@@ -216,9 +263,11 @@ def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
         "partial_invalid_finish",
         "empty_spec_valid_card",
         "empty_spec_nonexistent_card",
-    ]
+    ],
 )
-def test_is_valid_printing_specification(seeded_printings, card_name, spec, expected):
+def test_is_valid_printing_specification(
+    seeded_printings, card_name, spec, expected
+):
     """
     Tests the is_valid_printing_specification function with various valid and invalid inputs.
     This covers requirements [4.3.6], [4.3.8], and [4.3.9].
@@ -227,12 +276,17 @@ def test_is_valid_printing_specification(seeded_printings, card_name, spec, expe
     assert is_valid == expected
 
 
-def test_add_user_card_with_invalid_spec_raises_error(seeded_printings, seeded_user):
+def test_add_user_card_with_invalid_spec_raises_error(
+    seeded_printings, seeded_user
+):
     """
     Tests that add_user_card raises InvalidSpecificationError for an invalid spec.
     This directly tests the integration between add_user_card and the validation function.
     """
-    invalid_spec = {"set_code": "C21", "finish": "etched"} # This combination is invalid
+    invalid_spec = {
+        "set_code": "C21",
+        "finish": "etched",
+    }  # This combination is invalid
 
     with pytest.raises(data.exceptions.InvalidSpecificationError):
         data.add_user_card("testuser", "Sol Ring", 1, invalid_spec)

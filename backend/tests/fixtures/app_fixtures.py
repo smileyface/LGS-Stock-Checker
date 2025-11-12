@@ -3,6 +3,7 @@ from run import create_app
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
+
 @pytest.fixture(scope="function")
 def app(mocker, db_session):
     """Creates a test Flask application instance for the entire test session."""
@@ -21,7 +22,9 @@ def app(mocker, db_session):
     mocker.patch("managers.flask_manager.server_listener.start_server_listener")
 
     # Pass the overrides and the test database URL to the app factory.
-    _app = create_app("testing", override_config=test_config, database_url=TEST_DATABASE_URL)
+    _app = create_app(
+        "testing", override_config=test_config, database_url=TEST_DATABASE_URL
+    )
     return _app
 
 
@@ -37,6 +40,7 @@ def app_context(app):
     """Pushes a Flask application and request context for each test."""
     with app.test_request_context():
         from flask import request
+
         request.sid = "test_sid_12345"
         request.namespace = "/"
         yield

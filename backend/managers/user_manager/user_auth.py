@@ -3,6 +3,7 @@ User authentication functions for the application.
 
 Includes functions to authenticate users and update their passwords.
 """
+
 from typing import Optional
 
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -12,10 +13,11 @@ from data.database.schema.user_schema import UserDBSchema
 from data.database.models.orm_models import User
 from utility import logger
 
+
 def authenticate_user(username: str, password: str) -> Optional[User]:
     """
     Authenticate a user by username and password.
-    
+
     Args:
         username (str): The username of the user to authenticate.
         password (str): The password to authenticate the user.
@@ -37,9 +39,12 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
         return user_orm
 
     logger.warning(f"❌ Authentication failed for user: {username}")
-    return None # Return None on password failure
+    return None  # Return None on password failure
 
-def update_password(username: str, old_password: str, new_password: str) -> bool:
+
+def update_password(
+    username: str, old_password: str, new_password: str
+) -> bool:
     """
     Update the password for a user identified by username.
 
@@ -56,8 +61,12 @@ def update_password(username: str, old_password: str, new_password: str) -> bool
     """
     logger.info(f"🔑 Updating password for user: {username}")
     user_data = database.get_user_by_username(username)
-    if not user_data or not check_password_hash(user_data.password_hash, old_password):
-        logger.warning(f"❌ Password update failed for {username}. Incorrect current password.")
+    if not user_data or not check_password_hash(
+        user_data.password_hash, old_password
+    ):
+        logger.warning(
+            f"❌ Password update failed for {username}. Incorrect current password."
+        )
         return False
 
     new_password_hash = generate_password_hash(new_password)

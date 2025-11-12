@@ -1,7 +1,12 @@
 import pytest
 from werkzeug.security import check_password_hash
 
-from managers.user_manager import add_user, authenticate_user, get_public_user_profile, update_username
+from managers.user_manager import (
+    add_user,
+    authenticate_user,
+    get_public_user_profile,
+    update_username,
+)
 from data.database.models.orm_models import User
 
 # Note: We are NOT mocking the data layer here.
@@ -25,7 +30,9 @@ def test_add_user_integration_success(db_session):
     assert result is True
 
     # Verify directly in the database
-    user_in_db = db_session.query(User).filter_by(username=username).one_or_none()
+    user_in_db = (
+        db_session.query(User).filter_by(username=username).one_or_none()
+    )
     assert user_in_db is not None
     assert user_in_db.username == username
     assert check_password_hash(user_in_db.password_hash, password)
@@ -108,9 +115,13 @@ def test_update_username_integration_success(db_session):
 
     # Assert
     assert result is True
-    user_in_db = db_session.query(User).filter_by(username=new_username).one_or_none()
+    user_in_db = (
+        db_session.query(User).filter_by(username=new_username).one_or_none()
+    )
     assert user_in_db is not None
-    old_user_in_db = db_session.query(User).filter_by(username=old_username).one_or_none()
+    old_user_in_db = (
+        db_session.query(User).filter_by(username=old_username).one_or_none()
+    )
     assert old_user_in_db is None
 
 
@@ -131,5 +142,7 @@ def test_update_username_integration_name_taken(db_session):
 
     # Assert
     assert result is False
-    user1_in_db = db_session.query(User).filter_by(username=user1_name).one_or_none()
+    user1_in_db = (
+        db_session.query(User).filter_by(username=user1_name).one_or_none()
+    )
     assert user1_in_db is not None  # user1 should still exist with old name

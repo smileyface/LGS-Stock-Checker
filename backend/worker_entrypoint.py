@@ -19,7 +19,12 @@ if __name__ == "__main__":
     # The app context is needed for tasks that interact with the database
     # or other Flask extensions.
     with app.app_context():
-        queues = [Queue(q, connection=redis_manager.get_redis_connection()) for q in listen]
-        worker = LGSWorker(queues, connection=redis_manager.get_redis_connection())
+        queues = [
+            Queue(q, connection=redis_manager.get_redis_connection())
+            for q in listen
+        ]
+        worker = LGSWorker(
+            queues, connection=redis_manager.get_redis_connection()
+        )
         # worker.work() runs the worker in a continuous loop, listening for jobs.
         worker.work()

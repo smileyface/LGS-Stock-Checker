@@ -13,9 +13,12 @@ try:
     from LGS_Stock_Backend.data.database.models.orm_models import User, Base
 except ImportError as e:
     print("❌ Error: Could not import application modules.")
-    print("Please ensure you run this script from the 'LGS_Stock_Backend' directory.")
+    print(
+        "Please ensure you run this script from the 'LGS_Stock_Backend' directory."
+    )
     print(f"Details: {e}")
     sys.exit(1)
+
 
 def reset_user_password():
     """A command-line utility to reset a user's password or create a new user."""
@@ -23,17 +26,21 @@ def reset_user_password():
 
     # Ensure the database and tables exist before trying to query
     Base.metadata.create_all(bind=engine)
-    
+
     db = SessionLocal()
-    
+
     try:
         username = input("Enter the username: ").strip()
         user = db.query(User).filter(User.username == username).one_or_none()
 
         if not user:
             print(f"\nUser '{username}' not found.")
-            choice = input("Would you like to create this user? [y/N]: ").strip().lower()
-            if choice == 'y':
+            choice = (
+                input("Would you like to create this user? [y/N]: ")
+                .strip()
+                .lower()
+            )
+            if choice == "y":
                 user = User(username=username)
                 db.add(user)
                 print(f"Creating new user: {username}")
@@ -52,10 +59,13 @@ def reset_user_password():
         # Hash the new password and update the user object
         user.password_hash = generate_password_hash(new_password)
         db.commit()
-        print(f"\n✅ Password for user '{username}' has been successfully updated.")
+        print(
+            f"\n✅ Password for user '{username}' has been successfully updated."
+        )
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     reset_user_password()

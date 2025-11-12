@@ -13,7 +13,9 @@ def test_emit_from_worker(mocker):
     """
     # Arrange
     # We patch the `SocketIO` class where it is looked up, which is inside the `socket_emit` module.
-    mock_socketio_class = mocker.patch("managers.socket_manager.socket_emit.SocketIO")
+    mock_socketio_class = mocker.patch(
+        "managers.socket_manager.socket_emit.SocketIO"
+    )
 
     # The constructor of SocketIO returns an instance, so we create a mock for that instance.
     mock_socketio_instance = MagicMock()
@@ -31,4 +33,6 @@ def test_emit_from_worker(mocker):
     mock_socketio_class.assert_called_once_with(message_queue=REDIS_URL)
 
     # 2. Verify that the `emit` method on this new instance was called with the correct parameters.
-    mock_socketio_instance.emit.assert_called_once_with(test_event, test_data, room=test_room)
+    mock_socketio_instance.emit.assert_called_once_with(
+        test_event, test_data, room=test_room
+    )

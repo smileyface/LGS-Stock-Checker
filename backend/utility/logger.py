@@ -2,12 +2,14 @@ import logging
 import os
 import sys
 
+
 # Custom formatter to include emojis in log levels
 class EmojiFormatter(logging.Formatter):
     """
     A custom log formatter that replaces the textual log level (e.g., INFO)
     with a corresponding emoji.
     """
+
     # The format string now includes a custom field `level_emoji`
     LOG_FORMAT = "%(asctime)s - %(name)s - %(level_emoji)s - %(message)s"
 
@@ -47,19 +49,19 @@ def setup_logger() -> logging.Logger:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(EmojiFormatter())
         log.addHandler(handler)
-    
+
     log.info(f"✅ Logger configured with log level: {log_level_name}")
 
     return log
 
+
 def set_log_level(log: logging.Logger) -> str:
     log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
     log_level = getattr(logging, log_level_name, logging.INFO)
-    
+
     log.setLevel(log_level)
 
     return log_level_name
-
 
 
 # Create the logger instance that will be imported by other modules

@@ -8,9 +8,12 @@ from data.database.models.orm_models import User
 @pytest.mark.parametrize(
     "username, should_find_user",
     [
-        ("testuser", True),      # Case: User exists
+        ("testuser", True),  # Case: User exists
         ("nonexistent", False),  # Case: User does not exist
-        ("TestUser", False),     # Case: Check case-sensitivity (assuming it should be exact)
+        (
+            "TestUser",
+            False,
+        ),  # Case: Check case-sensitivity (assuming it should be exact)
     ],
 )
 def test_get_user_by_username(seeded_user, username, should_find_user):

@@ -5,6 +5,7 @@ from data.database.models.orm_models import User
 
 # --- Tests for /api/stores ---
 
+
 def test_get_all_stores_success(client, seeded_user, seeded_stores):
     """
     GIVEN a logged-in user
@@ -24,7 +25,9 @@ def test_get_all_stores_success(client, seeded_user, seeded_stores):
     assert "test_store" in response.json
     assert "another_store" in response.json
 
+
 # --- Security Test for Unauthorized Access ---
+
 
 def test_get_all_stores_unauthorized(client, db_session):
     """
@@ -35,7 +38,9 @@ def test_get_all_stores_unauthorized(client, db_session):
     response = client.get("/api/stores")
     assert response.status_code == 401
 
+
 # --- Security Test for Unauthorized Access ---
+
 
 def test_update_another_user_is_impossible(client, db_session):
     """
@@ -68,16 +73,24 @@ def test_update_another_user_is_impossible(client, db_session):
 
     # Assert
     # Check that user_A was renamed
-    renamed_user = db_session.query(User).filter_by(username="user_A_renamed").one_or_none()
+    renamed_user = (
+        db_session.query(User)
+        .filter_by(username="user_A_renamed")
+        .one_or_none()
+    )
     assert renamed_user is not None
-    original_user_A = db_session.query(User).filter_by(username="user_A").one_or_none()
+    original_user_A = (
+        db_session.query(User).filter_by(username="user_A").one_or_none()
+    )
     assert original_user_A is None
 
     # Check that user_B was NOT affected
     user_B = db_session.query(User).filter_by(username="user_B").one_or_none()
     assert user_B is not None
 
+
 # --- Tests for Invalid Input ---
+
 
 def test_update_invalid_username(client, seeded_user):
     """
@@ -102,7 +115,7 @@ def test_update_invalid_username(client, seeded_user):
 
     # Create another user to test for existing username collision
     add_user("existing_user", "password")
-    
+
     # Test with an existing username
     response = client.post(
         "/api/account/update_username",
@@ -111,6 +124,7 @@ def test_update_invalid_username(client, seeded_user):
     )
     assert response.status_code == 400
     assert response.json["error"] == "Username already exists"
+
 
 def test_update_invalid_password(client, seeded_user):
     """
@@ -127,7 +141,9 @@ def test_update_invalid_password(client, seeded_user):
     # Test with wrong current password
     response = client.post(
         "/api/account/update_password",
-        data=json.dumps({"current_password": "wrongpassword", "new_password": "newpassword"}),
+        data=json.dumps(
+            {"current_password": "wrongpassword", "new_password": "newpassword"}
+        ),
         content_type="application/json",
     )
     assert response.status_code == 400
@@ -140,10 +156,13 @@ def test_update_invalid_password(client, seeded_user):
         content_type="application/json",
     )
     assert response.status_code == 400
-    assert response.json["error"] == "Both current and new passwords are required"
+    assert (
+        response.json["error"] == "Both current and new passwords are required"
+    )
 
 
 # --- Tests for /api/account/get_tracked_cards ---
+
 
 def test_get_tracked_cards_success(client, seeded_user, mocker):
     """
@@ -174,7 +193,7 @@ def test_get_tracked_cards_success(client, seeded_user, mocker):
 
     mocker.patch(
         "managers.user_manager.load_card_list",
-        return_value=[mock_card_1, mock_card_2]
+        return_value=[mock_card_1, mock_card_2],
     )
 
     # Act: Make the GET request
@@ -190,8 +209,16 @@ def test_get_tracked_cards_success(client, seeded_user, mocker):
     assert card_data_1["card_name"] == "Sol Ring"
     assert card_data_1["amount"] == 1
     assert len(card_data_1["specifications"]) == 2
-    assert {"set_code": "C21", "collector_number": "125", "finish": "nonfoil"} in card_data_1["specifications"]
-    assert {"set_code": "LTC", "collector_number": "3", "finish": "foil"} in card_data_1["specifications"]
+    assert {
+        "set_code": "C21",
+        "collector_number": "125",
+        "finish": "nonfoil",
+    } in card_data_1["specifications"]
+    assert {
+        "set_code": "LTC",
+        "collector_number": "3",
+        "finish": "foil",
+    } in card_data_1["specifications"]
 
     # Assert details of the second card
     card_data_2 = response.json[1]
@@ -214,10 +241,7 @@ def test_get_tracked_cards_no_cards(client, seeded_user, mocker):
     )
 
     # Arrange: Mock user_manager.load_card_list to return an empty list
-    mocker.patch(
-        "managers.user_manager.load_card_list",
-        return_value=[]
-    )
+    mocker.patch("managers.user_manager.load_card_list", return_value=[])
 
     # Act: Make the GET request
     response = client.get("/api/account/get_tracked_cards")

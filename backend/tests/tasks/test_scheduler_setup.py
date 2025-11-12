@@ -11,8 +11,10 @@ from managers.task_manager import task_definitions
 
 # Define paths for patching where the objects are used
 SCHEDULER_PATH = "tasks.scheduler_setup.redis_manager.scheduler"
-LOGGER_ERROR_PATH = "tasks.scheduler_setup.logger.error" 
-UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH = "tasks.scheduler_setup.update_all_tracked_cards_availability"
+LOGGER_ERROR_PATH = "tasks.scheduler_setup.logger.error"
+UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH = (
+    "tasks.scheduler_setup.update_all_tracked_cards_availability"
+)
 
 
 @pytest.fixture
@@ -32,7 +34,7 @@ def test_schedule_recurring_tasks_all_new(mock_scheduler):
     """
     # Arrange
     # The mock_scheduler fixture already simulates an empty scheduler.
-    
+
     # Act
     schedule_recurring_tasks()
 
@@ -41,19 +43,31 @@ def test_schedule_recurring_tasks_all_new(mock_scheduler):
 
     # Check that each task was scheduled with the correct function and ID
     calls = mock_scheduler.schedule.call_args_list
-    
-    catalog_interval = timedelta(hours=CATALOG_UPDATE_INTERVAL_HOURS).total_seconds()
-    availability_interval = timedelta(minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES).total_seconds()
+
+    catalog_interval = timedelta(
+        hours=CATALOG_UPDATE_INTERVAL_HOURS
+    ).total_seconds()
+    availability_interval = timedelta(
+        minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES
+    ).total_seconds()
 
     # Verify full catalog update task
-    assert any(c.kwargs['id'] == task_definitions.FULL_CATALOG_TASK_ID and 
-               c.kwargs['func'] == 'tasks.catalog_tasks.update_full_catalog' and 
-               c.kwargs['interval'] == catalog_interval for c in calls)
+    assert any(
+        c.kwargs["id"] == task_definitions.FULL_CATALOG_TASK_ID
+        and c.kwargs["func"] == "tasks.catalog_tasks.update_full_catalog"
+        and c.kwargs["interval"] == catalog_interval
+        for c in calls
+    )
 
     # Verify availability update task
-    assert any(c.kwargs['id'] == task_definitions.AVAILABILITY_TASK_ID and
-               c.kwargs['func'] == 'tasks.card_availability_tasks.update_all_tracked_cards_availability' and
-               c.kwargs['interval'] == availability_interval for c in calls)
+    assert any(
+        c.kwargs["id"] == task_definitions.AVAILABILITY_TASK_ID
+        and c.kwargs["func"]
+        == "tasks.card_availability_tasks.update_all_tracked_cards_availability"
+        and c.kwargs["interval"] == availability_interval
+        for c in calls
+    )
+
 
 def test_schedule_recurring_tasks_are_idempotent(mock_scheduler):
     """
@@ -83,9 +97,13 @@ def test_schedule_recurring_tasks_mixed_state(mock_scheduler):
     existing_tasks = [
         task_definitions.FULL_CATALOG_TASK_ID,
     ]
-    mock_scheduler.__contains__.side_effect = lambda task_id: task_id in existing_tasks
+    mock_scheduler.__contains__.side_effect = (
+        lambda task_id: task_id in existing_tasks
+    )
 
-    with patch(UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH) as mock_update_all_avail:
+    with patch(
+        UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH
+    ) as mock_update_all_avail:
         # Act
         schedule_recurring_tasks()
 
@@ -93,12 +111,17 @@ def test_schedule_recurring_tasks_mixed_state(mock_scheduler):
         # Only the availability task should have been scheduled.
         mock_scheduler.schedule.assert_called_once()
         call_args = mock_scheduler.schedule.call_args
-        assert call_args.kwargs['id'] == task_definitions.AVAILABILITY_TASK_ID
-        assert call_args.kwargs['func'] == 'tasks.card_availability_tasks.update_all_tracked_cards_availability'
+        assert call_args.kwargs["id"] == task_definitions.AVAILABILITY_TASK_ID
+        assert (
+            call_args.kwargs["func"]
+            == "tasks.card_availability_tasks.update_all_tracked_cards_availability"
+        )
 
 
 @patch(LOGGER_ERROR_PATH)
-def test_schedule_recurring_tasks_handles_exception(mock_logger_error, mock_scheduler):
+def test_schedule_recurring_tasks_handles_exception(
+    mock_logger_error, mock_scheduler
+):
     """
     GIVEN the scheduler raises an exception
     WHEN schedule_recurring_tasks is called

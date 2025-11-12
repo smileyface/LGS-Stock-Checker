@@ -28,7 +28,9 @@ class Changes(TypedDict):
     updated: UpdatedCards
 
 
-def detect_changes(old_availability: CardAvailability, new_availability: CardAvailability) -> Changes:
+def detect_changes(
+    old_availability: CardAvailability, new_availability: CardAvailability
+) -> Changes:
     """Detects differences between two availability states."""
     logger.info("🔄 Detecting changes in availability data...")
 
@@ -48,9 +50,15 @@ def detect_changes(old_availability: CardAvailability, new_availability: CardAva
                 old_listings = old_availability[card].get(store, [])
                 if old_listings != new_listings:
                     changes["updated"].setdefault(card, {})[store] = {
-                        "new": [l for l in new_listings if l not in old_listings],
-                        "removed": [l for l in old_listings if l not in new_listings],
+                        "new": [
+                            l for l in new_listings if l not in old_listings
+                        ],
+                        "removed": [
+                            l for l in old_listings if l not in new_listings
+                        ],
                     }
 
-    logger.info(f"✅ Changes detected: {sum(len(v) for v in changes.values())} total.")
+    logger.info(
+        f"✅ Changes detected: {sum(len(v) for v in changes.values())} total."
+    )
     return changes

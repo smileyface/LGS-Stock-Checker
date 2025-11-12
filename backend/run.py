@@ -1,8 +1,13 @@
 import os
 
-def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
 
-    
+def create_app(
+    config_name=None,
+    override_config=None,
+    database_url=None,
+    skip_scheduler=False,
+):
+
     from utility import (
         logger,
         set_log_level,
@@ -11,15 +16,15 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     logger.info(f"--- CREATE_APP: START (config: {config_name}) ---")
 
     from managers import flask_manager
+
     app = flask_manager.initalize_flask_app(override_config, config_name)
     flask_manager.login_manager_init(app)
     flask_manager.register_blueprints(app)
 
     if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
         os.environ["LOG_LEVEL"] = "DEBUG"
-    
-    set_log_level(logger)
 
+    set_log_level(logger)
 
     # --- Logger Configuration (MUST happen after config, before other imports) ---
 
@@ -41,7 +46,6 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     print("--- CREATE_APP: Starting Server Listener ---")
     flask_manager.start_server_listener(app)
 
-
     # Use the provided database_url, or fall back to the environment variable.
     # This allows tests to inject a different database URL.
     db_url = database_url or os.environ.get("DATABASE_URL")
@@ -62,12 +66,14 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
     print("--- CREATE_APP: FINISHED ---")
     return app
 
+
 # This block is only for running the local development server directly via `python run.py`.
 # It is the entrypoint used by `docker-compose.dev.yml`.
 if __name__ == "__main__":
     # Monkey patch for the development server when run directly.
     # This must be done before other imports that might initialize sockets.
     import eventlet
+
     eventlet.monkey_patch()
 
     from managers import socket_manager

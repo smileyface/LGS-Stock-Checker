@@ -8,9 +8,10 @@ from managers import socket_manager
 from flask import jsonify
 
 
-auth_bp = Blueprint('auth_bp', __name__)
+auth_bp = Blueprint("auth_bp", __name__)
 
-@auth_bp.route('/api/login', methods=['POST'])
+
+@auth_bp.route("/api/login", methods=["POST"])
 def login():
 
     data = request.get_json()
@@ -32,16 +33,20 @@ def login():
 
         # Optional cleanup of old session key
         if "username" in session:
-             del session["username"]
+            del session["username"]
 
-        socket_manager.log_and_emit("info", f"✅ User '{username}' logged in successfully.")
+        socket_manager.log_and_emit(
+            "info", f"✅ User '{username}' logged in successfully."
+        )
         return jsonify({"message": "Login successful"}), 200
 
-    socket_manager.log_and_emit("warning", f"⚠️ Failed login attempt for username '{username}'.")
+    socket_manager.log_and_emit(
+        "warning", f"⚠️ Failed login attempt for username '{username}'."
+    )
     return jsonify({"error": "Invalid credentials"}), 401
 
 
-@auth_bp.route('/api/register', methods=['POST'])
+@auth_bp.route("/api/register", methods=["POST"])
 def register():
     """Handles new user registration."""
     data = request.get_json()
@@ -59,15 +64,23 @@ def register():
     success = user_manager.add_user(username, password)
 
     if success:
-        socket_manager.log_and_emit("info", f"✅ New user '{username}' registered successfully.")
+        socket_manager.log_and_emit(
+            "info", f"✅ New user '{username}' registered successfully."
+        )
         # HTTP 201 Created is the standard response for a successful creation
         return jsonify({"message": "User registered successfully"}), 201
     else:
-        socket_manager.log_and_emit("warning", f"⚠️ Failed registration attempt for username '{username}' (already exists).")
-        return jsonify({"error": "Username already exists"}), 409 # HTTP 409 Conflict
+        socket_manager.log_and_emit(
+            "warning",
+            f"⚠️ Failed registration attempt for username '{username}' (already exists).",
+        )
+        return (
+            jsonify({"error": "Username already exists"}),
+            409,
+        )  # HTTP 409 Conflict
 
 
-@auth_bp.route('/api/logout', methods=['POST'])
+@auth_bp.route("/api/logout", methods=["POST"])
 @login_required
 def logout():
     """Handles user logout."""
@@ -75,11 +88,14 @@ def logout():
     if "username" in session:
         del session["username"]
 
-    socket_manager.log_and_emit("info", f"✅ User '{current_user.username}' logged out successfully.")
+    socket_manager.log_and_emit(
+        "info", f"✅ User '{current_user.username}' logged out successfully."
+    )
     logout_user()
     return jsonify({"message": "Logout successful"}), 200
 
-@auth_bp.route('/api/user_data', methods=['GET'])
+
+@auth_bp.route("/api/user_data", methods=["GET"])
 @login_required
 def user_data():
     """

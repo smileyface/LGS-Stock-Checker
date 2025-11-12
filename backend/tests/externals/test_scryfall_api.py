@@ -9,7 +9,7 @@ from externals.scryfall_api import (
     fetch_scryfall_card_names,
     fetch_all_sets,
     fetch_all_card_data,
-    CACHE_EXPIRATION_SECONDS
+    CACHE_EXPIRATION_SECONDS,
 )
 
 # Define paths for patching
@@ -28,7 +28,9 @@ def mock_cache_manager():
 
 
 @patch(REQUESTS_GET_PATH)
-def test_fetch_scryfall_card_names_success(mock_requests_get, mock_cache_manager):
+def test_fetch_scryfall_card_names_success(
+    mock_requests_get, mock_cache_manager
+):
     """
     GIVEN a successful API response for card names
     WHEN fetch_scryfall_card_names is called
@@ -44,7 +46,9 @@ def test_fetch_scryfall_card_names_success(mock_requests_get, mock_cache_manager
 
     # Assert
     assert result == ["card1", "card2"]
-    mock_requests_get.assert_called_once_with("https://api.scryfall.com/catalog/card-names")
+    mock_requests_get.assert_called_once_with(
+        "https://api.scryfall.com/catalog/card-names"
+    )
     mock_cache_manager.save_data.assert_called_once_with(
         "scryfall_card_names", ["card1", "card2"], ex=CACHE_EXPIRATION_SECONDS
     )
@@ -66,19 +70,25 @@ def test_fetch_scryfall_card_names_from_cache(mock_cache_manager):
         # Assert
         assert result == ["cached_card1", "cached_card2"]
         mock_requests_get.assert_not_called()
-        mock_cache_manager.load_data.assert_called_once_with("scryfall_card_names")
+        mock_cache_manager.load_data.assert_called_once_with(
+            "scryfall_card_names"
+        )
 
 
 @patch(REQUESTS_GET_PATH)
 @patch(LOGGER_ERROR_PATH)
-def test_fetch_scryfall_card_names_api_error(mock_logger_error, mock_requests_get, mock_cache_manager):
+def test_fetch_scryfall_card_names_api_error(
+    mock_logger_error, mock_requests_get, mock_cache_manager
+):
     """
     GIVEN the Scryfall API returns an error
     WHEN fetch_scryfall_card_names is called
     THEN it should log the error and return an empty list.
     """
     # Arrange
-    mock_requests_get.side_effect = requests.exceptions.RequestException("API is down")
+    mock_requests_get.side_effect = requests.exceptions.RequestException(
+        "API is down"
+    )
 
     # Act
     result = fetch_scryfall_card_names()
@@ -91,7 +101,9 @@ def test_fetch_scryfall_card_names_api_error(mock_logger_error, mock_requests_ge
 
 @patch(REQUESTS_GET_PATH)
 @patch(LOGGER_ERROR_PATH)
-def test_fetch_all_card_data_bulk_uri_missing(mock_logger_error, mock_requests_get, mock_cache_manager):
+def test_fetch_all_card_data_bulk_uri_missing(
+    mock_logger_error, mock_requests_get, mock_cache_manager
+):
     """
     GIVEN the bulk data catalog response is missing the 'default_cards' URI
     WHEN fetch_all_card_data is called
@@ -99,7 +111,9 @@ def test_fetch_all_card_data_bulk_uri_missing(mock_logger_error, mock_requests_g
     """
     # Arrange
     mock_response = MagicMock()
-    mock_response.json.return_value = {"data": [{"type": "rulings", "download_uri": "some_uri"}]}
+    mock_response.json.return_value = {
+        "data": [{"type": "rulings", "download_uri": "some_uri"}]
+    }
     mock_requests_get.return_value = mock_response
 
     # Act
@@ -108,7 +122,9 @@ def test_fetch_all_card_data_bulk_uri_missing(mock_logger_error, mock_requests_g
     # Assert
     # Consume the generator and assert that it produces an empty list.
     assert list(result_generator) == []
-    mock_logger_error.assert_called_once_with("Could not find 'default_cards' download URI in Scryfall bulk data response.")
+    mock_logger_error.assert_called_once_with(
+        "Could not find 'default_cards' download URI in Scryfall bulk data response."
+    )
 
 
 @patch(REQUESTS_GET_PATH)
@@ -121,12 +137,16 @@ def test_fetch_all_card_data_success(mock_requests_get, mock_cache_manager):
     # Arrange
     bulk_uri = "http://fake.scryfall.com/all_cards.json.gz"
     mock_bulk_info_resp = MagicMock()
-    mock_bulk_info_resp.json.return_value = {"data": [{"type": "default_cards", "download_uri": bulk_uri}]}
+    mock_bulk_info_resp.json.return_value = {
+        "data": [{"type": "default_cards", "download_uri": bulk_uri}]
+    }
 
     card_payload = [{"name": "Card A"}, {"name": "Card B"}]
-    gzipped_payload = gzip.compress(json.dumps(card_payload).encode('utf-8'))
+    gzipped_payload = gzip.compress(json.dumps(card_payload).encode("utf-8"))
     mock_card_data_resp = MagicMock()
-    mock_card_data_resp.raw = io.BytesIO(gzipped_payload) # Use BytesIO for raw stream
+    mock_card_data_resp.raw = io.BytesIO(
+        gzipped_payload
+    )  # Use BytesIO for raw stream
     mock_requests_get.side_effect = [mock_bulk_info_resp, mock_card_data_resp]
 
     # Act
@@ -136,5 +156,8 @@ def test_fetch_all_card_data_success(mock_requests_get, mock_cache_manager):
     # Consume the generator and assert its contents match the payload.
     assert list(result_generator) == card_payload
     assert mock_requests_get.call_count == 2
-    assert mock_requests_get.call_args_list[0].args[0] == "https://api.scryfall.com/bulk-data"
+    assert (
+        mock_requests_get.call_args_list[0].args[0]
+        == "https://api.scryfall.com/bulk-data"
+    )
     assert mock_requests_get.call_args_list[1].args[0] == bulk_uri

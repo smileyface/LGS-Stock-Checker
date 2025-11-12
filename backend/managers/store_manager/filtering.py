@@ -28,14 +28,14 @@ def filter_listings(
 
     filtered_listings = []
     for listing in listings:
-        logger.debug(f"🔍 Filtering for '{card_name}' from "
-                     f"{listing.get('name')} with specifications: "
-                     f"{specifications}")
+        logger.debug(
+            f"🔍 Filtering for '{card_name}' from "
+            f"{listing.get('name')} with specifications: "
+            f"{specifications}"
+        )
         # Basic requirement: card name must match (case-insensitive).
-        if (
-            card_name.lower()
-            != listing.get("name", "").lower().split(" - ")[0]
-        ):
+        listing_name = listing.get("name", "")
+        if card_name.lower() != listing_name.lower().split(" - ")[0]:
             continue
 
         # If no specifications are provided, a name match is sufficient.
@@ -61,8 +61,8 @@ def filter_listings(
             collector_match = (
                 not filter_collector_id
                 or str(filter_collector_id).lower() == "n/a"
-                or str(filter_collector_id) == str(
-                    listing.get("collector_number"))
+                or str(filter_collector_id)
+                == str(listing.get("collector_number"))
             )
             finish_match = (
                 not filter_finish
@@ -72,10 +72,12 @@ def filter_listings(
 
             if set_match and collector_match and finish_match:
                 filtered_listings.append(listing)
-                # This listing matched one spec, so we add it and move to 
+                # This listing matched one spec, so we add it and move to
                 # the next listing.
                 break
 
-    logger.debug(f"Filtered {len(listings)} raw listings for '{card_name}'"
-                 f" down to {len(filtered_listings)} matching listings.")
+    logger.debug(
+        f"Filtered {len(listings)} raw listings for '{card_name}'"
+        f" down to {len(filtered_listings)} matching listings."
+    )
     return filtered_listings

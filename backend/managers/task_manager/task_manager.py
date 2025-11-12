@@ -8,6 +8,7 @@ from utility import logger
 # This avoids circular imports by allowing tasks to register themselves.
 TASK_REGISTRY = {}
 
+
 def task(task_id: str = None):
     """
     A decorator that registers a function as a background task with both RQ and our internal task manager.
@@ -21,6 +22,7 @@ def task(task_id: str = None):
     Args:
         task_id (str, optional): The ID to register the task with. If None, the function's name is used.
     """
+
     def decorator(func):
         # Use the provided task_id or default to the function's name
         _task_id = task_id or func.__name__
@@ -28,14 +30,20 @@ def task(task_id: str = None):
         register_task(_task_id, func)
         # 2. Return the original function, as RQ does not require pre-decoration.
         return func
+
     return decorator
+
 
 def register_task(task_id: str, func: callable):
     """Allows task modules to register their functions with the task manager."""
     if task_id in TASK_REGISTRY:
-        logger.warning(f"⚠️ Task ID '{task_id}' is being re-registered. This may be unintentional.")
+        logger.warning(
+            f"⚠️ Task ID '{task_id}' is being re-registered. This may be unintentional."
+        )
     TASK_REGISTRY[task_id] = func
-    logger.debug(f"✅ Registered task '{task_id}' to function '{func.__name__}'.")
+    logger.debug(
+        f"✅ Registered task '{task_id}' to function '{func.__name__}'."
+    )
 
 
 def queue_task(task_id: str, *args, **kwargs):
@@ -76,10 +84,13 @@ def trigger_scheduled_task(task_id: str):
             redis_manager.scheduler.enqueue_job(job)
             logger.info(f"✅ Successfully triggered scheduled task: {task_id}")
         else:
-            logger.warning(f"⚠️ Scheduled task '{task_id}' not found. Cannot trigger.")
+            logger.warning(
+                f"⚠️ Scheduled task '{task_id}' not found. Cannot trigger."
+            )
     except Exception as e:
         logger.error(f"❌ Failed to trigger scheduled task '{task_id}': {e}")
- 
+
+
 def init_task_manager():
     # Import task modules to ensure they register themselves on startup.
     import tasks.card_availability_tasks

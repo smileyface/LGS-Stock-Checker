@@ -1,9 +1,11 @@
 import os
 import time
 
+
 def create_app(config_name=None, override_config=None):
 
     from managers import flask_manager
+
     app = flask_manager.initalize_flask_app(override_config, config_name)
     flask_manager.login_manager_init(app)
     flask_manager.register_blueprints(app)
@@ -23,15 +25,15 @@ def create_app(config_name=None, override_config=None):
     socket_manager.configure_socket_io(app)
     scheduler_setup.schedule_recurring_tasks()
 
-    
-
     logger.info("✅ Flask app created successfully")
     return app
+
 
 if __name__ == "__main__":
     # Monkey patch for the development server when run directly.
     # This must be done before other imports that might initialize sockets.
     import eventlet
+
     eventlet.monkey_patch()
 
     app = create_app("development")
@@ -44,5 +46,7 @@ if __name__ == "__main__":
         from utility import logger
 
         scheduler_listener.start_scheduler_listener(app)
-        logger.info("🎧 Scheduler process is now up and listening for commands.")
+        logger.info(
+            "🎧 Scheduler process is now up and listening for commands."
+        )
         redis_manager.scheduler.run()

@@ -5,7 +5,7 @@ from .socket_manager import socketio
 from utility import logger
 
 
-@socketio.on('connect')
+@socketio.on("connect")
 def handle_connect():
     """
     Handle new WebSocket connections.
@@ -17,12 +17,15 @@ def handle_connect():
         username = current_user.username
         join_room(username)
         # Use `request.sid` as the canonical way to get the session ID for the current event.
-        logger.info(f"🟢 Client connected: {request.sid}, User: {username}, Room: {username}")
+        logger.info(
+            f"🟢 Client connected: {request.sid}, User: {username}, Room: {username}"
+        )
     else:
         # Handle anonymous or unauthenticated connections if necessary.
         logger.info(f"🟢 Anonymous client connected: {request.sid}")
 
-@socketio.on('disconnect')
+
+@socketio.on("disconnect")
 def handle_disconnect():
     """Handle WebSocket disconnections."""
     # Flask-SocketIO automatically handles leaving rooms on disconnect.

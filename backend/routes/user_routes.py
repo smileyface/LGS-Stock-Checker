@@ -47,8 +47,13 @@ def change_password():
     current_password = request.json.get("current_password")
     new_password = request.json.get("new_password")
     if not (current_password and new_password):
-        return jsonify({"error": "Both current and new passwords are required"}), 400
-    if user_manager.update_password(current_user.username, current_password, new_password):
+        return (
+            jsonify({"error": "Both current and new passwords are required"}),
+            400,
+        )
+    if user_manager.update_password(
+        current_user.username, current_password, new_password
+    ):
         return jsonify({"message": "Password updated successfully"})
     return jsonify({"error": "Incorrect current password"}), 400
 
@@ -68,13 +73,19 @@ def get_tracked_cards():
         {
             "card_name": card.card_name,
             "amount": card.amount,
-            "specifications": [
-                {
-                    "set_code": spec.set_code,
-                    "collector_number": spec.collector_number,
-                    "finish": spec.finish,
-                } for spec in card.specifications
-            ] if card.specifications else [],
-        } for card in cards
+            "specifications": (
+                [
+                    {
+                        "set_code": spec.set_code,
+                        "collector_number": spec.collector_number,
+                        "finish": spec.finish,
+                    }
+                    for spec in card.specifications
+                ]
+                if card.specifications
+                else []
+            ),
+        }
+        for card in cards
     ]
     return jsonify(card_list)

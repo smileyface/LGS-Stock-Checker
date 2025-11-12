@@ -26,7 +26,9 @@ def fetch_scryfall_card_names() -> List[str]:
         data = response.json()
         card_names = data.get("data", [])
         if card_names:
-            cache_manager.save_data(cache_key, card_names, ex=CACHE_EXPIRATION_SECONDS)
+            cache_manager.save_data(
+                cache_key, card_names, ex=CACHE_EXPIRATION_SECONDS
+            )
             logger.info(f"✅ Cached {len(card_names)} card names for 24 hours.")
         return card_names
     except requests.exceptions.RequestException as e:
@@ -49,7 +51,9 @@ def fetch_all_sets() -> List[Dict[str, Any]]:
         data = response.json()
         set_data = data.get("data", [])
         if set_data:
-            cache_manager.save_data(cache_key, set_data, ex=CACHE_EXPIRATION_SECONDS)
+            cache_manager.save_data(
+                cache_key, set_data, ex=CACHE_EXPIRATION_SECONDS
+            )
             logger.info(f"✅ Cached {len(set_data)} sets for 24 hours.")
         return set_data
     except requests.exceptions.RequestException as e:
@@ -99,4 +103,6 @@ def fetch_all_card_data() -> Generator[Dict[str, Any], None, None]:
     except requests.exceptions.RequestException as e:
         logger.error(f"Request to Scryfall for bulk data failed: {e}")
     except Exception as e:
-        logger.error(f"An unexpected error occurred during bulk data fetch: {e}")
+        logger.error(
+            f"An unexpected error occurred during bulk data fetch: {e}"
+        )

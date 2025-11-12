@@ -1,21 +1,33 @@
 import pytest
-from data.database.models.orm_models import User, Card, CardSpecification, UserTrackedCards
+from data.database.models.orm_models import (
+    User,
+    Card,
+    CardSpecification,
+    UserTrackedCards,
+)
 from werkzeug.security import generate_password_hash
 from data.database.repositories.card_repository import get_users_cards
-from data.database.repositories.user_repository import get_users_tracking_card, get_tracking_users_for_cards
+from data.database.repositories.user_repository import (
+    get_users_tracking_card,
+    get_tracking_users_for_cards,
+)
 
 
 @pytest.fixture
 def seeded_user_with_cards(db_session):
     """Fixture to create a user with multiple cards and specifications."""
-    user = User(username="carduser", password_hash=generate_password_hash("password"))
+    user = User(
+        username="carduser", password_hash=generate_password_hash("password")
+    )
 
     # Create the unique card names in the 'cards' lookup table first
-    db_session.add_all([
-        Card(name="Lightning Bolt"),
-        Card(name="Counterspell"),
-        Card(name="Sol Ring")
-    ])
+    db_session.add_all(
+        [
+            Card(name="Lightning Bolt"),
+            Card(name="Counterspell"),
+            Card(name="Sol Ring"),
+        ]
+    )
     # Commit to ensure these exist before we reference them via foreign key.
     db_session.commit()
 
@@ -25,9 +37,15 @@ def seeded_user_with_cards(db_session):
     tracked_card3 = UserTrackedCards(card_name="Sol Ring", amount=1)
 
     # Append specifications directly to the tracked card objects
-    tracked_card1.specifications.append(CardSpecification(set_code="2ED", finish="non-foil"))
-    tracked_card1.specifications.append(CardSpecification(set_code="3ED", finish="foil"))
-    tracked_card2.specifications.append(CardSpecification(set_code="CMR", finish="etched"))
+    tracked_card1.specifications.append(
+        CardSpecification(set_code="2ED", finish="non-foil")
+    )
+    tracked_card1.specifications.append(
+        CardSpecification(set_code="3ED", finish="foil")
+    )
+    tracked_card2.specifications.append(
+        CardSpecification(set_code="CMR", finish="etched")
+    )
 
     # Append the fully-formed tracked cards to the user's collection
     user.cards.append(tracked_card1)
@@ -45,7 +63,11 @@ def seeded_user_with_cards(db_session):
 def multiple_users_with_cards(db_session):
     """Fixture to create multiple users tracking various cards."""
     # Create unique card names
-    cards = [Card(name="Sol Ring"), Card(name="Brainstorm"), Card(name="Lurrus of the Dream-Den")]
+    cards = [
+        Card(name="Sol Ring"),
+        Card(name="Brainstorm"),
+        Card(name="Lurrus of the Dream-Den"),
+    ]
     db_session.add_all(cards)
     db_session.commit()
 
@@ -57,7 +79,9 @@ def multiple_users_with_cards(db_session):
     # User 2 tracks Sol Ring and Lurrus
     user2 = User(username="user2", password_hash="hash2")
     user2.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
-    user2.cards.append(UserTrackedCards(card_name="Lurrus of the Dream-Den", amount=1))
+    user2.cards.append(
+        UserTrackedCards(card_name="Lurrus of the Dream-Den", amount=1)
+    )
 
     # User 3 tracks no cards of interest
     user3 = User(username="user3", password_hash="hash3")

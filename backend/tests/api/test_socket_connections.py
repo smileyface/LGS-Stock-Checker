@@ -14,7 +14,9 @@ def test_anonymous_websocket_connection_lifecycle(app, client, mocker):
     THEN the server should log the disconnection.
     """
     # Arrange: Spy on the logger within the socket_connections module
-    mock_logger = mocker.patch("managers.socket_manager.socket_connections.logger")
+    mock_logger = mocker.patch(
+        "managers.socket_manager.socket_connections.logger"
+    )
 
     # Ensure a clean session state by logging out any pre-existing user.
     client.post("/api/logout")
@@ -24,14 +26,16 @@ def test_anonymous_websocket_connection_lifecycle(app, client, mocker):
 
     # Assert: The connection is established and logged
     assert test_ws_client.is_connected()
-    
+
     # Find the call to logger.info and assert its content starts with the expected prefix.
     # This is more robust than matching the exact string with a dynamic SID.
     connect_log_found = any(
         call.args[0].startswith("🟢 Anonymous client connected:")
         for call in mock_logger.info.call_args_list
     )
-    assert connect_log_found, "Expected log for anonymous client connection not found."
+    assert (
+        connect_log_found
+    ), "Expected log for anonymous client connection not found."
 
     # Act: Explicitly disconnect the client
     test_ws_client.disconnect()
@@ -42,10 +46,14 @@ def test_anonymous_websocket_connection_lifecycle(app, client, mocker):
         call.args[0].startswith("🔴 Client disconnected:")
         for call in mock_logger.info.call_args_list
     )
-    assert disconnect_log_found, "Expected log for client disconnection not found."
+    assert (
+        disconnect_log_found
+    ), "Expected log for client disconnection not found."
 
 
-def test_authenticated_websocket_connection_lifecycle(app, client, seeded_user, mocker):
+def test_authenticated_websocket_connection_lifecycle(
+    app, client, seeded_user, mocker
+):
     """
     GIVEN a user who is logged in via a standard HTTP request
     WHEN a WebSocket client connects using that session
@@ -53,8 +61,12 @@ def test_authenticated_websocket_connection_lifecycle(app, client, seeded_user, 
          and assign them to a user-specific room.
     """
     # Arrange: Spy on the logger and join_room function
-    mock_logger = mocker.patch("managers.socket_manager.socket_connections.logger")
-    mock_join_room = mocker.patch("managers.socket_manager.socket_connections.join_room")
+    mock_logger = mocker.patch(
+        "managers.socket_manager.socket_connections.logger"
+    )
+    mock_join_room = mocker.patch(
+        "managers.socket_manager.socket_connections.join_room"
+    )
 
     # 1. Log in the user via a standard POST request to establish a session
     login_response = client.post(
@@ -73,11 +85,13 @@ def test_authenticated_websocket_connection_lifecycle(app, client, seeded_user, 
 
     # Verify the log message for an authenticated connection.
     auth_connect_log_found = any(
-        "User: testuser, Room: testuser" in call.args[0] and
-        call.args[0].startswith("🟢 Client connected:")
+        "User: testuser, Room: testuser" in call.args[0]
+        and call.args[0].startswith("🟢 Client connected:")
         for call in mock_logger.info.call_args_list
     )
-    assert auth_connect_log_found, "Expected log for authenticated client connection not found."
+    assert (
+        auth_connect_log_found
+    ), "Expected log for authenticated client connection not found."
     mock_join_room.assert_called_once_with("testuser")
 
     # Cleanup

@@ -6,6 +6,7 @@ correct scraper class to use based on the store's `fetch_strategy`, and
 instantiates an object for each one. The resulting instances are stored in
 the `STORE_REGISTRY`, making them available to the rest of the application.
 """
+
 from utility import logger
 from .storefronts.crystal_commerce_store import CrystalCommerceStore
 from .storefronts.default import DefaultStore
@@ -20,6 +21,7 @@ class LazyStoreRegistry:
     has been initialized by the application factory before any queries are
     made.
     """
+
     def __init__(self):
         self._registry = None
         self._strategy_map = {
@@ -53,8 +55,9 @@ class LazyStoreRegistry:
                     search_url=store_model.search_url,
                 )
                 self._registry[instance.slug] = instance
-        logger.info(f"✅ Store registry loaded with"
-                    f" {len(self._registry)} stores.")
+        logger.info(
+            f"✅ Store registry loaded with" f" {len(self._registry)} stores."
+        )
 
     def get_registry(self):
         if self._registry is None:

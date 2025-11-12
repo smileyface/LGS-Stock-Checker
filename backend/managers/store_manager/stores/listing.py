@@ -94,9 +94,13 @@ class Listing:
         return self.id == other.id
 
     def __hash__(self) -> int:
-        return hash((self.name,
-                     self.set_code,
-                     self.collector_number,
-                     self.finish,
-                     self.price,
-                     self.condition))
+        return hash(
+            (
+                self.name,
+                self.set_code,
+                self.collector_number,
+                self.finish,
+                self.price,
+                self.condition,
+            )
+        )

@@ -17,7 +17,9 @@ class MockCard:
         return {"card_name": self.card_name}
 
 
-@patch("managers.availability_manager.availability_manager.redis_manager.publish_pubsub")
+@patch(
+    "managers.availability_manager.availability_manager.redis_manager.publish_pubsub"
+)
 def test_check_availability(mock_publish_pubsub):
     """
     Verifies check_availability publishes a command to the scheduler.
@@ -26,21 +28,25 @@ def test_check_availability(mock_publish_pubsub):
     username = "testuser"
     expected_command = {
         "type": "queue_all_availability_checks",
-        "payload": {"username": username}
+        "payload": {"username": username},
     }
 
     # Act
     result = check_availability(username)
 
     # Assert
-    mock_publish_pubsub.assert_called_once_with("scheduler-requests", expected_command)
+    mock_publish_pubsub.assert_called_once_with(
+        "scheduler-requests", expected_command
+    )
     assert result == {
         "status": "requested",
         "message": "Availability update has been requested.",
     }
 
 
-@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch(
+    "managers.availability_manager.availability_manager.availability_storage"
+)
 @patch("managers.availability_manager.availability_manager.user_manager")
 @patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_with_cached_data(
@@ -62,12 +68,18 @@ def test_get_card_availability_with_cached_data(
     cached_results = get_cached_availability_or_trigger_check(username)
 
     # Assert
-    mock_storage.get_cached_availability_data.assert_called_once_with("test-store", "Test Card")
-    assert cached_results == {"test-store": {"Test Card": cached_data}} # noqa
+    mock_storage.get_cached_availability_data.assert_called_once_with(
+        "test-store", "Test Card"
+    )
+    assert cached_results == {"test-store": {"Test Card": cached_data}}  # noqa
 
 
-@patch("managers.availability_manager.availability_manager.redis_manager.publish_pubsub")
-@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch(
+    "managers.availability_manager.availability_manager.redis_manager.publish_pubsub"
+)
+@patch(
+    "managers.availability_manager.availability_manager.availability_storage"
+)
 @patch("managers.availability_manager.availability_manager.user_manager")
 @patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_with_no_cached_data(
@@ -87,15 +99,19 @@ def test_get_card_availability_with_no_cached_data(
     expected_command = {
         "type": "availability_request",
         "payload": {
-            "username": username, "store": "test-store", "card_data": mock_card.model_dump()
-        }
+            "username": username,
+            "store": "test-store",
+            "card_data": mock_card.model_dump(),
+        },
     }
 
     # Act
     cached_results = get_cached_availability_or_trigger_check(username)
 
     # Assert
-    mock_storage.get_cached_availability_data.assert_called_once_with("test-store", "Test Card")
+    mock_storage.get_cached_availability_data.assert_called_once_with(
+        "test-store", "Test Card"
+    )
     # Verify that a command was published to the scheduler instead of a task being queued directly.
     mock_publish_pubsub.assert_called_once_with(
         "scheduler-requests", expected_command
@@ -103,7 +119,9 @@ def test_get_card_availability_with_no_cached_data(
     assert cached_results == {}
 
 
-@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch(
+    "managers.availability_manager.availability_manager.availability_storage"
+)
 @patch("managers.availability_manager.availability_manager.user_manager")
 @patch("managers.availability_manager.availability_manager.database")
 def test_get_card_availability_handles_invalid_store(
@@ -138,5 +156,6 @@ def test_get_card_availability_handles_invalid_store(
 
     # Verify that get_availability_data was only called for the one valid store
     mock_storage.get_cached_availability_data.assert_called_once_with(
-        "valid-store", "Test Card",
+        "valid-store",
+        "Test Card",
     )

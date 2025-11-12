@@ -6,6 +6,7 @@ It inherits from the abstract base class `Store` and provides a basic
 implementation for `_scrape_listings` that always returns an empty list,
 effectively indicating that no listings can be found for such stores.
 """
+
 from typing import Any, Dict, List
 
 from managers.store_manager.stores.store import Store

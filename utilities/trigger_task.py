@@ -7,13 +7,16 @@ using `docker exec`.
 Usage:
     python utilities/trigger_task.py tasks.catalog_tasks.update_full_catalog
 """
+
 import sys
 import os
 
 try:
     # Add the application root directory (/app) to the Python path.
     # This ensures that top-level packages like 'managers' and 'utility' can be found.
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    )
 
     # Import all task modules to ensure they are registered with the task manager.
     import tasks.card_availability_tasks
@@ -23,7 +26,7 @@ try:
     from utility import logger
 except ImportError as e:
     print(f"❌ Error: Could not import application modules. Details: {e}")
-    sys.exit(1) 
+    sys.exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

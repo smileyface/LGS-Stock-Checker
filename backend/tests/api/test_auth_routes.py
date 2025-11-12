@@ -1,5 +1,6 @@
 import json
 
+
 def test_login_success(client, seeded_user):
     """
     GIVEN a registered user
@@ -111,6 +112,7 @@ def test_user_data_success(client, seeded_user_with_stores):
     assert "test_store" in data["stores"]
     assert "another_store" in data["stores"]
 
+
 def test_invalid_user_data_request(client, db_session):
     """
     GIVEN a client that is not logged in
@@ -125,6 +127,7 @@ def test_invalid_user_data_request(client, db_session):
 
     responce = client.get("/api/user_data")
     assert responce.status_code == 401
+
 
 def test_update_invalid_username(client, seeded_user):
     """
@@ -154,6 +157,7 @@ def test_update_invalid_username(client, seeded_user):
     assert response.status_code == 400
     assert response.json["error"] == "Username already exists"
 
+
 def test_update_invalid_password(client, seeded_user):
     """
     GIVEN a logged-in user
@@ -168,7 +172,9 @@ def test_update_invalid_password(client, seeded_user):
 
     response = client.post(
         "/api/account/update_password",
-        data=json.dumps({"current_password": "wrongpassword", "new_password": "newpassword"}),
+        data=json.dumps(
+            {"current_password": "wrongpassword", "new_password": "newpassword"}
+        ),
         content_type="application/json",
     )
     assert response.status_code == 400
@@ -180,16 +186,23 @@ def test_update_invalid_password(client, seeded_user):
         content_type="application/json",
     )
     assert response.status_code == 400
-    assert response.json["error"] == "Both current and new passwords are required"
-    
-    #Test current password entered
+    assert (
+        response.json["error"] == "Both current and new passwords are required"
+    )
+
+    # Test current password entered
     response = client.post(
         "/api/account/update_password",
-        data=json.dumps({"current_password" : "", "new_password": "newpassword"}),
+        data=json.dumps(
+            {"current_password": "", "new_password": "newpassword"}
+        ),
         content_type="application/json",
     )
     assert response.status_code == 400
-    assert response.json["error"] == "Both current and new passwords are required"
+    assert (
+        response.json["error"] == "Both current and new passwords are required"
+    )
+
 
 def test_user_data_unauthorized(client, db_session):
     """
@@ -199,5 +212,3 @@ def test_user_data_unauthorized(client, db_session):
     """
     response = client.get("/api/user_data")
     assert response.status_code == 401
-
-    

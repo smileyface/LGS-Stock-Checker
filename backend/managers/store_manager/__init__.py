@@ -1,5 +1,5 @@
-
 from .store_manager import get_store
+
 """
 This module initializes and exposes key components for store management.
 
@@ -9,7 +9,7 @@ It provides:
 - `Listing`: The class representing a product listing within a store.
 - `STORE_REGISTRY`: A registry containing available store implementations.
 
-These components are intended to be imported and used by other parts of the 
+These components are intended to be imported and used by other parts of the
 application for managing store-related operations.
 """
 from .stores.store import Store

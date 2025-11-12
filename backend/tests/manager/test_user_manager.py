@@ -41,6 +41,7 @@ def test_get_public_user_profile(mocker):
     mock_database.get_user_for_display.assert_called_once_with(username)
     assert result is mock_user
 
+
 def test_add_user(mocker):
     """
     GIVEN a new username and password
@@ -49,8 +50,12 @@ def test_add_user(mocker):
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_MANAGER_MODULE_PATH}.database")
-    mock_user_exists = mocker.patch(f"{USER_MANAGER_MODULE_PATH}.user_exists", return_value=False)
-    mock_hash_pw = mocker.patch(GENERATE_HASH_PATH, return_value="hashed_password")
+    mock_user_exists = mocker.patch(
+        f"{USER_MANAGER_MODULE_PATH}.user_exists", return_value=False
+    )
+    mock_hash_pw = mocker.patch(
+        GENERATE_HASH_PATH, return_value="hashed_password"
+    )
     username = "newuser"
     password = "password123"
 
@@ -61,6 +66,7 @@ def test_add_user(mocker):
     mock_user_exists.assert_called_once_with(username)
     mock_hash_pw.assert_called_once_with(password)
     mock_database.add_user.assert_called_once_with(username, "hashed_password")
+
 
 def test_update_username(mocker):
     """
@@ -84,8 +90,11 @@ def test_update_username(mocker):
     assert result is True
     expected_calls = [call(new_username), call(old_username)]
     mock_user_exists.assert_has_calls(expected_calls)
-    mock_database.update_username.assert_called_once_with(old_username, new_username)
-    
+    mock_database.update_username.assert_called_once_with(
+        old_username, new_username
+    )
+
+
 def test_authenticate_user_success(mocker):
     """
     GIVEN a user with a correct password
@@ -110,6 +119,7 @@ def test_authenticate_user_success(mocker):
     mock_check_hash.assert_called_once_with("a_valid_hash", "password123")
     assert result is mock_user
 
+
 def test_authenticate_user_wrong_password(mocker):
     """
     GIVEN a user with an incorrect password
@@ -132,6 +142,7 @@ def test_authenticate_user_wrong_password(mocker):
     mock_check_hash.assert_called_once_with("a_valid_hash", "wrong_password")
     assert result is None
 
+
 def test_authenticate_user_no_user(mocker):
     """
     GIVEN a username that does not exist
@@ -146,7 +157,10 @@ def test_authenticate_user_no_user(mocker):
     result = authenticate_user("nonexistent", "password")
 
     # Assert
-    mock_database.get_user_orm_by_username.assert_called_once_with("nonexistent")
+    mock_database.get_user_orm_by_username.assert_called_once_with(
+        "nonexistent"
+    )
+
 
 def test_get_selected_stores(mocker):
     """
@@ -166,6 +180,7 @@ def test_get_selected_stores(mocker):
     mock_database.get_user_stores.assert_called_once_with("testuser")
     assert result is mock_stores
 
+
 def test_load_card_list(mocker):
     """
     GIVEN a username for an existing user
@@ -174,7 +189,9 @@ def test_load_card_list(mocker):
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_CARDS_MODULE_PATH}.database")
-    mock_database.get_user_by_username.return_value = True  # Simulate user exists
+    mock_database.get_user_by_username.return_value = (
+        True  # Simulate user exists
+    )
     mock_cards = [{"card_name": "test card"}]
     mock_database.get_users_cards.return_value = mock_cards
 

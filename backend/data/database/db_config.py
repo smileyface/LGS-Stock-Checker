@@ -12,6 +12,7 @@ from .session_manager import db_query, init_session
 # These will be initialized by the app factory or test setup.
 engine = None
 
+
 def initialize_database(database_url: str, for_testing: bool = False):
     """
     Initializes the database engine and session factory.
@@ -38,7 +39,7 @@ def initialize_database(database_url: str, for_testing: bool = False):
     except SQLAlchemyError as e:
         logger.error(f"❌ Error initializing database: {e}")
         return
-        
+
     init_session(engine)
     logger.info("🔄 Creating database tables...")
     Base.metadata.create_all(bind=get_engine())
@@ -48,8 +49,11 @@ def initialize_database(database_url: str, for_testing: bool = False):
 def get_engine():
     """Provides the database engine."""
     if not engine:
-        raise RuntimeError("Database not initialized. Call initialize_database() first.")
+        raise RuntimeError(
+            "Database not initialized. Call initialize_database() first."
+        )
     return engine
+
 
 def startup_database():
     """
@@ -60,5 +64,7 @@ def startup_database():
     # The logic to seed stores from stores.json has been intentionally removed.
     # The database is now the single source of truth for store information.
     # To add or manage stores, please interact with the 'stores' table directly.
-    logger.info("✅ Skipping database seeding from JSON file. Store management is now handled directly in the database.")
+    logger.info(
+        "✅ Skipping database seeding from JSON file. Store management is now handled directly in the database."
+    )
     pass

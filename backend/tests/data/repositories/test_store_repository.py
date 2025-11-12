@@ -1,10 +1,6 @@
 import data.database as data
 
 
-
-
-
-
 def test_get_store_metadata(seeded_store):
     """
     GIVEN a store exists in the database

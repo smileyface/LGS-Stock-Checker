@@ -18,7 +18,9 @@ def load_availability_state(username: str):
         logger.info(f"📥 Loaded availability from Redis for {username}.")
         return availability
 
-    logger.warning(f"⚠️ No availability data found for {username}. Returning empty state.")
+    logger.warning(
+        f"⚠️ No availability data found for {username}. Returning empty state."
+    )
     return {}
 
 
@@ -40,27 +42,45 @@ def notify_users_of_changes(changes: Changes):
     added = changes.get("added", {})
     removed = changes.get("removed", {})
     updated = changes.get("updated", {})
-    all_changed_cards = set(added.keys()) | set(removed.keys()) | set(updated.keys())
+    all_changed_cards = (
+        set(added.keys()) | set(removed.keys()) | set(updated.keys())
+    )
 
     if not all_changed_cards:
         return
 
-    logger.info(f"📢 Processing notifications for {len(all_changed_cards)} changed cards.")
+    logger.info(
+        f"📢 Processing notifications for {len(all_changed_cards)} changed cards."
+    )
 
     # Fetch all affected users for all changed cards in a single database query.
-    affected_users_map = database.get_tracking_users_for_cards(list(all_changed_cards))
+    affected_users_map = database.get_tracking_users_for_cards(
+        list(all_changed_cards)
+    )
 
     for card_name, affected_users in affected_users_map.items():
         if not affected_users:
-            logger.debug(f"No users are tracking the changed card '{card_name}'.")
+            logger.debug(
+                f"No users are tracking the changed card '{card_name}'."
+            )
             continue
 
         # Construct a change summary for this specific card
-        card_change_summary = {k: v for k, v in {
-            "card_name": card_name, "added": added.get(card_name),
-            "removed": removed.get(card_name), "updated": updated.get(card_name),
-        }.items() if v is not None}
+        card_change_summary = {
+            k: v
+            for k, v in {
+                "card_name": card_name,
+                "added": added.get(card_name),
+                "removed": removed.get(card_name),
+                "updated": updated.get(card_name),
+            }.items()
+            if v is not None
+        }
 
         for user in affected_users:
-            logger.info(f"🔔 Emitting 'availability_changed' to user '{user.username}' for card '{card_name}'.")
-            socket_manager.emit_from_worker("availability_changed", card_change_summary, room=user.username)
+            logger.info(
+                f"🔔 Emitting 'availability_changed' to user '{user.username}' for card '{card_name}'."
+            )
+            socket_manager.emit_from_worker(
+                "availability_changed", card_change_summary, room=user.username
+            )

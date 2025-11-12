@@ -7,11 +7,23 @@ from sqlalchemy.orm import joinedload
 from .. import schema
 from ..exceptions import InvalidSpecificationError
 from ..session_manager import db_query
-from ..models import Card, CardSpecification, User, UserTrackedCards, Set, Finish, CardPrinting, printing_finish_association
+from ..models import (
+    Card,
+    CardSpecification,
+    User,
+    UserTrackedCards,
+    Set,
+    Finish,
+    CardPrinting,
+    printing_finish_association,
+)
 from utility import logger
 
+
 @db_query
-def get_users_cards(username: str, *, session) -> List[schema.UserTrackedCardSchema]:
+def get_users_cards(
+    username: str, *, session
+) -> List[schema.UserTrackedCardSchema]:
     """
     Retrieves all tracked cards for a given user using an efficient single query.
     """
@@ -26,21 +38,35 @@ def get_users_cards(username: str, *, session) -> List[schema.UserTrackedCardSch
     )
 
     if not user:
-        logger.warning(f"🚨 User '{username}' not found. Cannot retrieve cards.")
+        logger.warning(
+            f"🚨 User '{username}' not found. Cannot retrieve cards."
+        )
         return []
 
     logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
-    return [schema.UserTrackedCardSchema.model_validate(card) for card in user.cards]
+    return [
+        schema.UserTrackedCardSchema.model_validate(card) for card in user.cards
+    ]
+
 
 @db_query
-def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[str, Any], *, session) -> None:
+def add_user_card(
+    username: str,
+    card_name: str,
+    amount: int,
+    card_specs: Dict[str, Any],
+    *,
+    session,
+) -> None:
     """
     Adds or updates a tracked card for a user, including its specifications.
     This function handles finding the user, finding/creating the card in the global
     card table, and then creating/updating the user-specific tracking information.
     """
     if not card_name:
-        logger.warning("🚨 Attempted to add a card with no name. Operation aborted.")
+        logger.warning(
+            "🚨 Attempted to add a card with no name. Operation aborted."
+        )
         return
 
     user = session.query(User).filter(User.username == username).first()
@@ -51,27 +77,39 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
     # Find or create the global card entry (ensures referential integrity)
     card_entry = session.query(Card).filter(Card.name == card_name).first()
     if not card_entry:
-        logger.info(f"➕ Adding new card '{card_name}' to the global card table.")
+        logger.info(
+            f"➕ Adding new card '{card_name}' to the global card table."
+        )
         card_entry = Card(name=card_name)
         session.add(card_entry)
         session.flush()  # Ensure it gets an ID before proceeding
 
     # Find or create the user's tracked card entry
-    tracked_card = session.query(UserTrackedCards).filter(
-        UserTrackedCards.user_id == user.id,
-        UserTrackedCards.card_name == card_name
-    ).first()
+    tracked_card = (
+        session.query(UserTrackedCards)
+        .filter(
+            UserTrackedCards.user_id == user.id,
+            UserTrackedCards.card_name == card_name,
+        )
+        .first()
+    )
 
     if tracked_card:
-        logger.info(f"🔄 User '{username}' is already tracking '{card_name}'. Adding new specifications if any.")
+        logger.info(
+            f"🔄 User '{username}' is already tracking '{card_name}'. Adding new specifications if any."
+        )
         # Amount is not updated here; use `update_user_tracked_card_preferences` for that.
     else:
         logger.info(f"➕ User '{username}' is now tracking '{card_name}'.")
-        tracked_card = UserTrackedCards(user_id=user.id, amount=amount, card_name=card_name)
+        tracked_card = UserTrackedCards(
+            user_id=user.id, amount=amount, card_name=card_name
+        )
         session.add(tracked_card)
 
     # Validate specifications before adding them
-    if card_specs and not is_valid_printing_specification(card_name, card_specs):
+    if card_specs and not is_valid_printing_specification(
+        card_name, card_specs
+    ):
         # Raise a specific exception that can be caught by the caller
         raise InvalidSpecificationError(
             f"Invalid specification for '{card_name}': {card_specs}"
@@ -83,28 +121,35 @@ def add_user_card(username: str, card_name: str, amount: int, card_specs: Dict[s
     # Efficiently update specifications
     if card_specs:
         # Get all existing specs for this card at once to avoid N+1 queries
-        existing_specs_query = session.query(CardSpecification).filter(CardSpecification.user_card_id == tracked_card.id)
+        existing_specs_query = session.query(CardSpecification).filter(
+            CardSpecification.user_card_id == tracked_card.id
+        )
         existing_specs_set = {
-            (s.set_code, s.collector_number, s.finish) for s in existing_specs_query.all()
+            (s.set_code, s.collector_number, s.finish)
+            for s in existing_specs_query.all()
         }
 
         # The frontend sends a single spec object, not a list.
         spec_tuple = (
             card_specs.get("set_code"),
             card_specs.get("collector_number"),
-            card_specs.get("finish")
+            card_specs.get("finish"),
         )
         if spec_tuple not in existing_specs_set:
             new_spec = CardSpecification(
                 user_card_id=tracked_card.id,
                 set_code=spec_tuple[0],
                 collector_number=spec_tuple[1],
-                finish=spec_tuple[2]
+                finish=spec_tuple[2],
             )
             session.add(new_spec)
-            logger.info(f"➕ Added new specification {spec_tuple} for '{card_name}'.")
+            logger.info(
+                f"➕ Added new specification {spec_tuple} for '{card_name}'."
+            )
 
-    logger.info(f"✅ Successfully processed '{card_name}' for user '{username}'.")
+    logger.info(
+        f"✅ Successfully processed '{card_name}' for user '{username}'."
+    )
 
 
 @db_query
@@ -132,7 +177,9 @@ def delete_user_card(username: str, card_name: str, *, session) -> None:
     """
     Deletes a tracked card for a user, ensuring related specifications are also deleted via ORM cascades.
     """
-    logger.info(f"🗑️ Attempting to delete tracked card '{card_name}' for user '{username}'.")
+    logger.info(
+        f"🗑️ Attempting to delete tracked card '{card_name}' for user '{username}'."
+    )
 
     # Find the specific card tracked by the user.
     # We must load the object into the session to trigger cascade deletes for its specifications.
@@ -140,28 +187,43 @@ def delete_user_card(username: str, card_name: str, *, session) -> None:
     tracked_card = (
         session.query(UserTrackedCards)
         .join(User)
-        .filter(User.username == username, UserTrackedCards.card_name == card_name)
+        .filter(
+            User.username == username, UserTrackedCards.card_name == card_name
+        )
         .first()
     )
 
     if tracked_card:
         session.delete(tracked_card)
-        logger.info(f"✅ Successfully deleted tracked card '{card_name}' for user '{username}'.")
+        logger.info(
+            f"✅ Successfully deleted tracked card '{card_name}' for user '{username}'."
+        )
     else:
         # This could be because the user doesn't exist or they aren't tracking the card.
-        logger.warning(f"⚠️ No tracked card named '{card_name}' found for user '{username}'. No action taken.")
+        logger.warning(
+            f"⚠️ No tracked card named '{card_name}' found for user '{username}'. No action taken."
+        )
 
 
 @db_query
-def update_user_tracked_cards_list(username: str, card_list: List[Dict[str, Any]], *, session) -> None:
+def update_user_tracked_cards_list(
+    username: str, card_list: List[Dict[str, Any]], *, session
+) -> None:
     """
     Replaces a user's entire tracked card list with a new one.
     This uses an idiomatic "set" operation, letting the ORM handle deletes and inserts.
     """
     logger.info(f"🔄 Replacing entire tracked card list for user '{username}'.")
-    user = session.query(User).options(joinedload(User.cards)).filter(User.username == username).first()
+    user = (
+        session.query(User)
+        .options(joinedload(User.cards))
+        .filter(User.username == username)
+        .first()
+    )
     if not user:
-        logger.warning(f"🚨 User '{username}' not found. Cannot update card list.")
+        logger.warning(
+            f"🚨 User '{username}' not found. Cannot update card list."
+        )
         return
 
     # By assigning a new list to the 'cards' relationship, SQLAlchemy's ORM
@@ -170,7 +232,9 @@ def update_user_tracked_cards_list(username: str, card_list: List[Dict[str, Any]
 
     if not card_list:
         user.cards = []
-        logger.info(f"✅ Cleared all card preferences for user '{username}' as the provided list was empty.")
+        logger.info(
+            f"✅ Cleared all card preferences for user '{username}' as the provided list was empty."
+        )
         return
 
     # Create new card preference objects
@@ -182,31 +246,45 @@ def update_user_tracked_cards_list(username: str, card_list: List[Dict[str, Any]
             UserTrackedCards(
                 # user_id is set via the relationship back-reference
                 card_name=card_data["card_name"],
-                amount=card_data.get("amount", 1)
+                amount=card_data.get("amount", 1),
             )
         )
 
     user.cards = new_tracked_cards
-    logger.info(f"✅ Successfully set {len(card_list)} new tracked cards for user '{username}'.")
+    logger.info(
+        f"✅ Successfully set {len(card_list)} new tracked cards for user '{username}'."
+    )
 
 
 @db_query
-def update_user_tracked_card_preferences(username: str, card_name: str, preference_updates: Dict[str, Any], *, session) -> None:
+def update_user_tracked_card_preferences(
+    username: str,
+    card_name: str,
+    preference_updates: Dict[str, Any],
+    *,
+    session,
+) -> None:
     """
     Updates specific preferences (e.g., amount) for a single tracked card.
     """
-    logger.info(f"✏️ Updating preferences for card '{card_name}' for user '{username}'.")
+    logger.info(
+        f"✏️ Updating preferences for card '{card_name}' for user '{username}'."
+    )
 
     # Find the specific card tracked by the user in a single query
     tracked_card = (
         session.query(UserTrackedCards)
         .join(User)
-        .filter(User.username == username, UserTrackedCards.card_name == card_name)
+        .filter(
+            User.username == username, UserTrackedCards.card_name == card_name
+        )
         .first()
     )
 
     if not tracked_card:
-        logger.warning(f"🚨 Card '{card_name}' not found for user '{username}'. Cannot update preferences.")
+        logger.warning(
+            f"🚨 Card '{card_name}' not found for user '{username}'. Cannot update preferences."
+        )
         return
 
     # Update preferences based on the provided dictionary
@@ -216,14 +294,16 @@ def update_user_tracked_card_preferences(username: str, card_name: str, preferen
             tracked_card.amount = new_amount
             logger.debug(f"Updated amount to {new_amount} for '{card_name}'.")
         else:
-            logger.warning(f"⚠️ Invalid amount '{new_amount}' provided. Must be a positive integer.")
+            logger.warning(
+                f"⚠️ Invalid amount '{new_amount}' provided. Must be a positive integer."
+            )
 
     # Handle updating specifications. This replaces all existing specs for the card.
     if "specifications" in preference_updates:
         logger.debug(f"Updating specifications for '{card_name}'.")
         # Clear existing specifications
         tracked_card.specifications.clear()
-        session.flush() # Apply the clear operation
+        session.flush()  # Apply the clear operation
 
         # Add new specifications
         new_specs = preference_updates["specifications"]
@@ -231,12 +311,17 @@ def update_user_tracked_card_preferences(username: str, card_name: str, preferen
             new_spec = CardSpecification(
                 set_code=spec_data.get("set_code"),
                 collector_number=spec_data.get("collector_number"),
-                finish=spec_data.get("finish")
+                finish=spec_data.get("finish"),
             )
             tracked_card.specifications.append(new_spec)
-        logger.debug(f"Added {len(new_specs)} new specifications for '{card_name}'.")
+        logger.debug(
+            f"Added {len(new_specs)} new specifications for '{card_name}'."
+        )
 
-    logger.info(f"✅ Preferences updated for card '{card_name}' for user '{username}'.")
+    logger.info(
+        f"✅ Preferences updated for card '{card_name}' for user '{username}'."
+    )
+
 
 @db_query
 def add_card_names_to_catalog(card_names: List[str], *, session):
@@ -261,7 +346,10 @@ def add_card_names_to_catalog(card_names: List[str], *, session):
     stmt = stmt.on_conflict_do_nothing()
 
     session.execute(stmt)
-    logger.info(f"Attempted to bulk insert {len(card_names)} names into the card catalog.")
+    logger.info(
+        f"Attempted to bulk insert {len(card_names)} names into the card catalog."
+    )
+
 
 @db_query
 def add_set_data_to_catalog(set_data: List[Dict[str, Any]], *, session):
@@ -283,15 +371,21 @@ def add_set_data_to_catalog(set_data: List[Dict[str, Any]], *, session):
     stmt = stmt.on_conflict_do_nothing()
 
     session.execute(stmt)
-    logger.info(f"Attempted to bulk insert {len(set_data)} sets into the set catalog.")
+    logger.info(
+        f"Attempted to bulk insert {len(set_data)} sets into the set catalog."
+    )
+
 
 @db_query
 def is_card_in_catalog(card_name: str, *, session) -> bool:
     """Checks if a card with the given name exists in the catalog."""
     # The correct way to check for existence is to create an exists()
     # subquery and then query for its scalar result.
-    exists_query = session.query(Card.name).filter(Card.name == card_name).exists()
+    exists_query = (
+        session.query(Card.name).filter(Card.name == card_name).exists()
+    )
     return session.query(exists_query).scalar()
+
 
 @db_query
 def filter_existing_card_names(card_names: List[str], *, session) -> set:
@@ -302,8 +396,10 @@ def filter_existing_card_names(card_names: List[str], *, session) -> set:
         return set()
 
     # Query the Card table for names that are in the provided list
-    existing_names_query = session.query(Card.name).filter(Card.name.in_(card_names))
-    
+    existing_names_query = session.query(Card.name).filter(
+        Card.name.in_(card_names)
+    )
+
     # Return the results as a set for efficient `in` checks.
     return {name for name, in existing_names_query}
 
@@ -317,6 +413,7 @@ def bulk_add_finishes(finish_names: List[str], *, session):
     session.execute(stmt)
     logger.info(f"Attempted to bulk insert {len(finish_names)} finishes.")
 
+
 @db_query
 def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
     if not printings:
@@ -326,18 +423,30 @@ def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
     session.execute(stmt)
     logger.info(f"Attempted to bulk insert {len(printings)} card printings.")
 
+
 @db_query
 def get_all_printings_map(*, session) -> Dict[tuple, int]:
-    results = session.query(CardPrinting.id, CardPrinting.card_name, CardPrinting.set_code, CardPrinting.collector_number).all()
-    return {(r.card_name, r.set_code, r.collector_number): r.id for r in results}
+    results = session.query(
+        CardPrinting.id,
+        CardPrinting.card_name,
+        CardPrinting.set_code,
+        CardPrinting.collector_number,
+    ).all()
+    return {
+        (r.card_name, r.set_code, r.collector_number): r.id for r in results
+    }
+
 
 @db_query
 def get_all_finishes_map(*, session) -> Dict[str, int]:
     results = session.query(Finish.id, Finish.name).all()
     return {r.name: r.id for r in results}
 
+
 @db_query
-def bulk_add_printing_finish_associations(associations: List[Dict[str, int]], *, session):
+def bulk_add_printing_finish_associations(
+    associations: List[Dict[str, int]], *, session
+):
     """
     Bulk inserts printing-to-finish associations.
     Uses a dialect-specific approach for conflict handling to support both
@@ -354,7 +463,10 @@ def bulk_add_printing_finish_associations(associations: List[Dict[str, int]], *,
     stmt = stmt.on_conflict_do_nothing()
 
     session.execute(stmt)
-    logger.info(f"Attempted to bulk insert {len(associations)} printing-finish associations.")
+    logger.info(
+        f"Attempted to bulk insert {len(associations)} printing-finish associations."
+    )
+
 
 @db_query
 def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
@@ -367,7 +479,9 @@ def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
     printings = (
         session.query(CardPrinting)
         .filter(CardPrinting.card_name == card_name)
-        .options(joinedload(CardPrinting.available_finishes))  # Eagerly load finishes
+        .options(
+            joinedload(CardPrinting.available_finishes)
+        )  # Eagerly load finishes
         .order_by(CardPrinting.set_code, CardPrinting.collector_number)
         .all()
     )
@@ -384,8 +498,11 @@ def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
         for p in printings
     ]
 
+
 @db_query
-def is_valid_printing_specification(card_name: str, spec: Dict[str, Any], *, session) -> bool:
+def is_valid_printing_specification(
+    card_name: str, spec: Dict[str, Any], *, session
+) -> bool:
     """
     Validates if a given specification (set, collector #, finish) is valid for a card.
     Handles partial specifications as wildcards, as per requirement [4.3.8].
@@ -398,8 +515,6 @@ def is_valid_printing_specification(card_name: str, spec: Dict[str, Any], *, ses
         True if the specification is valid, False otherwise.
     """
 
-
-
     logger.info(f"🔍 Validating specification for '{card_name}': {spec}")
     # Create a cleaned specification, ignoring any keys with empty string values.
     # This treats them as wildcards, as intended.
@@ -407,20 +522,28 @@ def is_valid_printing_specification(card_name: str, spec: Dict[str, Any], *, ses
 
     # If the cleaned spec is empty, it's a wildcard for any printing, which is always valid.
     if not cleaned_spec:
-        logger.debug(f"Validation passed for '{card_name}' with empty spec (wildcard).")
+        logger.debug(
+            f"Validation passed for '{card_name}' with empty spec (wildcard)."
+        )
         return True
 
     # Start a query on CardPrinting
-    query = session.query(CardPrinting).filter(CardPrinting.card_name == card_name)
+    query = session.query(CardPrinting).filter(
+        CardPrinting.card_name == card_name
+    )
 
     # Add filters for the specs that are actually provided in the cleaned dictionary
     if "set_code" in cleaned_spec:
         query = query.filter(CardPrinting.set_code == cleaned_spec["set_code"])
     if "collector_number" in cleaned_spec:
-        query = query.filter(CardPrinting.collector_number == cleaned_spec["collector_number"])
+        query = query.filter(
+            CardPrinting.collector_number == cleaned_spec["collector_number"]
+        )
     if "finish" in cleaned_spec:
         # If a finish is specified, we must join to check it
-        query = query.join(CardPrinting.available_finishes).filter(Finish.name == cleaned_spec["finish"])
+        query = query.join(CardPrinting.available_finishes).filter(
+            Finish.name == cleaned_spec["finish"]
+        )
 
     # We just need to know if at least one such printing exists.
     # The .scalar() method returns the first column of the first row, or None.

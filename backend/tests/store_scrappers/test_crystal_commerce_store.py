@@ -1,12 +1,16 @@
 """
 Unit tests for the CrystalCommerceStore base scraper.
 """
+
 import unittest
 from unittest.mock import patch, MagicMock, PropertyMock
 import requests
 from bs4 import BeautifulSoup
 
-from managers.store_manager.stores.storefronts.crystal_commerce_store import CrystalCommerceStore, _make_request_with_retries
+from managers.store_manager.stores.storefronts.crystal_commerce_store import (
+    CrystalCommerceStore,
+    _make_request_with_retries,
+)
 from managers.store_manager.stores.listing import Listing
 
 # --- Sample HTML Payloads ---
@@ -112,17 +116,21 @@ SEARCH_RESULTS_WITH_DATA_PRICE = """
 </ul>
 """
 
-class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityGamesMesaArizona
-    """Tests for the CrystalCommerceStore base scraper.""" # Docstring updated
+
+class TestCrystalCommerceStore(
+    unittest.TestCase
+):  # Renamed from TestAuthorityGamesMesaArizona
+    """Tests for the CrystalCommerceStore base scraper."""  # Docstring updated
+
     def setUp(self):
         """Set up the test case."""
-        self.scraper = CrystalCommerceStore( # This was already correct
+        self.scraper = CrystalCommerceStore(  # This was already correct
             name="Test Crystal Commerce Store",
             slug="test-cc-store",
             homepage="https://test-store.crystalcommerce.com/",
-            search_url="https://test-store.crystalcommerce.com/products/search"
+            search_url="https://test-store.crystalcommerce.com/products/search",
         )
-        
+
     def mock_requests_get(self, url, params=None, timeout=None):
         """
         A custom mock function for requests.get.
@@ -147,12 +155,16 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
 
         return mock_response
 
-    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store.set_manager.set_code')
-    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
-    @patch.object(Listing, 'set_code', new_callable=PropertyMock)
-    def test_scrape_listings_success(self, mock_set_code, 
-                                     mock_make_request,
-                                     mock_set_manager_set_code):
+    @patch(
+        "managers.store_manager.stores.storefronts.crystal_commerce_store.set_manager.set_code"
+    )
+    @patch(
+        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+    )
+    @patch.object(Listing, "set_code", new_callable=PropertyMock)
+    def test_scrape_listings_success(
+        self, mock_set_code, mock_make_request, mock_set_manager_set_code
+    ):
         """
         Test the full scraping process for a card, mocking both network calls.
         """
@@ -162,13 +174,15 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         mock_make_request.side_effect = self.mock_requests_get
         mock_set_code.return_value = "tst"
         mock_set_manager_set_code.return_value = "tst"
-        
+
         # --- Execute ---
         card_name = "Test Card"
         listings = self.scraper._scrape_listings(card_name)
 
         # --- Assert ---
-        self.assertEqual(len(listings), 2, "Should find two listings (one regular, one foil)")
+        self.assertEqual(
+            len(listings), 2, "Should find two listings (one regular, one foil)"
+        )
 
         # Verify the first listing (Non-Foil)
         listing1 = listings[0]
@@ -188,27 +202,43 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         self.assertEqual(listing2.stock, 1)
         self.assertEqual(listing2.condition, "Near Mint")
         self.assertEqual(listing2.finish, "foil")
-        self.assertEqual(listing2.collector_number, "123") # Both variants share the collector number
+        self.assertEqual(
+            listing2.collector_number, "123"
+        )  # Both variants share the collector number
 
         # Verify that requests.get was called correctly
-        self.assertEqual(mock_make_request.call_count, 2, "Should make one call for search and one for the product page")
-        
+        self.assertEqual(
+            mock_make_request.call_count,
+            2,
+            "Should make one call for search and one for the product page",
+        )
+
         # Check the first call (search)
         search_call_args = mock_make_request.call_args_list[0]
-        self.assertEqual(search_call_args.kwargs['params'], {'q': 'Test Card', 'c': 1})
-        
+        self.assertEqual(
+            search_call_args.kwargs["params"], {"q": "Test Card", "c": 1}
+        )
+
         # Check the second call (product page)
         product_page_call_args = mock_make_request.call_args_list[1]
-        self.assertIn('/products/1234-test-card', product_page_call_args.args[0])
-        
+        self.assertIn(
+            "/products/1234-test-card", product_page_call_args.args[0]
+        )
+
         # 1. Assert that the SET MANAGER was called with the RAW NAME from the HTML
-        mock_set_manager_set_code.assert_any_call("Magic The Gathering: Test Set")
+        mock_set_manager_set_code.assert_any_call(
+            "Magic The Gathering: Test Set"
+        )
         # 2. Assert that the LISTING was set with the SET CODE from the SET MANAGER
         mock_set_code.assert_any_call("tst")
 
-    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
-    @patch.object(Listing, 'set_code')
-    def test_scrape_listings_deduplicates_results(self, mock_set_code, mock_make_request):
+    @patch(
+        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+    )
+    @patch.object(Listing, "set_code")
+    def test_scrape_listings_deduplicates_results(
+        self, mock_set_code, mock_make_request
+    ):
         """
         Test that the scraper correctly deduplicates listings when the source HTML
         contains identical variants.
@@ -225,7 +255,10 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         mock_product_response.text = PRODUCT_PAGE_HTML
 
         # Set the side_effect to return the correct mock response based on the URL.
-        mock_make_request.side_effect = [mock_search_response, mock_product_response]
+        mock_make_request.side_effect = [
+            mock_search_response,
+            mock_product_response,
+        ]
         mock_set_code.return_value = "tst"
 
         # --- Execute ---
@@ -235,11 +268,19 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         # --- Assert ---
         # The source HTML has 3 variants, but 2 are identical.
         # The scraper should return only 2 unique listings.
-        self.assertEqual(len(listings), 2, "Should find 2 unique listings after deduplication")
+        self.assertEqual(
+            len(listings),
+            2,
+            "Should find 2 unique listings after deduplication",
+        )
 
-    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
-    @patch.object(Listing, 'set_code')
-    def test_scrape_listings_stops_on_non_matching_card(self, mock_set_code, mock_make_request):
+    @patch(
+        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+    )
+    @patch.object(Listing, "set_code")
+    def test_scrape_listings_stops_on_non_matching_card(
+        self, mock_set_code, mock_make_request
+    ):
         """
         Test that the scraper stops processing once it encounters a card that
         does not match the search term.
@@ -254,7 +295,10 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         mock_product_response.text = PRODUCT_PAGE_HTML
 
         # The scraper should only request the first product page, then stop.
-        mock_make_request.side_effect = [mock_search_response, mock_product_response]
+        mock_make_request.side_effect = [
+            mock_search_response,
+            mock_product_response,
+        ]
         mock_set_code.return_value = "tst"
 
         # --- Execute ---
@@ -263,13 +307,23 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
 
         # --- Assert ---
         # It should only find the one listing from the first product.
-        self.assertEqual(len(listings), 1, "Should only process listings before the non-matching card")
+        self.assertEqual(
+            len(listings),
+            1,
+            "Should only process listings before the non-matching card",
+        )
 
         # It should have made one call for the search page and one for the first product page.
         # It should NOT have made a call for the second "Test Card" after the "Wrong Card".
-        self.assertEqual(mock_make_request.call_count, 2, "Should stop making requests after a non-match")
+        self.assertEqual(
+            mock_make_request.call_count,
+            2,
+            "Should stop making requests after a non-match",
+        )
 
-    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    @patch(
+        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+    )
     def test_scrape_listings_search_network_failure(self, mock_make_request):
         """
         Test that _scrape_listings handles a network error during the initial search
@@ -287,8 +341,12 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         self.assertEqual(listings, [])
         mock_make_request.assert_called_once()
 
-    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
-    def test_scrape_listings_product_page_network_failure(self, mock_make_request):
+    @patch(
+        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+    )
+    def test_scrape_listings_product_page_network_failure(
+        self, mock_make_request
+    ):
         """
         Test that _scrape_listings handles a network failure when fetching the
         individual product page and still processes the variant data it has.
@@ -304,14 +362,20 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         listings = self.scraper._scrape_listings("Test Card")
 
         # --- Assert ---
-        self.assertEqual(len(listings), 2, "Should still find 2 variants even if product page fails")
+        self.assertEqual(
+            len(listings),
+            2,
+            "Should still find 2 variants even if product page fails",
+        )
         # Check that details from the failed page are missing
         self.assertEqual(listings[0].set_code, "")
         self.assertEqual(listings[0].collector_number, "")
         # Check that details from the variant parsing are still present
         self.assertEqual(listings[0].price, 10.00)
 
-    @patch('managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries')
+    @patch(
+        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+    )
     def test_scrape_listings_no_variants_found(self, mock_make_request):
         """
         Test that the scraper returns an empty list when a product is found
@@ -324,13 +388,20 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         mock_product_response = MagicMock()
         mock_product_response.text = PRODUCT_PAGE_HTML
 
-        mock_make_request.side_effect = [mock_search_response, mock_product_response]
+        mock_make_request.side_effect = [
+            mock_search_response,
+            mock_product_response,
+        ]
 
         # --- Execute ---
         listings = self.scraper._scrape_listings("Test Card")
 
         # --- Assert ---
-        self.assertEqual(len(listings), 0, "Should return an empty list if no variants are found")
+        self.assertEqual(
+            len(listings),
+            0,
+            "Should return an empty list if no variants are found",
+        )
 
     def test_parse_variants_handles_missing_data(self):
         """
@@ -367,7 +438,9 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
         variants = self.scraper._parse_variants(product_element)
 
         # --- Assert ---
-        self.assertEqual(len(variants), 0, "Should skip variants with malformed price.")
+        self.assertEqual(
+            len(variants), 0, "Should skip variants with malformed price."
+        )
 
     def test_parse_variants_uses_data_price_attribute(self):
         """
@@ -383,12 +456,16 @@ class TestCrystalCommerceStore(unittest.TestCase): # Renamed from TestAuthorityG
 
         # --- Assert ---
         self.assertEqual(len(variants), 1, "Should find one variant.")
-        
+
         # The price should be from `data-price="$12.34"`, not from `<span class="price">$99.99</span>`.
-        self.assertEqual(variants[0]['price'], 12.34, "Price should be parsed from the data-price attribute.")
-        self.assertEqual(variants[0]['stock'], 5)
-        self.assertEqual(variants[0]['condition'], "Near Mint")
+        self.assertEqual(
+            variants[0]["price"],
+            12.34,
+            "Price should be parsed from the data-price attribute.",
+        )
+        self.assertEqual(variants[0]["stock"], 5)
+        self.assertEqual(variants[0]["condition"], "Near Mint")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

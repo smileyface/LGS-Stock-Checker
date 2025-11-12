@@ -6,7 +6,9 @@ from data import database
 from utility import logger
 
 
-def get_public_user_profile(username: str) -> Optional[database.schema.UserPublicSchema]:
+def get_public_user_profile(
+    username: str,
+) -> Optional[database.schema.UserPublicSchema]:
     """
     Retrieve a user's public profile by username, excluding sensitive fields, and return as a UserPublicSchema instance.
     Args:
@@ -34,7 +36,9 @@ def add_user(username: str, password: str) -> bool:
     logger.info(f"➕ Adding user: {username}")
 
     if not password or not isinstance(password, str):
-        logger.error(f"❌ Attempted to add user '{username}' with an invalid password.")
+        logger.error(
+            f"❌ Attempted to add user '{username}' with an invalid password."
+        )
         return False
 
     # Check if user already exists
@@ -42,7 +46,9 @@ def add_user(username: str, password: str) -> bool:
         logger.warning(f"🚨 User '{username}' already exists.")
         return False
 
-    hashed_password = generate_password_hash(password)  # ✅ Hash password BEFORE inserting
+    hashed_password = generate_password_hash(
+        password
+    )  # ✅ Hash password BEFORE inserting
     result = database.add_user(username, hashed_password)
 
     if result:

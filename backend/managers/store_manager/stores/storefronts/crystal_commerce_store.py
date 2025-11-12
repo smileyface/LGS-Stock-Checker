@@ -142,13 +142,15 @@ class CrystalCommerceStore(Store):
                     break
 
                 product_link_tag = product.select_one("a[itemprop='url']")
-                product_url = product_link_tag.get("href") if product_link_tag\
-                    else ""
+                product_url = (
+                    product_link_tag.get("href") if product_link_tag else ""
+                )
                 full_product_url = urljoin(self.homepage, product_url)
 
                 product_page_soup = self._get_product_page(product_url)
                 static_details = self._parse_product_page_details(
-                    product_page_soup)
+                    product_page_soup
+                )
 
                 variants = self._parse_variants(product)
                 for variant_details in variants:
@@ -218,7 +220,8 @@ class CrystalCommerceStore(Store):
         for variant_row in product.select("div.variant-row.in-stock"):
             try:
                 condition_element = variant_row.select_one(
-                    ".variant-description")
+                    ".variant-description"
+                )
                 price_element = variant_row.select_one(".price")
                 qty_element = variant_row.select_one(".variant-qty")
 
@@ -228,13 +231,13 @@ class CrystalCommerceStore(Store):
 
                 description = condition_element.text.strip()
                 condition = description.split(",")[0].strip()
-                finish = "foil" if "foil" in description.lower()\
-                    else "non-foil"
+                finish = "foil" if "foil" in description.lower() else "non-foil"
 
                 price_str = None
                 # Prioritize getting the price from the form's data attribute.
-                form_element = variant_row.find("form",
-                                                class_="add-to-cart-form")
+                form_element = variant_row.find(
+                    "form", class_="add-to-cart-form"
+                )
                 if form_element and form_element.get("data-price"):
                     price_str = form_element["data-price"]
                 elif price_element:

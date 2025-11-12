@@ -3,9 +3,18 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from werkzeug.security import generate_password_hash
 
-from data.database.models.orm_models import Base, User, Store, Card, Set, Finish, CardPrinting
+from data.database.models.orm_models import (
+    Base,
+    User,
+    Store,
+    Card,
+    Set,
+    Finish,
+    CardPrinting,
+)
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
+
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -23,10 +32,13 @@ def db_session():
 
 def seed_user(db_session):
     """Helper function to create and commit a test user."""
-    user = User(username="testuser", password_hash=generate_password_hash("password"))
+    user = User(
+        username="testuser", password_hash=generate_password_hash("password")
+    )
     db_session.add(user)
     db_session.commit()
     return user
+
 
 @pytest.fixture(scope="function")
 def seeded_user(db_session):
@@ -81,20 +93,25 @@ def seeded_store(seeded_stores):
 @pytest.fixture
 def seeded_printings(db_session):
     """Fixture to create a card with multiple printings and finishes."""
-    db_session.add_all([
-        Card(name="Sol Ring"),
-        Card(name="Thoughtseize"),
-        Card(name="Ugin, the Spirit Dragon"),
-        Set(code="C21", name="Commander 2021"),
-        Set(code="LTC", name="The Lord of the Rings: Tales of Middle-earth Commander"),
-        Set(code="ONE", name="Phyrexia: All Will Be One"),
-        Set(code="MH2", name="Modern Horizons 2"),
-        Set(code="2XM", name="Double Masters"),
-        Set(code="M21", name="Core Set 2021"),
-        Finish(name="nonfoil"),
-        Finish(name="foil"),
-        Finish(name="etched")
-    ])
+    db_session.add_all(
+        [
+            Card(name="Sol Ring"),
+            Card(name="Thoughtseize"),
+            Card(name="Ugin, the Spirit Dragon"),
+            Set(code="C21", name="Commander 2021"),
+            Set(
+                code="LTC",
+                name="The Lord of the Rings: Tales of Middle-earth Commander",
+            ),
+            Set(code="ONE", name="Phyrexia: All Will Be One"),
+            Set(code="MH2", name="Modern Horizons 2"),
+            Set(code="2XM", name="Double Masters"),
+            Set(code="M21", name="Core Set 2021"),
+            Finish(name="nonfoil"),
+            Finish(name="foil"),
+            Finish(name="etched"),
+        ]
+    )
     db_session.commit()
 
     printings_data = [
@@ -109,8 +126,14 @@ def seeded_printings(db_session):
     all_finishes = {f.name: f for f in db_session.query(Finish).all()}
 
     for card_name, set_code, collector_number, finish_names in printings_data:
-        printing = CardPrinting(card_name=card_name, set_code=set_code, collector_number=collector_number)
-        printing.available_finishes.extend([all_finishes[name] for name in finish_names])
+        printing = CardPrinting(
+            card_name=card_name,
+            set_code=set_code,
+            collector_number=collector_number,
+        )
+        printing.available_finishes.extend(
+            [all_finishes[name] for name in finish_names]
+        )
         db_session.add(printing)
 
     db_session.commit()

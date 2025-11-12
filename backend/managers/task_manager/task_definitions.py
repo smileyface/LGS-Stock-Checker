@@ -5,6 +5,7 @@ This prevents circular dependencies by allowing any part of the application
 (e.g., schedulers, API endpoints) to reference a task by its ID without
 needing to import the task function itself.
 """
+
 # --- Scheduled Task IDs ---
 CATALOG_TASK_ID = "scheduled_catalog_update"
 SET_CATALOG_TASK_ID = "scheduled_set_catalog_update"

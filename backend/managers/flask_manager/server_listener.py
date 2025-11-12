@@ -11,28 +11,33 @@ def _handle_availability_result(payload: dict):
     Caches the availability data.
     """
     if all(k in payload for k in ["store", "card", "items"]):
-        logger.info(f"Received availability result for '{payload['card']}' at '{payload['store']}' from worker.")
-        availability_manager.cache_availability_data(payload['store'], payload['card'], payload['items'])
+        logger.info(
+            f"Received availability result for '{payload['card']}' at '{payload['store']}' from worker."
+        )
+        availability_manager.cache_availability_data(
+            payload["store"], payload["card"], payload["items"]
+        )
     else:
         logger.error(f"Invalid availability result payload: {payload}")
+
 
 # A map of event types to their corresponding handler functions.
 HANDLER_MAP = {
     "availability_result": _handle_availability_result,
 }
 
+
 class _Server_Listener:
     """
     Manages a background thread on the server to listen for results from workers on a Redis Pub/Sub channel.
     This is implemented as a singleton to ensure only one listener thread is active.
     """
+
     def __init__(self):
         self.thread = None
         self.pubsub = None
 
-
     def start(self):
-
         """Starts the listener thread if it's not already running."""
         if self.thread and self.thread.is_alive():
             logger.warning("Server listener thread is already running.")
@@ -58,7 +63,9 @@ class _Server_Listener:
         """The actual listener function that runs in the background thread."""
         self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe("worker-results")
-        logger.info("🎧 Server results listener started. Subscribed to 'worker-results' channel.")
+        logger.info(
+            "🎧 Server results listener started. Subscribed to 'worker-results' channel."
+        )
         try:
             for message in self.pubsub.listen():
                 try:
@@ -70,12 +77,19 @@ class _Server_Listener:
                         payload = data.get("payload", {})
                         handler(payload)
                     else:
-                        logger.warning(f"No handler found for event type '{event_type}' on 'worker-results' channel. Payload: {data}")
+                        logger.warning(
+                            f"No handler found for event type '{event_type}' on 'worker-results' channel. Payload: {data}"
+                        )
                 except Exception as e:
-                    logger.error(f"Error processing message in server listener: {e}", exc_info=True)
+                    logger.error(
+                        f"Error processing message in server listener: {e}",
+                        exc_info=True,
+                    )
                     try:
                         # Move the failed message to a dead-letter queue for worker results
-                        redis_manager.get_redis_connection().rpush('worker-results-dlq', message.get('data'))
+                        redis_manager.get_redis_connection().rpush(
+                            "worker-results-dlq", message.get("data")
+                        )
                     except Exception as dlq_e:
                         logger.error(f"Failed to push message to DLQ: {dlq_e}")
         except Exception as e:
@@ -83,7 +97,10 @@ class _Server_Listener:
             # or if there's a connection error.
             logger.info(f"Server listener loop exiting: {e}")
 
+
 _listener_instance = _Server_Listener()
+
+
 # Create a single instance of the listener.
 def start_server_listener(app):
     """Public function to start the singleton server listener."""

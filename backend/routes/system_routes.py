@@ -10,7 +10,8 @@ from managers import flask_manager
 from utility import logger
 
 
-system_bp = Blueprint('system_bp', __name__)
+system_bp = Blueprint("system_bp", __name__)
+
 
 @system_bp.route("/api/health")
 def health_check():
@@ -19,7 +20,7 @@ def health_check():
     Used by Docker's healthcheck to ensure the application is fully operational.
     """
     try:
-        # Add a guard to ensure the database has been initialized. 
+        # Add a guard to ensure the database has been initialized.
         if not database.get_session():
             logger.error(
                 "❌ Health check failed: Database is not initialized (SessionLocal is None)."
@@ -28,23 +29,17 @@ def health_check():
 
         # 1. Check Database connection
         if not database.health_check():
-            logger.error(
-                "❌ Health check failed: Database connection failed."
-            )
+            logger.error("❌ Health check failed: Database connection failed.")
             return "Service Unavailable: DB connection failed", 503
 
         # 2. Check Redis connection
         if not redis_manager.health_check():
-            logger.error(
-                "❌ Health check failed: Redis connection failed."
-            )
+            logger.error("❌ Health check failed: Redis connection failed.")
             return "Service Unavailable: Redis connection failed", 503
 
         # 3. Check SocketIO connection
         if not socket_manager.health_check():
-            logger.error(
-                "❌ Health check failed: Socket.IO connection failed."
-            )
+            logger.error("❌ Health check failed: Socket.IO connection failed.")
             return "Service Unavailable: Socket.IO connection failed", 503
 
         # 4. Check Flask Session OK
@@ -54,7 +49,7 @@ def health_check():
             )
             return "Service Unavailable: Flask Session connection failed", 503
 
-        # 5. Check Flask Login OK  
+        # 5. Check Flask Login OK
 
         return "OK", 200
     except Exception as e:

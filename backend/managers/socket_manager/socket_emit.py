@@ -3,6 +3,7 @@ This module centralizes all Socket.IO emission logic, providing helper
 functions for sending messages from both the main Flask app and from
 background RQ workers.
 """
+
 from flask_socketio import SocketIO
 
 from utility import logger
@@ -33,10 +34,14 @@ def emit_from_worker(event: str, data: dict, room: str = None):
         external_socketio.emit(event, data, room=room)
         logger.info(f"📢 Worker dispatched event '{event}' {target} via Redis.")
     except Exception as e:
-        logger.error(f"❌ Worker failed to dispatch event '{event}' {target}: {e}")
+        logger.error(
+            f"❌ Worker failed to dispatch event '{event}' {target}: {e}"
+        )
 
 
-def emit_card_availability_data(username: str, store_slug: str, card_name: str, items: list):
+def emit_card_availability_data(
+    username: str, store_slug: str, card_name: str, items: list
+):
     """A specific helper for emitting card availability data from a worker."""
     event_data = {"store": store_slug, "card": card_name, "items": items}
     emit_from_worker("card_availability_data", event_data, room=username)

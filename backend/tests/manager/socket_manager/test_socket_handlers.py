@@ -5,7 +5,10 @@ from managers.socket_manager import socket_handlers
 
 
 def test_on_add_card_triggers_availability_check(
-    mock_sh_user_manager, mock_sh_get_current_user, mock_sh_emit, mock_sh_trigger_availability_check
+    mock_sh_user_manager,
+    mock_sh_get_current_user,
+    mock_sh_emit,
+    mock_sh_trigger_availability_check,
 ):
     """
     GIVEN a user with preferred stores
@@ -35,15 +38,27 @@ def test_on_add_card_triggers_availability_check(
     mock_sh_trigger_availability_check.assert_called_once()
     # Check the positional arguments passed to the trigger function
     assert mock_sh_trigger_availability_check.call_args.args[0] == username
-    assert mock_sh_trigger_availability_check.call_args.args[1] == card_data_for_task
+    assert (
+        mock_sh_trigger_availability_check.call_args.args[1]
+        == card_data_for_task
+    )
     # Check that a callback was passed
-    assert "on_complete_callback" in mock_sh_trigger_availability_check.call_args.kwargs
+    assert (
+        "on_complete_callback"
+        in mock_sh_trigger_availability_check.call_args.kwargs
+    )
 
     # 3. Verify the client was notified with the updated card list via the callback
     # To test this properly, we execute the callback that was passed to the mock
-    callback = mock_sh_trigger_availability_check.call_args.kwargs["on_complete_callback"]
+    callback = mock_sh_trigger_availability_check.call_args.kwargs[
+        "on_complete_callback"
+    ]
     callback()
-    mock_sh_emit.assert_called_with("cards_data", {"username": "testuser", "tracked_cards": []}, room="testuser")
+    mock_sh_emit.assert_called_with(
+        "cards_data",
+        {"username": "testuser", "tracked_cards": []},
+        room="testuser",
+    )
 
 
 def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
@@ -56,7 +71,11 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     card_name = "Sol Ring"
     client_data = {"card_name": card_name}
     mock_printings = [
-        {"set_code": "C21", "collector_number": "125", "finishes": ["foil", "nonfoil"]}
+        {
+            "set_code": "C21",
+            "collector_number": "125",
+            "finishes": ["foil", "nonfoil"],
+        }
     ]
     # Configure the mock provided by the fixture
     mock_sh_database.is_card_in_catalog.return_value = True
@@ -69,4 +88,6 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     mock_sh_database.is_card_in_catalog.assert_called_once_with(card_name)
     mock_sh_database.get_printings_for_card.assert_called_once_with(card_name)
     expected_payload = {"card_name": card_name, "printings": mock_printings}
-    mock_sh_emit.assert_called_once_with("card_printings_data", expected_payload)
+    mock_sh_emit.assert_called_once_with(
+        "card_printings_data", expected_payload
+    )

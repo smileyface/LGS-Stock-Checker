@@ -4,10 +4,12 @@ from unittest.mock import MagicMock, patch
 # Global variable to hold the mock Redis instance, accessible by fixtures.
 _global_mock_redis_instance = None
 
+
 def set_global_mock_redis_instance(instance):
     """Sets the global mock redis instance."""
     global _global_mock_redis_instance
     _global_mock_redis_instance = instance
+
 
 @pytest.fixture(autouse=True)
 def mock_redis_manager_objects(mocker):
@@ -17,7 +19,10 @@ def mock_redis_manager_objects(mocker):
     """
     global _global_mock_redis_instance
 
-    mocker.patch("managers.redis_manager.redis_manager.get_redis_connection", _global_mock_redis_instance)
+    mocker.patch(
+        "managers.redis_manager.redis_manager.get_redis_connection",
+        _global_mock_redis_instance,
+    )
 
     mock_queue = MagicMock()
     mock_queue.task.side_effect = lambda func: func
@@ -32,7 +37,9 @@ def mock_db_session_for_app(mocker, db_session):
     test-specific db_session. This ensures that application code (e.g., in route
     handlers) uses the same isolated database session as the test fixtures.
     """
-    mocker.patch("data.database.session_manager.get_session", return_value=db_session)
+    mocker.patch(
+        "data.database.session_manager.get_session", return_value=db_session
+    )
 
 
 @pytest.fixture(autouse=True)

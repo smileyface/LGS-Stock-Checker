@@ -5,12 +5,16 @@ from managers import redis_manager
 from utility import logger
 
 
-def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[int] = None) -> None:
+def save_data(
+    key: str, value: Any, field: Optional[str] = None, ex: Optional[int] = None
+) -> None:
     """
     Save data to Redis with optional expiration.
 
-    - If `field` is provided, uses a Redis hash (`hset`) (no expiration support for hashes).
-    - Otherwise, stores the entire `value` as a string (`set`) with optional expiration (`ex`).
+    - If `field` is provided, uses a Redis hash (`hset`) (no expiration
+     support for hashes).
+    - Otherwise, stores the entire `value` as a string (`set`) with optional
+    expiration (`ex`).
     - Logs the action with a timestamp and status.
     """
     try:
@@ -19,11 +23,18 @@ def save_data(key: str, value: Any, field: Optional[str] = None, ex: Optional[in
 
         if field:
             redis_conn.hset(key, field, value_json)
-            logger.info(f"💾 Saved data to Redis Hash {key}[{field}] (No Expiration)")
+            logger.info(
+                f"💾 Saved data to Redis Hash {key}[{field}] (No Expiration)"
+            )
         else:
             if ex:
-                redis_conn.set(key, value_json, ex=ex)  # ✅ Now supports expiration!
-                logger.info(f"💾 Saved data to Redis Key {key} with expiration: {ex} seconds")
+                redis_conn.set(
+                    key, value_json, ex=ex
+                )  # ✅ Now supports expiration!
+                logger.info(
+                    f"💾 Saved data to Redis Key {key} with expiration: "
+                    f"{ex} seconds"
+                )
             else:
                 redis_conn.set(key, value_json)
                 logger.info(f"💾 Saved data to Redis Key {key} (No Expiration)")
@@ -52,11 +63,16 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
 
 
 def get_all_hash_fields(key: str) -> Dict[str, Any]:
-
     """Retrieve all fields and values from a Redis hash."""
-    redis_conn = redis_manager.get_redis_connection(decode_responses=False) # hgetall returns bytes
+    redis_conn = redis_manager.get_redis_connection(
+        decode_responses=False
+    )  # hgetall returns bytes
     data = redis_conn.hgetall(key)
-    return {k.decode("utf-8"): json.loads(v) for k, v in data.items()} if data else {}
+    return (
+        {k.decode("utf-8"): json.loads(v) for k, v in data.items()}
+        if data
+        else {}
+    )
 
 
 def delete_data(key: str, field=None) -> None:

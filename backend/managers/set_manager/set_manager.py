@@ -10,13 +10,16 @@ from utility import logger
 
 # --- Configuration ---
 # Construct a robust path to the file, assuming it's in the parent directory of 'managers'
-_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+_BACKEND_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
 SET_LOOKUP_FILE = os.path.join(_BACKEND_DIR, "set_lookup.json")
 SET_UPDATE_INTERVAL = 86400  # 24 hours in seconds
 
 # --- In-memory cache ---
 _set_map: bidict[str, str] = bidict()
 _initialized = False
+
 
 def _load_set_data_from_file() -> bool:
     """Loads the set lookup data from the JSON file into memory."""
@@ -40,10 +43,16 @@ def _save_set_data_to_file() -> None:
     sets = scryfall_api.fetch_all_sets()
 
     if not sets:
-        logger.error("❌ Failed to fetch set data from Scryfall. In-memory data may be stale.")
+        logger.error(
+            "❌ Failed to fetch set data from Scryfall. In-memory data may be stale."
+        )
         return
 
-    set_data = {s["name"]: s["code"].upper() for s in sets if "code" in s and "name" in s}
+    set_data = {
+        s["name"]: s["code"].upper()
+        for s in sets
+        if "code" in s and "name" in s
+    }
 
     try:
         with open(SET_LOOKUP_FILE, "w") as file:
@@ -62,9 +71,12 @@ def initialize_set_data():
     if _initialized:
         return
 
-    if not os.path.exists(SET_LOOKUP_FILE) or \
-       (time.time() - os.path.getmtime(SET_LOOKUP_FILE) > SET_UPDATE_INTERVAL):
-        logger.info("Set lookup file is missing or outdated. Fetching fresh data.")
+    if not os.path.exists(SET_LOOKUP_FILE) or (
+        time.time() - os.path.getmtime(SET_LOOKUP_FILE) > SET_UPDATE_INTERVAL
+    ):
+        logger.info(
+            "Set lookup file is missing or outdated. Fetching fresh data."
+        )
         _save_set_data_to_file()
     else:
         logger.info("Set lookup table is up to date. Loading from file.")

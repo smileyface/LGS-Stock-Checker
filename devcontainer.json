@@ -23,7 +23,7 @@
         "editor.formatOnSave": true,
         // --- Python Specific ---
         "[python]": {
-          "editor.defaultFormatter": "ms-python.black-formatter",
+          "editor.defaultFormatter": null,
           "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit"
           }

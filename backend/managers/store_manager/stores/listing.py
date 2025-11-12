@@ -1,8 +1,10 @@
 from typing import Any, Dict
 
+
 class Listing:
     """
-    Represents a product listing with details such as name, set code, collector number, finish, price, condition, and URL.
+    Represents a product listing with details such as name, set code,
+    collector number, finish, price, condition, and URL.
     Attributes:
         url (str): The URL of the listing.
         name (str): The name of the product.
@@ -14,13 +16,17 @@ class Listing:
 
     Properties:
         set_code (str): Gets or sets the set code, ensuring it is uppercase.
-        id (dict): Gets or sets a dictionary containing name, price, condition, and URL.
-        details (dict): Gets or sets a dictionary containing set_code, collector_number, and finish.
+        id (dict): Gets or sets a dictionary containing name, price,
+        condition, and URL.
+        details (dict): Gets or sets a dictionary containing set_code,
+        collector_number, and finish.
 
     Methods:
         to_dict() -> dict: Returns a dictionary representation of the listing.
-        __eq__(other) -> bool: Checks equality with another Listing instance based on id.
-        __hash__() -> int: Returns a hash value for the listing based on its attributes.
+        __eq__(other) -> bool: Checks equality with another Listing instance
+        based on id.
+        __hash__() -> int: Returns a hash value for the listing based on its
+        attributes.
     """
 
     def __init__(self):
@@ -36,6 +42,7 @@ class Listing:
     @property
     def set_code(self) -> str:
         return self._set_code
+
     @set_code.setter
     def set_code(self, value: str):
         self._set_code = value.upper() if value else ""
@@ -48,6 +55,7 @@ class Listing:
             "condition": self.condition,
             "url": self.url,
         }
+
     @id.setter
     def id(self, value: dict):
         self.name = value.get("name", "")
@@ -62,6 +70,7 @@ class Listing:
             "collector_number": self.collector_number,
             "finish": self.finish,
         }
+
     @details.setter
     def details(self, value: dict):
         self.set_code = value.get("set_code", "")
@@ -78,11 +87,16 @@ class Listing:
             "price": self.price,
             "condition": self.condition,
         }
-    
+
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Listing):
             return False
         return self.id == other.id
 
     def __hash__(self) -> int:
-        return hash((self.name, self.set_code, self.collector_number, self.finish, self.price, self.condition))
+        return hash((self.name,
+                     self.set_code,
+                     self.collector_number,
+                     self.finish,
+                     self.price,
+                     self.condition))

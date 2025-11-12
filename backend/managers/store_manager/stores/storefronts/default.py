@@ -41,7 +41,8 @@ class DefaultStore(Store):
         scraping and always returns an empty list.
         """
         logger.info(
-            f"ℹ️ DefaultStore for '{self.name}' was called to scrape '{card_name}'. "
-            "Returning an empty list as no scraping strategy is implemented."
+            f"ℹ️ DefaultStore for '{self.name}' was called to"
+            "scrape '{card_name}'. Returning an empty list as "
+            "no scraping strategy is implemented."
         )
         return []

@@ -1,4 +1,5 @@
 import os
+import importlib
 from flask_socketio import SocketIO
 
 from managers import redis_manager
@@ -18,7 +19,10 @@ def register_socket_handlers():
     """
     # By importing these modules, the @socketio.on decorators within them
     # are executed, registering the event handlers automatically.
-    from . import socket_connections, socket_handlers
+    # Using importlib for more dynamic loading. The `package` argument is
+    # essential for relative imports.
+    importlib.import_module(".socket_connections", package=__package__)
+    importlib.import_module(".socket_handlers", package=__package__)
 
     logger.info("✅ Socket.IO event handlers registered.")
 

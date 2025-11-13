@@ -231,7 +231,8 @@ class CrystalCommerceStore(Store):
 
                 description = condition_element.text.strip()
                 condition = description.split(",")[0].strip()
-                finish = "foil" if "foil" in description.lower() else "non-foil"
+                finish = "foil" if "foil" in description.lower() else \
+                    "non-foil"
 
                 price_str = None
                 # Prioritize getting the price from the form's data attribute.

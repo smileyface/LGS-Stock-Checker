@@ -339,9 +339,10 @@ def handle_stock_data_request(data: dict):
         f"🔍 Aggregating all available items for '{card_name}' for user "
         f"'{username}'."
     )
-    all_available_items = availability_manager.get_all_available_items_for_card(
-        username, card_name)
-
+    all_available_items = \
+        availability_manager.get_all_available_items_for_card(
+            username, card_name
+        )
     # Emit the aggregated data back to the client.
     socketio.emit(
         "stock_data",

@@ -9,7 +9,8 @@ from externals import scryfall_api
 from utility import logger
 
 # --- Configuration ---
-# Construct a robust path to the file, assuming it's in the parent directory of 'managers'
+# Construct a robust path to the file, assuming it's in the parent directory
+# of 'managers'
 _BACKEND_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..")
 )
@@ -28,7 +29,8 @@ def _load_set_data_from_file() -> bool:
         with open(SET_LOOKUP_FILE, "r") as file:
             set_data = json.load(file)
         _set_map.clear()
-        _set_map.update({name: code.upper() for name, code in set_data.items()})
+        _set_map.update({name: code.upper() for name, code
+                         in set_data.items()})
         logger.info("✅ Set data loaded into memory from file.")
         return True
     except (FileNotFoundError, json.JSONDecodeError) as e:
@@ -44,7 +46,8 @@ def _save_set_data_to_file() -> None:
 
     if not sets:
         logger.error(
-            "❌ Failed to fetch set data from Scryfall. In-memory data may be stale."
+            "❌ Failed to fetch set data from Scryfall. "
+            "In-memory data may be stale."
         )
         return
 
@@ -60,7 +63,8 @@ def _save_set_data_to_file() -> None:
         logger.info(f"✅ Set data fetched and saved to {SET_LOOKUP_FILE}.")
         # Update the in-memory bidict after saving
         _set_map.clear()
-        _set_map.update({name: code.upper() for name, code in set_data.items()})
+        _set_map.update({name: code.upper() for name, code
+                         in set_data.items()})
     except IOError as e:
         logger.error(f"❌ Error saving set data to {SET_LOOKUP_FILE}: {e}")
 

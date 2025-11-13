@@ -58,7 +58,8 @@ def health_check():
     """
     Performs a health check on the Flask session mechanism.
 
-    It verifies that the session is operational by writing and reading a test value.
+    It verifies that the session is operational by writing and reading a test
+    value.
     This implicitly checks the connection to the session backend (e.g., Redis).
     """
     try:

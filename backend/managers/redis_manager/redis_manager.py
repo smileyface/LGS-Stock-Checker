@@ -15,27 +15,30 @@ import json
 from utility import logger
 
 # --- Redis Connection ---
-# Use an environment variable for the URL, falling back to a default for convenience.
+# Use an environment variable for the URL, falling back to a default
+# for convenience.
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379")
 _redis_connections = {}
 
 
-def get_redis_connection(decode_responses=False):
+def get_redis_connection(decode_responses=False) -> Redis:
     """
-    Returns a Redis connection instance, creating it if it doesn't exist for the
-    given `decode_responses` setting. This lazy initialization prevents connection
-    attempts at import time and correctly handles requests for connections with
-    different decoding settings.
+    Returns a Redis connection instance, creating it if it doesn't
+    exist for the given `decode_responses` setting. This lazy initialization
+    prevents connection attempts at import time and correctly handles requests
+    for connections with different decoding settings.
     """
-    # Use the decode_responses value as a key to store separate connection objects.
-    # This is crucial because a connection must be created with the correct setting.
+    # Use the decode_responses value as a key to store separate
+    # connection objects. This is crucial because a connection
+    # must be created with the correct setting.
     conn_key = str(decode_responses)
 
     if conn_key not in _redis_connections:
         try:
             conn = Redis.from_url(REDIS_URL, decode_responses=decode_responses)
             logger.info(
-                f"✅ Redis client created for {REDIS_URL} with decode_responses={decode_responses}"
+                f"✅ Redis client created for "
+                f"{REDIS_URL} with decode_responses={decode_responses}"
             )
             _redis_connections[conn_key] = conn
         except Exception as e:
@@ -59,7 +62,8 @@ def pubsub(**kwargs):
 
 def publish_pubsub(channel: str, payload: dict):
     """
-    Publishes a JSON payload to a specified Redis channel using the job connection.
+    Publishes a JSON payload to a specified Redis channel using
+    the job connection.
     This abstracts the direct Redis publish operation.
     """
     logger.info(f"Publishing {payload} to {channel}")

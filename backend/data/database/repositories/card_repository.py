@@ -496,7 +496,7 @@ def bulk_add_printing_finish_associations(
 @db_query
 def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
     """
-    Retrieves all printings for a given card name, including their available 
+    Retrieves all printings for a given card name, including their available
     finishes.
     This is used to populate the UI with valid specification options.
     Implements requirement [4.3.5].
@@ -543,11 +543,12 @@ def is_valid_printing_specification(
     """
 
     logger.info(f"🔍 Validating specification for '{card_name}': {spec}")
-    # Create a cleaned specification, ignoring any keys with empty string values.
+    # Create a cleaned specification, ignoring any keys with empty string
+    # values.
     # This treats them as wildcards, as intended.
     cleaned_spec = {key: value for key, value in spec.items() if value}
 
-    # If the cleaned spec is empty, it's a wildcard for any printing, 
+    # If the cleaned spec is empty, it's a wildcard for any printing,
     # which is always valid.
     if not cleaned_spec:
         logger.debug(
@@ -560,7 +561,8 @@ def is_valid_printing_specification(
         CardPrinting.card_name == card_name
     )
 
-    # Add filters for the specs that are actually provided in the cleaned dictionary
+    # Add filters for the specs that are actually provided in the cleaned
+    # dictionary
     if "set_code" in cleaned_spec:
         query = query.filter(CardPrinting.set_code == cleaned_spec["set_code"])
     if "collector_number" in cleaned_spec:
@@ -578,6 +580,7 @@ def is_valid_printing_specification(
     exists = session.query(query.exists()).scalar()
 
     if not exists:
-        logger.warning(f"Validation failed for '{card_name}' with spec: {spec}")
+        logger.warning(f"Validation failed for '{card_name}' "
+                       f"with spec: {spec}")
 
     return exists

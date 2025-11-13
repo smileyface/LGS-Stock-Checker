@@ -26,7 +26,8 @@ def register_socket_handlers():
 def configure_socket_io(app):
 
     # --- Configure CORS and SocketIO ---
-    # In development/debug mode, allow all origins for flexibility (e.g., mobile testing).
+    # In development/debug mode, allow all origins for flexibility
+    # (e.g., mobile testing).
     # In production, use the strict list from the environment variable.
     if app.debug:
         allowed_origins = "*"
@@ -70,7 +71,8 @@ def health_check():
 
         # 2. Check if the client manager is configured for Redis.
         # This is crucial for multi-process communication (e.g., with workers).
-        # The class name check ensures we're not using the default in-memory manager.
+        # The class name check ensures we're not using the default
+        # in-memory manager.
         if "RedisManager" not in socketio.server.manager.__class__.__name__:
             raise RuntimeError(
                 "Socket.IO is not configured with a Redis message queue."

@@ -12,7 +12,8 @@ def _handle_availability_result(payload: dict):
     """
     if all(k in payload for k in ["store", "card", "items"]):
         logger.info(
-            f"Received availability result for '{payload['card']}' at '{payload['store']}' from worker."
+            f"Received availability result for '{payload['card']}' at "
+            f"'{payload['store']}' from worker."
         )
         availability_manager.cache_availability_data(
             payload["store"], payload["card"], payload["items"]
@@ -29,8 +30,10 @@ HANDLER_MAP = {
 
 class _Server_Listener:
     """
-    Manages a background thread on the server to listen for results from workers on a Redis Pub/Sub channel.
-    This is implemented as a singleton to ensure only one listener thread is active.
+    Manages a background thread on the server to listen for results from
+    workers on a Redis Pub/Sub channel.
+    This is implemented as a singleton to ensure only one listener
+    thread is active.
     """
 
     def __init__(self):
@@ -64,7 +67,8 @@ class _Server_Listener:
         self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe("worker-results")
         logger.info(
-            "🎧 Server results listener started. Subscribed to 'worker-results' channel."
+            "🎧 Server results listener started. Subscribed to "
+            "'worker-results' channel."
         )
         try:
             for message in self.pubsub.listen():
@@ -72,13 +76,15 @@ class _Server_Listener:
                     data = json.loads(message["data"])
                     event_type = data.get("type")
                     handler = HANDLER_MAP.get(event_type)
-                    logger.debug(f"Server recieved message from worker: {data}")
+                    logger.debug(f"Server recieved message from worker: "
+                                 f"{data}")
                     if handler:
                         payload = data.get("payload", {})
                         handler(payload)
                     else:
                         logger.warning(
-                            f"No handler found for event type '{event_type}' on 'worker-results' channel. Payload: {data}"
+                            f"No handler found for event type '{event_type}' "
+                            f"on 'worker-results' channel. Payload: {data}"
                         )
                 except Exception as e:
                     logger.error(
@@ -86,7 +92,8 @@ class _Server_Listener:
                         exc_info=True,
                     )
                     try:
-                        # Move the failed message to a dead-letter queue for worker results
+                        # Move the failed message to a dead-letter queue
+                        # for worker results
                         redis_manager.get_redis_connection().rpush(
                             "worker-results-dlq", message.get("data")
                         )

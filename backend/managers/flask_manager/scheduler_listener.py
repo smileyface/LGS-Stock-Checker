@@ -10,7 +10,8 @@ def _handle_availability_request(payload: dict):
     required_keys = ["username", "store", "card_data"]
     if not all(key in payload for key in required_keys):
         logger.error(
-            f"Invalid 'availability_request' payload. Missing required keys. Payload: {payload}"
+            f"Invalid 'availability_request' payload. Missing required keys."
+            f" Payload: {payload}"
         )
         return
 
@@ -27,7 +28,8 @@ def _handle_queue_all_availability_checks(payload: dict):
     username = payload.get("username")
     if not username:
         logger.error(
-            f"Invalid 'queue_all_availability_checks' payload. Missing 'username'. Payload: {payload}"
+            f"Invalid 'queue_all_availability_checks' payload. Missing "
+            f"'username'. Payload: {payload}"
         )
         return
 
@@ -53,8 +55,10 @@ HANDLER_MAP = {
 
 class _Scheduler_Listener:
     """
-    Manages a background thread to listen for results from workers on a Redis Pub/Sub channel.
-    This is implemented as a singleton to ensure only one listener thread is active.
+    Manages a background thread to listen for results from
+    workers on a Redis Pub/Sub channel.
+    This is implemented as a singleton to ensure only one
+    listener thread is active.
     """
 
     def __init__(self):
@@ -88,7 +92,8 @@ class _Scheduler_Listener:
         self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe("scheduler-requests")
         logger.info(
-            "🎧 Scheduler results listener started. Subscribed to 'scheduler-requests' channel."
+            "🎧 Scheduler results listener started. Subscribed to "
+            "'scheduler-requests' channel."
         )
 
         try:
@@ -105,11 +110,14 @@ class _Scheduler_Listener:
                         handler(payload)
                     else:
                         raise ValueError(
-                            f"No handler found for command type '{command_type}' on 'scheduler-requests' channel."
+                            "No handler found for command type "
+                            f"'{command_type}' on 'scheduler-requests' "
+                            "channel."
                         )
                 except Exception as e:
                     logger.error(
-                        f"Failed to process scheduler-requests message: {e}. Message: {message.get('data')}"
+                        f"Failed to process scheduler-requests message: {e}."
+                        f" Message: {message.get('data')}"
                     )
                     try:
                         # Move the failed message to a dead-letter queue

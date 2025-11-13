@@ -1,7 +1,7 @@
 from data import database
 from data import cache
 import managers.socket_manager as socket_manager
-from .availability_diff import Changes, detect_changes
+from .availability_diff import Changes
 from utility import logger
 
 # Configurable setting to enable or disable auto-triggering updates
@@ -9,7 +9,10 @@ ENABLE_AUTO_TRIGGER = False
 
 
 def load_availability_state(username: str):
-    """Loads availability state for a user from Redis, falling back to JSON if needed."""
+    """
+    Loads availability state for a user from Redis,
+    falling back to JSON if needed.
+    """
     redis_key = f"{username}_availability"
 
     # Try Redis first
@@ -34,9 +37,9 @@ def save_availability_state(username: str, availability: dict):
 
 def notify_users_of_changes(changes: Changes):
     """
-    Processes a 'changes' dictionary, finds affected users for each changed card,
-    and emits WebSocket notifications to them. This function is designed to be
-    called from a background worker.
+    Processes a 'changes' dictionary, finds affected users for each changed
+    card, and emits WebSocket notifications to them. This function is designed
+    to be called from a background worker.
     """
 
     added = changes.get("added", {})
@@ -50,10 +53,12 @@ def notify_users_of_changes(changes: Changes):
         return
 
     logger.info(
-        f"📢 Processing notifications for {len(all_changed_cards)} changed cards."
+        f"📢 Processing notifications for {len(all_changed_cards)} "
+        "changed cards."
     )
 
-    # Fetch all affected users for all changed cards in a single database query.
+    # Fetch all affected users for all changed cards in a single
+    #  database query.
     affected_users_map = database.get_tracking_users_for_cards(
         list(all_changed_cards)
     )
@@ -79,7 +84,8 @@ def notify_users_of_changes(changes: Changes):
 
         for user in affected_users:
             logger.info(
-                f"🔔 Emitting 'availability_changed' to user '{user.username}' for card '{card_name}'."
+                f"🔔 Emitting 'availability_changed' to user '{user.username}'"
+                f" for card '{card_name}'."
             )
             socket_manager.emit_from_worker(
                 "availability_changed", card_change_summary, room=user.username

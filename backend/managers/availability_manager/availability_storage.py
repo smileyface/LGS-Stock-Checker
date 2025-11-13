@@ -1,5 +1,3 @@
-import json
-
 from data import cache
 from utility import logger
 

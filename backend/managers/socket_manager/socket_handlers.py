@@ -4,7 +4,8 @@ from pydantic import ValidationError
 from data import database
 from data.database import exceptions
 from .socket_manager import socketio
-from .. import user_manager, availability_manager, store_manager
+import user_manager
+import availability_manager
 from .socket_schemas import (
     AddCardSchema,
     UpdateCardSchema,
@@ -124,10 +125,13 @@ def handle_get_card_availability(data: dict = None):
         # 2. Immediately send any cached data back to the client.
         if cached_data:
             logger.info(
-                f"📡 Sending {sum(len(cards) for cards in cached_data.values())} cached availability items to user '{username}'."
+                f"📡 Sending "
+                f"{sum(len(cards) for cards in cached_data.values())} "
+                f"cached availability items to user '{username}'."
             )
-            # The data is structured as {store_slug: {card_name: items}}. We need to emit it
-            # in the format the frontend expects: one event per item.
+            # The data is structured as {store_slug: {card_name: items}}.
+            # We need to emit it in the format the frontend expects:
+            # one event per item.
             for store_slug, cards in cached_data.items():
                 for card_name, items in cards.items():
                     event_data = {
@@ -145,7 +149,8 @@ def handle_get_card_availability(data: dict = None):
             )
 
         logger.info(
-            f"✅ Card availability check process initiated for user '{username}'."
+            "✅ Card availability check process initiated for user "
+            f"'{username}'."
         )
     else:
         logger.warning(
@@ -211,13 +216,15 @@ def handle_add_user_tracked_card(data: dict):
             validated_data.card_specs,
         )
 
-        # Delegate to the availability manager to trigger the check, adhering to data flow rules.
+        # Delegate to the availability manager to trigger the check, 
+        # adhering to data flow rules.
         card_data_for_task = {
             "card_name": validated_data.card,
             "specifications": validated_data.card_specs,
         }
-        # Pass _send_user_cards as a callback to be executed *after* the availability checks
-        # have been queued. This ensures the frontend receives events in the correct order.
+        # Pass _send_user_cards as a callback to be executed *after* 
+        # the availability checks have been queued. This ensures the 
+        # frontend receives events in the correct order.
         availability_manager.trigger_availability_check_for_card(
             username,
             card_data_for_task,
@@ -323,11 +330,11 @@ def handle_stock_data_request(data: dict):
         return
 
     logger.info(
-        f"🔍 Aggregating all available items for '{card_name}' for user '{username}'."
+        f"🔍 Aggregating all available items for '{card_name}' for user "
+        f"'{username}'."
     )
     all_available_items = availability_manager.get_all_available_items_for_card(
-        username, card_name
-    )
+        username, card_name)
 
     # Emit the aggregated data back to the client.
     socketio.emit(

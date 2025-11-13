@@ -23,14 +23,17 @@ class LGSWorker(Worker):
 
         if job:
             logger.info(
-                f"Job {job.id} is currently running. Notifying client of interruption."
+                f"Job {job.id} is currently running. "
+                f"Notifying client of interruption."
             )
             username = None
             card_name = None
             try:
-                # Check if this is a card availability task, which is the only one we need to notify for.
+                # Check if this is a card availability task, which is the
+                # only one we need to notify for.
                 if job.func_name.endswith("update_availability_single_card"):
-                    # Safely get username and card_name from keyword arguments or positional arguments.
+                    # Safely get username and card_name from keyword arguments
+                    # or positional arguments.
                     username = job.kwargs.get("username") or (
                         job.args[0] if job.args else None
                     )
@@ -42,17 +45,20 @@ class LGSWorker(Worker):
                 if username and card_name:
                     payload = {
                         "card": card_name,
-                        "message": "Worker is shutting down, job will be retried.",
+                        "message": "Worker is shutting down, "
+                        "job will be retried.",
                     }
                     socket_emit.emit_from_worker(
                         "job_interrupted", payload, room=username
                     )
                     logger.info(
-                        f"📡 Emitted 'job_interrupted' to room '{username}' for card '{card_name}'."
+                        f"📡 Emitted 'job_interrupted' to room '{username}' "
+                        f"for card '{card_name}'."
                     )
                 else:
                     logger.warning(
-                        f"Could not determine username/card_name from job '{job.id}' to emit interruption."
+                        f"Could not determine username/card_name from job "
+                        f"'{job.id}' to emit interruption."
                     )
 
             except (IndexError, AttributeError, Exception) as e:

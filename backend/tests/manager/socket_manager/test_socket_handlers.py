@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import MagicMock, call
 
 from managers.socket_manager import socket_handlers
 

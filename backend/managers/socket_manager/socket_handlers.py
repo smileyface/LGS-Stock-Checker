@@ -3,9 +3,10 @@ from pydantic import ValidationError
 
 from data import database
 from data.database import exceptions
+from managers import user_manager
+from managers import availability_manager
+
 from .socket_manager import socketio
-import user_manager
-import availability_manager
 from .socket_schemas import (
     AddCardSchema,
     UpdateCardSchema,
@@ -216,14 +217,14 @@ def handle_add_user_tracked_card(data: dict):
             validated_data.card_specs,
         )
 
-        # Delegate to the availability manager to trigger the check, 
+        # Delegate to the availability manager to trigger the check
         # adhering to data flow rules.
         card_data_for_task = {
             "card_name": validated_data.card,
             "specifications": validated_data.card_specs,
         }
-        # Pass _send_user_cards as a callback to be executed *after* 
-        # the availability checks have been queued. This ensures the 
+        # Pass _send_user_cards as a callback to be executed *after*
+        # the availability checks have been queued. This ensures the
         # frontend receives events in the correct order.
         availability_manager.trigger_availability_check_for_card(
             username,
@@ -235,7 +236,8 @@ def handle_add_user_tracked_card(data: dict):
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
     except exceptions.InvalidSpecificationError as e:
         logger.warning(
-            f"⚠️ User '{username}' submitted an invalid card specification: {e}"
+            f"⚠️ User '{username}' submitted an invalid card specification: "
+            f"{e}"
         )
         # Send a specific, user-friendly error message to the client.
         socketio.emit("error", {"message": str(e)})
@@ -250,7 +252,8 @@ def handle_delete_user_tracked_card(data: dict):
         if not username:
             logger.warning("🚨 Unauthenticated user tried to delete a card.")
             socketio.emit(
-                "error", {"message": "Authentication required to delete cards."}
+                "error", {"message":
+                          "Authentication required to delete cards."}
             )
             return
 
@@ -272,7 +275,8 @@ def handle_update_user_tracked_cards(data: dict):
         if not username:
             logger.warning("🚨 Unauthenticated user tried to update a card.")
             socketio.emit(
-                "error", {"message": "Authentication required to update cards."}
+                "error", {"message":
+                          "Authentication required to update cards."}
             )
             return
 
@@ -289,7 +293,9 @@ def handle_update_user_tracked_cards(data: dict):
 
 @socketio.on("update_stores")
 def handle_update_user_stores(data: dict):
-    """Handles a request to update the user's entire list of preferred stores."""
+    """
+    Handles a request to update the user's entire list of preferred stores.
+     Implements requirement [4.3.6]."""
     logger.info(
         f"📩 Received 'update_stores' request from front end. Data: {data}"
     )
@@ -343,5 +349,6 @@ def handle_stock_data_request(data: dict):
         room=username,
     )
     logger.info(
-        f"📡 Sent {len(all_available_items)} aggregated stock items for '{card_name}' to user '{username}'."
+        f"📡 Sent {len(all_available_items)} aggregated stock items for "
+        f"'{card_name}' to user '{username}'."
     )

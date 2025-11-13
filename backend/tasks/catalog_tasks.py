@@ -13,8 +13,8 @@ import time
 @task_manager.task()
 def update_card_catalog():
     """
-    Task to fetch all card names from Scryfall and update the local database catalog.
-    This is intended to be run as a background job.
+    Task to fetch all card names from Scryfall and update the
+    local database catalog. This is intended to be run as a background job.
     """
     logger.info("🚀 Starting background task: update_card_catalog")
 
@@ -22,7 +22,8 @@ def update_card_catalog():
 
     if card_names:
         logger.info(
-            f"🗂️ Fetched {len(card_names)} card names from source. Updating database catalog..."
+            f"🗂️ Fetched {len(card_names)} card names from source. "
+            f"Updating database catalog..."
         )
         database.add_card_names_to_catalog(
             card_names
@@ -34,16 +35,18 @@ def update_card_catalog():
 @task_manager.task()
 def update_set_catalog():
     """
-    Task to fetch all set data from Scryfall and update the local database catalog.
-    This is intended to be run as a background job.
+    Task to fetch all set data from Scryfall and update the local database
+    catalog. This is intended to be run as a background job.
     """
     logger.info("🚀 Starting background task: update_set_catalog")
 
     raw_set_data = fetch_all_sets()
 
     if raw_set_data:
-        # Transform the data to match the database schema ('released_at' -> 'release_date')
-        # and convert date strings to Python date objects for SQLite compatibility.
+        # Transform the data to match the database schema
+        # ('released_at' -> 'release_date')
+        # and convert date strings to Python date objects for
+        # SQLite compatibility.
         set_data_to_add = [
             {
                 "code": s.get("code"),
@@ -59,7 +62,8 @@ def update_set_catalog():
             and s.get("name")  # Ensure essential fields are present
         ]
         logger.info(
-            f"🗂️ Fetched and processed {len(set_data_to_add)} sets from source. Updating database catalog..."
+            f"🗂️ Fetched and processed {len(set_data_to_add)} sets from "
+            f"source. Updating database catalog..."
         )
         database.add_set_data_to_catalog(set_data_to_add)
         logger.info("✅ Successfully updated set catalog in the database.")
@@ -80,7 +84,8 @@ def update_full_catalog():
     # --- Enforce Dependency ---
     # Ensure the main card catalog is populated before processing printings.
     logger.info(
-        "Ensuring main card catalog is up-to-date before processing printings..."
+        "Ensuring main card catalog is up-to-date before "
+        "processing printings..."
     )
     update_set_catalog()
     update_card_catalog()
@@ -102,7 +107,8 @@ def update_full_catalog():
         printings_chunk = []
         associations_chunk_temp = []
 
-        logger.info(f"Processing card data stream in chunks of {chunk_size}...")
+        logger.info(f"Processing card data stream in chunks of "
+                    f"{chunk_size}...")
         chunk_start_time = time.monotonic()
         for i, card in enumerate(card_data_stream, 1):
             total_cards_processed = i
@@ -129,9 +135,11 @@ def update_full_catalog():
             if i % chunk_size == 0:
                 chunk_duration = time.monotonic() - chunk_start_time
                 logger.info(
-                    f"Processing chunk up to card {i}... (took {chunk_duration:.2f}s)"
+                    f"Processing chunk up to card {i}... "
+                    f"(took {chunk_duration:.2f}s)"
                 )
-                _process_catalog_chunk(printings_chunk, associations_chunk_temp)
+                _process_catalog_chunk(printings_chunk,
+                                       associations_chunk_temp)
                 # Clear chunks for the next iteration
                 printings_chunk = []
                 associations_chunk_temp = []
@@ -147,7 +155,8 @@ def update_full_catalog():
         # Add all unique finishes found across all chunks at the end
         if all_finishes:
             logger.info(
-                f"Found {len(all_finishes)} unique finishes. Updating database..."
+                f"Found {len(all_finishes)} unique finishes. "
+                f"Updating database."
             )
             database.bulk_add_finishes(list(all_finishes))
 
@@ -158,7 +167,9 @@ def update_full_catalog():
     finally:
         total_duration = time.monotonic() - start_time
         logger.info(
-            f"🏁 Finished background task: update_full_catalog. Processed {total_cards_processed} cards in {total_duration:.2f} seconds."
+            f"🏁 Finished background task: update_full_catalog. "
+            f"Processed {total_cards_processed} cards in "
+            f"{total_duration:.2f} seconds."
         )
 
 
@@ -181,7 +192,8 @@ def _process_catalog_chunk(printings_to_add, associations_to_add_temp):
         p for p in printings_to_add if p["card_name"] in valid_card_names
     ]
     valid_associations_temp = [
-        a for a in associations_to_add_temp if a.get("name") in valid_card_names
+        a for a in associations_to_add_temp if a.get("name") in
+        valid_card_names
     ]
 
     if not valid_printings:
@@ -190,7 +202,7 @@ def _process_catalog_chunk(printings_to_add, associations_to_add_temp):
         )
         return
 
-    logger.info(f"Adding {len(valid_printings)} valid printings to database...")
+    logger.info(f"Adding {len(valid_printings)} valid printings to database.")
     database.bulk_add_card_printings(valid_printings)
 
     # Get maps of all printings and finishes to resolve IDs
@@ -216,6 +228,6 @@ def _process_catalog_chunk(printings_to_add, associations_to_add_temp):
 
     if associations_to_add:
         logger.info(
-            f"Adding {len(associations_to_add)} printing-finish associations..."
+            f"Adding {len(associations_to_add)} printing-finish associations."
         )
         database.bulk_add_printing_finish_associations(associations_to_add)

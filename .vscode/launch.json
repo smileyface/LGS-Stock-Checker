@@ -1,0 +1,53 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Flask",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "managers.flask_manager.flask_manager",
+                "FLASK_DEBUG": "1",
+                "PYTHONPATH": "${workspaceFolder}/LGS_Stock_Backend"
+            },
+            "args": [
+                "run",
+                "--no-debugger",
+                "--no-reload"
+            ],
+            "jinja": true,
+            "justMyCode": true,
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+        },
+        {
+            "name": "Python: Pytest",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/LGS_Stock_Backend"
+            },
+            "justMyCode": false,
+            "subProcess": true,
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+        },
+        {
+            "name": "Python: Current Pytest File (Debug)",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--no-cov",
+                "${file}"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/LGS_Stock_Backend"
+            },
+            "justMyCode": true, // <-- Set to true
+            "python": "${command:python.interpreterPath}" // <-- Use active interpreter
+        }
+    ]
+}

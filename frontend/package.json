@@ -18,7 +18,7 @@
         "eslint-plugin-vue": "^8.7.1",
         "jsdom": "^24.1.0",
         "socket.io-mock": "^1.0.0",
-        "vite": "^7.2.2",
+        "vite": "^6.0.0",
         "vitest": "^4.0.9"
     },
     "dependencies": {

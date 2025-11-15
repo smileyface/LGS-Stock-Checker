@@ -1,5 +1,4 @@
 {
-    "CodeGPT.apiKey": "CodeGPT Plus Beta",
     "python.testing.pytestArgs": [
         "backend"
     ],

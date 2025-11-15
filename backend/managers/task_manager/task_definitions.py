@@ -9,6 +9,7 @@ needing to import the task function itself.
 # --- Scheduled Task IDs ---
 CATALOG_TASK_ID = "scheduled_catalog_update"
 SET_CATALOG_TASK_ID = "scheduled_set_catalog_update"
+CARD_CATALOG_TASK_ID = "scheduled_card_catalog_update"
 FULL_CATALOG_TASK_ID = "scheduled_full_catalog_update"
 AVAILABILITY_TASK_ID = "scheduled_availability_update"
 

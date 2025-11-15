@@ -63,7 +63,8 @@ def test_update_another_user_is_impossible(client, db_session):
     assert login_res.status_code == 200
 
     # Act: user_A attempts to change their username. The endpoint should only
-    # ever affect the currently logged-in user. There's no way to target user_B.
+    # ever affect the currently logged-in user.
+    # There's no way to target user_B.
     update_res = client.post(
         "/api/account/update_username",
         data=json.dumps({"new_username": "user_A_renamed"}),
@@ -95,7 +96,8 @@ def test_update_another_user_is_impossible(client, db_session):
 def test_update_invalid_username(client, seeded_user):
     """
     GIVEN a logged-in user
-    WHEN a POST request is made to /api/account/update_username with an invalid username
+    WHEN a POST request is made to /api/account/update_username
+         with an invalid username
     THEN the response should be 400 Bad Request.
     """
     client.post(
@@ -129,7 +131,8 @@ def test_update_invalid_username(client, seeded_user):
 def test_update_invalid_password(client, seeded_user):
     """
     GIVEN a logged-in user
-    WHEN a POST request is made to /api/account/update_password with an invalid password
+    WHEN a POST request is made to /api/account/update_password
+         with an invalid password
     THEN the response should be 400 Bad Request.
     """
     client.post(
@@ -142,7 +145,8 @@ def test_update_invalid_password(client, seeded_user):
     response = client.post(
         "/api/account/update_password",
         data=json.dumps(
-            {"current_password": "wrongpassword", "new_password": "newpassword"}
+            {"current_password": "wrongpassword",
+             "new_password": "newpassword"}
         ),
         content_type="application/json",
     )

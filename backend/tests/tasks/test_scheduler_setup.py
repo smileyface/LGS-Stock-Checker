@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, call, MagicMock
+from unittest.mock import patch, call, MagicMock, ANY
 from datetime import timedelta
 
 from tasks.scheduler_setup import (
@@ -12,9 +12,6 @@ from managers.task_manager import task_definitions
 # Define paths for patching where the objects are used
 SCHEDULER_PATH = "tasks.scheduler_setup.redis_manager.scheduler"
 LOGGER_ERROR_PATH = "tasks.scheduler_setup.logger.error"
-UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH = (
-    "tasks.scheduler_setup.update_all_tracked_cards_availability"
-)
 
 
 @pytest.fixture
@@ -51,20 +48,28 @@ def test_schedule_recurring_tasks_all_new(mock_scheduler):
         minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES
     ).total_seconds()
 
-    # Verify full catalog update task
+    # Verify card catalog update task
     assert any(
-        c.kwargs["id"] == task_definitions.FULL_CATALOG_TASK_ID
-        and c.kwargs["func"] == "tasks.catalog_tasks.update_full_catalog"
-        and c.kwargs["interval"] == catalog_interval
+        c == call(
+            scheduled_time=ANY,
+            func="tasks.catalog_tasks.update_full_catalog",
+            interval=catalog_interval,
+            id=task_definitions.FULL_CATALOG_TASK_ID,
+            description="Periodically updates the full card, set, printing, "
+                        "and finish catalog from Scryfall.",
+        )
         for c in calls
     )
 
     # Verify availability update task
     assert any(
-        c.kwargs["id"] == task_definitions.AVAILABILITY_TASK_ID
-        and c.kwargs["func"]
-        == "tasks.card_availability_tasks.update_all_tracked_cards_availability"
-        and c.kwargs["interval"] == availability_interval
+        c == call(
+            scheduled_time=ANY,
+            func="tasks.card_availability_tasks.update_all_tracked_cards_availability",
+            interval=availability_interval,
+            id=task_definitions.AVAILABILITY_TASK_ID,
+            description="Periodically checks for card availability for all users.",
+        )
         for c in calls
     )
 
@@ -101,21 +106,24 @@ def test_schedule_recurring_tasks_mixed_state(mock_scheduler):
         lambda task_id: task_id in existing_tasks
     )
 
-    with patch(
-        UPDATE_ALL_TRACKED_CARDS_AVAILABILITY_PATH
-    ) as mock_update_all_avail:
-        # Act
-        schedule_recurring_tasks()
+    # Act
+    schedule_recurring_tasks()
 
-        # Assert
-        # Only the availability task should have been scheduled.
-        mock_scheduler.schedule.assert_called_once()
-        call_args = mock_scheduler.schedule.call_args
-        assert call_args.kwargs["id"] == task_definitions.AVAILABILITY_TASK_ID
-        assert (
-            call_args.kwargs["func"]
-            == "tasks.card_availability_tasks.update_all_tracked_cards_availability"
-        )
+    # Assert
+    # Only the availability task should have been scheduled.
+    availability_interval = timedelta(
+        minutes=AVAILABILITY_UPDATE_INTERVAL_MINUTES
+    ).total_seconds()
+
+    mock_scheduler.schedule.assert_called_once_with(
+        scheduled_time=ANY,
+        func="tasks.card_availability_tasks."
+        "update_all_tracked_cards_availability",
+        interval=availability_interval,
+        id=task_definitions.AVAILABILITY_TASK_ID,
+        description="Periodically checks for card availability "
+                    "for all users.",
+    )
 
 
 @patch(LOGGER_ERROR_PATH)

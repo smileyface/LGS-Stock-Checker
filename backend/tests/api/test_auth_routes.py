@@ -132,7 +132,8 @@ def test_invalid_user_data_request(client, db_session):
 def test_update_invalid_username(client, seeded_user):
     """
     GIVEN a logged-in user
-    WHEN a POST request is made to /api/account/update_username with an invalid username
+    WHEN a POST request is made to /api/account/update_username with an
+         invalid username
     THEN the response should be 400 Bad Request.
     """
     client.post(
@@ -161,7 +162,8 @@ def test_update_invalid_username(client, seeded_user):
 def test_update_invalid_password(client, seeded_user):
     """
     GIVEN a logged-in user
-    WHEN a POST request is made to /api/account/update_password with an invalid password
+    WHEN a POST request is made to /api/account/update_password with an
+         invalid password
     THEN the response should be 400 Bad Request.
     """
     client.post(
@@ -173,7 +175,8 @@ def test_update_invalid_password(client, seeded_user):
     response = client.post(
         "/api/account/update_password",
         data=json.dumps(
-            {"current_password": "wrongpassword", "new_password": "newpassword"}
+            {"current_password": "wrongpassword",
+             "new_password": "newpassword"}
         ),
         content_type="application/json",
     )

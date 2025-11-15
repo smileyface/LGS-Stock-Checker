@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 from datetime import datetime
 import pytest
-from tests.conftest import seed_user, seed_stores
+from tests.fixtures.db_fixtures import seed_user, seed_stores
 from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
 from data.database.models.orm_models import Store, User
@@ -41,9 +41,7 @@ PACKAGES_TO_TEST = import_all_modules_from_packages(
 )
 
 
-def _get_arg_from_known_names(
-    param_name, func, live_user, live_store, data_payloads
-):
+def _get_arg_from_known_names(param_name, func, live_user, live_store, data_payloads):
     """Generate arguments based on specific, known parameter names."""
     if func.__name__ == "add_user" and "username" in param_name:
         # Generate a unique username for each call to prevent IntegrityError
@@ -54,9 +52,7 @@ def _get_arg_from_known_names(
         return mock_app
     if param_name == "data" and func.__name__ in data_payloads:
         return data_payloads[func.__name__]
-    if "user" in param_name and (
-        "name" in param_name or "username" in param_name
-    ):
+    if "user" in param_name and ("name" in param_name or "username" in param_name):
         return live_user.username
     if "user" in param_name and "id" in param_name:
         return live_user.id
@@ -258,9 +254,7 @@ def test_all_functions_no_crashes(
         live_store = seed_stores(db_session)[0]  # Get the first store
 
         params = inspect.signature(func).parameters
-        pos_args, kw_args = _generate_test_args(
-            func, params, live_user, live_store
-        )
+        pos_args, kw_args = _generate_test_args(func, params, live_user, live_store)
 
         try:
             func(*pos_args, **kw_args)

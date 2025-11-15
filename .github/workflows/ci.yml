@@ -53,7 +53,8 @@ jobs:
           node-version: '20' # Or whatever version you use
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install eslint eslint-plugin-vue --save-dev
 
       - name: Run Linter
         # Runs the "lint" script from your package.json

@@ -7,7 +7,9 @@ from data.database.models.orm_models import User
 
 @pytest.fixture(autouse=True)
 def stop_global_db_mock(mocker):
-    """Stop the global mock of get_session to allow local patching in this module."""
+    """
+    Stop the global mock of get_session to allow local patching in this module.
+    """
     mocker.stopall()
     yield
 
@@ -20,8 +22,8 @@ SESSION_LOCAL_PATH = "data.database.session_manager.SessionLocal"
 
 def test_db_query_success():
     """
-    Tests that the db_query decorator commits the session and returns the result
-    when the wrapped function executes successfully.
+    Tests that the db_query decorator commits the session and returns
+    the result when the wrapped function executes successfully.
     """
     # 1. Arrange
     mock_session = MagicMock()
@@ -45,10 +47,10 @@ def test_db_query_success():
 
         # 3. Assert
         # Check session management
-        mock_session_local_factory.assert_called_once()  # Session was created from the factory
-        mock_session.commit.assert_called_once()  # Transaction was committed
-        mock_session.rollback.assert_not_called()  # Rollback was not called
-        mock_session_local_factory.remove.assert_called_once()  # Session was closed/removed
+        mock_session_local_factory.assert_called_once()
+        mock_session.commit.assert_called_once()
+        mock_session.rollback.assert_not_called()
+        mock_session_local_factory.remove.assert_called_once()
 
         # Check function behavior
         mock_session.add.assert_called_once_with(mock_orm_object)
@@ -57,8 +59,8 @@ def test_db_query_success():
 
 def test_db_query_exception_rolls_back_and_reraises():
     """
-    Tests that the db_query decorator rolls back the session and re-raises the exception
-    when the wrapped function fails.
+    Tests that the db_query decorator rolls back the session and re-raises
+    the exception when the wrapped function fails.
     """
     # 1. Arrange
     mock_session = MagicMock()
@@ -83,9 +85,9 @@ def test_db_query_exception_rolls_back_and_reraises():
 
         # Check session management
         mock_session_local_factory.assert_called_once()
-        mock_session.commit.assert_not_called()  # Commit was not called
-        mock_session.rollback.assert_called_once()  # Rollback was called
-        mock_session_local_factory.remove.assert_called_once()  # Session was still closed
+        mock_session.commit.assert_not_called()
+        mock_session.rollback.assert_called_once()
+        mock_session_local_factory.remove.assert_called_once()
 
         # Check function behavior
         mock_session.add.assert_called_once_with(mock_orm_object)

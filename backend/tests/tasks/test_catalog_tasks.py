@@ -1,7 +1,6 @@
-import pytest
+import pytest  # noqa
 from unittest.mock import patch
 from tasks.catalog_tasks import update_card_catalog, update_set_catalog
-from data.database.models import Card, Set
 from datetime import date
 
 
@@ -57,7 +56,8 @@ def test_update_set_catalog_success(mock_db, mock_fetch_sets, mock_cache_load):
     """
     GIVEN a list of set data is successfully fetched
     WHEN update_set_catalog is called
-    THEN it should transform the data and call the database function to add the sets.
+    THEN it should transform the data and call the database function to add
+         the sets.
     """
     # Arrange
 
@@ -126,13 +126,14 @@ def test_update_set_catalog_handles_missing_keys(
     """
     GIVEN fetched set data has items with missing keys
     WHEN update_set_catalog is called
-    THEN it should filter out the invalid items before calling the database function.
+    THEN it should filter out the invalid items before calling the database
+         function.
     """
     # Arrange
     raw_set_data = [
         {"code": "M21", "name": "Core Set 2021", "released_at": "2020-06-25"},
-        {"name": "Incomplete Set", "released_at": "2020-01-01"},  # Missing code
-        {"code": "INV", "released_at": "2000-10-02"},  # Missing name
+        {"name": "Incomplete Set", "released_at": "2020-01-01"},
+        {"code": "INV", "released_at": "2000-10-02"},
     ]
     mock_fetch_sets.return_value = raw_set_data
 

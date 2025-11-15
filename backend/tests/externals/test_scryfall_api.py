@@ -7,7 +7,6 @@ import json
 
 from externals.scryfall_api import (
     fetch_scryfall_card_names,
-    fetch_all_sets,
     fetch_all_card_data,
     CACHE_EXPIRATION_SECONDS,
 )
@@ -61,7 +60,8 @@ def test_fetch_scryfall_card_names_from_cache(mock_cache_manager):
     THEN it should return the cached data without making an API call.
     """
     # Arrange
-    mock_cache_manager.load_data.return_value = ["cached_card1", "cached_card2"]
+    mock_cache_manager.load_data.return_value = ["cached_card1",
+                                                 "cached_card2"]
 
     with patch(REQUESTS_GET_PATH) as mock_requests_get:
         # Act
@@ -123,7 +123,8 @@ def test_fetch_all_card_data_bulk_uri_missing(
     # Consume the generator and assert that it produces an empty list.
     assert list(result_generator) == []
     mock_logger_error.assert_called_once_with(
-        "Could not find 'default_cards' download URI in Scryfall bulk data response."
+        "Could not find 'default_cards' download URI in Scryfall bulk"
+        " data response."
     )
 
 

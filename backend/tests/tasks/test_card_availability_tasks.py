@@ -19,7 +19,8 @@ def test_update_availability_single_card_success(
     """
     GIVEN a card and store
     WHEN update_availability_single_card is called and finds available items
-    THEN it should fetch data, publish the result to Redis, and emit socket events.
+    THEN it should fetch data, publish the result to Redis, and emit socket
+         events.
     """
     # Arrange
     username = "testuser"
@@ -55,7 +56,8 @@ def test_update_availability_single_card_success(
     )
 
     # Verify socket emission
-    # The task should emit two events: one when it starts, one when it finishes.
+    # The task should emit two events: one when it starts, one when it
+    #  finishes.
     expected_calls = [
         call(
             "availability_check_started",

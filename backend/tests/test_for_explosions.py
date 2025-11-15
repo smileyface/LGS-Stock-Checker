@@ -41,7 +41,11 @@ PACKAGES_TO_TEST = import_all_modules_from_packages(
 )
 
 
-def _get_arg_from_known_names(param_name, func, live_user, live_store, data_payloads):
+def _get_arg_from_known_names(param_name,
+                              func,
+                              live_user,
+                              live_store,
+                              data_payloads):
     """Generate arguments based on specific, known parameter names."""
     if func.__name__ == "add_user" and "username" in param_name:
         # Generate a unique username for each call to prevent IntegrityError
@@ -52,7 +56,8 @@ def _get_arg_from_known_names(param_name, func, live_user, live_store, data_payl
         return mock_app
     if param_name == "data" and func.__name__ in data_payloads:
         return data_payloads[func.__name__]
-    if "user" in param_name and ("name" in param_name or "username" in param_name):
+    if "user" in param_name and ("name" in param_name or
+                                 "username" in param_name):
         return live_user.username
     if "user" in param_name and "id" in param_name:
         return live_user.id
@@ -83,7 +88,8 @@ def _get_arg_from_type_hint(param, live_user, live_store):
         )
         if non_none_type:
             annotation = (
-                non_none_type  # Try to generate a value for the underlying type
+                # Try to generate a value for the underlying type
+                non_none_type
             )
 
     # Handle specific ORM model types
@@ -122,8 +128,8 @@ def _get_arg_from_type_hint(param, live_user, live_store):
 
 def _generate_test_args(func, params, live_user, live_store):
     """
-    Generates positional and keyword arguments for a function based on its signature,
-    using seeded data and safe defaults.
+    Generates positional and keyword arguments for a function based on
+    its signature, using seeded data and safe defaults.
     """
     pos_args = []
     kw_args = {}
@@ -147,14 +153,16 @@ def _generate_test_args(func, params, live_user, live_store):
     for param_name, param in params.items():
         is_kw_only = param.kind == inspect.Parameter.KEYWORD_ONLY
 
-        # Skip variable-length positional and keyword arguments (*args, **kwargs)
+        # Skip variable-length positional and keyword arguments (*args,
+        # **kwargs)
         if param.kind in (
             inspect.Parameter.VAR_POSITIONAL,
             inspect.Parameter.VAR_KEYWORD,
         ):
             continue
 
-        # Skip dependency-injected database sessions provided by the @db_query decorator.
+        # Skip dependency-injected database sessions provided by the
+        # @db_query decorator.
         if param_name == "session":
             continue  # The @db_query decorator injects the session; skip.
 
@@ -168,7 +176,8 @@ def _generate_test_args(func, params, live_user, live_store):
         if arg_value is None:
             arg_value = _get_arg_from_type_hint(param, live_user, live_store)
 
-        # 3. If still not found, use the parameter's default value, if it exists.
+        # 3. If still not found, use the parameter's default value,
+        # if it exists.
         if arg_value is None and param.default is not inspect.Parameter.empty:
             arg_value = param.default
 
@@ -191,7 +200,8 @@ def test_all_functions_no_crashes(
 ):
     """
     Smoke test to ensure that functions can be called with basic, safe inputs
-    without raising exceptions. This test uses seeded data for more realistic scenarios.
+    without raising exceptions. This test uses seeded data for more
+    realistic scenarios.
     """
     # Mock the underlying get_json method to prevent crashes in route handlers
     # that access request.json without the correct Content-Type header.
@@ -202,7 +212,8 @@ def test_all_functions_no_crashes(
         "managers.redis_manager.redis_manager.get_redis_connection",
         return_value=MagicMock(),
     )
-    # Also mock it where it's imported and used in cache_manager to ensure it's caught.
+    # Also mock it where it's imported and used in cache_manager to ensure
+    # it's caught.
     mocker.patch(
         "data.cache.cache_manager.redis_manager.get_redis_connection",
         return_value=MagicMock(),
@@ -225,16 +236,19 @@ def test_all_functions_no_crashes(
         mock_store_instance = MagicMock()
         mock_store_instance.fetch_card_availability.return_value = []
         mocker.patch(
-            "managers.store_manager.get_store", return_value=mock_store_instance
+            "managers.store_manager.get_store",
+            return_value=mock_store_instance
         )
 
     for name, func in inspect.getmembers(package, inspect.isfunction):
-        # Ensure we only test functions defined in the current package, not imported ones.
+        # Ensure we only test functions defined in the current package,
+        # not imported ones.
         if func.__module__ != package.__name__:
             continue
 
-            # Skip app factory functions as they require a specific setup context
-            # provided by fixtures, not the generic argument generation.
+            # Skip app factory functions as they require a specific setup
+            # context provided by fixtures, not the generic argument
+            # generation.
         if name in (
             "initalize_flask_app",
             "create_app",
@@ -254,18 +268,24 @@ def test_all_functions_no_crashes(
         live_store = seed_stores(db_session)[0]  # Get the first store
 
         params = inspect.signature(func).parameters
-        pos_args, kw_args = _generate_test_args(func, params, live_user, live_store)
+        pos_args, kw_args = _generate_test_args(func,
+                                                params,
+                                                live_user,
+                                                live_store)
 
         try:
             func(*pos_args, **kw_args)
-        except HTTPException as e:
-            # HTTP exceptions (like 401 Unauthorized or 404 Not Found) are expected outcomes
+        except HTTPException:
+            # HTTP exceptions (like 401 Unauthorized or 404 Not Found) are
+            # expected outcomes
             # for route handlers when called without a proper request context.
-            # We consider this a "pass" for a smoke test, as the function didn't crash
+            # We consider this a "pass" for a smoke test, as the function
+            # didn't crash
             # due to a programming error.
             pass
         except Exception as e:
             pytest.fail(
                 f"Function {package.__name__}.{name}{inspect.signature(func)} "
-                f"raised an exception with args {pos_args} and kwargs {kw_args}: {e}"
+                f"raised an exception with args {pos_args} and kwargs"
+                f" {kw_args}: {e}"
             )

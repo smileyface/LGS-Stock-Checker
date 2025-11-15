@@ -1,6 +1,5 @@
-import pytest
+import pytest  # noqa
 from unittest.mock import MagicMock, patch
-from managers import task_manager
 from managers.availability_manager.availability_manager import (
     check_availability,
     get_cached_availability_or_trigger_check,
@@ -18,7 +17,8 @@ class MockCard:
 
 
 @patch(
-    "managers.availability_manager.availability_manager.redis_manager.publish_pubsub"
+    "managers.availability_manager.availability_manager."
+    "redis_manager.publish_pubsub"
 )
 def test_check_availability(mock_publish_pubsub):
     """
@@ -53,7 +53,8 @@ def test_get_card_availability_with_cached_data(
     mock_database, mock_user_manager, mock_storage, mocker
 ):
     """
-    Verifies get_cached_availability_or_trigger_check returns cached data and does not queue a task.
+    Verifies get_cached_availability_or_trigger_check returns cached data
+    and does not queue a task.
     """
     # Arrange
     username = "testuser"
@@ -75,7 +76,8 @@ def test_get_card_availability_with_cached_data(
 
 
 @patch(
-    "managers.availability_manager.availability_manager.redis_manager.publish_pubsub"
+    "managers.availability_manager.availability_manager."
+    "redis_manager.publish_pubsub"
 )
 @patch(
     "managers.availability_manager.availability_manager.availability_storage"
@@ -86,7 +88,8 @@ def test_get_card_availability_with_no_cached_data(
     mock_database, mock_user_manager, mock_storage, mock_publish_pubsub, mocker
 ):
     """
-    Verifies get_cached_availability_or_trigger_check queues a fetch task if data is not cached.
+    Verifies get_cached_availability_or_trigger_check queues a fetch task if
+    data is not cached.
     """
     # Arrange
     username = "testuser"
@@ -112,7 +115,8 @@ def test_get_card_availability_with_no_cached_data(
     mock_storage.get_cached_availability_data.assert_called_once_with(
         "test-store", "Test Card"
     )
-    # Verify that a command was published to the scheduler instead of a task being queued directly.
+    # Verify that a command was published to the scheduler instead of a task
+    # being queued directly.
     mock_publish_pubsub.assert_called_once_with(
         "scheduler-requests", expected_command
     )

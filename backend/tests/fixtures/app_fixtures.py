@@ -24,7 +24,8 @@ def app(mocker, db_session):
     }
     # Patch the worker listener to prevent the background thread from starting
     #  during tests.
-    mocker.patch("managers.flask_manager.server_listener." "start_server_listener")
+    mocker.patch("managers.flask_manager.server_listener."
+                 "start_server_listener")
 
     # Pass the overrides and the test database URL to the app factory.
     _app = create_app(

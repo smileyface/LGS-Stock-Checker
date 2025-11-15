@@ -1,4 +1,4 @@
-import pytest
+import pytest  # noqa
 from werkzeug.security import check_password_hash
 
 from managers.user_manager import (
@@ -62,7 +62,8 @@ def test_authenticate_user_integration(db_session):
     """
     GIVEN a user created in the database
     WHEN the authenticate_user manager function is called
-    THEN it should return the user object for correct credentials and None for incorrect ones.
+    THEN it should return the user object for correct credentials and None for
+         incorrect ones.
     """
     # Arrange
     username = "auth_user"
@@ -102,8 +103,10 @@ def test_get_public_user_profile_integration(db_session):
 def test_update_username_integration_success(db_session):
     """
     GIVEN a user in the database
-    WHEN the update_username manager function is called with a new, unique username
-    THEN it should return True and the username should be updated in the database.
+    WHEN the update_username manager function is called with a new,
+         and unique username
+    THEN it should return True and the username should be updated in
+         the database.
     """
     # Arrange
     old_username = "old_name"

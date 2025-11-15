@@ -48,7 +48,9 @@ def mock_sh_queue_task(mocker):
 
 @pytest.fixture
 def mock_sh_get_current_user(mocker):
-    """Mocks get_username and provides a default test user for socket handlers."""
+    """
+    Mocks get_username and provides a default test user for socket handlers.
+    """
     return mocker.patch(
         "managers.socket_manager.socket_handlers.get_username",
         return_value="testuser",
@@ -58,12 +60,17 @@ def mock_sh_get_current_user(mocker):
 @pytest.fixture
 def mock_sh_emit(mocker):
     """Mocks the socketio.emit function used in the socket handlers."""
-    return mocker.patch("managers.socket_manager.socket_handlers.socketio.emit")
+    return mocker.patch("managers.socket_manager."
+                        "socket_handlers.socketio.emit")
 
 
 @pytest.fixture
 def mock_sh_trigger_availability_check(mocker):
-    """Mocks the trigger_availability_check_for_card function used in socket handlers."""
+    """
+    Mocks the trigger_availability_check_for_card function used in socket
+    handlers.
+    """
     return mocker.patch(
-        "managers.socket_manager.socket_handlers.availability_manager.trigger_availability_check_for_card"
+        "managers.socket_manager.socket_handlers."
+        "availability_manager.trigger_availability_check_for_card"
     )

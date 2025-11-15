@@ -111,7 +111,9 @@ def test_delete_user_card_cascades_specifications(
 
 
 def test_delete_user_card_for_nonexistent_user(db_session):
-    """Test that attempting to delete a card for a non-existent user does nothing."""
+    """
+    Test that attempting to delete a card for a non-existent user does nothing.
+    """
     # This should run without error
     data.delete_user_card("nonexistent_user", "any_card")
     # And no cards should be in the DB
@@ -119,7 +121,9 @@ def test_delete_user_card_for_nonexistent_user(db_session):
 
 
 def test_delete_user_card_not_found(seeded_user):
-    """Test that attempting to delete a card not tracked by the user does nothing."""
+    """
+    Test that attempting to delete a card not tracked by the user does nothing.
+    """
     data.add_user_card("testuser", "Lightning Bolt", 1, {})
     initial_card_count = len(data.get_users_cards("testuser"))
 
@@ -142,7 +146,9 @@ def test_update_user_tracked_cards_list(seeded_user):
 
 
 def test_update_user_tracked_cards_list_clears_cards(seeded_user):
-    """Test that passing an empty list removes all tracked cards for the user."""
+    """
+    Test that passing an empty list removes all tracked cards for the user.
+    """
     # Arrange: Add some cards first
     initial_list = [{"card_name": "Counterspell", "amount": 4}]
     data.update_user_tracked_cards_list("testuser", initial_list)
@@ -154,7 +160,9 @@ def test_update_user_tracked_cards_list_clears_cards(seeded_user):
 
 
 def test_update_user_tracked_cards_list_for_nonexistent_user(db_session):
-    """Test that updating the card list for a non-existent user does nothing."""
+    """
+    Test that updating the card list for a non-existent user does nothing.
+    """
     card_list = [{"card_name": "Brainstorm", "amount": 4}]
     # This should run without error
     data.update_user_tracked_cards_list("nonexistent_user", card_list)
@@ -244,7 +252,7 @@ def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
         ("Sol Ring", {"finish": "holographic"}, False),
         # --- Empty Specification (Wildcard for everything) ---
         ("Sol Ring", {}, True),
-        ("Nonexistent Card", {}, True),  # Valid because it means "any printing"
+        ("Nonexistent Card", {}, True),
     ],
     ids=[
         "full_valid_spec",
@@ -269,7 +277,8 @@ def test_is_valid_printing_specification(
     seeded_printings, card_name, spec, expected
 ):
     """
-    Tests the is_valid_printing_specification function with various valid and invalid inputs.
+    Tests the is_valid_printing_specification function with various valid and
+    invalid inputs.
     This covers requirements [4.3.6], [4.3.8], and [4.3.9].
     """
     is_valid = is_valid_printing_specification(card_name, spec)
@@ -280,8 +289,10 @@ def test_add_user_card_with_invalid_spec_raises_error(
     seeded_printings, seeded_user
 ):
     """
-    Tests that add_user_card raises InvalidSpecificationError for an invalid spec.
-    This directly tests the integration between add_user_card and the validation function.
+    Tests that add_user_card raises InvalidSpecificationError for an invalid
+    specification.
+    This directly tests the integration between add_user_card and the
+    validation function.
     """
     invalid_spec = {
         "set_code": "C21",

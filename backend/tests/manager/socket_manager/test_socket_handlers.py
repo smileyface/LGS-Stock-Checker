@@ -1,4 +1,4 @@
-import pytest
+import pytest  # noqa
 
 from managers.socket_manager import socket_handlers
 
@@ -27,7 +27,8 @@ def test_on_add_card_triggers_availability_check(
     socket_handlers.handle_add_user_tracked_card(card_data_from_client)
 
     # Assert
-    # 1. Verify the card was added to the user's list with the correct arguments
+    # 1. Verify the card was added to the user's list with the
+    # correct arguments
     mock_sh_user_manager.add_user_card.assert_called_once_with(
         username, "Sol Ring", 1, {}
     )
@@ -47,8 +48,10 @@ def test_on_add_card_triggers_availability_check(
         in mock_sh_trigger_availability_check.call_args.kwargs
     )
 
-    # 3. Verify the client was notified with the updated card list via the callback
-    # To test this properly, we execute the callback that was passed to the mock
+    # 3. Verify the client was notified with the updated card list via
+    # the callback
+    # To test this properly, we execute the callback that was passed to
+    # the mock
     callback = mock_sh_trigger_availability_check.call_args.kwargs[
         "on_complete_callback"
     ]

@@ -49,7 +49,8 @@ def seeded_user(db_session):
 @pytest.fixture
 def seeded_user_with_stores(db_session, seeded_user, seeded_stores):
     """Fixture to create a user and associate them with some stores."""
-    user = db_session.query(User).filter_by(username=seeded_user.username).one()
+    user = db_session.query(User).filter_by(
+        username=seeded_user.username).one()
     user.selected_stores.extend(seeded_stores)
     db_session.commit()
     return user
@@ -86,7 +87,9 @@ def seeded_stores(db_session):
 
 @pytest.fixture
 def seeded_store(seeded_stores):
-    """Fixture to provide a single test store from the list of seeded stores."""
+    """
+    Fixture to provide a single test store from the list of seeded stores.
+    """
     return next(s for s in seeded_stores if s.slug == "test_store")
 
 

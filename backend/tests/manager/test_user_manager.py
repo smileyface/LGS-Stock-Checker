@@ -1,5 +1,5 @@
-import pytest
-from unittest.mock import MagicMock, call, patch
+import pytest  # noqa
+from unittest.mock import MagicMock, call
 
 from managers.user_manager import (
     get_public_user_profile,
@@ -46,7 +46,8 @@ def test_add_user(mocker):
     """
     GIVEN a new username and password
     WHEN add_user is called
-    THEN it checks if the user exists, hashes the password, and calls the data layer to add the user.
+    THEN it checks if the user exists, hashes the password, and calls the data
+         layer to add the user.
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_MANAGER_MODULE_PATH}.database")
@@ -72,11 +73,13 @@ def test_update_username(mocker):
     """
     GIVEN an old and new username for a successful update
     WHEN update_username is called
-    THEN it checks for the existence of both users and calls the data layer to perform the update.
+    THEN it checks for the existence of both users and calls the data layer to
+         perform the update.
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_MANAGER_MODULE_PATH}.database")
-    # Mock user_exists to return False for the new name check, and True for the old name check.
+    # Mock user_exists to return False for the new name check, and True for
+    # the old name check.
     mock_user_exists = mocker.patch(
         f"{USER_MANAGER_MODULE_PATH}.user_exists", side_effect=[False, True]
     )
@@ -99,13 +102,15 @@ def test_authenticate_user_success(mocker):
     """
     GIVEN a user with a correct password
     WHEN authenticate_user is called
-    THEN it retrieves the user ORM object and returns it after successful password check.
+    THEN it retrieves the user ORM object and returns it after successful
+         password check.
     """
     # Arrange
     # Use mocker.patch() inside the test function.
     mock_check_hash = mocker.patch(CHECK_HASH_PATH, return_value=True)
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
-    # The mock user object needs a `password_hash` attribute for the function to access.
+    # The mock user object needs a `password_hash` attribute for the function
+    # to access.
     mock_user = MagicMock()
     mock_user.password_hash = "a_valid_hash"
     mock_database.get_user_orm_by_username.return_value = mock_user
@@ -115,7 +120,8 @@ def test_authenticate_user_success(mocker):
 
     # Assert
     mock_database.get_user_orm_by_username.assert_called_once_with("testuser")
-    # Verify that the check_password_hash function was called with the user's hash and the provided password.
+    # Verify that the check_password_hash function was called with the user's
+    # hash and the provided password.
     mock_check_hash.assert_called_once_with("a_valid_hash", "password123")
     assert result is mock_user
 
@@ -147,7 +153,8 @@ def test_authenticate_user_no_user(mocker):
     """
     GIVEN a username that does not exist
     WHEN authenticate_user is called
-    THEN it fails to retrieve a user and returns None without checking a password.
+    THEN it fails to retrieve a user and returns None without checking a
+         password.
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
@@ -160,6 +167,7 @@ def test_authenticate_user_no_user(mocker):
     mock_database.get_user_orm_by_username.assert_called_once_with(
         "nonexistent"
     )
+    assert result is None
 
 
 def test_get_selected_stores(mocker):
@@ -185,7 +193,8 @@ def test_load_card_list(mocker):
     """
     GIVEN a username for an existing user
     WHEN load_card_list is called
-    THEN it checks if the user exists and calls the data layer to get the user's cards.
+    THEN it checks if the user exists and calls the data layer to get the
+         list of the user's cards.
     """
     # Arrange
     mock_database = mocker.patch(f"{USER_CARDS_MODULE_PATH}.database")

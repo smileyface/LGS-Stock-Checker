@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, call, MagicMock, ANY
+from unittest.mock import patch, call, ANY
 from datetime import timedelta
 
 from tasks.scheduler_setup import (
@@ -16,7 +16,9 @@ LOGGER_ERROR_PATH = "tasks.scheduler_setup.logger.error"
 
 @pytest.fixture
 def mock_scheduler():
-    """Fixture to mock the scheduler object, simulating it's empty by default."""
+    """
+    Fixture to mock the scheduler object, simulating it's empty by default.
+    """
     with patch(SCHEDULER_PATH) as mock:
         # To make `job_id in scheduler` work, we mock __contains__
         mock.__contains__.return_value = False
@@ -65,10 +67,12 @@ def test_schedule_recurring_tasks_all_new(mock_scheduler):
     assert any(
         c == call(
             scheduled_time=ANY,
-            func="tasks.card_availability_tasks.update_all_tracked_cards_availability",
+            func="tasks.card_availability_tasks."
+            "update_all_tracked_cards_availability",
             interval=availability_interval,
             id=task_definitions.AVAILABILITY_TASK_ID,
-            description="Periodically checks for card availability for all users.",
+            description="Periodically checks for card availability for"
+            " all users.",
         )
         for c in calls
     )

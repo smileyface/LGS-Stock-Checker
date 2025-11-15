@@ -4,12 +4,10 @@ Unit tests for the CrystalCommerceStore base scraper.
 
 import unittest
 from unittest.mock import patch, MagicMock, PropertyMock
-import requests
 from bs4 import BeautifulSoup
 
 from managers.store_manager.stores.storefronts.crystal_commerce_store import (
     CrystalCommerceStore,
-    _make_request_with_retries,
 )
 from managers.store_manager.stores.listing import Listing
 
@@ -57,15 +55,22 @@ SEARCH_RESULTS_HTML_WITH_DUPLICATES = """
     <h4 class="name" title="Test Card">Test Card</h4>
     <span class="category">Magic The Gathering: Test Set</span>
     <div class="variants">
-      <div class="variant-row in-stock"><div class="variant-description">Near Mint</div><div class="price">$10.00</div><div class="variant-qty">2 In Stock</div></div>
-      <div class="variant-row in-stock"><div class="variant-description">Near Mint</div><div class="price">$10.00</div><div class="variant-qty">2 In Stock</div></div>
-      <div class="variant-row in-stock"><div class="variant-description">Lightly Played</div><div class="price">$8.00</div><div class="variant-qty">1 In Stock</div></div>
+      <div class="variant-row in-stock"><div class="variant-description">
+      Near Mint</div><div class="price">$10.00</div><div class="variant-qty">
+      2 In Stock</div></div>
+      <div class="variant-row in-stock"><div class="variant-description">
+      Near Mint</div><div class="price">$10.00</div><div class="variant-qty">
+      2 In Stock</div></div>
+      <div class="variant-row in-stock"><div class="variant-description">
+      Lightly Played</div><div class="price">$8.00</div>
+      <div class="variant-qty">1 In Stock</div></div>
     </div>
   </li>
 </ul>
 """
 
-# This HTML tests the early-exit logic. It has a valid card, then a non-matching card,
+# This HTML tests the early-exit logic. It has a valid card, then a
+# non-matching card,
 # then another valid card. The scraper should stop after the non-matching card.
 SEARCH_RESULTS_WITH_NON_MATCHING_HTML = """
 <ul class="products">
@@ -74,7 +79,9 @@ SEARCH_RESULTS_WITH_NON_MATCHING_HTML = """
     <h4 class="name" title="Test Card">Test Card</h4>
     <span class="category">Magic The Gathering: Test Set</span>
     <div class="variants">
-      <div class="variant-row in-stock"><div class="variant-description">Near Mint</div><div class="price">$10.00</div><div class="variant-qty">2 In Stock</div></div>
+      <div class="variant-row in-stock"><div class="variant-description">
+      Near Mint</div><div class="price">$10.00</div><div class="variant-qty">
+      2 In Stock</div></div>
     </div>
   </li>
   <li class="product">
@@ -98,7 +105,8 @@ SEARCH_RESULTS_NO_VARIANTS = """
 </ul>
 """
 
-# This HTML tests that the scraper prioritizes the `data-price` attribute on the form
+# This HTML tests that the scraper prioritizes the `data-price` attribute
+# on the form
 # over the text inside the `span.price` element.
 SEARCH_RESULTS_WITH_DATA_PRICE = """
 <ul class="products">
@@ -128,7 +136,9 @@ class TestCrystalCommerceStore(
             name="Test Crystal Commerce Store",
             slug="test-cc-store",
             homepage="https://test-store.crystalcommerce.com/",
-            search_url="https://test-store.crystalcommerce.com/products/search",
+            search_url=(
+                "https://test-store.crystalcommerce.com/products/search"
+            )
         )
 
     def mock_requests_get(self, url, params=None, timeout=None):
@@ -156,10 +166,12 @@ class TestCrystalCommerceStore(
         return mock_response
 
     @patch(
-        "managers.store_manager.stores.storefronts.crystal_commerce_store.set_manager.set_code"
+        "managers.store_manager.stores.storefronts.crystal_commerce_store."
+        "set_manager.set_code"
     )
     @patch(
-        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+        "managers.store_manager.stores.storefronts.crystal_commerce_store."
+        "_make_request_with_retries"
     )
     @patch.object(Listing, "set_code", new_callable=PropertyMock)
     def test_scrape_listings_success(
@@ -181,7 +193,8 @@ class TestCrystalCommerceStore(
 
         # --- Assert ---
         self.assertEqual(
-            len(listings), 2, "Should find two listings (one regular, one foil)"
+            len(listings), 2,
+            "Should find two listings (one regular, one foil)"
         )
 
         # Verify the first listing (Non-Foil)
@@ -225,26 +238,30 @@ class TestCrystalCommerceStore(
             "/products/1234-test-card", product_page_call_args.args[0]
         )
 
-        # 1. Assert that the SET MANAGER was called with the RAW NAME from the HTML
+        # 1. Assert that the SET MANAGER was called with the
+        # RAW NAME from the HTML
         mock_set_manager_set_code.assert_any_call(
             "Magic The Gathering: Test Set"
         )
-        # 2. Assert that the LISTING was set with the SET CODE from the SET MANAGER
+        # 2. Assert that the LISTING was set with the SET CODE
+        #  from the SET MANAGER
         mock_set_code.assert_any_call("tst")
 
     @patch(
-        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+        "managers.store_manager.stores.storefronts."
+        "crystal_commerce_store._make_request_with_retries"
     )
     @patch.object(Listing, "set_code")
     def test_scrape_listings_deduplicates_results(
         self, mock_set_code, mock_make_request
     ):
         """
-        Test that the scraper correctly deduplicates listings when the source HTML
-        contains identical variants.
+        Test that the scraper correctly deduplicates listings when the
+        source HTML contains identical variants.
         """
         # --- Arrange ---
-        # Mock the response for the search page to return the HTML with duplicates.
+        # Mock the response for the search page to return the HTML
+        # with duplicates.
         mock_search_response = MagicMock()
         mock_search_response.raise_for_status.return_value = None
         mock_search_response.text = SEARCH_RESULTS_HTML_WITH_DUPLICATES
@@ -254,7 +271,8 @@ class TestCrystalCommerceStore(
         mock_product_response.raise_for_status.return_value = None
         mock_product_response.text = PRODUCT_PAGE_HTML
 
-        # Set the side_effect to return the correct mock response based on the URL.
+        # Set the side_effect to return the correct mock response based
+        # on the URL.
         mock_make_request.side_effect = [
             mock_search_response,
             mock_product_response,
@@ -275,7 +293,8 @@ class TestCrystalCommerceStore(
         )
 
     @patch(
-        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+        "managers.store_manager.stores.storefronts."
+        "crystal_commerce_store._make_request_with_retries"
     )
     @patch.object(Listing, "set_code")
     def test_scrape_listings_stops_on_non_matching_card(
@@ -313,8 +332,10 @@ class TestCrystalCommerceStore(
             "Should only process listings before the non-matching card",
         )
 
-        # It should have made one call for the search page and one for the first product page.
-        # It should NOT have made a call for the second "Test Card" after the "Wrong Card".
+        # It should have made one call for the search page and one for
+        # the first product page.
+        # It should NOT have made a call for the second "Test Card" after
+        #  the "Wrong Card".
         self.assertEqual(
             mock_make_request.call_count,
             2,
@@ -322,15 +343,17 @@ class TestCrystalCommerceStore(
         )
 
     @patch(
-        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+        "managers.store_manager.stores.storefronts."
+        "crystal_commerce_store._make_request_with_retries"
     )
     def test_scrape_listings_search_network_failure(self, mock_make_request):
         """
-        Test that _scrape_listings handles a network error during the initial search
-        and returns an empty list without crashing.
+        Test that _scrape_listings handles a network error during the
+          initial search and returns an empty list without crashing.
         """
         # --- Arrange ---
-        # Configure the mock to raise a RequestException, simulating a network failure.
+        # Configure the mock to raise a RequestException, simulating a network
+        #  failure.
         mock_make_request.return_value = None
         card_name = "Test Card"
 
@@ -342,7 +365,8 @@ class TestCrystalCommerceStore(
         mock_make_request.assert_called_once()
 
     @patch(
-        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+        "managers.store_manager.stores.storefronts."
+        "crystal_commerce_store._make_request_with_retries"
     )
     def test_scrape_listings_product_page_network_failure(
         self, mock_make_request
@@ -374,7 +398,8 @@ class TestCrystalCommerceStore(
         self.assertEqual(listings[0].price, 10.00)
 
     @patch(
-        "managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries"
+        "managers.store_manager.stores.storefronts."
+        "crystal_commerce_store._make_request_with_retries"
     )
     def test_scrape_listings_no_variants_found(self, mock_make_request):
         """
@@ -405,21 +430,26 @@ class TestCrystalCommerceStore(
 
     def test_parse_variants_handles_missing_data(self):
         """
-        Test that _parse_variants can handle a row with missing price/qty and not crash.
+        Test that _parse_variants can handle a row with missing price/qty and
+          not crash.
         """
         # --- Arrange ---
-        malformed_html = """<div class="product"><div class="variant-row in-stock"><div class="variant-description">Near Mint</div></div></div>"""
+        malformed_html = """<div class="product">
+        <div class="variant-row in-stock">
+        <div class="variant-description">Near Mint</div></div></div>"""
         soup = BeautifulSoup(malformed_html, "html.parser")
         product_element = soup.find("div", class_="product")
 
         # --- Execute & Assert ---
-        # The function should run without raising an exception and return an empty list.
+        # The function should run without raising an exception and return an
+        #  empty list.
         variants = self.scraper._parse_variants(product_element)
         self.assertEqual(variants, [])
 
     def test_parse_variants_malformed_price(self):
         """
-        Test that _parse_variants can handle a malformed price string gracefully.
+        Test that _parse_variants can handle a malformed price
+          string gracefully.
         """
         # --- Arrange ---
         malformed_price_html = """
@@ -444,7 +474,8 @@ class TestCrystalCommerceStore(
 
     def test_parse_variants_uses_data_price_attribute(self):
         """
-        Test that _parse_variants correctly prioritizes the `data-price` attribute
+        Test that _parse_variants correctly prioritizes the `data-price`
+          attribute
         from the form tag over the text in the price span.
         """
         # --- Arrange ---
@@ -457,7 +488,8 @@ class TestCrystalCommerceStore(
         # --- Assert ---
         self.assertEqual(len(variants), 1, "Should find one variant.")
 
-        # The price should be from `data-price="$12.34"`, not from `<span class="price">$99.99</span>`.
+        # The price should be from `data-price="$12.34"`, not from
+        # `<span class="price">$99.99</span>`.
         self.assertEqual(
             variants[0]["price"],
             12.34,

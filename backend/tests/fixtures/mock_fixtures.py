@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # Global variable to hold the mock Redis instance, accessible by fixtures.
 _global_mock_redis_instance = None
@@ -34,8 +34,9 @@ def mock_redis_manager_objects(mocker):
 def mock_db_session_for_app(mocker, db_session):
     """
     Automatically mocks the application's session provider to return the
-    test-specific db_session. This ensures that application code (e.g., in route
-    handlers) uses the same isolated database session as the test fixtures.
+    test-specific db_session. This ensures that application code
+    (e.g., in route handlers) uses the same isolated database session as the
+    test fixtures.
     """
     mocker.patch(
         "data.database.session_manager.get_session", return_value=db_session
@@ -52,7 +53,9 @@ def mock_fetch_sets(mocker):
 
 @pytest.fixture(autouse=True)
 def mock_fetch_all_card_data(mocker):
-    """Mocks the fetch_all_card_data function to prevent large network calls."""
+    """
+    Mocks the fetch_all_card_data function to prevent large network calls.
+    """
     mock = mocker.patch("externals.scryfall_api.fetch_all_card_data")
     mock.return_value = []
     return mock
@@ -60,5 +63,8 @@ def mock_fetch_all_card_data(mocker):
 
 @pytest.fixture
 def mock_cache_availability(mocker):
-    """Mocks the cache_availability function used in socket handlers."""
-    return mocker.patch("managers.availability_manager.cache_availability_data")
+    """
+    Mocks the cache_availability function used in socket handlers.
+    """
+    return mocker.patch("managers.availability_manager."
+                        "cache_availability_data")

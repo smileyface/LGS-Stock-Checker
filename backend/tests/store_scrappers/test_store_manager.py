@@ -11,7 +11,8 @@ def test_store_registry_loads_from_db(mock_database):
     """
     GIVEN a mock database that returns store data
     WHEN the store registry module is imported (or reloaded)
-    THEN the STORE_REGISTRY should be populated with the correct store instances.
+    THEN the STORE_REGISTRY should be populated with the correct store
+      instances.
     """
     # --- Arrange ---
     # Create mock ORM objects that simulate what SQLAlchemy would return
@@ -29,9 +30,8 @@ def test_store_registry_loads_from_db(mock_database):
     # --- Act ---
     # We need to reload the module to trigger the dynamic loading logic again
     from managers.store_manager import stores
-    from managers.store_manager.stores.storefronts.crystal_commerce_store import (
+    from managers.store_manager.stores.storefronts.crystal_commerce_store import (  # noqa
         CrystalCommerceStore,
-        _make_request_with_retries,
     )
 
     importlib.reload(stores)
@@ -43,7 +43,9 @@ def test_store_registry_loads_from_db(mock_database):
     # --- Assert ---
     assert len(registry) == 1
     assert "authority_games_mesa_az" in registry
-    assert isinstance(registry["authority_games_mesa_az"], CrystalCommerceStore)
+    assert isinstance(registry["authority_games_mesa_az"],
+                      CrystalCommerceStore)
     assert (
-        registry["authority_games_mesa_az"].name == "Authority Games (Mesa, AZ)"
+        registry["authority_games_mesa_az"].name ==
+        "Authority Games (Mesa, AZ)"
     )

@@ -2,7 +2,6 @@ import pytest
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
 import data.database as data
-from data.database.models.orm_models import User
 
 
 @pytest.mark.parametrize(
@@ -20,7 +19,8 @@ def test_get_user_by_username(seeded_user, username, should_find_user):
     """
     GIVEN a seeded user in the database
     WHEN get_user_by_username is called with various usernames
-    THEN the function returns a user object for an existing user and None otherwise.
+    THEN the function returns a user object for an existing user and
+         None otherwise.
     """
     # Act
     user = data.get_user_by_username(username)
@@ -60,7 +60,8 @@ def test_update_username(seeded_user):
     """
     GIVEN a user exists in the database
     WHEN update_username is called with a new username
-    THEN the user's username is updated, and the old username is no longer found.
+    THEN the user's username is updated, and the old username is no
+         longer found.
     """
     # Act
     data.update_username("testuser", "updateduser")
@@ -117,7 +118,8 @@ def test_user_store_preferences(seeded_user, seeded_store):
     """
     GIVEN a user and store exist in the database
     WHEN user store preferences are added
-    THEN the preferences are saved, and duplicates or non-existent stores are ignored.
+    THEN the preferences are saved, and duplicates or non-existent stores
+         are ignored.
     """
     # Assert initial state
     assert data.get_user_stores("testuser") == []

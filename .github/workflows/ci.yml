@@ -31,7 +31,7 @@ jobs:
       - name: Run Linter (Flake8)
         run: |
           # Lint with Flake8
-          flake8 backend
+          flake8 .
       
       - name: Run Pytest
         run: |

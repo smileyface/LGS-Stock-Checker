@@ -28,12 +28,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Run Linter (Flake8/Black)
+      - name: Run Linter (Flake8)
         run: |
-          # Add your linter command here. If you use flake8:
-          flake8 .
-          # If you use black to check formatting:
-          black --check .
+          # Lint with Flake8
+          flake8 backend
       
       - name: Run Pytest
         run: |

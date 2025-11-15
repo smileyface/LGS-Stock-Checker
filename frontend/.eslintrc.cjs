@@ -3,6 +3,7 @@ module.exports = {
     browser: true,
     es2021: true,
     node: true, // Added node for configuration file itself
+    'vue/setup-compiler-macros': true
   },
   extends: [
     'eslint:recommended',

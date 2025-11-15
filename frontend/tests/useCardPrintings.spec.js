@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { ref } from 'vue';
 import { useCardPrintings } from '../src/composables/useCardPrintings';
-import { useSocket } from '../src/composables/useSocket';
 
 // --- Mocks ---
 

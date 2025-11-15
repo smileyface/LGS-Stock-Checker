@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import BaseLayout from '../components/BaseLayout.vue';
 import AddCardModal from '../components/AddCardModal.vue';
 import EditCardModal from '../components/EditCardModal.vue';

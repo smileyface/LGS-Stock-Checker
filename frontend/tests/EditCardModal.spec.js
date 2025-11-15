@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import EditCardModal from '../src/components/EditCardModal.vue';
 import { ref } from 'vue';
-import { Modal } from 'bootstrap';
 
 // --- Mocks ---
 

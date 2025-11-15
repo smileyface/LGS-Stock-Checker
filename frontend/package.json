@@ -7,7 +7,7 @@
         "dev": "vite --host",
         "build": "vite build",
         "preview": "vite preview",
-        "test": "vitest run",
+        "test:unit": "vitest run",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs",
         "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix"
     },

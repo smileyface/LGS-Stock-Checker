@@ -12,9 +12,7 @@ __all__ = [
     "socketio",
     "register_socket_handlers",
     "configure_socket_io",
-    "health_check"
     # Emitter functions
-    "emit_card_availability_data",
     "log_and_emit",
     "emit_from_worker",
 ]

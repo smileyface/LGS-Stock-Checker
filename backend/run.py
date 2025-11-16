@@ -1,19 +1,7 @@
 import os
+import logging
 
-
-def create_app(
-    config_name=None,
-    override_config=None,
-    database_url=None,
-    skip_scheduler=False,
-):
-
-    from utility import (
-        logger,
-        set_log_level,
-    )
-
-    logger.info(f"--- CREATE_APP: START (config: {config_name}) ---")
+def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
 
     from managers import flask_manager
 
@@ -23,6 +11,13 @@ def create_app(
 
     if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
         os.environ["LOG_LEVEL"] = "DEBUG"
+    
+    set_log_level(logger)
+
+
+    # --- Logger Configuration (MUST happen after config, before other imports) ---
+
+    print(f"--- CREATE_APP: LOG_LEVEL is {os.environ.get('LOG_LEVEL')} ---")
 
     set_log_level(logger)
 
@@ -36,14 +31,11 @@ def create_app(
     from managers import task_manager
     from data import database
 
-    logger.info("--- CREATE_APP: Initializing Task Manager ---")
     task_manager.init_task_manager()
 
-    logger.info("--- CREATE_APP: Configuring Socket.IO ---")
     socket_manager.configure_socket_io(app)
 
     # Start the background thread to listen for worker results
-    logger.info("--- CREATE_APP: Starting Server Listener ---")
     flask_manager.start_server_listener(app)
 
     # Use the provided database_url, or fall back to the environment variable.
@@ -51,7 +43,6 @@ def create_app(
     db_url = database_url or os.environ.get("DATABASE_URL")
 
     if db_url:
-        logger.info("--- CREATE_APP: Initializing Database (URL exists) ---")
         database.initialize_database(db_url)
 
     @app.teardown_appcontext

@@ -1,6 +1,5 @@
 import json
 
-
 def test_login_success(client, seeded_user):
     """
     GIVEN a registered user

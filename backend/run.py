@@ -1,7 +1,11 @@
 import os
-import logging
+from utility.logger import logger, set_log_level
 
-def create_app(config_name=None, override_config=None, database_url=None, skip_scheduler=False):
+
+def create_app(config_name=None,
+               override_config=None,
+               database_url=None,
+               skip_scheduler=False):
 
     from managers import flask_manager
 
@@ -11,13 +15,10 @@ def create_app(config_name=None, override_config=None, database_url=None, skip_s
 
     if app.debug and os.environ.get("LOG_LEVEL") != "DEBUG":
         os.environ["LOG_LEVEL"] = "DEBUG"
-    
+
     set_log_level(logger)
 
-
-    # --- Logger Configuration (MUST happen after config, before other imports) ---
-
-    print(f"--- CREATE_APP: LOG_LEVEL is {os.environ.get('LOG_LEVEL')} ---")
+    logger.info(f"CREATE_APP: LOG_LEVEL is {os.environ.get('LOG_LEVEL')}")
 
     set_log_level(logger)
 

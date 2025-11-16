@@ -15,7 +15,7 @@ eventlet.monkey_patch()
 app = None
 
 # Create the app instance using the factory.
-# The factory handles all configuration, blueprint registration, and extension initialization.
+# The factory handles all configuration, blueprint registration, and
+# extension initialization.
 logger.info("🚀 Creating app context for server...")
 app = create_app()
-

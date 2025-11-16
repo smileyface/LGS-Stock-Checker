@@ -104,8 +104,11 @@ class _Scheduler_Listener:
                     handler = HANDLER_MAP.get(command_type)
                     if handler:
                         payload = data.get("payload", {})
-                        handler(payload)   
-                        raise ValueError(f"No handler found for command type '{command_type}' on 'scheduler-requests' channel.")
+                        handler(payload)
+                    else:
+                        raise ValueError(f"No handler found for command type "
+                                         f"'{command_type}' on "
+                                         "'scheduler-requests' channel.")
                 except Exception as e:
                     logger.error(
                         f"Failed to process scheduler-requests message: {e}."

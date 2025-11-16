@@ -59,9 +59,7 @@ __all__ = [
     # Setup
     "initialize_database",
     "schema",
-    "startup_database"
     # Session Manager
-    "db_query",
     "get_session",
     "remove_session",
     "health_check",

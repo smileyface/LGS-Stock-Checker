@@ -53,8 +53,6 @@ def create_app(
     if db_url:
         logger.info("--- CREATE_APP: Initializing Database (URL exists) ---")
         database.initialize_database(db_url)
-        if config_name != "testing":
-            database.startup_database()
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):

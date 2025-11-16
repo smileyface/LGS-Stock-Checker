@@ -53,12 +53,12 @@ def detect_changes(
                 if old_listings != new_listings:
                     changes["updated"].setdefault(card, {})[store] = {
                         "new": [
-                            listing for listing in new_listings if
-                            listing not in old_listings
+                            l for l in new_listings if
+                            l not in old_listings
                         ],
                         "removed": [
-                            listing for listing in old_listings if
-                            listing not in new_listings
+                            l for l in old_listings if
+                            l not in new_listings
                         ],
                     }
 

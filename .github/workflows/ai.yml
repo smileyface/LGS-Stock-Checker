@@ -30,7 +30,7 @@ jobs:
           
       # 3. Use the official Gemini CLI Action
       - name: Run Gemini AI Review
-        uses: google-github-actions/run-gemini-cli@v1
+        uses: google-github-actions/run-gemini-cli@v0.1.14
         with:
           # 4. Provide the API key from your secrets
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}

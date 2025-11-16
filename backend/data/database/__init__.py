@@ -99,4 +99,3 @@ __all__ = [
     "get_store_metadata",
     "get_all_stores",
 ]
-# This file makes the 'tasks' directory a Python package.

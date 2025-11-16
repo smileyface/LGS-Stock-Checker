@@ -50,8 +50,6 @@ def health_check():
             )
             return "Service Unavailable: Flask Session connection failed", 503
 
-        # 5. Check Flask Login OK
-
         return "OK", 200
     except Exception as e:
         # Use the application's configured logger to report the

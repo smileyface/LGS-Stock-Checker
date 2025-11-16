@@ -13,7 +13,7 @@ jobs:
   traceability-check:
     runs-on: ubuntu-latest
     steps:
-      # 1. Check out the code
+      # 1. Check out code (we need the full history to compare)
       - name: Check out code
         uses: actions/checkout@v4
         with:
@@ -27,41 +27,61 @@ jobs:
           echo "srd_content<<EOF" >> $GITHUB_OUTPUT
           echo "$srd_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
-      # 3. Use the official Gemini CLI Action
-      - name: Run Gemini AI Review
-        uses: google-github-actions/run-gemini-cli@v0.1.14
-        with:
-          # 4. Provide the API key from your secrets
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          
-          # 5. Provide the GitHub token so it can post comments
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          
-          # 6. This action has a "comment" flag to post to the PR
-          comment: true
-          
-          # 7. This action can automatically get the diff for you
-          diff: ${{ github.event.pull_request.diff_url }}
 
-          # 8. This is your updated prompt!
+      # 3. Get the diff of this PR and store it
+      - name: Get PR Diff
+        id: diff
+        run: |
+          diff_content=$(git diff origin/${{ github.base_ref }}...${{ github.head_ref }})
+          echo "diff_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$diff_content" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      # 4. Run the Gemini CLI with all our context
+      - name: Run Gemini AI Review
+        id: gemini-review
+        uses: google-github-actions/run-gemini-cli@v1
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           prompt: |
-            You are a senior software engineer performing a Requirements Traceability check. 
-            Your SOLE task is to validate that the code changes in this PR (provided in the diff)
-            directly satisfy the requirements listed below.
+            You are a senior software engineer performing a Requirements Traceability check.
+            Your SOLE task is to validate that the code changes in the provided DIFF
+            directly satisfy the requirements listed in the SRD.
 
             ## Software Requirements (from docs/srd.md):
             ${{ steps.srd.outputs.srd_content }}
 
-            ## Instructions:
+            ## PR Title and Body:
+            "${{ github.event.pull_request.title }} - ${{ github.event.pull_request.body }}"
+
+            ## PR Code Diff:
+            ```diff
+            ${{ steps.diff.outputs.diff_content }}
+            ```
+
+            ## Your Instructions:
             1.  Analyze the provided code diff.
-            2.  Analyze the PR title and body: "${{ github.event.pull_request.title }} - ${{ github.event.pull_request.body }}"
+            2.  Analyze the PR title and body.
             3.  Compare the diff and PR body against the Software Requirements.
             4.  Check the test files in the diff to see if there is a test case for the requirement.
             
-            ## Your Comment:
+            ## Your Comment (Respond with ONLY this):
             Provide a clear "Traceability Analysis" in your comment.
             - Start with "✅ **Traceability Satisfied**" if the code AND tests clearly map to a requirement mentioned in the PR.
             - Start with "⚠️ **Traceability Check: NEEDS CLARIFICATION**" if the code seems to make changes but the PR body doesn't specify *which* requirement is being met.
             - Clearly state *which* requirement(s) you believe are affected.
             - **Always** remind the author to update the 'docs/traceability_matrix.md' file.
+            
+      # 5. Post the Gemini's response as a PR comment
+      - name: Post Comment to PR
+        uses: github-actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `${{ steps.gemini-review.outputs.gemini_response }}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: output
+            });

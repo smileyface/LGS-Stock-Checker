@@ -18,7 +18,7 @@
             ],
             "jinja": true,
             "justMyCode": true,
-            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            "python": "${command:python.interpreterPath}"
         },
         {
             "name": "Python: Pytest",
@@ -31,7 +31,7 @@
             },
             "justMyCode": false,
             "subProcess": true,
-            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            "python": "${command:python.interpreterPath}"
         },
         {
             "name": "Python: Current Pytest File (Debug)",

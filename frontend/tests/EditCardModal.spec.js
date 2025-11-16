@@ -10,11 +10,13 @@ const mockModalInstance = {
     show: vi.fn(),
     hide: vi.fn(),
 };
-vi.mock('bootstrap', () => {
-    // Mock the Modal class with a constructable function
-    const MockModal = vi.fn(() => mockModalInstance);
-    return { Modal: MockModal };
-});
+vi.mock('bootstrap', () => ({
+    Modal: class {
+        constructor() {
+            return mockModalInstance;
+        }
+    }
+}));
 
 // Mock the useCardPrintings composable
 vi.mock('../src/composables/useCardPrintings', () => ({

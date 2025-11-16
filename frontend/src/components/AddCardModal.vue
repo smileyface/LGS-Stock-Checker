@@ -161,6 +161,10 @@ const handleSave = () => {
   emit('save-card', cardData);
   emit('close');
 };
+
+defineExpose({
+  searchResults // Expose this for testing
+});
 </script>
 
 <style scoped>

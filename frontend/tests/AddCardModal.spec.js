@@ -74,6 +74,21 @@ describe('AddCardModal.vue', () => {
         expect(wrapper.emitted()).toHaveProperty('close');
     });
 
+    it("updates searchResults ref when 'card_name_search_results' is received", async () => {
+        const wrapper = mount(AddCardModal);
+
+        // Find the 'on' call for our event and capture the handler
+        const onCall = mockSocket.on.mock.calls.find(call => call[0] === 'card_name_search_results');
+        const eventHandler = onCall[1];
+
+        // Simulate the server sending search results
+        const searchResultsData = { card_names: ['Lightning Bolt', 'Lightning Greaves'] };
+        eventHandler(searchResultsData);
+
+        // No need to wait for DOM update, just check the component's internal state
+        expect(wrapper.vm.searchResults).toEqual(['Lightning Bolt', 'Lightning Greaves']);
+    });
+
     it("emits a debounced 'search_card_names' event when typing a card name", async () => {
         const wrapper = mount(AddCardModal, { props: { show: true } });
 
@@ -99,8 +114,8 @@ describe('AddCardModal.vue', () => {
         const eventHandler = onCall[1];
 
         // Simulate the server sending search results
-        const searchResults = { card_names: ['Lightning Bolt', 'Lightning Greaves'] };
-        eventHandler(searchResults);
+        const searchResultsData = { card_names: ['Lightning Bolt', 'Lightning Greaves'] };
+        eventHandler(searchResultsData);
 
         // Wait for Vue to update the DOM
         await wrapper.vm.$nextTick();

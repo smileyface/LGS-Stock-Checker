@@ -14,7 +14,7 @@
     "vscode": {
       "extensions": [
         "ms-python.python",
-        "ms-python.black-formatter",
+        "vitest.explorer",          // <-- Adds Vitest for the Test Explorer
         "ms-python.flake8",
         "njpwerner.autodocstring"
       ],

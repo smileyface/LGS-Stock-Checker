@@ -32,7 +32,7 @@ jobs:
       - name: Get PR Diff
         id: diff
         run: |
-          diff_content=$(git diff origin/${{ github.base_ref }}...${{ github.head_ref }})
+          diff_content=$(git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }})
           echo "diff_content<<EOF" >> $GITHUB_OUTPUT
           echo "$diff_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT

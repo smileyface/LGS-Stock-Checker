@@ -97,10 +97,11 @@ class Listing:
         return hash(
             (
                 self.name,
+                self.price,
+                self.condition,
+                self.url,
                 self.set_code,
                 self.collector_number,
                 self.finish,
-                self.price,
-                self.condition,
             )
         )

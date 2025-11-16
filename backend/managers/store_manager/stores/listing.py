@@ -94,7 +94,6 @@ class Listing:
         return self.id == other.id and self.details == other.details
 
     def __hash__(self) -> int:
-    def __hash__(self) -> int:
         return hash(
             (
                 self.name,

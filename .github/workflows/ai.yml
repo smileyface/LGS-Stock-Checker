@@ -13,13 +13,23 @@ jobs:
   traceability-check:
     runs-on: ubuntu-latest
     steps:
-      # 1. Check out code (we need the full history to compare)
+      # 1. Check out code
       - name: Check out code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches full history for a better diff
+          fetch-depth: 0
 
-      # 2. Read your SRD file into an output variable
+      # 2. Setup Node.js (to install gemini-cli)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. Install the Gemini CLI manually (using the version from your log)
+      - name: Install Gemini CLI
+        run: npm install --global @google/gemini-cli@0.15.3
+
+      # 4. Read your SRD file
       - name: Read Software Requirements
         id: srd
         run: |
@@ -28,53 +38,64 @@ jobs:
           echo "$srd_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # 3. Get the diff of this PR and store it
+      # 5. Get the PR Diff
       - name: Get PR Diff
         id: diff
         run: |
-          diff_content=$(git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }})
+          diff_content=$(git diff origin/${{ github.base_ref }}...HEAD)
           echo "diff_content<<EOF" >> $GITHUB_OUTPUT
           echo "$diff_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           
-      # 4. Run the Gemini CLI with all our context
+      # 6. Build the prompt and run Gemini CLI via stdin
       - name: Run Gemini AI Review
         id: gemini-review
-        uses: google-github-actions/run-gemini-cli@v0.1.14
-        with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          prompt: |
-            You are a senior software engineer performing a Requirements Traceability check.
-            Your SOLE task is to validate that the code changes in the provided DIFF
-            directly satisfy the requirements listed in the SRD.
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          # Build the full prompt in a variable
+          PROMPT_CONTENT=$(cat <<EOF
+You are a senior software engineer performing a Requirements Traceability check.
+Your SOLE task is to validate that the code changes in the provided DIFF
+directly satisfy the requirements listed in the SRD.
 
-            ## Software Requirements (from docs/srd.md):
-            ${{ steps.srd.outputs.srd_content }}
+## Software Requirements (from docs/srd.md):
+${{ steps.srd.outputs.srd_content }}
 
-            ## PR Title and Body:
-            "${{ github.event.pull_request.title }} - ${{ github.event.pull_request.body }}"
+## PR Title and Body:
+"${{ github.event.pull_request.title }} - ${{ github.event.pull_request.body }}"
 
-            ## PR Code Diff:
-            ```diff
-            ${{ steps.diff.outputs.diff_content }}
-            ```
+## PR Code Diff:
+\`\`\`diff
+${{ steps.diff.outputs.diff_content }}
+\`\`\`
 
-            ## Your Instructions:
-            1.  Analyze the provided code diff.
-            2.  Analyze the PR title and body.
-            3.  Compare the diff and PR body against the Software Requirements.
-            4.  Check the test files in the diff to see if there is a test case for the requirement.
+## Your Instructions:
+1.  Analyze the provided code diff.
+2.  Analyze the PR title and body.
+3.  Compare the diff and PR body against the Software Requirements.
+4.  Check the test files in the diff to see if there is a test case for the requirement.
             
-            ## Your Comment (Respond with ONLY this):
-            Provide a clear "Traceability Analysis" in your comment.
-            - Start with "✅ **Traceability Satisfied**" if the code AND tests clearly map to a requirement mentioned in the PR.
-            - Start with "⚠️ **Traceability Check: NEEDS CLARIFICATION**" if the code seems to make changes but the PR body doesn't specify *which* requirement is being met.
-            - Clearly state *which* requirement(s) you believe are affected.
-            - **Always** remind the author to update the 'docs/traceability_matrix.md' file.
+## Your Comment (Respond with ONLY this):
+Provide a clear "Traceability Analysis" in your comment.
+- Start with "✅ **Traceability Satisfied**" if the code AND tests clearly map to a requirement mentioned in the PR.
+- Start with "⚠️ **Traceability Check: NEEDS CLARIFICATION**" if the code seems to make changes but the PR body doesn't specify *which* requirement is being met.
+- Clearly state *which* requirement(s) you believe are affected.
+- **Always** remind the author to update the 'docs/traceability_matrix.md' file.
+EOF
+)
+          
+          # Pipe the prompt via stdin to the CLI to avoid "Argument list too long"
+          gemini_response=$(echo "$PROMPT_CONTENT" | gemini --yolo)
+          
+          # Save the response to a GitHub output
+          echo "gemini_response<<EOF" >> $GITHUB_OUTPUT
+          echo "$gemini_response" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
             
-      # 5. Post the Gemini's response as a PR comment
+      # 7. Post the Gemini's response as a PR comment
       - name: Post Comment to PR
-        uses: actions/github-script@v8
+        uses: github-actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -84,4 +105,4 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: output
-            });8
+            });

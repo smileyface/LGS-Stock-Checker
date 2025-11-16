@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import EditCardModal from '../src/components/EditCardModal.vue';
 import { ref } from 'vue';
-import { Modal } from 'bootstrap';
 
 // --- Mocks ---
 
@@ -12,7 +11,11 @@ const mockModalInstance = {
     hide: vi.fn(),
 };
 vi.mock('bootstrap', () => ({
-    Modal: vi.fn(() => mockModalInstance),
+    Modal: class {
+        constructor() {
+            return mockModalInstance;
+        }
+    }
 }));
 
 // Mock the useCardPrintings composable

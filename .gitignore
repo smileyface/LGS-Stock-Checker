@@ -31,7 +31,6 @@ flask_session/
 # IDE, Editor, and OS files
 ############################
 .idea/
-.vscode/
 *.swp
 *.swo
 .DS_Store
@@ -45,3 +44,4 @@ Thumbs.db
 .env.*
 !/.env.example
 .coverage
+coverage.xml

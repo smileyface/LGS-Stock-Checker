@@ -1,0 +1,42 @@
+{
+  "name": "LGS Stock Checker Dev",
+  // Use your existing Docker Compose file
+  "dockerComposeFile": "../docker-compose.yml",
+  // Tell VSCode which service is the dev environment
+  "service": "backend",
+  // The folder to open in VSCode
+  "workspaceFolder": "/workspaces/LGS-Stock-Checker",
+  // This is the most important part!
+  // Automatically install dev requirements AFTER the container is built.
+  "postCreateCommand": "pip install -r backend/requirements-dev.txt",
+  // Automatically install helpful VSCode extensions
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "vitest.explorer",          // <-- Adds Vitest for the Test Explorer
+        "ms-python.flake8",
+        "njpwerner.autodocstring"
+      ],
+      "settings": {
+        // --- General Settings ---
+        "editor.formatOnSave": true,
+        // --- Python Specific ---
+        "[python]": {
+          "editor.defaultFormatter": null,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        // --- Black & Flake8 Config ---
+        "black-formatter.args": [
+          "--line-length=88"
+        ],
+        "flake8.args": [
+          "--max-line-length=88",
+          "--extend-ignore=E203"
+        ]
+      }
+    }
+  }
+}

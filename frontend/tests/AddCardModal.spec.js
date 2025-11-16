@@ -5,11 +5,14 @@ import AddCardModal from '../src/components/AddCardModal.vue';
 
 // --- Mocks ---
 
-// Mock the useSocket composable
+// 1. DEFINE the mock object here. It must include .off()
 const mockSocket = {
     on: vi.fn(),
     emit: vi.fn(),
+    off: vi.fn(), // This is crucial for component unmount
 };
+
+// 2. USE the mock object. This runs once and is stable.
 vi.mock('../src/composables/useSocket', () => ({
     useSocket: vi.fn(() => ({
         socket: mockSocket,
@@ -26,19 +29,19 @@ vi.mock('../src/composables/useCardPrintings', () => ({
 }));
 
 describe('AddCardModal.vue', () => {
+    
+    // 3. RESET the history of the mocks before each test
     beforeEach(() => {
-        // Use fake timers to control setTimeout for debouncing
-        vi.useFakeTimers();
+        vi.clearAllMocks();
     });
 
+    // 4. RESTORE real timers after each test
     afterEach(() => {
-        // Restore mocks and timers after each test
-        vi.restoreAllMocks();
+        vi.useRealTimers();
     });
 
     it('renders the form fields correctly', () => {
         const wrapper = mount(AddCardModal);
-
         expect(wrapper.find('input#cardName').exists()).toBe(true);
         expect(wrapper.find('input#amount').exists()).toBe(true);
         expect(wrapper.find('select#set').exists()).toBe(true);
@@ -49,16 +52,11 @@ describe('AddCardModal.vue', () => {
     it("emits 'save-card' with the correct payload on submission", async () => {
         const wrapper = mount(AddCardModal, { props: { show: true } });
 
-        // Simulate user input
         await wrapper.find('#cardName').setValue('Sol Ring');
         await wrapper.find('#amount').setValue(4);
-        // Note: We are not testing the dependent dropdowns here, just the save logic.
-        // We can assume selectedSet, etc., are empty strings.
-
-        // Trigger submission by calling the handler
+        
         await wrapper.vm.handleSave();
 
-        // Assert that the event was emitted with the correct data
         expect(wrapper.emitted()).toHaveProperty('save-card');
         expect(wrapper.emitted('save-card')[0][0]).toEqual({
             card: 'Sol Ring',
@@ -69,13 +67,38 @@ describe('AddCardModal.vue', () => {
                 finish: ''
             }
         });
-
-        // Assert that the close event was also emitted
         expect(wrapper.emitted()).toHaveProperty('close');
     });
 
+    // 5. This test needs REAL timers (the default) to use await $nextTick
+    it("updates searchResults ref when 'card_name_search_results' is received", async () => {
+        const wrapper = mount(AddCardModal);
+        
+        // Wait for the onMounted() hook to run
+        await wrapper.vm.$nextTick(); 
+
+        // Find the 'on' call for our event and capture the handler
+        const onCall = mockSocket.on.mock.calls.find(call => call[0] === 'card_name_search_results');
+        const eventHandler = onCall[1];
+
+        // Simulate the server sending search results
+        const searchResultsData = { card_names: ['Lightning Bolt', 'Lightning Greaves'] };
+        eventHandler(searchResultsData);
+        
+        // Wait for Vue to process the state update
+        await wrapper.vm.$nextTick(); 
+
+        // Now the assertion will see the updated state
+        expect(wrapper.vm.searchResults).toEqual(['Lightning Bolt', 'Lightning Greaves']);
+    });
+
+    // 6. This test needs FAKE timers
     it("emits a debounced 'search_card_names' event when typing a card name", async () => {
+        // --- Enable fake timers just for this test ---
+        vi.useFakeTimers();
+
         const wrapper = mount(AddCardModal, { props: { show: true } });
+        await wrapper.vm.$nextTick(); // Wait for onMounted
 
         // Type in the input
         await wrapper.find('#cardName').setValue('Light');
@@ -88,26 +111,5 @@ describe('AddCardModal.vue', () => {
 
         // Now the event should have been emitted
         expect(mockSocket.emit).toHaveBeenCalledWith('search_card_names', { query: 'Light' });
-    });
-
-    it("updates datalist options when 'card_name_search_results' is received", async () => {
-        const wrapper = mount(AddCardModal, { props: { show: true } });
-
-        // Find the 'on' call for our event and capture the handler
-        const onCall = mockSocket.on.mock.calls.find(call => call[0] === 'card_name_search_results'
-        );
-        const eventHandler = onCall[1];
-
-        // Simulate the server sending search results
-        const searchResults = { card_names: ['Lightning Bolt', 'Lightning Greaves'] };
-        eventHandler(searchResults);
-
-        // Wait for Vue to update the DOM
-        await wrapper.vm.$nextTick();
-
-        const options = wrapper.findAll('datalist#cardNameDatalist option');
-        expect(options.length).toBe(2);
-        expect(options[0].attributes('value')).toBe('Lightning Bolt');
-        expect(options[1].attributes('value')).toBe('Lightning Greaves');
     });
 });

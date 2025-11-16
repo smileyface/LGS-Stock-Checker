@@ -10,8 +10,12 @@ const mockModalInstance = {
     hide: vi.fn(),
 };
 vi.mock('bootstrap', () => ({
-    // The default export is the Modal class
-    Modal: vi.fn(() => mockModalInstance),
+// Mock the Modal as a class that returns our instance
+    Modal: class {
+        constructor() {
+            return mockModalInstance;
+        }
+    }
 }));
 
 

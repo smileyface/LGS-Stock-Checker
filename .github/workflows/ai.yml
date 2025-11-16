@@ -52,22 +52,19 @@ jobs:
         id: gemini-review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SRD_CONTENT: ${{ steps.srd.outputs.srd_content }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
-          DIFF_CONTENT: ${{ steps.diff.outputs.diff_content }}
         run: |
           # Read the prompt template
           PROMPT_TEMPLATE=$(cat .github/workflows/ai_trace_prompt.txt)
           
-          # Substitute placeholders. We use a temp file for sed to handle multi-line content.
-          echo "$SRD_CONTENT" > srd.tmp
+          # We read the large content from files directly to avoid argument length limits.
+          # We still use a temp file for the PR body to handle multi-line content correctly with sed.
           echo "$PR_BODY" > body.tmp
-          echo "$DIFF_CONTENT" > diff.tmp
           
-          PROMPT_CONTENT=$(sed -e "/__SRD_CONTENT__/r srd.tmp" -e "/__SRD_CONTENT__/d" \
+          PROMPT_CONTENT=$(sed -e "/__SRD_CONTENT__/r docs/srd.md" -e "/__SRD_CONTENT__/d" \
                                -e "/__PR_BODY__/r body.tmp" -e "/__PR_BODY__/d" \
-                               -e "/__DIFF_CONTENT__/r diff.tmp" -e "/__DIFF_CONTENT__/d" \
+                               -e "/__DIFF_CONTENT__/r <(git diff origin/${{ github.base_ref }}...HEAD)" -e "/__DIFF_CONTENT__/d" \
                                <<<"$PROMPT_TEMPLATE" | sed -e "s/__PR_TITLE__/$PR_TITLE/g")
           
           # Pipe the final prompt to the Gemini CLI

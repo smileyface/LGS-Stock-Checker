@@ -91,7 +91,7 @@ class Listing:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Listing):
             return False
-        return self.id == other.id
+        return self.id == other.id and self.details == other.details
 
     def __hash__(self) -> int:
         return hash(

@@ -29,25 +29,7 @@ jobs:
       - name: Install Gemini CLI
         run: npm install --global @google/gemini-cli@0.15.3
 
-      # 4. Read your SRD file
-      - name: Read Software Requirements
-        id: srd
-        run: |
-          srd_content=$(cat docs/srd.md)
-          echo "srd_content<<EOF" >> $GITHUB_OUTPUT
-          echo "$srd_content" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      # 5. Get the PR Diff
-      - name: Get PR Diff
-        id: diff
-        run: |
-          diff_content=$(git diff origin/${{ github.base_ref }}...HEAD)
-          echo "diff_content<<EOF" >> $GITHUB_OUTPUT
-          echo "$diff_content" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-      # 6. Build the prompt and run Gemini CLI via stdin
+      # 4. Build the prompt and run Gemini CLI via stdin
       - name: Run Gemini AI Review
         id: gemini-review
         env:
@@ -58,13 +40,13 @@ jobs:
           # Read the prompt template
           PROMPT_TEMPLATE=$(cat .github/workflows/ai_trace_prompt.txt)
           
-          # We read the large content from files directly to avoid argument length limits.
-          # We still use a temp file for the PR body to handle multi-line content correctly with sed.
+          # Create temp files for multi-line content to safely pass to sed.
           echo "$PR_BODY" > body.tmp
+          git diff origin/${{ github.base_ref }}...HEAD > diff.tmp
           
           PROMPT_CONTENT=$(sed -e "/__SRD_CONTENT__/r docs/srd.md" -e "/__SRD_CONTENT__/d" \
                                -e "/__PR_BODY__/r body.tmp" -e "/__PR_BODY__/d" \
-                               -e "/__DIFF_CONTENT__/r <(git diff origin/${{ github.base_ref }}...HEAD)" -e "/__DIFF_CONTENT__/d" \
+                               -e "/__DIFF_CONTENT__/r diff.tmp" -e "/__DIFF_CONTENT__/d" \
                                <<<"$PROMPT_TEMPLATE" | sed -e "s/__PR_TITLE__/$PR_TITLE/g")
           
           # Pipe the final prompt to the Gemini CLI
@@ -75,16 +57,18 @@ jobs:
           echo "$gemini_response" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
             
-      # 7. Post the Gemini's response as a PR comment
+      # 5. Post the Gemini's response as a PR comment
       - name: Post Comment to PR
         uses: actions/github-script@v8
+        env:
+          COMMENT_BODY: ${{ steps.gemini-review.outputs.gemini_response }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `${{ steps.gemini-review.outputs.gemini_response }}`;
+            const body = process.env.COMMENT_BODY;
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: output
+              body: body
             });

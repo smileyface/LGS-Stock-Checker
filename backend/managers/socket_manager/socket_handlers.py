@@ -137,7 +137,7 @@ def handle_get_card_availability(data: dict = None):
                 for card_name, items in cards.items():
                     event_data = {
                         "username": username,
-                        "store": store_slug,
+                        "store_slug": store_slug,
                         "card": card_name,
                         "items": items,
                     }

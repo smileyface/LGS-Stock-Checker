@@ -46,11 +46,11 @@ socket.on('availability_check_started', (data) => {
 });
 
 socket.on('card_availability_data', (data) => {
-    if (!data || !data.card || !data.store) return;
+    if (!data || !data.card || !data.store_slug) return;
 
     const cardName = data.card;
     const newItems = data.items || [];
-    console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${data.store}'. Found: ${newItems.length} items.`);
+    console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${data.store_slug}'. Found: ${newItems.length} items.`);
 
     // Ensure the entry for the card exists.
     if (!availabilityMap.value[cardName]) {
@@ -62,11 +62,11 @@ socket.on('card_availability_data', (data) => {
 
     // 1. Filter out all items from the store that sent the update.
     const otherStoreItems = existingItems.filter(
-        item => item.store_slug !== data.store
+        item => item.store_slug !== data.store_slug
     );
 
     // 2. Add the new items, ensuring they have the store slug for future identification.
-    const itemsForCurrentStore = newItems.map(item => ({ ...item, store_slug: data.store }));
+    const itemsForCurrentStore = newItems.map(item => ({ ...item, store_slug: data.store_slug }));
 
     // 3. Combine the lists.
     const updatedItems = [...otherStoreItems, ...itemsForCurrentStore];

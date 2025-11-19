@@ -17,7 +17,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: LGS_Stock_Backend/Dockerfile
+      dockerfile: backend/Dockerfile
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     command: >
@@ -58,7 +58,7 @@ services:
   worker:
     build:
       context: .
-      dockerfile: LGS_Stock_Backend/Dockerfile
+      dockerfile: backend/Dockerfile
     restart: on-failure
     # Allow the worker up to 130s to finish its current job before being killed.
     stop_grace_period: 130s
@@ -82,7 +82,7 @@ services:
   scheduler:
     build:
       context: .
-      dockerfile: LGS_Stock_Backend/Dockerfile
+      dockerfile: backend/Dockerfile
     container_name: lgs-stock-checker-scheduler-1 # Add autoheal label
     restart: on-failure
     # Give the scheduler time to unregister itself cleanly.

@@ -1,40 +1,24 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/debian
 {
-	"name": "Debian",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
-	"features": {
-		"ghcr.io/devcontainers-extra/features/flake8:2": {},
-		"ghcr.io/devcontainers/features/python:1": {},
+  "name": "Debian",
+  "image": "mcr.microsoft.com/devcontainers/base:bullseye",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/flake8:2": {},
+    "ghcr.io/devcontainers/features/python:1": {},
     "ghcr.io/devcontainers/features/git-lfs:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
-	},
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Configure tool-specific properties.
-	"customizations": {
-    "name": "LGS Stock Checker Dev",
-    // Use your existing Docker Compose file
-    "dockerComposeFile": "../docker-compose.yml",
-    // Tell VSCode which service is the dev environment
-    "service": "backend",
-    // The folder to open in VSCode
-    "workspaceFolder": "/workspaces/LGS-Stock-Checker",
-    // This is the most important part!
-    // Automatically install dev requirements AFTER the container is built.
-    "postCreateCommand": "pip install -r backend/requirements-dev.txt",
-	  "vscode": {
+  },
+  "workspaceFolder": "/workspaces/LGS-Stock-Checker",
+  "postCreateCommand": "pip install -r backend/requirements-dev.txt",
+  "customizations": {
+    "vscode": {
       "extensions": [
         "ms-python.python",
-        "vitest.explorer",      
+        "vitest.explorer",
         "ms-python.flake8",
-        "njpwerner.autodocstring"
+        "njpwerner.autodocstring",
+        "ms-azuretools.vscode-containers"
       ],
       "settings": {
         // --- General Settings ---
@@ -60,7 +44,6 @@
       }
     }
   }
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
 }

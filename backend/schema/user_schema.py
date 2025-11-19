@@ -1,8 +1,8 @@
 from typing import List
 from pydantic import BaseModel, Field, ConfigDict
 
-from data.database.schema import CardSpecificationSchema
-from data.database.schema.store_schema import StoreSchema
+from .card_schema import CardSpecificationSchema
+from .store_schema import StoreSchema
 
 
 # Schema for User data including sensitive password_hash,

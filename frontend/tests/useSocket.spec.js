@@ -132,7 +132,7 @@ describe('useSocket Composable', () => {
     it('should update availabilityMap to "completed" on card_availability_data', async () => {
         const eventData = {
             card: 'Brainstorm',
-            store: 'StoreA',
+            store_slug: 'StoreA',
             items: [{ price: 1.99 }], // This makes it "available"
         };
 

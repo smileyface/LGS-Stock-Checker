@@ -1,4 +1,4 @@
-from typing import Optional, List, Literal
+from typing import Optional, Literal
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, ConfigDict
 class FinishSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    name: Literal["normal", "foil", "etched"]
+    name: Literal["non-foil", "foil", "etched"]
 
 
 class CardSchema(BaseModel):
@@ -25,7 +25,7 @@ class CardSpecificationSchema(BaseModel):
     )
     finish: Optional[FinishSchema] = Field(
         None,
-        description="The card's finish ('normal', 'foil', 'etched'). "
+        description="The card's finish ('non-foil', 'foil', 'etched'). "
         "Defaults to None.",
     )
 
@@ -34,5 +34,13 @@ class CardPrintingSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     card_name: str
-    specification: CardSpecificationSchema
-    available_finishes: List[FinishSchema]
+    specification: Optional[CardSpecificationSchema]
+    available_finishes: Optional[FinishSchema]
+
+
+class CardAmountSchema(BaseModel):
+    """
+    Schema for representing a card and its quantity.
+    """
+    card: CardPrintingSchema
+    amount: int = Field(..., description="The quantity of the card.")

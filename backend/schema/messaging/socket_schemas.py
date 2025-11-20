@@ -48,7 +48,6 @@ class DeleteCardSchema(BaseModel):
     """
     Validates the payload for the 'delete_card' event.
     """
-
     card: str
 
 
@@ -74,12 +73,5 @@ class SearchCardNamesSchema(BaseModel):
     )
 
 
-class CardSpecsSchema(BaseModel):
-    """
-    Represents the specific printing details of a card.
-    All fields are optional, allowing for partial or wildcard tracking.
-    """
-
-    set_code: Optional[str] = None
-    collector_number: Optional[str] = None
-    finish: Optional[str] = None
+class GetCardPrintings(BaseModel):
+    card_name: str = Field(..., min_length=1)

@@ -3,6 +3,7 @@ from data.database.models.orm_models import (
     User,
     Card,
     CardSpecification,
+    Finish,
     UserTrackedCards,
 )
 from werkzeug.security import generate_password_hash
@@ -31,6 +32,12 @@ def seeded_user_with_cards(db_session):
     # Commit to ensure these exist before we reference them via foreign key.
     db_session.commit()
 
+    # Create Finish objects to be associated with specifications
+    finish_nonfoil = Finish(name="non-foil")
+    finish_foil = Finish(name="foil")
+    finish_etched = Finish(name="etched")
+    db_session.add_all([finish_nonfoil, finish_foil, finish_etched])
+
     # Create the UserTrackedCards instances
     tracked_card1 = UserTrackedCards(card_name="Lightning Bolt", amount=4)
     tracked_card2 = UserTrackedCards(card_name="Counterspell", amount=2)
@@ -38,13 +45,13 @@ def seeded_user_with_cards(db_session):
 
     # Append specifications directly to the tracked card objects
     tracked_card1.specifications.append(
-        CardSpecification(set_code="2ED", finish="non-foil")
+        CardSpecification(set_code="2ED", finish_id=finish_nonfoil.id)
     )
     tracked_card1.specifications.append(
-        CardSpecification(set_code="3ED", finish="foil")
+        CardSpecification(set_code="3ED", finish_id=finish_foil.id)
     )
     tracked_card2.specifications.append(
-        CardSpecification(set_code="CMR", finish="etched")
+        CardSpecification(set_code="CMR", finish_id=finish_etched.id)
     )
 
     # Append the fully-formed tracked cards to the user's collection
@@ -56,7 +63,10 @@ def seeded_user_with_cards(db_session):
     db_session.add(user)
     db_session.commit()
 
-    return user
+    # Re-fetch the user to ensure all relationships are fresh and not expired
+    # after the commit. This prevents DetachedInstanceError in tests.
+    refreshed_user = db_session.query(User).filter_by(username=user.username).one()
+    return refreshed_user
 
 
 @pytest.fixture

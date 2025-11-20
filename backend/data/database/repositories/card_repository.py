@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 # Internal package imports
 
-from .. import schema
+from schema import db
 from ..exceptions import InvalidSpecificationError
 from ..session_manager import db_query
 from ..models import (
@@ -23,7 +23,7 @@ from utility import logger
 @db_query
 def get_users_cards(
     username: str, *, session
-) -> List[schema.UserTrackedCardSchema]:
+) -> List[db.UserTrackedCardSchema]:
     """
     Retrieves all tracked cards for a given user using an
     efficient single query.
@@ -34,6 +34,7 @@ def get_users_cards(
         .filter(User.username == username)
         .options(
             joinedload(User.cards).joinedload(UserTrackedCards.specifications)
+            .joinedload(CardSpecification.finish)
         )
         .first()
     )
@@ -46,7 +47,7 @@ def get_users_cards(
 
     logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
     return [
-        schema.UserTrackedCardSchema.model_validate(card) for card
+        db.UserTrackedCardSchema.model_validate(card) for card
         in user.cards
     ]
 

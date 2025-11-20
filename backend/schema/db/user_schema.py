@@ -26,15 +26,12 @@ class UserDBSchema(BaseModel):
 class UserPublicSchema(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
-    )  # <--- THIS IS CRUCIAL FOR ORM CONVERSION
+    )
 
     username: str
-    # Assuming selected_stores is a relationship that returns ORM Store objects
     selected_stores: List[StoreSchema] = Field(
         [], description="List of stores selected by the user."
     )
-
-    # Add other user fields as needed
 
 
 class UserTrackedCardSchema(BaseModel):

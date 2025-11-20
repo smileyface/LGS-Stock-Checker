@@ -151,12 +151,13 @@ class CardSpecification(Base):
     collector_number = Column(
         String, nullable=True
     )  # NULL = "Any Collector Number"
-    finish = Column(String, nullable=True)  # NULL = "Any Finish"
+    finish_id = Column(Integer, ForeignKey("finishes.id"), nullable=True)
 
     # Relationship back to user_card_preferences
     user_card = relationship(
         "UserTrackedCards", back_populates="specifications"
     )
+    finish = relationship("Finish")
 
 
 class Store(Base):

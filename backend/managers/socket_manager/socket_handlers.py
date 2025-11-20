@@ -1,19 +1,13 @@
 from flask_login import current_user
 from pydantic import ValidationError
 
+from schema import messaging
 from data import database
 from data.database import exceptions
 from managers import user_manager
 from managers import availability_manager
 
 from .socket_manager import socketio
-from .socket_schemas import (
-    AddCardSchema,
-    UpdateCardSchema,
-    DeleteCardSchema,
-    GetPrintingsSchema,
-    UpdateStoreSchema,
-)
 from utility import logger
 
 
@@ -30,7 +24,7 @@ def handle_get_card_printings(data: dict):
     Handles a client's request for all valid printings of a specific card.
     Implements requirement [4.3.5].
     """
-    validated_data = GetPrintingsSchema.model_validate(data)
+    validated_data = messaging.GetPrintingsSchema.model_validate(data)
     card_name = validated_data.card_name
     if not database.is_card_in_catalog(card_name):
         logger.info(f"{card_name} not in catalog")
@@ -201,7 +195,7 @@ def handle_add_user_tracked_card(data: dict):
     logger.info("📩 Received 'add_card' request from front end.")
     """Add tracked card to the database and send an updated card list."""
     try:
-        validated_data = AddCardSchema.model_validate(data)
+        validated_data = messaging.AddCardSchema.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to add a card.")
@@ -247,7 +241,7 @@ def handle_add_user_tracked_card(data: dict):
 def handle_delete_user_tracked_card(data: dict):
     logger.info("📩 Received 'delete_card' request from front end.")
     try:
-        validated_data = DeleteCardSchema.model_validate(data)
+        validated_data = messaging.DeleteCardSchema.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to delete a card.")
@@ -270,7 +264,7 @@ def handle_delete_user_tracked_card(data: dict):
 def handle_update_user_tracked_cards(data: dict):
     logger.info("📩 Received 'update_card' request from front end.")
     try:
-        validated_data = UpdateCardSchema.model_validate(data)
+        validated_data = messaging.UpdateCardSchema.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to update a card.")
@@ -305,7 +299,7 @@ def handle_update_user_stores(data: dict):
         return
 
     try:
-        validated_data = UpdateStoreSchema.model_validate(data)
+        validated_data = messaging.UpdateStoreSchema.model_validate(data)
         database.set_user_stores(username, validated_data.stores)
         _send_user_stores(username)
         logger.info(f"✅ Updated preferred stores for user '{username}'.")

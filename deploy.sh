@@ -15,7 +15,7 @@ main() {
     composer_cmd=$(detect_composer)
 
     # --- Deployment Arguments ---
-    local branch=${1:-master}
+    local branch=${1:-stable}
     export LOG_LEVEL=${2:-INFO} # Export for docker-compose
 
     # --- Configure Environment for Deployment ---

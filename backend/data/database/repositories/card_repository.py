@@ -304,7 +304,7 @@ def update_user_tracked_card_preferences(
             f"🚨 Card '{card_name}' not found for user '{username}'. "
             "Cannot update preferences."
         )
-        return
+        return {"error": "Card not found"}
 
     # Update preferences based on the provided dictionary
     if "amount" in preference_updates:

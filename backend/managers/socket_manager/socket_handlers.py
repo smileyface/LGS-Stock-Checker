@@ -280,6 +280,7 @@ def handle_update_user_tracked_cards(data: dict):
         _send_user_cards(username)
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
+        
         socketio.emit(
             "error", {"message": f"Invalid data for update_card: {e}"}
         )

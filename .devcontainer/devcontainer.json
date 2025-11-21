@@ -3,6 +3,7 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "backend",
   "workspaceFolder": "/workspaces/LGS-Stock-Checker",
+  "overrideCommand": true,
   "postCreateCommand": "pip install -r backend/requirements-dev.txt",
   "features": {
     "ghcr.io/devcontainers-extra/features/flake8:2": {},

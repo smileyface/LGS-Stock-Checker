@@ -1,7 +1,7 @@
 from typing import List
 from pydantic import BaseModel, Field, ConfigDict
 
-from .card_schema import CardSpecificationSchema
+from .card_schema import CardSpecificationSchema, CardSchema
 from .store_schema import StoreSchema
 
 
@@ -35,11 +35,12 @@ class UserPublicSchema(BaseModel):
 
 
 class UserTrackedCardSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True
+        )
 
-    card_name: str = Field(
-        ..., description="The name of the card being tracked."
-    )
+    card_name: CardSchema
+
     amount: int = Field(
         1,
         ge=1,

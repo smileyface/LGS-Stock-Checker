@@ -54,7 +54,7 @@ def add_user_card(username: str,
     """Adds a card to a user's list and sends an update."""
     logger.info(f"Adding card '{card_name}' for user '{username}'.")
     # Pass the arguments individually to the data layer function.
-    database.add_user_card(username, card_name, amount, card_specs)
+    database.add_card_to_user(username, card_name, amount, card_specs)
     _send_updated_card_list(username)
 
 

@@ -1,6 +1,9 @@
 import pytest  # noqa
 
-from data.database.repositories.card_repository import get_users_cards
+from data.database.repositories.card_repository import (
+    get_users_cards,
+    add_card_to_user
+)
 from data.database.repositories.user_repository import (
     get_users_tracking_card,
     get_tracking_users_for_cards,
@@ -102,3 +105,88 @@ def test_get_tracking_users_for_cards(multiple_users_with_cards):
 
     # Check empty input
     assert get_tracking_users_for_cards([]) == {}
+
+
+def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
+    """
+    Tests adding a completely new card to a user who is already tracking
+    other cards.
+    """
+    username = seeded_user_with_cards.username
+
+    # Define a new card to add
+    new_card_data = {
+        "card_name": "Brainstorm",
+        "amount": 3,
+        "specifications": [{"set_code": "ICE", "finish": "non-foil"}],
+    }
+
+    # Act: Add the new card to the user
+    add_card_to_user(username,
+                     new_card_data)
+
+    # Assert: Verify the card was added and existing cards are untouched
+    all_cards = get_users_cards(username)
+    assert len(all_cards) == 4  # 3 existing + 1 new
+
+    # Find the newly added card
+    added_card = next(
+        (c for c in all_cards if c.card_name == "Brainstorm"), None
+    )
+
+    assert added_card is not None
+    assert added_card.amount == 3
+    assert len(added_card.specifications) == 1
+    assert added_card.specifications[0].set_code == "ICE"
+
+
+@pytest.mark.parametrize(
+        "card_data",
+        [
+            {
+                "card_name": "Sol Ring",
+                "update_data": {"amount": 5},
+                "expected_amount": 5,
+                "expected_specs_count": 0,
+            },
+            {
+                "card_name": "Sol Ring",
+                "update_data": {
+                    "specifications": [{"set_code": "LTC", "finish": "etched"}]
+                },
+                "expected_amount": 1,  # Original amount
+                "expected_specs_count": 1,
+            },
+            {
+                "card_name": "Lightning Bolt",
+                "update_data": {
+                    "specifications": [{"set_code": "4ED", "finish": "non-foil"}]
+                },
+                "expected_amount": 4,  # Original amount
+                "expected_specs_count": 1,
+                "expected_set_code": "4ED",
+            },
+        ],
+)
+def test_update_user_card(seeded_user_with_cards, card_data):
+    """
+    Tests updating a user's tracked card, including amount and specifications.
+    """
+    username = seeded_user_with_cards.username
+    card_name = card_data["card_name"]
+
+    # Act: Update the card
+    update_user_card(username, card_name, card_data["update_data"])
+
+    # Assert: Verify the update
+    all_cards = get_users_cards(username)
+    updated_card = next((c for c in all_cards if c.card_name == card_name), None)
+
+    assert updated_card is not None
+    assert updated_card.amount == card_data["expected_amount"]
+    assert len(updated_card.specifications) == card_data["expected_specs_count"]
+
+    # If we updated specs, let's check them
+    if "expected_set_code" in card_data:
+        assert updated_card.specifications[0].set_code == card_data["expected_set_code"]
+    

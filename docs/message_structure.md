@@ -71,9 +71,17 @@ Updates an existing tracked card's amount or specifications.
       "card": "Card Name",
       "update_data": {
         "amount": 2,
-        "specifications": {
-          "set_code": "2X2"
-        }
+        "specifications": [
+            //for set 2X2 with a non-foil finish
+            {
+            "set_code": "2X2",
+            "finish": "non-foil"
+            },
+            //for any etched finish
+            {
+                "finish": "etched"
+            }
+        ]
       }
     }
     ```
@@ -161,13 +169,12 @@ Provides the client with the user's complete and updated list of tracked cards. 
             {
                 "card_name": "string",
                 "amount": "integer",
-                "specifications": [
-                    {
-                        "set_code": "string | null",
-                        "collector_number": "string | null",
-                        "finish": "string | null"
-                    }
-                ]
+                "specifications":
+                {
+                    "set_code": "string | null",
+                    "collector_number": "string | null",
+                    "finish": "string | null"
+                }
             }
         ]
     }

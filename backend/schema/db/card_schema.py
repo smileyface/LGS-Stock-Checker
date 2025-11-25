@@ -11,7 +11,9 @@ class FinishSchema(BaseModel):
 
 class CardSchema(BaseModel):
     id: int
-    name: str
+    name: str = Field(..., 
+                      description="The name of the card.",
+                      min_length=1)
 
 
 class CardSpecificationSchema(BaseModel):
@@ -33,14 +35,6 @@ class CardSpecificationSchema(BaseModel):
 class CardPrintingSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    card_name: str
+    card_name: CardSchema
     specification: Optional[CardSpecificationSchema]
     available_finishes: Optional[FinishSchema]
-
-
-class CardAmountSchema(BaseModel):
-    """
-    Schema for representing a card and its quantity.
-    """
-    card: CardPrintingSchema
-    amount: int = Field(..., description="The quantity of the card.")

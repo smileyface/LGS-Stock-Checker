@@ -108,6 +108,17 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
         ({}, "Field required"),  # Missing all fields
         ({"card": "Sol Ring"}, "Field required"),  # Missing update_data
         ({"update_data": {}}, "Field required"),  # Missing card name
+        (
+            {
+                "card": "Sol Ring",
+                "update_data":
+                {
+                    "specifications":
+                        {"finish": "invalid"}
+                },
+            },
+            "Invalid 'update_card' data received",
+        ),  # Invalid finish
     ],
 )
 def test_on_update_card_with_invalid_data(
@@ -136,13 +147,7 @@ def test_on_update_card_with_invalid_data(
             {"card": "Sol Ring", "update_data": {"amount": 0}},
             "Invalid amount '0' provided",
         ),  # Invalid amount
-        (
-            {
-                "card": "Sol Ring",
-                "update_data": {"specifications": {"finish": "invalid"}},
-            },
-            "Invalid 'update_card' data received",
-        ),  # Invalid finish
+        
     ]
 )
 def test_on_update_card_with_non_critical_invalid_data(
@@ -158,7 +163,6 @@ def test_on_update_card_with_non_critical_invalid_data(
     THEN it should log a warning, not update the field, but update
          other fields.
     """
-    mock_sh_get_current_user.return_value = seeded_user_with_cards
     socket_handlers.handle_update_user_tracked_cards(invalid_data)
     assert expected_log_part in caplog.text
 

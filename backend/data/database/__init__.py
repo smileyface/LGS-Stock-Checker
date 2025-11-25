@@ -18,7 +18,7 @@ from .session_manager import get_session, remove_session, health_check
 
 from .repositories.card_repository import (
     get_users_cards,
-    add_user_card,
+    add_card_to_user,
     delete_user_card,
     update_user_tracked_cards_list,
     update_user_tracked_card_preferences,
@@ -64,7 +64,7 @@ __all__ = [
     "health_check",
     # Card Repository
     "get_users_cards",
-    "add_user_card",
+    "add_card_to_user",
     "delete_user_card",
     "update_user_tracked_cards_list",
     "update_user_tracked_card_preferences",

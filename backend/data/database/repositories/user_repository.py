@@ -63,9 +63,7 @@ def get_user_by_username(
 
 @db_query
 def get_user_orm_by_username(username: str,
-                             session: Session = None) -> Optional[User]:
-    # This assert tells Pylance that session is not None
-    assert session is not None, "Session is injected by @db_query decorator"
+                             session: Session = Session()) -> User:
     """
     Retrieve a user ORM object by username from the database.
     This is intended for internal use where the ORM object's methods are

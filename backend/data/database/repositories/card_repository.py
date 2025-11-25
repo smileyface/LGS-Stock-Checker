@@ -34,7 +34,6 @@ def get_users_cards(
         .filter(User.username == username)
         .options(
             joinedload(User.cards).joinedload(UserTrackedCards.specifications)
-            .joinedload(CardSpecification.finish)
         )
         .first()
     )
@@ -130,23 +129,32 @@ def add_user_card(
         existing_specs_query = session.query(CardSpecification).filter(
             CardSpecification.user_card_id == tracked_card.id
         )
+        # Load the finish relationship to avoid lazy loading in the loop
+        existing_specs_query = existing_specs_query.options(joinedload(CardSpecification.finish))
         existing_specs_set = {
-            (s.set_code, s.collector_number, s.finish)
+            (s.set_code, s.collector_number, s.finish.name if s.finish else None)
             for s in existing_specs_query.all()
         }
 
         # The frontend sends a single spec object, not a list.
+        finish_name = card_specs.get("finish")
         spec_tuple = (
             card_specs.get("set_code"),
             card_specs.get("collector_number"),
-            card_specs.get("finish"),
+            finish_name,
         )
         if spec_tuple not in existing_specs_set:
+            finish_obj = None
+            if finish_name:
+                finish_obj = (
+                    session.query(Finish).filter(Finish.name == finish_name).first()
+                )
+
             new_spec = CardSpecification(
                 user_card_id=tracked_card.id,
                 set_code=spec_tuple[0],
                 collector_number=spec_tuple[1],
-                finish=spec_tuple[2],
+                finish=finish_obj,
             )
             session.add(new_spec)
             logger.info(

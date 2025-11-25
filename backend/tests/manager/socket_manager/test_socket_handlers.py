@@ -50,8 +50,7 @@ def test_on_add_card_triggers_availability_check(
     assert mock_sh_trigger_availability_check.call_args.args[0] == username
     assert mock_sh_trigger_availability_check.call_args.args[1] == card_data_for_task
     # Check that a callback was passed
-    assert "on_complete_callback" in 
-        mock_sh_trigger_availability_check.call_args.kwargs
+    assert "on_complete_callback" in mock_sh_trigger_availability_check.call_args.kwargs
 
     # 3. Verify the client was notified with the updated card list via
     # the callback

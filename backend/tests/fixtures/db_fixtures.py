@@ -167,6 +167,7 @@ def seeded_user_with_cards(db_session):
     finish_foil = Finish(name="foil")
     finish_etched = Finish(name="etched")
     db_session.add_all([finish_nonfoil, finish_foil, finish_etched])
+    db_session.commit()
 
     # Create the UserTrackedCards instances
     tracked_card1 = UserTrackedCards(card_name="Lightning Bolt", amount=4)

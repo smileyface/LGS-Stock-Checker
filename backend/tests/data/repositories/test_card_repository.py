@@ -21,7 +21,7 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
     assert cards[0].amount == 4
     assert len(cards[0].specifications) == 1
     assert cards[0].specifications[0].set_code == "ONE"
-    assert cards[0].specifications[0].finish == "foil"
+    assert cards[0].specifications[0].finish.name == "foil"
 
 
 def test_add_user_card_user_not_found(db_session):
@@ -63,7 +63,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     # Verify both old and new specifications are present
     specs = tracked_card.specifications
     assert len(specs) == 2, "Should have added the new specification"
-    spec_tuples = {(s.set_code, s.finish) for s in specs}
+    spec_tuples = {(s.set_code, s.finish.name) for s in specs}
     assert ("MH2", "etched") in spec_tuples
     assert ("2XM", "nonfoil") in spec_tuples
 

@@ -25,7 +25,7 @@ def test_get_users_cards(seeded_user_with_cards):
     assert cards_data[0].amount == 2
     assert len(cards_data[0].specifications) == 1
     assert cards_data[0].specifications[0].set_code == "CMR"
-    assert cards_data[0].specifications[0].finish == "etched"
+    assert cards_data[0].specifications[0].finish.name == "etched"
 
     # Assertions for Lightning Bolt
     assert cards_data[1].card_name == "Lightning Bolt"

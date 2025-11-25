@@ -14,6 +14,12 @@ RUN apt-get update \
     build-essential \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+
+# Add Node
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
+
 # Upgrade pip and install flake8 globally so the VS Code extension can find it
 RUN python3 -m pip install --upgrade pip flake8
 

@@ -21,8 +21,8 @@ vi.mock('../src/composables/useSocket', () => ({
 const mockPrintingsData = {
     card_name: 'Sol Ring',
     printings: [
-        { set_code: 'C21', collector_number: '125', finishes: ['nonfoil', 'foil'] },
-        { set_code: 'LTC', collector_number: '3', finishes: ['nonfoil', 'etched'] },
+        { set_code: 'C21', collector_number: '125', finishes: ['non-foil', 'foil'] },
+        { set_code: 'LTC', collector_number: '3', finishes: ['non-foil', 'etched'] },
         { set_code: 'LTC', collector_number: '350', finishes: ['foil'] },
     ],
 };
@@ -138,6 +138,6 @@ describe('useCardPrintings.js', () => {
         selectedSetRef.value = 'LTC';
         selectedCollectorNumberRef.value = '3';
 
-        expect(finishOptions.value).toEqual(['nonfoil', 'etched']);
+        expect(finishOptions.value).toEqual(['non-foil', 'etched']);
     });
 });

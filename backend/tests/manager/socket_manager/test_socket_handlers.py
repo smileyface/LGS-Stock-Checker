@@ -198,7 +198,7 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
         {
             "set_code": "C21",
             "collector_number": "125",
-            "finishes": ["foil", "nonfoil"],
+            "finishes": ["foil", "non-foil"],
         }
     ]
     # Configure the mock provided by the fixture

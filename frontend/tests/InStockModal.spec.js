@@ -23,7 +23,7 @@ describe('InStockModal.vue', () => {
     const cardNameProp = 'Sol Ring';
     const availableItemsProp = [
         { store_name: 'Store B', price: 5.99, set_code: 'LTC', collector_number: '350', finish: 'foil' },
-        { store_name: 'Store A', price: 1.99, set_code: 'C21', collector_number: '125', finish: 'nonfoil' },
+        { store_name: 'Store A', price: 1.99, set_code: 'C21', collector_number: '125', finish: 'non-foil' },
     ]; // Note: The component doesn't use all these fields anymore.
 
     let wrapper;

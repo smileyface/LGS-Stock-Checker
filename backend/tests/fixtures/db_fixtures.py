@@ -112,7 +112,7 @@ def seeded_printings(db_session):
             Set(code="MH2", name="Modern Horizons 2"),
             Set(code="2XM", name="Double Masters"),
             Set(code="M21", name="Core Set 2021"),
-            Finish(name="nonfoil"),
+            Finish(name="non-foil"),
             Finish(name="foil"),
             Finish(name="etched"),
         ]
@@ -120,11 +120,11 @@ def seeded_printings(db_session):
     db_session.commit()
 
     printings_data = [
-        ("Sol Ring", "C21", "125", ["nonfoil", "foil"]),
-        ("Sol Ring", "LTC", "3", ["nonfoil", "etched"]),
-        ("Sol Ring", "ONE", "254", ["nonfoil", "foil"]),
+        ("Sol Ring", "C21", "125", ["non-foil", "foil"]),
+        ("Sol Ring", "LTC", "3", ["non-foil", "etched"]),
+        ("Sol Ring", "ONE", "254", ["non-foil", "foil"]),
         ("Thoughtseize", "MH2", "107", ["etched"]),
-        ("Thoughtseize", "2XM", "107", ["nonfoil"]),
+        ("Thoughtseize", "2XM", "107", ["non-foil"]),
         ("Ugin, the Spirit Dragon", "M21", "1", ["foil"]),
     ]
 

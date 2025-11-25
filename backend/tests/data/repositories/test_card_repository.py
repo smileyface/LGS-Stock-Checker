@@ -45,7 +45,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     data.add_user_card("testuser", "Thoughtseize", 1, initial_specs)
 
     # Act: Call add_user_card again with a new spec and a DIFFERENT amount
-    new_specs = {"set_code": "2XM", "finish": "nonfoil"}
+    new_specs = {"set_code": "2XM", "finish": "non-foil"}
     data.add_user_card("testuser", "Thoughtseize", 10, new_specs)
 
     # Assert
@@ -65,7 +65,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     assert len(specs) == 2, "Should have added the new specification"
     spec_tuples = {(s.set_code, s.finish.name) for s in specs}
     assert ("MH2", "etched") in spec_tuples
-    assert ("2XM", "nonfoil") in spec_tuples
+    assert ("2XM", "non-foil") in spec_tuples
 
 
 def test_delete_user_card(seeded_user):
@@ -241,7 +241,7 @@ def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
         ("Sol Ring", {"collector_number": "3"}, True),
         ("Sol Ring", {"finish": "foil"}, True),
         ("Sol Ring", {"set_code": "LTC", "collector_number": "3"}, True),
-        ("Sol Ring", {"set_code": "C21", "finish": "nonfoil"}, True),
+        ("Sol Ring", {"set_code": "C21", "finish": "non-foil"}, True),
         # --- Partial, Invalid Specifications ---
         (
             "Sol Ring",

@@ -36,7 +36,7 @@ user_store_preferences = Table(
 )
 
 
-# Users Table (Updated)
+# Users Table
 class User(UserMixin, Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)

@@ -2,7 +2,8 @@ import pytest  # noqa
 
 from data.database.repositories.card_repository import (
     get_users_cards,
-    add_card_to_user
+    add_card_to_user,
+    update_user_tracked_card_preferences
 )
 from data.database.repositories.user_repository import (
     get_users_tracking_card,
@@ -174,9 +175,12 @@ def test_update_user_card(seeded_user_with_cards, card_data):
     """
     username = seeded_user_with_cards.username
     card_name = card_data["card_name"]
+    update_data = card_data["update_data"]
 
     # Act: Update the card
-    update_user_card(username, card_name, card_data["update_data"])
+    update_user_tracked_card_preferences(
+        username, card_name, update_data
+    )
 
     # Assert: Verify the update
     all_cards = get_users_cards(username)
@@ -189,4 +193,3 @@ def test_update_user_card(seeded_user_with_cards, card_data):
     # If we updated specs, let's check them
     if "expected_set_code" in card_data:
         assert updated_card.specifications[0].set_code == card_data["expected_set_code"]
-    

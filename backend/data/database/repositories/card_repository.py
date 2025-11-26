@@ -286,7 +286,7 @@ def update_user_tracked_card_preferences(
     card_name: str,
     preference_updates: Dict[str, Any],
     *,
-    session,
+    session: Session = Session(),
 ) -> None:
     """
     Updates specific preferences (e.g., amount) for a single tracked card.
@@ -335,12 +335,23 @@ def update_user_tracked_card_preferences(
 
         # Add new specifications
         new_specs = preference_updates["specifications"]
-        new_spec = CardSpecification(
-            set_code=new_specs.get("set_code"),
-            collector_number=new_specs.get("collector_number"),
-            finish=new_specs.get("finish"),
-        )
-        tracked_card.specifications.append(new_spec)
+        for new_spec in new_specs:
+            finish_obj = None
+            finish_name = new_spec.get("finish")
+            if finish_name:
+                # Get or create the Finish object to avoid unique constraint errors
+                finish_obj = (
+                    session.query(Finish).filter(Finish.name == finish_name).first()
+                )
+                if not finish_obj:
+                    finish_obj = Finish(name=finish_name)
+                    session.add(finish_obj)
+            spec = CardSpecification(
+                set_code=new_spec.get("set_code"),
+                collector_number=new_spec.get("collector_number"),
+                finish=finish_obj,
+            )
+            tracked_card.specifications.append(spec)
         logger.debug(
             f"Added new specification for '{card_name}'."
         )

@@ -39,7 +39,9 @@ class UserTrackedCardSchema(BaseModel):
         from_attributes=True
         )
 
-    card_name: CardSchema
+    card: CardSchema = Field(
+        ..., alias="card_name", description="The card being tracked."
+    )
 
     amount: int = Field(
         1,

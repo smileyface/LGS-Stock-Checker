@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class FinishSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
     name: Literal["non-foil", "foil", "etched"]
 
 

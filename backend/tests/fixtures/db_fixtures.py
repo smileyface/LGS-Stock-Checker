@@ -157,6 +157,8 @@ def seeded_user_with_cards(db_session):
             Card(name="Lightning Bolt"),
             Card(name="Counterspell"),
             Card(name="Sol Ring"),
+            Card(name="Brainstorm"),
+            Card(name="Lurrus of the Dream-Den"),
         ]
     )
     # Commit to ensure these exist before we reference them via foreign key.

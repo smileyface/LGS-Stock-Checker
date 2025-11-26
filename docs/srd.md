@@ -100,6 +100,7 @@ These requirements define the global card catalog used for searching and validat
 - **[4.1.6]** The system shall include a scheduled background task that periodically fetches a list of all known card names from an external source (e.g., Scryfall) and updates the card catalog.
 - **[4.1.7]** The background task shall add any new card names to the catalog that are not already present.
 - **[4.1.8]** The background task shall not remove any card names from the catalog, even if they are no longer present in the external source.
+- **[4.1.9]** The system shall use the catalogue to validate all cards in the system.
 
 ### 4.2 Set Catalog
 

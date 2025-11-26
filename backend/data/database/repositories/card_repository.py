@@ -34,6 +34,10 @@ def get_users_cards(
     logger.debug(f"📖 Querying for all tracked cards for user '{username}'.")
     user = get_user_orm_by_username(username)
 
+    if not user:
+        logger.warning(f"User '{username}' not found. Cannot get cards.")
+        return []
+
     logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
     return [
         db.UserTrackedCardSchema.model_validate(card) for card in user.cards
@@ -64,17 +68,13 @@ def add_card_to_user(
         return
 
     user = get_user_orm_by_username(username)
-    card_entry = search_card_names(card_name)[0]
+    card_entry = search_card_names(card_name)
 
-    # Find or create the global card entry (ensures referential integrity)
-    card_entry = session.query(Card).filter(Card.name == card_name).first()
     if not card_entry:
-        logger.info(
-            f"➕ Adding new card '{card_name}' to the global card table."
-        )
-        card_entry = Card(name=card_name)
-        session.add(card_entry)
-        session.flush()  # Ensure it gets an ID before proceeding
+        # Logging for this error is handled in
+        # search_card_names
+        return
+    card_entry = card_entry[0]
 
     # Find or create the user's tracked card entry
     tracked_card = (
@@ -119,11 +119,11 @@ def add_card_to_user(
 
         for card_spec in card_specs:
             # The frontend sends a single spec object, not a list.
-            finish_name = card_spec.finish
+            finish_name = card_spec.finish.name
             spec_tuple = (
                 card_spec.set_code,
                 card_spec.collector_number,
-                card_spec.finish,
+                finish_name,
             )
             if spec_tuple not in existing_specs_set:
                 finish_obj = None
@@ -149,6 +149,15 @@ def add_card_to_user(
 
 
 @db_query
+def get_card(card_name: str,
+             *,
+             session: Session = Session()):
+    if not card_name:
+        return []
+    card = 
+
+
+@db_query
 def search_card_names(query: str,
                       *,
                       session: Session = Session(),
@@ -167,9 +176,11 @@ def search_card_names(query: str,
         .limit(limit)
         .all()
     )
-    # The result is a list of tuples, e.g., [('Lightning Bolt',)],
-    # so we extract the first element.
-    return [row[0] for row in results]
+    if len(results) == 0:
+        logger.warning(f"No matching card names for {Card.name} found.")
+        return []
+    else:
+        return [row[0] for row in results]
 
 
 @db_query

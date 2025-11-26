@@ -1,7 +1,6 @@
 import pytest
 
 from data.database.models.orm_models import (
-    Card,
     CardSpecification,
     UserTrackedCards
 )
@@ -11,8 +10,6 @@ from data.database.repositories.card_repository import (
     get_users_cards,
     add_card_to_user,
     delete_user_card,
-    update_user_tracked_cards_list,
-    update_user_tracked_card_preferences,
 )
 
 
@@ -21,12 +18,23 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
     assert get_users_cards("testuser") == []
 
     # Add a card with specifications
-    specs = {"set_code": "ONE", "finish": "foil"}
-    add_card_to_user("testuser", "Sol Ring", 4, specs)
+    add_card_to_user("testuser", {
+        "card":
+        {
+            "name": "Sol Ring"
+        },
+        "amount": 4,
+        "specifications": [
+            {
+                "set_code": "ONE",
+                "finish": {"name": "foil"}
+            }
+        ]
+    })
 
     cards = get_users_cards("testuser")
     assert len(cards) == 1
-    assert cards[0].card_name == "Sol Ring"
+    assert cards[0].card.name == "Sol Ring"
     assert cards[0].amount == 4
     assert len(cards[0].specifications) == 1
     assert cards[0].specifications[0].set_code == "ONE"
@@ -35,7 +43,14 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
 
 def test_add_user_card_user_not_found(db_session):
     """Test that adding a card for a non-existent user does nothing."""
-    add_card_to_user("nonexistent_user", "Some Card", 1, {})
+    add_card_to_user("nonexistent_user", {
+        "card": {
+            "name": "Some Card"
+            },
+        "amount": 1,
+        "specifications": []
+        }
+    )
     # Verify no UserTrackedCards were created
     assert db_session.query(UserTrackedCards).count() == 0
 

@@ -25,7 +25,7 @@ from utility import logger
 
 @db_query
 def get_user_by_username(
-    username: str, session: Session = None
+    username: str, session: Session = Session()
 ) -> Optional[db.UserDBSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
@@ -76,7 +76,11 @@ def get_user_orm_by_username(username: str,
         User or None: The SQLAlchemy User ORM object if found, otherwise None.
     """
     logger.debug(f"📖 Querying for user ORM object '{username}'.")
-    user_orm = session.query(User).filter(User.username == username).first()
+    user_orm = (session.query(User)
+                .options(joinedload(User.cards)
+                         .joinedload(UserTrackedCards.card))
+                .filter(User.username == username)
+                .first())
     logger.debug(
         f"✅ Found user ORM object for '{username}'."
         if user_orm
@@ -87,7 +91,7 @@ def get_user_orm_by_username(username: str,
 
 @db_query
 def get_user_orm_by_id(user_id: int,
-                       session: Session = None) -> Optional[User]:
+                       session: Session = Session()) -> Optional[User]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -121,7 +125,9 @@ def get_user_orm_by_id(user_id: int,
 
 @db_query
 def add_user(
-    username: str, password_hash: str, session: Session = None
+    username: str,
+    password_hash: str,
+    session: Session = Session()
 ) -> Optional[db.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
@@ -151,7 +157,7 @@ def add_user(
 
 @db_query
 def update_username(old_username: str, new_username: str,
-                    session: Session = None) -> None:
+                    session: Session = Session()) -> None:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """

@@ -22,17 +22,17 @@ def test_get_users_cards(seeded_user_with_cards):
     assert len(cards_data) == 3
 
     # Sort cards by name to make assertions deterministic
-    cards_data.sort(key=lambda c: c.card_name)
+    cards_data.sort(key=lambda c: c.card.name)
 
     # Assertions for Counterspell
-    assert cards_data[0].card_name == "Counterspell"
+    assert cards_data[0].card.name == "Counterspell"
     assert cards_data[0].amount == 2
     assert len(cards_data[0].specifications) == 1
     assert cards_data[0].specifications[0].set_code == "CMR"
     assert cards_data[0].specifications[0].finish.name == "etched"
 
     # Assertions for Lightning Bolt
-    assert cards_data[1].card_name == "Lightning Bolt"
+    assert cards_data[1].card.name == "Lightning Bolt"
     assert cards_data[1].amount == 4
     assert len(cards_data[1].specifications) == 2
     spec_sets = {s.set_code for s in cards_data[1].specifications}
@@ -40,7 +40,7 @@ def test_get_users_cards(seeded_user_with_cards):
     assert "3ED" in spec_sets
 
     # Assertions for Sol Ring
-    assert cards_data[2].card_name == "Sol Ring"
+    assert cards_data[2].card.name == "Sol Ring"
     assert cards_data[2].amount == 1
     assert len(cards_data[2].specifications) == 0
 
@@ -117,9 +117,11 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
 
     # Define a new card to add
     new_card_data = {
-        "card_name": "Brainstorm",
+        "card": {"name": "Brainstorm"},
         "amount": 3,
-        "specifications": [{"set_code": "ICE", "finish": "non-foil"}],
+        "specifications": [
+            {"set_code": "ICE", "finish": {"name": "non-foil"}}
+        ],
     }
 
     # Act: Add the new card to the user
@@ -132,7 +134,7 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
 
     # Find the newly added card
     added_card = next(
-        (c for c in all_cards if c.card_name == "Brainstorm"), None
+        (c for c in all_cards if c.card.name == "Brainstorm"), None
     )
 
     assert added_card is not None
@@ -184,7 +186,9 @@ def test_update_user_card(seeded_user_with_cards, card_data):
 
     # Assert: Verify the update
     all_cards = get_users_cards(username)
-    updated_card = next((c for c in all_cards if c.card_name == card_name), None)
+    updated_card = next(
+        (c for c in all_cards if c.card.name == card_name), None
+    )
 
     assert updated_card is not None
     assert updated_card.amount == card_data["expected_amount"]

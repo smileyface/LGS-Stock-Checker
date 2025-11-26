@@ -10,8 +10,8 @@ class FinishSchema(BaseModel):
 
 
 class CardSchema(BaseModel):
-    id: int
-    name: str = Field(..., 
+    model_config = ConfigDict(from_attributes=True)
+    name: str = Field(...,
                       description="The name of the card.",
                       min_length=1)
 

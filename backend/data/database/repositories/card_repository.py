@@ -32,25 +32,11 @@ def get_users_cards(
     efficient single query.
     """
     logger.debug(f"📖 Querying for all tracked cards for user '{username}'.")
-    user = (
-        session.query(User)
-        .filter(User.username == username)
-        .options(
-            joinedload(User.cards).joinedload(UserTrackedCards.specifications)
-        )
-        .first()
-    )
-
-    if not user:
-        logger.warning(
-            f"🚨 User '{username}' not found. Cannot retrieve cards."
-        )
-        return []
+    user = get_user_orm_by_username(username)
 
     logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
     return [
-        db.UserTrackedCardSchema.model_validate(card) for card
-        in user.cards
+        db.UserTrackedCardSchema.model_validate(card) for card in user.cards
     ]
 
 
@@ -68,7 +54,7 @@ def add_card_to_user(
       information.
     """
     valid_card_data = db.UserTrackedCardSchema.model_validate(card_data)
-    card_name = valid_card_data.card_name
+    card_name = valid_card_data.card.name
     amount = valid_card_data.amount
     card_specs = valid_card_data.specifications
     if not card_name:
@@ -78,7 +64,7 @@ def add_card_to_user(
         return
 
     user = get_user_orm_by_username(username)
-    card_entry = search_card_names(card_name.name)[0]
+    card_entry = search_card_names(card_name)[0]
 
     # Find or create the global card entry (ensures referential integrity)
     card_entry = session.query(Card).filter(Card.name == card_name).first()
@@ -110,7 +96,7 @@ def add_card_to_user(
     else:
         logger.info(f"➕ User '{username}' is now tracking '{card_name}'.")
         tracked_card = UserTrackedCards(
-            user_id=user.id, amount=amount, card_name=card_name
+            user_id=user.id, amount=amount, card=card_entry
         )
         session.add(tracked_card)
 
@@ -187,7 +173,10 @@ def search_card_names(query: str,
 
 
 @db_query
-def delete_user_card(username: str, card_name: str, *, session) -> None:
+def delete_user_card(username: str,
+                     card_name: str,
+                     *,
+                     session: Session = Session()) -> None:
     """
     Deletes a tracked card for a user, ensuring related specifications are
       also deleted via ORM cascades.
@@ -512,7 +501,9 @@ def bulk_add_printing_finish_associations(
 
 
 @db_query
-def get_printings_for_card(card_name: str, *, session) -> List[Dict[str, Any]]:
+def get_printings_for_card(card_name: str,
+                           *,
+                           session: Session = Session()) -> List[Dict[str, Any]]:
     """
     Retrieves all printings for a given card name, including their available
     finishes.

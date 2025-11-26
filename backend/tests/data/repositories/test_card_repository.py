@@ -10,7 +10,6 @@ from data.database.repositories.card_repository import (
     get_users_cards,
     add_card_to_user,
     delete_user_card,
-    update_user_tracked_cards_list,
     update_user_tracked_card_preferences
 )
 
@@ -133,17 +132,15 @@ def test_delete_user_card_cascades_specifications(
     add_card_to_user("testuser", {"card":
                                   {"name": "Ugin, the Spirit Dragon"},
                                   "amount": 1,
-                                  "specfications": [specs]})
+                                  "specifications": [specs]})
 
     # Verify everything was created correctly
     tracked_card = db_session.query(UserTrackedCards).one()
     assert tracked_card is not None
-    assert (
-        db_session.query(CardSpecification)
-        .filter_by(user_card_id=tracked_card.id)
-        .count()
-        == 1
-    )
+    assert (db_session
+            .query(CardSpecification)
+            .filter_by(user_card_id=tracked_card.id)
+            .count()) == 1
 
     # Act: Delete the card
     delete_user_card("testuser", "Ugin, the Spirit Dragon")
@@ -172,45 +169,6 @@ def test_delete_user_card_not_found(seeded_user):
 
     delete_user_card("testuser", "Fireball")  # This card is not tracked
     assert len(get_users_cards("testuser")) == initial_card_count
-
-
-def test_update_user_tracked_cards_list(seeded_user):
-    new_card_list = [
-        {"card_name": "Brainstorm", "amount": 4},
-        {"card_name": "Ponder", "amount": 4},
-    ]
-    update_user_tracked_cards_list("testuser", new_card_list)
-
-    cards = get_users_cards("testuser")
-    assert len(cards) == 2
-    card_names = {c.card.name for c in cards}
-    assert "Brainstorm" in card_names
-    assert "Ponder" in card_names
-
-
-def test_update_user_tracked_cards_list_clears_cards(seeded_user):
-    """
-    Test that passing an empty list removes all tracked cards for the user.
-    """
-    # Arrange: Add some cards first
-    initial_list = [{"card_name": "Counterspell", "amount": 4}]
-    update_user_tracked_cards_list("testuser", initial_list)
-    assert len(get_users_cards("testuser")) == 1
-
-    # Act & Assert: Update with an empty list and verify they are gone
-    update_user_tracked_cards_list("testuser", [])
-    assert len(get_users_cards("testuser")) == 0
-
-
-def test_update_user_tracked_cards_list_for_nonexistent_user(db_session):
-    """
-    Test that updating the card list for a non-existent user does nothing.
-    """
-    card_list = [{"card_name": "Brainstorm", "amount": 4}]
-    # This should run without error
-    update_user_tracked_cards_list("nonexistent_user", card_list)
-    # And no cards should be in the DB
-    assert db_session.query(UserTrackedCards).count() == 0
 
 
 def test_update_user_tracked_card_preferences(seeded_user):

@@ -106,7 +106,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     assert ("2XM", "non-foil") in spec_tuples
 
 
-def test_delete_user_card(seeded_user, seed_card_catalogue):
+def test_delete_user_card(seeded_user, seeded_card_catalogue):
     # Arrange: Use the username from the fixture object to add a card.
     username = seeded_user.username
     add_card_to_user(username, {"card": {"name": "Sol Ring"},
@@ -171,7 +171,7 @@ def test_delete_user_card_not_found(seeded_user):
     assert len(get_users_cards("testuser")) == initial_card_count
 
 
-def test_update_user_tracked_card_preferences(seeded_user):
+def test_update_user_tracked_card_preferences(seeded_user, seeded_card_catalogue):
     add_card_to_user("testuser", {"card": {"name": "Swords to Plowshares"},
                                   "amount": 1})
     update_user_tracked_card_preferences(
@@ -192,7 +192,8 @@ def test_update_user_tracked_card_preferences_user_not_found(db_session):
     assert db_session.query(UserTrackedCards).count() == 0
 
 
-def test_update_user_tracked_card_preferences_card_not_found(seeded_user):
+def test_update_user_tracked_card_preferences_card_not_found(seeded_user,
+                                                             seeded_card_catalogue):
     """Test updating preferences for a card the user is not tracking."""
     add_card_to_user("testuser", {"card": {"name": "Lightning Bolt"}, "amount": 1})
     update_user_tracked_card_preferences(

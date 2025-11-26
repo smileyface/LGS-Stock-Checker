@@ -261,16 +261,10 @@ def update_user_tracked_card_preferences(
         return
 
     # Update preferences based on the provided dictionary
-    if "amount" in preference_updates:
-        new_amount = preference_updates["amount"]
-        if isinstance(new_amount, int) and new_amount > 0:
-            tracked_card.amount = new_amount
-            logger.debug(f"Updated amount to {new_amount} for '{card_name}'.")
-        else:
-            logger.warning(
-                f"⚠️ Invalid amount '{new_amount}' provided. Must be a "
-                "positive integer."
-            )
+    valid_updates = db.UserTrackedCardUpdateSchema.model_validate(preference_updates)
+    if valid_updates.amount is not None:
+        tracked_card.amount = valid_updates.amount
+        logger.debug(f"Updated amount to {valid_updates.amount} for '{card_name}'.")
 
     # Handle updating specifications.
     # This replaces all existing specs for the card.

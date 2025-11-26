@@ -6,6 +6,7 @@ from .user_schema import (
     UserDBSchema,
     UserPublicSchema,
     UserTrackedCardSchema,
+    UserTrackedCardUpdateSchema,
 )
 from .card_schema import (
     CardSpecificationSchema,
@@ -25,4 +26,5 @@ __all__ = [
     "UserDBSchema",
     "UserPublicSchema",
     "UserTrackedCardSchema",
+    "UserTrackedCardUpdateSchema",
 ]

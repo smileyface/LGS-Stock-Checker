@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 from .card_schema import CardSpecificationSchema, CardSchema
@@ -48,4 +48,16 @@ class UserTrackedCardSchema(BaseModel):
     )
     specifications: List[CardSpecificationSchema] = Field(
         [], description="List of specific versions of the card."
+    )
+
+
+class UserTrackedCardUpdateSchema(BaseModel):
+    """Schema for updating a user's tracked card, allowing partial updates."""
+    amount: Optional[int] = Field(
+        None,
+        ge=1,
+        description="The quantity of the card the user wants to track."
+    )
+    specifications: Optional[List[CardSpecificationSchema]] = Field(
+        None, description="List of specific versions of the card."
     )

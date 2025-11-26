@@ -96,7 +96,7 @@ def seeded_store(seeded_stores):
 
 
 @pytest.fixture
-def seed_card_catalogue(db_session):
+def seeded_card_catalogue(db_session):
     db_session.add_all(
         [
             Card(name="Sol Ring"),
@@ -106,6 +106,7 @@ def seed_card_catalogue(db_session):
             Card(name="Counterspell"),
             Card(name="Brainstorm"),
             Card(name="Lurrus of the Dream-Den"),
+            Card(name="Swords to Plowshares"),
         ]
     )
 

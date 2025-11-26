@@ -25,7 +25,8 @@
         "google.geminicodeassist",
         "davidanson.vscode-markdownlint",
         "wequick.coverage-gutters",
-        "vue.volar"
+        "vue.volar",
+        "heyprincesingh.pycache-cleaner"
       ],
       "settings": {
         "editor.formatOnSave": true,

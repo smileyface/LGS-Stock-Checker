@@ -455,7 +455,6 @@ def get_all_users(session: Session = None) -> List[db.UserPublicSchema]:
     return [db.UserPublicSchema.model_validate(user) for user in users_orm]
 
 
-
 @db_query
 def get_users_tracking_card(
     card_name: str, session: Session = None

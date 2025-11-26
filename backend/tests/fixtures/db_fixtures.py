@@ -96,6 +96,21 @@ def seeded_store(seeded_stores):
 
 
 @pytest.fixture
+def seed_card_catalogue(db_session):
+    db_session.add_all(
+        [
+            Card(name="Sol Ring"),
+            Card(name="Thoughtseize"),
+            Card(name="Ugin, the Spirit Dragon"),
+            Card(name="Lightning Bolt"),
+            Card(name="Counterspell"),
+            Card(name="Brainstorm"),
+            Card(name="Lurrus of the Dream-Den"),
+        ]
+    )
+
+
+@pytest.fixture
 def seeded_printings(db_session):
     """Fixture to create a card with multiple printings and finishes."""
     db_session.add_all(

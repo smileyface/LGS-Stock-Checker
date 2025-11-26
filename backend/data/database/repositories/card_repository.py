@@ -68,13 +68,17 @@ def add_card_to_user(
         return
 
     user = get_user_orm_by_username(username)
-    card_entry = search_card_names(card_name)
+    card_entry = get_card(card_name)
 
-    if not card_entry:
+    if card_entry.name is None:
         # Logging for this error is handled in
         # search_card_names
         return
-    card_entry = card_entry[0]
+
+    if not user:
+        # Logging for this error is handled in
+        # search_card_names
+        return
 
     # Find or create the user's tracked card entry
     tracked_card = (
@@ -151,10 +155,16 @@ def add_card_to_user(
 @db_query
 def get_card(card_name: str,
              *,
-             session: Session = Session()):
+             session: Session = Session()) -> Card:
     if not card_name:
-        return []
-    card = 
+        logger.error("No card name was passed in")
+        return Card()
+    card = (session.query(Card).filter(Card.name == card_name).first())
+    if not card:
+        logger.error("Card not found in catalogue")
+        return Card()
+    else:
+        return card
 
 
 @db_query
@@ -227,7 +237,10 @@ def delete_user_card(username: str,
 
 @db_query
 def update_user_tracked_cards_list(
-    username: str, card_list: List[Dict[str, Any]], *, session
+    username: str,
+    card_list: List[Dict[str, Any]],
+    *,
+    session: Session = Session()
 ) -> None:
     """
     Replaces a user's entire tracked card list with a new one.

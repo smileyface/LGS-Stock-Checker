@@ -265,7 +265,9 @@ def update_user_tracked_card_preferences(
     # Update preferences based on the provided dictionary
     valid_updates = db.UserTrackedCardUpdateSchema.model_validate(preference_updates)
     if valid_updates.amount is not None:
-        tracked_card.amount = valid_updates.amount
+        session.query(UserTrackedCards).filter(
+            UserTrackedCards.id == tracked_card.id
+        ).update({"amount": valid_updates.amount})
         logger.debug(f"Updated amount to {valid_updates.amount} for '{card_name}'.")
 
     # Handle updating specifications.

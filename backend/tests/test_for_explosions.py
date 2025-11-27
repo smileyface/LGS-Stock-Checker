@@ -148,6 +148,11 @@ def _generate_test_args(func, params, live_user, live_store):
             "update_data": {"amount": 2},
         },
         "handle_update_user_stores": {"stores": ["test_store"]},
+        "add_card_to_user": {
+            "card": {"name": "test_card"},
+            "amount": 1,
+            "specifications": [],
+        },
     }
 
     for param_name, param in params.items():
@@ -167,9 +172,13 @@ def _generate_test_args(func, params, live_user, live_store):
 
         # --- Argument Generation Strategy ---
         # 1. Try to generate an argument based on known parameter names.
-        arg_value = _get_arg_from_known_names(
-            param_name, func, live_user, live_store, data_payloads
-        )
+                # The `data_payloads` check needs to look at the function name and param name.
+        if param_name == "card_data" and func.__name__ in data_payloads:
+            arg_value = data_payloads[func.__name__]
+        else:
+            arg_value = _get_arg_from_known_names(
+                param_name, func, live_user, live_store, data_payloads
+            )
 
         # 2. If not found, try to generate based on type hints.
         if arg_value is None:

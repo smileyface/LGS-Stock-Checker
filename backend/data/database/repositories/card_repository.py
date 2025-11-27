@@ -11,7 +11,6 @@ from .user_repository import get_user_orm_by_username
 from ..models import (
     Card,
     CardSpecification,
-    User,
     UserTrackedCards,
     Set,
     Finish,
@@ -110,13 +109,16 @@ def add_card_to_user(
         existing_specs_query = existing_specs_query.options(
             joinedload(CardSpecification.finish))
         existing_specs_set = {
-            (s.set_code, s.collector_number, s.finish.name if s.finish else None)
+            (s.set_code, s.collector_number,
+             s.finish.name if s.finish else None)
             for s in existing_specs_query.all()
         }
 
         for card_spec in card_specs:
             # The frontend sends a single spec object, not a list.
-            finish_name = card_spec.finish.name
+            finish_name = (card_spec.finish.name
+                           if card_spec.finish
+                           else None)
             spec_tuple = (
                 card_spec.set_code,
                 card_spec.collector_number,

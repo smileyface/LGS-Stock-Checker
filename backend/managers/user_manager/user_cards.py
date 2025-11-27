@@ -53,8 +53,14 @@ def add_user_card(username: str,
                   card_specs: dict):
     """Adds a card to a user's list and sends an update."""
     logger.info(f"Adding card '{card_name}' for user '{username}'.")
-    # Pass the arguments individually to the data layer function.
-    database.add_card_to_user(username, card_name, amount, card_specs)
+    # The data layer expects a single dictionary that conforms to the
+    # UserTrackedCardSchema.
+    card_data = {
+        "card": {"name": card_name},
+        "amount": amount,
+        "specifications": [card_specs] if card_specs else [],
+    }
+    database.add_card_to_user(username, card_data)
     _send_updated_card_list(username)
 
 

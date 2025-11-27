@@ -268,34 +268,30 @@ def update_user_tracked_card_preferences(
 
     # Handle updating specifications.
     # This replaces all existing specs for the card.
-    if "specifications" in preference_updates:
+    if valid_updates.specifications is not None:
         logger.debug(f"Updating specifications for '{card_name}'.")
         # Clear existing specifications
         tracked_card.specifications.clear()
         session.flush()  # Apply the clear operation
 
         # Add new specifications
-        new_specs = preference_updates["specifications"]
-        for new_spec in new_specs:
+        for new_spec in valid_updates.specifications:
             finish_obj = None
-            finish_name = new_spec.get("finish")
-            if finish_name:
-                # Get or create the Finish object to avoid unique constraint errors
+            if new_spec.finish and new_spec.finish.name:
                 finish_obj = (
-                    session.query(Finish).filter(Finish.name == finish_name).first()
+                    session.query(Finish)
+                    .filter(Finish.name == new_spec.finish.name)
+                    .first()
                 )
-                if not finish_obj:
-                    finish_obj = Finish(name=finish_name)
-                    session.add(finish_obj)
-            spec = CardSpecification(
-                set_code=new_spec.get("set_code"),
-                collector_number=new_spec.get("collector_number"),
+            card_spec = CardSpecification(
+                user_card_id=tracked_card.id,
+                set_code=new_spec.set_code,
+                collector_number=new_spec.collector_number,
                 finish=finish_obj,
             )
-            tracked_card.specifications.append(spec)
-        logger.debug(
-            f"Added new specification for '{card_name}'."
-        )
+            tracked_card.specifications.append(card_spec)
+            logger.debug(
+                f"Added new specification for '{card_name}'.")
 
     logger.info(
         f"✅ Preferences updated for card '{card_name}' for user '{username}'."

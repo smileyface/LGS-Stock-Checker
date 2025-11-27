@@ -147,7 +147,7 @@ def test_on_update_card_with_invalid_data(
             {"card": "Sol Ring", "update_data": {"amount": 0}},
             "Invalid amount '0' provided",
         ),  # Invalid amount
-        
+
     ]
 )
 def test_on_update_card_with_non_critical_invalid_data(

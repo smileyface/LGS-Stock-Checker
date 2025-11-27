@@ -155,7 +155,8 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
             {
                 "card_name": "Sol Ring",
                 "update_data": {
-                    "specifications": [{"set_code": "LTC", "finish": "etched"}]
+                    "specifications": [{"set_code": "LTC", "finish":
+                                        {"name": "etched"}}]
                 },
                 "expected_amount": 1,  # Original amount
                 "expected_specs_count": 1,
@@ -163,7 +164,8 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
             {
                 "card_name": "Lightning Bolt",
                 "update_data": {
-                    "specifications": [{"set_code": "4ED", "finish": "non-foil"}]
+                    "specifications": [{"set_code": "4ED", "finish":
+                                        {"name": "non-foil"}}]
                 },
                 "expected_amount": 4,  # Original amount
                 "expected_specs_count": 1,

@@ -117,7 +117,7 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
                         {"finish": "invalid"}
                 },
             },
-            "Invalid 'update_card' data received",
+            "Invalid data for update_card: 1 validation error",
         ),  # Invalid finish
     ],
 )
@@ -145,9 +145,9 @@ def test_on_update_card_with_invalid_data(
     [
         (
             {"card": "Sol Ring", "update_data": {"amount": 0}},
-            "Invalid amount '0' provided",
+            "Input should be greater than or equal to 1 ["
+            "type=greater_than_equal, input_value=0, input_type=int]",
         ),  # Invalid amount
-
     ]
 )
 def test_on_update_card_with_non_critical_invalid_data(

@@ -19,10 +19,7 @@ class StoreSchema(BaseModel):
 
 
 class UpdateStoreSchema(BaseModel):
-    """Schema for validating the payload of the 'store_update' event."""
-    """
-    Validates the payload for the 'update_stores' event.
-    """
+    """Validates the payload for the 'update_stores' event."""
     stores: List[str] = Field(
         ..., description="A list of store slugs the user wants to track."
     )

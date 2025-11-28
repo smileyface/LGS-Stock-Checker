@@ -5,7 +5,7 @@ from sqlalchemy.orm.session import Session
 
 # Internal package imports
 
-from schema import db
+from schema import orm
 from ..session_manager import db_query
 from .user_repository import get_user_orm_by_username
 from ..models import (
@@ -22,7 +22,7 @@ def get_users_cards(
     username: str,
     *,
     session: Session = Session()
-) -> List[db.UserTrackedCardSchema]:
+) -> List[orm.UserTrackedCardSchema]:
     """
     Retrieves all tracked cards for a given user using an
     efficient single query.
@@ -36,7 +36,7 @@ def get_users_cards(
 
     logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
     return [
-        db.UserTrackedCardSchema.model_validate(card) for card in user.cards
+        orm.UserTrackedCardSchema.model_validate(card) for card in user.cards
     ]
 
 
@@ -53,7 +53,7 @@ def add_card_to_user(
     global card table, and then creating/updating the user-specific tracking
       information.
     """
-    valid_card_data = db.UserTrackedCardSchema.model_validate(card_data)
+    valid_card_data = orm.UserTrackedCardSchema.model_validate(card_data)
     card_name = valid_card_data.card.name
     amount = valid_card_data.amount
     card_specs = valid_card_data.specifications
@@ -263,7 +263,7 @@ def update_user_tracked_card_preferences(
         return
 
     # Update preferences based on the provided dictionary
-    valid_updates = (db.UserTrackedCardUpdateSchema
+    valid_updates = (orm.UserTrackedCardUpdateSchema
                      .model_validate(preference_updates))
     if valid_updates.amount is not None:
         session.query(UserTrackedCards).filter(

@@ -15,7 +15,9 @@ from ..models import (
 
 
 @db_query
-def add_card_names_to_catalog(card_names: List[str], *, session):
+def add_card_names_to_catalog(card_names: List[str],
+                              *,
+                              session: Session = Session()) -> None:
     """
     Adds a list of card names to the cards table, ignoring any duplicates.
     This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for
@@ -46,7 +48,9 @@ def add_card_names_to_catalog(card_names: List[str], *, session):
 
 
 @db_query
-def add_set_data_to_catalog(set_data: List[Dict[str, Any]], *, session):
+def add_set_data_to_catalog(set_data: List[Dict[str, Any]],
+                            *,
+                            session: Session = Session()) -> None:
     """
     Adds a list of set data to the sets table, ignoring any duplicates.
 

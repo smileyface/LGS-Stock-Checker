@@ -1,8 +1,12 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 
-from .card_schema import CardSpecificationSchema, CardSchema
+from .card_schema import CardSpecificationSchema
 from .store_schema import StoreSchema
+
+from ..blocks import (
+    CardSchema,
+)
 
 
 # Schema for User data including sensitive password_hash,
@@ -19,8 +23,6 @@ class UserDBSchema(BaseModel):
     selected_stores: List[StoreSchema] = Field(
         [], description="List of stores selected by the user."
     )
-
-    # Add other internal user fields as needed
 
 
 class UserPublicSchema(BaseModel):

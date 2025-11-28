@@ -1,4 +1,5 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+# SQLAlchemy imports
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.session import Session
@@ -152,26 +153,27 @@ def add_card_to_user(
 @db_query
 def get_card(card_name: str,
              *,
-             session: Session = Session()) -> Card:
+             session: Session = Session()) -> Optional[Card]:
     if not card_name:
         logger.error("No card name was passed in")
-        return Card()
+        return None
     card = (session.query(Card).filter(Card.name == card_name).first())
     if not card:
         logger.error("Card not found in catalogue")
-        return Card()
+        return None
     else:
         return card
 
 
 @db_query
-def get_tracked_card(username: str,
-                     card_name: str,
-                     *,
-                     session: Session = Session()) -> UserTrackedCards:
+def get_tracked_card(
+    username: str,
+        card_name: str,
+        *,
+        session: Session = Session()) -> Optional[UserTrackedCards]:
     user = get_user_orm_by_username(username)
     if not user:
-        return UserTrackedCards()
+        return None
     tracked_card = session.query(UserTrackedCards).filter(
             UserTrackedCards.user_id == user.id,
             UserTrackedCards.card_name == card_name,
@@ -199,7 +201,7 @@ def search_card_names(query: str,
         .all()
     )
     if len(results) == 0:
-        logger.warning(f"No matching card names for {Card.name} found.")
+        logger.warning(f"No matching card names for query {query} found.")
         return []
     else:
         return [row[0] for row in results]

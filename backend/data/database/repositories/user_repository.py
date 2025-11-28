@@ -63,7 +63,7 @@ def get_user_by_username(
 
 @db_query
 def get_user_orm_by_username(username: str,
-                             session: Session = Session()) -> User:
+                             session: Session = Session()) -> Optional[User]:
     """
     Retrieve a user ORM object by username from the database.
     This is intended for internal use where the ORM object's methods are

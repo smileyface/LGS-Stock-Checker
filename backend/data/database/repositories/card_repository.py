@@ -70,7 +70,7 @@ def add_card_to_user(
     user = get_user_orm_by_username(username)
     card_entry = get_card(card_name)
 
-    if card_entry.name is None:
+    if card_entry is None:
         # Logging for this error is handled in
         # search_card_names
         return

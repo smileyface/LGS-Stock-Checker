@@ -6,6 +6,7 @@ from typing import Optional
 from bidict import bidict
 
 from externals import scryfall_api
+from data import database
 from utility import logger
 
 # --- Configuration ---

@@ -5,12 +5,14 @@ from data.database.models.orm_models import (
     UserTrackedCards
 )
 from data.database.repositories.card_repository import (
-    get_printings_for_card,
-    is_valid_printing_specification,
     get_users_cards,
     add_card_to_user,
     delete_user_card,
     update_user_tracked_card_preferences
+)
+from data.database.repositories.catalogue_repository import (
+    get_printings_for_card,
+    is_valid_printing_specification
 )
 
 

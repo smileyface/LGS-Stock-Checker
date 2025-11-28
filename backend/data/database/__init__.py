@@ -22,16 +22,6 @@ from .repositories.card_repository import (
     delete_user_card,
     update_user_tracked_card_preferences,
     search_card_names,
-    add_card_names_to_catalog,
-    add_set_data_to_catalog,
-    bulk_add_finishes,
-    bulk_add_card_printings,
-    get_all_printings_map,
-    get_all_finishes_map,
-    get_printings_for_card,
-    bulk_add_printing_finish_associations,
-    is_valid_printing_specification,
-    is_card_in_catalog,
     filter_existing_card_names,
 )
 from .repositories.user_repository import (
@@ -50,7 +40,22 @@ from .repositories.user_repository import (
     get_user_orm_by_id,
     get_user_orm_by_username,
 )
-from .repositories.store_repository import get_store_metadata, get_all_stores
+from .repositories.store_repository import (
+    get_store_metadata,
+    get_all_stores
+)
+from .repositories.catalogue_repository import (
+    add_card_names_to_catalog,
+    add_set_data_to_catalog,
+    bulk_add_finishes,
+    bulk_add_card_printings,
+    bulk_add_printing_finish_associations,
+    get_all_printings_map,
+    get_all_finishes_map,
+    get_printings_for_card,
+    is_card_in_catalog,
+    is_valid_printing_specification,
+)
 
 # Define the public API of the `data.database` package.
 __all__ = [
@@ -67,14 +72,6 @@ __all__ = [
     "delete_user_card",
     "update_user_tracked_card_preferences",
     "search_card_names",
-    "add_card_names_to_catalog",
-    "add_set_data_to_catalog",
-    "bulk_add_finishes",
-    "get_printings_for_card",
-    "bulk_add_card_printings",
-    "get_all_printings_map",
-    "get_all_finishes_map",
-    "bulk_add_printing_finish_associations",
     "get_user_by_username",
     "update_username",
     "update_password",
@@ -95,4 +92,14 @@ __all__ = [
     # Store Repository
     "get_store_metadata",
     "get_all_stores",
+    # Catalogue Repository
+    "add_card_names_to_catalog",
+    "add_set_data_to_catalog",
+    "bulk_add_finishes",
+    "get_printings_for_card",
+    "bulk_add_card_printings",
+    "get_all_printings_map",
+    "get_all_finishes_map",
+    "bulk_add_printing_finish_associations",
+    "is_card_in_catalog",
 ]

@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 
-from data.database.schema import CardSpecificationSchema
-from data.database.schema.store_schema import StoreSchema
+from .card_schema import CardSpecificationSchema, CardSchema
+from .store_schema import StoreSchema
 
 
 # Schema for User data including sensitive password_hash,
@@ -26,23 +26,21 @@ class UserDBSchema(BaseModel):
 class UserPublicSchema(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
-    )  # <--- THIS IS CRUCIAL FOR ORM CONVERSION
+    )
 
     username: str
-    # Assuming selected_stores is a relationship that returns ORM Store objects
     selected_stores: List[StoreSchema] = Field(
         [], description="List of stores selected by the user."
     )
 
-    # Add other user fields as needed
-
 
 class UserTrackedCardSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True
+        )
 
-    card_name: str = Field(
-        ..., description="The name of the card being tracked."
-    )
+    card: CardSchema = Field(..., description="The card being tracked.")
+
     amount: int = Field(
         1,
         ge=1,
@@ -50,4 +48,16 @@ class UserTrackedCardSchema(BaseModel):
     )
     specifications: List[CardSpecificationSchema] = Field(
         [], description="List of specific versions of the card."
+    )
+
+
+class UserTrackedCardUpdateSchema(BaseModel):
+    """Schema for updating a user's tracked card, allowing partial updates."""
+    amount: Optional[int] = Field(
+        None,
+        ge=1,
+        description="The quantity of the card the user wants to track."
+    )
+    specifications: Optional[List[CardSpecificationSchema]] = Field(
+        None, description="List of specific versions of the card."
     )

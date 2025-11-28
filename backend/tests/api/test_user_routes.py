@@ -186,7 +186,7 @@ def test_get_tracked_cards_success(client, seeded_user, mocker):
     mock_card_1.card_name = "Sol Ring"
     mock_card_1.amount = 1
     mock_card_1.specifications = [
-        MagicMock(set_code="C21", collector_number="125", finish="nonfoil"),
+        MagicMock(set_code="C21", collector_number="125", finish="non-foil"),
         MagicMock(set_code="LTC", collector_number="3", finish="foil"),
     ]
 
@@ -216,7 +216,7 @@ def test_get_tracked_cards_success(client, seeded_user, mocker):
     assert {
         "set_code": "C21",
         "collector_number": "125",
-        "finish": "nonfoil",
+        "finish": "non-foil",
     } in card_data_1["specifications"]
     assert {
         "set_code": "LTC",

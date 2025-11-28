@@ -95,6 +95,7 @@ A many-to-many association table linking card printings to their available finis
 | `finish_id`   | Integer | Primary Key, Foreign Key (finishes.id) | The ID of the available finish.           |
 
 ## `user_store_preferences`
+
 A many-to-many association table linking users to their selected stores.
 
 | Column     | Type    | Constraints              | Description                               |

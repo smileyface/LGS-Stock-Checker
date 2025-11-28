@@ -11,7 +11,7 @@ from typing import List, Optional
 from sqlalchemy.orm import joinedload, Session
 
 # Internal package imports (relative to the data.database package)
-from .. import schema
+from schema import db
 from ..session_manager import db_query
 from ..models.orm_models import (
     User,
@@ -25,8 +25,8 @@ from utility import logger
 
 @db_query
 def get_user_by_username(
-    username: str, session: Session = None
-) -> Optional[schema.UserDBSchema]:
+    username: str, session: Session = Session()
+) -> Optional[db.UserDBSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -55,7 +55,7 @@ def get_user_by_username(
     if user_orm:
         logger.debug(f"✅ Found user '{username}'.")
         # Use UserDBSchema.model_validate to convert the ORM object
-        return schema.UserDBSchema.model_validate(user_orm)
+        return db.UserDBSchema.model_validate(user_orm)
 
     logger.debug(f"❌ User '{username}' not found in database.")
     return None
@@ -63,9 +63,7 @@ def get_user_by_username(
 
 @db_query
 def get_user_orm_by_username(username: str,
-                             session: Session = None) -> Optional[User]:
-    # This assert tells Pylance that session is not None
-    assert session is not None, "Session is injected by @db_query decorator"
+                             session: Session = Session()) -> Optional[User]:
     """
     Retrieve a user ORM object by username from the database.
     This is intended for internal use where the ORM object's methods are
@@ -78,7 +76,11 @@ def get_user_orm_by_username(username: str,
         User or None: The SQLAlchemy User ORM object if found, otherwise None.
     """
     logger.debug(f"📖 Querying for user ORM object '{username}'.")
-    user_orm = session.query(User).filter(User.username == username).first()
+    user_orm = (session.query(User)
+                .options(joinedload(User.cards)
+                         .joinedload(UserTrackedCards.card))
+                .filter(User.username == username)
+                .first())
     logger.debug(
         f"✅ Found user ORM object for '{username}'."
         if user_orm
@@ -89,7 +91,7 @@ def get_user_orm_by_username(username: str,
 
 @db_query
 def get_user_orm_by_id(user_id: int,
-                       session: Session = None) -> Optional[User]:
+                       session: Session = Session()) -> Optional[User]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -123,8 +125,10 @@ def get_user_orm_by_id(user_id: int,
 
 @db_query
 def add_user(
-    username: str, password_hash: str, session: Session = None
-) -> Optional[schema.UserPublicSchema]:
+    username: str,
+    password_hash: str,
+    session: Session = Session()
+) -> Optional[db.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -148,12 +152,12 @@ def add_user(
     # session closes.
     session.flush()
     logger.info(f"✅ User {username} added to the database")
-    return schema.UserPublicSchema.model_validate(new_user)
+    return db.UserPublicSchema.model_validate(new_user)
 
 
 @db_query
 def update_username(old_username: str, new_username: str,
-                    session: Session = None) -> None:
+                    session: Session = Session()) -> None:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -219,7 +223,7 @@ def update_password(username: str,
 
 @db_query
 def get_user_stores(username: str,
-                    session: Session = None) -> List[schema.StoreSchema]:
+                    session: Session = None) -> List[db.StoreSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -252,7 +256,7 @@ def get_user_stores(username: str,
         f"✅ Found {len(user.selected_stores)} stores for user '{username}'."
     )
     return [
-        schema.StoreSchema.model_validate(store_orm)
+        db.StoreSchema.model_validate(store_orm)
         for store_orm in user.selected_stores
     ]
 
@@ -400,7 +404,7 @@ def set_user_stores(username: str, store_slugs: List[str],
 @db_query
 def get_user_for_display(
     username: str, session: Session = None
-) -> Optional[schema.UserPublicSchema]:
+) -> Optional[db.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -427,13 +431,13 @@ def get_user_for_display(
     )
     if user_orm:
         logger.info(f"✅ User '{username}' retrieved successfully.")
-        return schema.UserPublicSchema.model_validate(user_orm)
+        return db.UserPublicSchema.model_validate(user_orm)
     logger.warning(f"❌ User '{username}' not found.")
     return None
 
 
 @db_query
-def get_all_users(session: Session = None) -> List[schema.UserPublicSchema]:
+def get_all_users(session: Session = None) -> List[db.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -448,13 +452,13 @@ def get_all_users(session: Session = None) -> List[schema.UserPublicSchema]:
         session.query(User).options(joinedload(User.selected_stores)).all()
     )
     logger.info(f"✅ Retrieved {len(users_orm)} users from the database.")
-    return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
+    return [db.UserPublicSchema.model_validate(user) for user in users_orm]
 
 
 @db_query
 def get_users_tracking_card(
     card_name: str, session: Session = None
-) -> list[schema.UserPublicSchema]:
+) -> list[db.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -476,13 +480,13 @@ def get_users_tracking_card(
         .all()
     )
     logger.debug(f"✅ Found {len(users_orm)} users tracking '{card_name}'.")
-    return [schema.UserPublicSchema.model_validate(user) for user in users_orm]
+    return [db.UserPublicSchema.model_validate(user) for user in users_orm]
 
 
 @db_query
 def get_tracking_users_for_cards(
     card_names: list[str], session: Session = None
-) -> dict[str, list[schema.UserPublicSchema]]:
+) -> dict[str, list[db.UserPublicSchema]]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -513,7 +517,7 @@ def get_tracking_users_for_cards(
     card_to_users_map = {name: [] for name in card_names}
     for tracked_card in tracked_cards_with_users:
         if tracked_card.user:
-            user_schema = schema.UserPublicSchema.model_validate(
+            user_schema = db.UserPublicSchema.model_validate(
                 tracked_card.user
             )
             card_to_users_map[tracked_card.card_name].append(user_schema)

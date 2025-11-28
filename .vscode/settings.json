@@ -6,5 +6,10 @@
     "python.testing.pytestEnabled": true,
     "python.envFile": "${workspaceFolder}/.env",
     "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python-envs.pythonProjects": ["backend"]
+    "python-envs.pythonProjects": [
+        "backend"
+    ],
+    "flake8.args": [
+        "--max-line-length=88"
+    ]
 }

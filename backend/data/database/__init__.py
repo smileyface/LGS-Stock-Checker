@@ -12,16 +12,14 @@ The import order here is critical to avoid circular dependencies.
 # To resolve a circular dependency, we must import modules that the
 # repositories depend on *before* we import the repositories themselves.
 # The repositories depend on `schema`, so we import it first.
-from . import schema
 from .db_config import initialize_database
 
 from .session_manager import get_session, remove_session, health_check
 
 from .repositories.card_repository import (
     get_users_cards,
-    add_user_card,
+    add_card_to_user,
     delete_user_card,
-    update_user_tracked_cards_list,
     update_user_tracked_card_preferences,
     search_card_names,
     add_card_names_to_catalog,
@@ -65,9 +63,8 @@ __all__ = [
     "health_check",
     # Card Repository
     "get_users_cards",
-    "add_user_card",
+    "add_card_to_user",
     "delete_user_card",
-    "update_user_tracked_cards_list",
     "update_user_tracked_card_preferences",
     "search_card_names",
     "add_card_names_to_catalog",

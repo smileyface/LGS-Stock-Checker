@@ -6,7 +6,7 @@ FROM python:3.9 as builder
 WORKDIR /app
 
 # Copy requirements first to leverage Docker layer caching
-COPY ./LGS_Stock_Backend/requirements.txt .
+COPY ./backend/requirements.txt .
 
 # Install system dependencies and Python packages
 # Using --no-install-recommends keeps the layer smaller.
@@ -38,7 +38,7 @@ COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy the application source code into the container
-COPY ./LGS_Stock_Backend .
+COPY ./backend .
 # Copy the utilities directory into the app's root, keeping its name.
 # This makes it part of the application package.
 COPY utilities utilities

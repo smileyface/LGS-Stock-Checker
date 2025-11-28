@@ -11,6 +11,8 @@ from data.database.models.orm_models import (
     Set,
     Finish,
     CardPrinting,
+    CardSpecification,
+    UserTrackedCards,
 )
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -94,6 +96,22 @@ def seeded_store(seeded_stores):
 
 
 @pytest.fixture
+def seeded_card_catalogue(db_session):
+    db_session.add_all(
+        [
+            Card(name="Sol Ring"),
+            Card(name="Thoughtseize"),
+            Card(name="Ugin, the Spirit Dragon"),
+            Card(name="Lightning Bolt"),
+            Card(name="Counterspell"),
+            Card(name="Brainstorm"),
+            Card(name="Lurrus of the Dream-Den"),
+            Card(name="Swords to Plowshares"),
+        ]
+    )
+
+
+@pytest.fixture
 def seeded_printings(db_session):
     """Fixture to create a card with multiple printings and finishes."""
     db_session.add_all(
@@ -110,7 +128,7 @@ def seeded_printings(db_session):
             Set(code="MH2", name="Modern Horizons 2"),
             Set(code="2XM", name="Double Masters"),
             Set(code="M21", name="Core Set 2021"),
-            Finish(name="nonfoil"),
+            Finish(name="non-foil"),
             Finish(name="foil"),
             Finish(name="etched"),
         ]
@@ -118,11 +136,11 @@ def seeded_printings(db_session):
     db_session.commit()
 
     printings_data = [
-        ("Sol Ring", "C21", "125", ["nonfoil", "foil"]),
-        ("Sol Ring", "LTC", "3", ["nonfoil", "etched"]),
-        ("Sol Ring", "ONE", "254", ["nonfoil", "foil"]),
+        ("Sol Ring", "C21", "125", ["non-foil", "foil"]),
+        ("Sol Ring", "LTC", "3", ["non-foil", "etched"]),
+        ("Sol Ring", "ONE", "254", ["non-foil", "foil"]),
         ("Thoughtseize", "MH2", "107", ["etched"]),
-        ("Thoughtseize", "2XM", "107", ["nonfoil"]),
+        ("Thoughtseize", "2XM", "107", ["non-foil"]),
         ("Ugin, the Spirit Dragon", "M21", "1", ["foil"]),
     ]
 
@@ -139,4 +157,94 @@ def seeded_printings(db_session):
         )
         db_session.add(printing)
 
+    db_session.commit()
+
+
+@pytest.fixture
+def seeded_user_with_cards(db_session):
+    """Fixture to create a user with multiple cards and specifications."""
+    user = User(
+        username="testuser", password_hash=generate_password_hash("password")
+    )
+
+    # Create the unique card names in the 'cards' lookup table first
+    db_session.add_all(
+        [
+            Card(name="Lightning Bolt"),
+            Card(name="Counterspell"),
+            Card(name="Sol Ring"),
+            Card(name="Brainstorm"),
+            Card(name="Lurrus of the Dream-Den"),
+        ]
+    )
+    # Commit to ensure these exist before we reference them via foreign key.
+    db_session.commit()
+
+    # Create Finish objects to be associated with specifications
+    finish_nonfoil = Finish(name="non-foil")
+    finish_foil = Finish(name="foil")
+    finish_etched = Finish(name="etched")
+    db_session.add_all([finish_nonfoil, finish_foil, finish_etched])
+    db_session.commit()
+
+    # Create the UserTrackedCards instances
+    tracked_card1 = UserTrackedCards(card_name="Lightning Bolt", amount=4)
+    tracked_card2 = UserTrackedCards(card_name="Counterspell", amount=2)
+    tracked_card3 = UserTrackedCards(card_name="Sol Ring", amount=1)
+
+    # Append specifications directly to the tracked card objects
+    tracked_card1.specifications.append(
+        CardSpecification(set_code="2ED", finish_id=finish_nonfoil.id)
+    )
+    tracked_card1.specifications.append(
+        CardSpecification(set_code="3ED", finish_id=finish_foil.id)
+    )
+    tracked_card2.specifications.append(
+        CardSpecification(set_code="CMR", finish_id=finish_etched.id)
+    )
+
+    # Append the fully-formed tracked cards to the user's collection
+    user.cards.append(tracked_card1)
+    user.cards.append(tracked_card2)
+    user.cards.append(tracked_card3)
+
+    # Add the top-level user object; cascades will handle the rest.
+    db_session.add(user)
+    db_session.commit()
+
+    # Re-fetch the user to ensure all relationships are fresh and not expired
+    # after the commit. This prevents DetachedInstanceError in tests.
+    refreshed_user = db_session.query(User).filter_by(
+        username=user.username).one()
+    return refreshed_user
+
+
+@pytest.fixture
+def multiple_users_with_cards(db_session):
+    """Fixture to create multiple users tracking various cards."""
+    # Create unique card names
+    cards = [
+        Card(name="Sol Ring"),
+        Card(name="Brainstorm"),
+        Card(name="Lurrus of the Dream-Den"),
+    ]
+    db_session.add_all(cards)
+    db_session.commit()
+
+    # User 1 tracks Sol Ring and Brainstorm
+    user1 = User(username="user1", password_hash="hash1")
+    user1.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
+    user1.cards.append(UserTrackedCards(card_name="Brainstorm", amount=4))
+
+    # User 2 tracks Sol Ring and Lurrus
+    user2 = User(username="user2", password_hash="hash2")
+    user2.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
+    user2.cards.append(
+        UserTrackedCards(card_name="Lurrus of the Dream-Den", amount=1)
+    )
+
+    # User 3 tracks no cards of interest
+    user3 = User(username="user3", password_hash="hash3")
+
+    db_session.add_all([user1, user2, user3])
     db_session.commit()

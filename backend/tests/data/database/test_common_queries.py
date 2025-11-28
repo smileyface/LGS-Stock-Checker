@@ -1,93 +1,14 @@
-import pytest
-from data.database.models.orm_models import (
-    User,
-    Card,
-    CardSpecification,
-    UserTrackedCards,
+import pytest  # noqa
+
+from data.database.repositories.card_repository import (
+    get_users_cards,
+    add_card_to_user,
+    update_user_tracked_card_preferences
 )
-from werkzeug.security import generate_password_hash
-from data.database.repositories.card_repository import get_users_cards
 from data.database.repositories.user_repository import (
     get_users_tracking_card,
     get_tracking_users_for_cards,
 )
-
-
-@pytest.fixture
-def seeded_user_with_cards(db_session):
-    """Fixture to create a user with multiple cards and specifications."""
-    user = User(
-        username="carduser", password_hash=generate_password_hash("password")
-    )
-
-    # Create the unique card names in the 'cards' lookup table first
-    db_session.add_all(
-        [
-            Card(name="Lightning Bolt"),
-            Card(name="Counterspell"),
-            Card(name="Sol Ring"),
-        ]
-    )
-    # Commit to ensure these exist before we reference them via foreign key.
-    db_session.commit()
-
-    # Create the UserTrackedCards instances
-    tracked_card1 = UserTrackedCards(card_name="Lightning Bolt", amount=4)
-    tracked_card2 = UserTrackedCards(card_name="Counterspell", amount=2)
-    tracked_card3 = UserTrackedCards(card_name="Sol Ring", amount=1)
-
-    # Append specifications directly to the tracked card objects
-    tracked_card1.specifications.append(
-        CardSpecification(set_code="2ED", finish="non-foil")
-    )
-    tracked_card1.specifications.append(
-        CardSpecification(set_code="3ED", finish="foil")
-    )
-    tracked_card2.specifications.append(
-        CardSpecification(set_code="CMR", finish="etched")
-    )
-
-    # Append the fully-formed tracked cards to the user's collection
-    user.cards.append(tracked_card1)
-    user.cards.append(tracked_card2)
-    user.cards.append(tracked_card3)
-
-    # Add the top-level user object; cascades will handle the rest.
-    db_session.add(user)
-    db_session.commit()
-
-    return user
-
-
-@pytest.fixture
-def multiple_users_with_cards(db_session):
-    """Fixture to create multiple users tracking various cards."""
-    # Create unique card names
-    cards = [
-        Card(name="Sol Ring"),
-        Card(name="Brainstorm"),
-        Card(name="Lurrus of the Dream-Den"),
-    ]
-    db_session.add_all(cards)
-    db_session.commit()
-
-    # User 1 tracks Sol Ring and Brainstorm
-    user1 = User(username="user1", password_hash="hash1")
-    user1.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
-    user1.cards.append(UserTrackedCards(card_name="Brainstorm", amount=4))
-
-    # User 2 tracks Sol Ring and Lurrus
-    user2 = User(username="user2", password_hash="hash2")
-    user2.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
-    user2.cards.append(
-        UserTrackedCards(card_name="Lurrus of the Dream-Den", amount=1)
-    )
-
-    # User 3 tracks no cards of interest
-    user3 = User(username="user3", password_hash="hash3")
-
-    db_session.add_all([user1, user2, user3])
-    db_session.commit()
 
 
 def test_get_users_cards(seeded_user_with_cards):
@@ -101,17 +22,17 @@ def test_get_users_cards(seeded_user_with_cards):
     assert len(cards_data) == 3
 
     # Sort cards by name to make assertions deterministic
-    cards_data.sort(key=lambda c: c.card_name)
+    cards_data.sort(key=lambda c: c.card.name)
 
     # Assertions for Counterspell
-    assert cards_data[0].card_name == "Counterspell"
+    assert cards_data[0].card.name == "Counterspell"
     assert cards_data[0].amount == 2
     assert len(cards_data[0].specifications) == 1
     assert cards_data[0].specifications[0].set_code == "CMR"
-    assert cards_data[0].specifications[0].finish == "etched"
+    assert cards_data[0].specifications[0].finish.name == "etched"
 
     # Assertions for Lightning Bolt
-    assert cards_data[1].card_name == "Lightning Bolt"
+    assert cards_data[1].card.name == "Lightning Bolt"
     assert cards_data[1].amount == 4
     assert len(cards_data[1].specifications) == 2
     spec_sets = {s.set_code for s in cards_data[1].specifications}
@@ -119,7 +40,7 @@ def test_get_users_cards(seeded_user_with_cards):
     assert "3ED" in spec_sets
 
     # Assertions for Sol Ring
-    assert cards_data[2].card_name == "Sol Ring"
+    assert cards_data[2].card.name == "Sol Ring"
     assert cards_data[2].amount == 1
     assert len(cards_data[2].specifications) == 0
 
@@ -185,3 +106,99 @@ def test_get_tracking_users_for_cards(multiple_users_with_cards):
 
     # Check empty input
     assert get_tracking_users_for_cards([]) == {}
+
+
+def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
+    """
+    Tests adding a completely new card to a user who is already tracking
+    other cards.
+    """
+    username = seeded_user_with_cards.username
+
+    # Define a new card to add
+    new_card_data = {
+        "card": {"name": "Brainstorm"},
+        "amount": 3,
+        "specifications": [
+            {"set_code": "ICE", "finish": {"name": "non-foil"}}
+        ],
+    }
+
+    # Act: Add the new card to the user
+    add_card_to_user(username,
+                     new_card_data)
+
+    # Assert: Verify the card was added and existing cards are untouched
+    all_cards = get_users_cards(username)
+    assert len(all_cards) == 4  # 3 existing + 1 new
+
+    # Find the newly added card
+    added_card = next(
+        (c for c in all_cards if c.card.name == "Brainstorm"), None
+    )
+
+    assert added_card is not None
+    assert added_card.amount == 3
+    assert len(added_card.specifications) == 1
+    assert added_card.specifications[0].set_code == "ICE"
+
+
+@pytest.mark.parametrize(
+        "card_data",
+        [
+            {
+                "card_name": "Sol Ring",
+                "update_data": {"amount": 5},
+                "expected_amount": 5,
+                "expected_specs_count": 0,
+            },
+            {
+                "card_name": "Sol Ring",
+                "update_data": {
+                    "specifications": [{"set_code": "LTC", "finish":
+                                        {"name": "etched"}}]
+                },
+                "expected_amount": 1,  # Original amount
+                "expected_specs_count": 1,
+            },
+            {
+                "card_name": "Lightning Bolt",
+                "update_data": {
+                    "specifications": [{"set_code": "4ED", "finish":
+                                        {"name": "non-foil"}}]
+                },
+                "expected_amount": 4,  # Original amount
+                "expected_specs_count": 1,
+                "expected_set_code": "4ED",
+            },
+        ],
+)
+def test_update_user_card(seeded_user_with_cards, card_data):
+    """
+    Tests updating a user's tracked card, including amount and specifications.
+    """
+    username = seeded_user_with_cards.username
+    card_name = card_data["card_name"]
+    update_data = card_data["update_data"]
+
+    # Act: Update the card
+    update_user_tracked_card_preferences(
+        username, card_name, update_data
+    )
+
+    # Assert: Verify the update
+    all_cards = get_users_cards(username)
+    updated_card = next(
+        (c for c in all_cards if c.card.name == card_name), None
+    )
+
+    assert updated_card is not None
+    assert updated_card.amount == card_data["expected_amount"]
+    assert len(updated_card.specifications) == card_data[
+        "expected_specs_count"
+        ]
+
+    # If we updated specs, let's check them
+    if "expected_set_code" in card_data:
+        assert updated_card.specifications[0].set_code == card_data[
+            "expected_set_code"]

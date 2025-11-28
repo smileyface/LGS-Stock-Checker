@@ -1,5 +1,5 @@
 """
-Setup script for the LGS_Stock_Backend package.
+Setup script for the backend package.
 
 This script uses setuptools to configure the package installation.
 It explicitly lists the sub-packages to include, resolving any ambiguity
@@ -17,7 +17,7 @@ from setuptools import setup
 
 
 setup(
-    name="LGS_Stock_Backend",
+    name="backend",
     version="0.1.0",
     # Explicitly list the packages to include, instead of
     # using find_packages().

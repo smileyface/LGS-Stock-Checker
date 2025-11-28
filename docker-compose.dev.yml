@@ -12,7 +12,7 @@ services:
     command: [ "python", "run.py" ]
     volumes:
       # Mount the source code into the container.
-      - ./LGS_Stock_Backend:/app
+      - ./backend:/app
     environment:
       <<: *common-backend-env
 
@@ -32,7 +32,7 @@ services:
 
   worker:
     volumes:
-      - ./LGS_Stock_Backend:/app
+      - ./backend:/app
     environment:
       <<: *common-backend-env
 

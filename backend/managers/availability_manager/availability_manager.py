@@ -9,6 +9,7 @@ from managers import redis_manager
 
 # Project package imports
 from data import database
+from schema import messaging
 from utility import logger
 
 
@@ -64,14 +65,11 @@ def trigger_availability_check_for_card(
         logger.debug(
             f"Publishing command to check '{card_name}' at '{store.slug}'."
         )
-        command = {
-            "type": "availability_request",
-            "payload": {
-                "username": username,
-                "store": store.slug,
-                "card_data": card_data,
-            },
-        }
+        payload = messaging.AvailabilityRequestPayload(
+            username=username, store_slug=store.slug, card_data=card_data
+        )
+        command = messaging.SchedulerCommand(command="availability_request",
+                                             payload=payload)
         redis_manager.publish_pubsub("scheduler-requests", command)
 
     # After queuing all tasks, call the callback if one was provided.

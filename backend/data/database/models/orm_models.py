@@ -7,6 +7,7 @@ from sqlalchemy import (
     Date,
     UniqueConstraint,
 )
+from typing import Any
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
@@ -36,7 +37,7 @@ user_store_preferences = Table(
 )
 
 
-# Users Table (Updated)
+# Users Table
 class User(UserMixin, Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -53,13 +54,20 @@ class User(UserMixin, Base):
         "UserTrackedCards", back_populates="user", cascade="all, delete-orphan"
     )
 
+    def __init__(self, username: str,
+                 password_hash: str,
+                 **kw: Any):
+        super().__init__(**kw)
+        self.username = username
+        self.password_hash = password_hash
+
     def set_password(self, password):
         """Hashes the password and stores it."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         """Checks if the provided password matches the stored hash."""
-        return check_password_hash(self.password_hash, password)
+        return check_password_hash(str(self.password_hash), password)
 
     def to_dict(self):
         """Returns user data as a dictionary, suitable for JSON responses."""
@@ -139,6 +147,9 @@ class UserTrackedCards(Base):
     # Relationship back to the user
     user = relationship("User", back_populates="cards")
 
+    # Relationship to the card itself
+    card = relationship("Card")
+
 
 class CardSpecification(Base):
     __tablename__ = "card_specifications"
@@ -151,12 +162,13 @@ class CardSpecification(Base):
     collector_number = Column(
         String, nullable=True
     )  # NULL = "Any Collector Number"
-    finish = Column(String, nullable=True)  # NULL = "Any Finish"
+    finish_id = Column(Integer, ForeignKey("finishes.id"), nullable=True)
 
     # Relationship back to user_card_preferences
     user_card = relationship(
         "UserTrackedCards", back_populates="specifications"
     )
+    finish = relationship("Finish")
 
 
 class Store(Base):

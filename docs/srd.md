@@ -100,6 +100,7 @@ These requirements define the global card catalog used for searching and validat
 - **[4.1.6]** The system shall include a scheduled background task that periodically fetches a list of all known card names from an external source (e.g., Scryfall) and updates the card catalog.
 - **[4.1.7]** The background task shall add any new card names to the catalog that are not already present.
 - **[4.1.8]** The background task shall not remove any card names from the catalog, even if they are no longer present in the external source.
+- **[4.1.9]** The system shall use the catalogue to validate all cards in the system.
 
 ### 4.2 Set Catalog
 
@@ -113,7 +114,7 @@ These requirements define the global card catalog used for searching and validat
 These requirements define the system for storing detailed card printing data and using it to validate user input.
 
 - **[4.3.1]** The system shall maintain a detailed catalog of all individual card printings. Each printing must be associated with a card name, a set code, and a collector number.
-- **[4.3.2]** The system shall maintain a catalog of all possible card finishes (e.g., "foil", "nonfoil", "etched").
+- **[4.3.2]** The system shall maintain a catalog of all possible card finishes (e.g., "foil", "non-foil", "etched").
 - **[4.3.3]** The system shall associate each card printing with its available finishes.
 - **[4.3.4]** The system shall include a scheduled background task (e.g., `update_full_catalog`) to populate the card printing, finish, and association catalogs from an external source.
 - **[4.3.5]** The system shall provide an API endpoint to retrieve all valid printings (i.e., all valid combinations of set, collector number, and finish) for a given card name. This will be used to populate dropdown menus in the UI.

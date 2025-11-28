@@ -3,12 +3,13 @@ from typing import Optional
 from werkzeug.security import generate_password_hash
 
 from data import database
+from schema import db
 from utility import logger
 
 
 def get_public_user_profile(
     username: str,
-) -> Optional[database.schema.UserPublicSchema]:
+) -> Optional[db.UserPublicSchema]:
     """
     Retrieve a user's public profile by username, excluding sensitive fields,
       and return as a UserPublicSchema instance.
@@ -16,7 +17,7 @@ def get_public_user_profile(
         username (str): The unique username of the user to fetch.
 
     Returns:
-        Optional[database.schema.UserPublicSchema]: The user data as a
+        Optional[db.UserPublicSchema]: The user data as a
         UserPublicSchema if found, otherwise None.
     """
     return database.get_user_for_display(username)

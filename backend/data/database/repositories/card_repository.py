@@ -128,7 +128,8 @@ def add_card_to_user(
                 finish_obj = None
                 if finish_name:
                     finish_obj = (
-                        session.query(Finish).filter(Finish.name == finish_name).first()
+                        session.query(Finish).filter(
+                            Finish.name == finish_name).first()
                     )
 
                 new_spec = CardSpecification(
@@ -139,7 +140,8 @@ def add_card_to_user(
                 )
                 session.add(new_spec)
                 logger.info(
-                    f"➕ Added new specification {spec_tuple} for '{card_name}'."
+                    f"➕ Added new specification {spec_tuple}"
+                    f" for '{card_name}'."
                 )
 
     logger.info(
@@ -263,12 +265,14 @@ def update_user_tracked_card_preferences(
         return
 
     # Update preferences based on the provided dictionary
-    valid_updates = db.UserTrackedCardUpdateSchema.model_validate(preference_updates)
+    valid_updates = (db.UserTrackedCardUpdateSchema
+                     .model_validate(preference_updates))
     if valid_updates.amount is not None:
         session.query(UserTrackedCards).filter(
             UserTrackedCards.id == tracked_card.id
         ).update({"amount": valid_updates.amount})
-        logger.debug(f"Updated amount to {valid_updates.amount} for '{card_name}'.")
+        logger.debug(f"Updated amount to {valid_updates.amount} "
+                     f"for '{card_name}'.")
 
     # Handle updating specifications.
     # This replaces all existing specs for the card.
@@ -359,7 +363,9 @@ def add_set_data_to_catalog(set_data: List[Dict[str, Any]], *, session):
 
 
 @db_query
-def is_card_in_catalog(card_name: str, *, session) -> bool:
+def is_card_in_catalog(card_name: str,
+                       *,
+                       session: Session = Session()) -> bool:
     """Checks if a card with the given name exists in the catalog."""
     # The correct way to check for existence is to create an exists()
     # subquery and then query for its scalar result.
@@ -455,7 +461,8 @@ def bulk_add_printing_finish_associations(
 @db_query
 def get_printings_for_card(card_name: str,
                            *,
-                           session: Session = Session()) -> List[Dict[str, Any]]:
+                           session: Session = Session()) -> List[
+                               Dict[str, Any]]:
     """
     Retrieves all printings for a given card name, including their available
     finishes.

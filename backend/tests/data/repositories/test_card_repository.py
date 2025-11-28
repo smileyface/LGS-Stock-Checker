@@ -164,14 +164,17 @@ def test_delete_user_card_not_found(seeded_user):
     """
     Test that attempting to delete a card not tracked by the user does nothing.
     """
-    add_card_to_user("testuser", {"card": {"name": "Lightning Bolt"}, "amount": 1})
+    add_card_to_user("testuser", {"card":
+                                  {"name": "Lightning Bolt"},
+                                  "amount": 1})
     initial_card_count = len(get_users_cards("testuser"))
 
     delete_user_card("testuser", "Fireball")  # This card is not tracked
     assert len(get_users_cards("testuser")) == initial_card_count
 
 
-def test_update_user_tracked_card_preferences(seeded_user, seeded_card_catalogue):
+def test_update_user_tracked_card_preferences(seeded_user,
+                                              seeded_card_catalogue):
     add_card_to_user("testuser", {"card": {"name": "Swords to Plowshares"},
                                   "amount": 1})
     update_user_tracked_card_preferences(
@@ -192,10 +195,13 @@ def test_update_user_tracked_card_preferences_user_not_found(db_session):
     assert db_session.query(UserTrackedCards).count() == 0
 
 
-def test_update_user_tracked_card_preferences_card_not_found(seeded_user,
-                                                             seeded_card_catalogue):
+def test_update_user_tracked_card_preferences_card_not_found(
+        seeded_user,
+        seeded_card_catalogue):
     """Test updating preferences for a card the user is not tracking."""
-    add_card_to_user("testuser", {"card": {"name": "Lightning Bolt"}, "amount": 1})
+    add_card_to_user("testuser", {"card":
+                                  {"name": "Lightning Bolt"},
+                                  "amount": 1})
     update_user_tracked_card_preferences(
         "testuser", "Fireball", {"amount": 10}
     )

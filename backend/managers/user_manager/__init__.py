@@ -13,7 +13,10 @@ from .user_manager import (
     add_user,
     update_username,
 )
-from .user_auth import authenticate_user, update_password, load_user_by_id
+from .user_auth import (
+    authenticate_user,
+    update_password,
+    load_user_by_id)
 from .user_preferences import update_selected_stores, get_selected_stores
 from .user_cards import (
     load_card_list,

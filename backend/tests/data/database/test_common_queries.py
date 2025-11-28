@@ -194,8 +194,11 @@ def test_update_user_card(seeded_user_with_cards, card_data):
 
     assert updated_card is not None
     assert updated_card.amount == card_data["expected_amount"]
-    assert len(updated_card.specifications) == card_data["expected_specs_count"]
+    assert len(updated_card.specifications) == card_data[
+        "expected_specs_count"
+        ]
 
     # If we updated specs, let's check them
     if "expected_set_code" in card_data:
-        assert updated_card.specifications[0].set_code == card_data["expected_set_code"]
+        assert updated_card.specifications[0].set_code == card_data[
+            "expected_set_code"]

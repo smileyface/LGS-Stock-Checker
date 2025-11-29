@@ -37,6 +37,8 @@
         "python.testing.pytestArgs": [
           "."
         ],
+        "python.analysis.diagnosticMode": "workspace",
+        "python.analysis.typeCheckingMode": "standard",
         "[python]": {
           "editor.defaultFormatter": null,
           "editor.codeActionsOnSave": {

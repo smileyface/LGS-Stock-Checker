@@ -10,7 +10,7 @@ echo "--------------------------------------------------"
 # Download the specific CLI for Linux x64
 if [ ! -f "./code-cli" ]; then
     echo "Downloading VS Code CLI..."
-    curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-linux-x64' --output vscode_cli.tar.gz
+    curl -Lk 'https://update.code.visualstudio.com/latest/cli-linux-x64/stable' --output vscode_cli.tar.gz
     
     echo "Extracting CLI..."
     tar -xf vscode_cli.tar.gz

@@ -4,6 +4,8 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 # Avoid warnings by switching to non-interactive
 ENV DEBIAN_FRONTEND=noninteractive
 
+RUN mkdir -p /workspaces/LGS-Stock-Checker
+
 # Update and install Python 3, pip, venv, and basic build tools
 # We also install flake8 here directly to replace the feature
 RUN apt-get update \

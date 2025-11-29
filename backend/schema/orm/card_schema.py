@@ -23,6 +23,13 @@ class CardSpecificationSchema(BaseModel):
         "Defaults to None.",
     )
 
+    def get_key(self) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        return (
+            self.set_code.code if self.set_code else None,
+            self.collector_number,
+            self.finish.name if self.finish else None,
+        )
+
 
 class CardPrintingSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)

@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from utility import logger
 from sqlalchemy.dialects.postgresql import insert
@@ -251,3 +251,27 @@ def is_valid_printing_specification(
                        f"with spec: {spec}")
 
     return exists
+
+
+@db_query
+def get_set(set_name: Optional[str] = None,
+            set_code: Optional[str] = None,
+            *,
+            session: Session = Session()) -> Optional[Set]:
+    if not set_name and not set_code:
+        logger.error("Neither set_name nor set_code provided. Aborting.")
+        return None
+    elif set_name:
+        return session.query(Set).filter(Set.name == set_name).first()
+    else:
+        return session.query(Set).filter(Set.code == set_code).first()
+
+
+@db_query
+def get_finish(finish_name: Optional[str] = None,
+               *,
+               session: Session = Session()) -> Optional[Finish]:
+    if not finish_name:
+        logger.error("No finish name provided. Aborting.")
+        return None
+    return session.query(Finish).filter(Finish.name == finish_name).first()

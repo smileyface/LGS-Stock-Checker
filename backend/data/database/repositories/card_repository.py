@@ -8,6 +8,7 @@ from sqlalchemy.orm.session import Session
 from schema import orm
 from ..session_manager import db_query
 from .user_repository import get_user_orm_by_username
+from .catalogue_repository import get_set, get_finish
 from ..models import (
     Card,
     CardSpecification,
@@ -113,31 +114,21 @@ def add_card_to_user(
 
         for card_spec in card_specs:
             # The frontend sends a single spec object, not a list.
-            finish_name = (card_spec.finish.name
-                           if card_spec.finish
-                           else None)
-            spec_tuple = (
-                card_spec.set_code,
-                card_spec.collector_number,
-                finish_name,
-            )
-            if spec_tuple not in existing_specs_set:
-                finish_obj = None
-                if finish_name:
-                    finish_obj = (
-                        session.query(Finish).filter(
-                            Finish.name == finish_name).first()
-                    )
+            if card_spec.get_key() not in existing_specs_set:
 
                 new_spec = CardSpecification(
                     user_card_id=tracked_card.id,
-                    set_code=spec_tuple[0],
-                    collector_number=spec_tuple[1],
-                    finish=finish_obj,
+                    set_code=(get_set(card_spec.set_code.code)
+                              if card_spec.set_code
+                              else None),
+                    collector_number=card_spec.collector_number,
+                    finish=(get_finish(card_spec.finish.name)
+                            if card_spec.finish
+                            else None),
                 )
                 session.add(new_spec)
                 logger.info(
-                    f"➕ Added new specification {spec_tuple}"
+                    f"➕ Added new specification {card_spec.get_key()}"
                     f" for '{card_name}'."
                 )
 

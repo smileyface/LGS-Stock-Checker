@@ -17,6 +17,7 @@ from ..models.orm_models import (
     User,
     UserTrackedCards,
     Store,
+    CardSpecification
 )
 
 # Project package imports
@@ -49,8 +50,7 @@ def get_user_by_username(
     user_orm = (
         session.query(User)
         .options(joinedload(User.selected_stores))
-        .filter(User.username == username)
-        .first()
+        .filter_by(username=username).first()
     )
     if user_orm:
         logger.debug(f"✅ Found user '{username}'.")
@@ -77,10 +77,15 @@ def get_user_orm_by_username(username: str,
     """
     logger.debug(f"📖 Querying for user ORM object '{username}'.")
     user_orm = (session.query(User)
-                .options(joinedload(User.cards)
-                         .joinedload(UserTrackedCards.card))
-                .filter(User.username == username)
-                .first())
+                .options(
+                    joinedload(User.cards)
+                    .joinedload(UserTrackedCards.card),
+                    joinedload(User.cards)
+                    .joinedload(UserTrackedCards.specifications)
+                    .joinedload(CardSpecification.set),
+                    joinedload(User.cards)
+                    .joinedload(UserTrackedCards.specifications).joinedload(
+                        CardSpecification.finish)).filter_by(username=username).first())
     logger.debug(
         f"✅ Found user ORM object for '{username}'."
         if user_orm
@@ -112,8 +117,7 @@ def get_user_orm_by_id(user_id: int,
     user_orm = (
         session.query(User)
         .options(joinedload(User.selected_stores))
-        .filter(User.id == user_id)
-        .first()
+        .filter_by(id=user_id).first()
     )
     logger.debug(
         f"✅ Found user ORM object for ID '{user_id}'."
@@ -177,7 +181,7 @@ def update_username(old_username: str, new_username: str,
     logger.info(
         f"✏️ Updating username from '{old_username}' to '{new_username}'."
     )
-    user = session.query(User).filter(User.username == old_username).first()
+    user = session.query(User).filter_by(username=old_username).first()
     if not user:
         logger.warning(
             f"🚨 User '{old_username}' not found. Cannot update username."
@@ -192,7 +196,7 @@ def update_username(old_username: str, new_username: str,
 @db_query
 def update_password(username: str,
                     password_hash: str,
-                    session: Session = None) -> None:
+                    session: Session = Session()) -> None:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -211,7 +215,7 @@ def update_password(username: str,
         Success or failure of the password update operation.
     """
     logger.info(f"🔑 Updating password for user '{username}'.")
-    user = session.query(User).filter(User.username == username).first()
+    user = session.query(User).filter_by(username=username).first()
     if not user:
         logger.warning(
             f"🚨 User '{username}' not found. Cannot update password."
@@ -223,7 +227,7 @@ def update_password(username: str,
 
 @db_query
 def get_user_stores(username: str,
-                    session: Session = None) -> List[orm.StoreSchema]:
+                    session: Session = Session()) -> List[orm.StoreSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -243,8 +247,7 @@ def get_user_stores(username: str,
     user = (
         session.query(User)
         .options(joinedload(User.selected_stores))
-        .filter(User.username == username)
-        .first()
+        .filter_by(username=username).first()
     )
     if not user:
         logger.warning(
@@ -264,7 +267,7 @@ def get_user_stores(username: str,
 @db_query
 def add_user_store(username: str,
                    store_slug: str,
-                   session: Session = None) -> None:
+                   session: Session = Session()) -> None:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -281,8 +284,7 @@ def add_user_store(username: str,
     user = (
         session.query(User)
         .options(joinedload(User.selected_stores))
-        .filter(User.username == username)
-        .first()
+        .filter_by(username=username).first()
     )
     if not user:
         logger.warning(
@@ -298,7 +300,7 @@ def add_user_store(username: str,
         )
         return
 
-    store_obj = session.query(Store).filter(Store.slug == store_slug).first()
+    store_obj = session.query(Store).filter_by(slug=store_slug).first()
     if not store_obj:
         logger.warning(
             f"Store with slug '{store_slug}' not found. "
@@ -313,7 +315,7 @@ def add_user_store(username: str,
 
 @db_query
 def remove_user_store(username: str, store_slug: str,
-                      session: Session = None) -> None:
+                      session: Session = Session()) -> None:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -329,8 +331,7 @@ def remove_user_store(username: str, store_slug: str,
     user = (
         session.query(User)
         .options(joinedload(User.selected_stores))
-        .filter(User.username == username)
-        .first()
+        .filter_by(username=username).first()
     )
     if not user:
         logger.warning(
@@ -357,7 +358,7 @@ def remove_user_store(username: str, store_slug: str,
 
 @db_query
 def set_user_stores(username: str, store_slugs: List[str],
-                    session: Session = None) -> None:
+                    session: Session = Session()) -> None:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -367,8 +368,7 @@ def set_user_stores(username: str, store_slugs: List[str],
     user = (
         session.query(User)
         .options(joinedload(User.selected_stores))
-        .filter(User.username == username)
-        .first()
+        .filter_by(username=username).first()
     )
     if not user:
         logger.warning(
@@ -403,7 +403,7 @@ def set_user_stores(username: str, store_slugs: List[str],
 
 @db_query
 def get_user_for_display(
-    username: str, session: Session = None
+    username: str, session: Session = Session()
 ) -> Optional[orm.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
@@ -426,8 +426,7 @@ def get_user_for_display(
     user_orm = (
         session.query(User)
         .options(joinedload(User.selected_stores))
-        .filter(User.username == username)
-        .first()
+        .filter_by(username=username).first()
     )
     if user_orm:
         logger.info(f"✅ User '{username}' retrieved successfully.")
@@ -437,7 +436,7 @@ def get_user_for_display(
 
 
 @db_query
-def get_all_users(session: Session = None) -> List[orm.UserPublicSchema]:
+def get_all_users(session: Session = Session()) -> List[orm.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -457,7 +456,7 @@ def get_all_users(session: Session = None) -> List[orm.UserPublicSchema]:
 
 @db_query
 def get_users_tracking_card(
-    card_name: str, session: Session = None
+    card_name: str, session: Session = Session()
 ) -> list[orm.UserPublicSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
@@ -485,7 +484,7 @@ def get_users_tracking_card(
 
 @db_query
 def get_tracking_users_for_cards(
-    card_names: list[str], session: Session = None
+    card_names: list[str], session: Session = Session()
 ) -> dict[str, list[orm.UserPublicSchema]]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"

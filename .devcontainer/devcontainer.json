@@ -7,12 +7,13 @@
   },
   "features": {
     "ghcr.io/devcontainers/features/git-lfs:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
   "workspaceFolder": "/workspaces/LGS-Stock-Checker",
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "pip install -r backend/requirements-dev.txt && cd frontend && npm install",
-  // Configure tool-specific properties.
+  // We use a script now for cleaner setup. Ensure this script exists!
+  "postCreateCommand": "bash .devcontainer/scripts/post-create.sh", // Configure tool-specific properties.
   "customizations": {
     "vscode": {
       "extensions": [

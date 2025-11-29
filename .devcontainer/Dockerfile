@@ -12,6 +12,9 @@ RUN apt-get update \
     python3-pip \
     python3-venv \
     build-essential \
+    curl \
+    wget \
+    ca-certificates \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 

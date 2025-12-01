@@ -24,7 +24,7 @@ def _send_updated_card_list(username: str):
     # This is crucial for the data to be correctly interpreted by the frontend.
     card_list = [
         {
-            "card_name": card.card_name,
+            "card_name": card.name,
             "amount": card.amount,
             "specifications": (
                 [

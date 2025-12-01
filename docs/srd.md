@@ -104,10 +104,10 @@ These requirements define the global card catalog used for searching and validat
 
 ### 4.2 Set Catalog
 
-- **[4.2.1]** The system shall maintain a database table of unique card sets (referred to as the "set catalog"), storing at least the set code, name, and release date.
+- **[4.2.1]** The system shall maintain a persistent catalog of unique card sets, storing at least the set code, name, and release date.
 - **[4.2.2]** The system shall include a scheduled background task that periodically fetches a list of all known sets from an external source (e.g., Scryfall).
-- **[4.2.3]** The system shall store the fetched set data in the set catalogue.
-- **[4.2.4]** The background task shall add any new sets to the catalog that are not already present, using the set code as the unique identifier.
+- **[4.2.3]** The system shall limit the execution frequency of the background task to at most once every 24 hours to comply with external API rate limits.
+- **[4.2.4]** The background task shall update the catalog with the fetched data, adding new sets and updating details for existing sets.
 - **[4.2.5]** The background task shall not remove any sets from the catalog.
 
 ### 4.3 Card Printing Catalog & Specification Validation

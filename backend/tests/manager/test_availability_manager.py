@@ -4,16 +4,7 @@ from managers.availability_manager.availability_manager import (
     check_availability,
     get_cached_availability_or_trigger_check,
 )
-
-
-# Mock Card class to simulate the structure of card objects from user_manager
-class MockCard:
-    def __init__(self, card_name):
-        self.card_name = card_name
-
-    def model_dump(self):
-        """Simulates Pydantic's model_dump for task queuing."""
-        return {"card_name": self.card_name}
+from tests.fixtures.mock_fixtures import MockCard
 
 
 @patch(

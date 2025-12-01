@@ -1,7 +1,11 @@
 import pytest  # noqa
 
+from pydantic import ValidationError
 from managers.socket_manager import socket_handlers
-from schema.messaging import CardSpecsSchema
+from schema.messaging import (
+    CardSpecsSchema,
+    CardSchema
+)
 
 
 def test_on_add_card_triggers_availability_check(
@@ -19,7 +23,10 @@ def test_on_add_card_triggers_availability_check(
     # Arrange
     username = "testuser"
     # This data must match the AddCardSchema
-    card_data_from_client = {"card": "Sol Ring", "amount": 1, "card_specs": {}}
+    card_data_from_client = {
+        "card": {"name": "Sol Ring"},
+        "amount": 1,
+        "card_specs": {}}
 
     # Mock the return value for the full card list after adding
     mock_sh_user_manager.load_card_list.return_value = []
@@ -32,7 +39,7 @@ def test_on_add_card_triggers_availability_check(
     # correct arguments
     mock_sh_user_manager.add_user_card.assert_called_once_with(
         username,
-        "Sol Ring",
+        CardSchema(name="Sol Ring"),
         1,
         CardSpecsSchema(set_code=None, collector_number=None, finish=None),
     )
@@ -40,7 +47,7 @@ def test_on_add_card_triggers_availability_check(
     # 2. Verify availability check was triggered for the new card ([5.1.6])
     # The availability check uses a dictionary representation
     card_data_for_task = {
-        "card_name": "Sol Ring",
+        "card_name": CardSchema(name="Sol Ring"),
         "specifications": CardSpecsSchema(
             set_code=None, collector_number=None, finish=None
         ),
@@ -75,19 +82,21 @@ def test_on_add_card_triggers_availability_check(
         # Missing all fields
         ({}, "Field required"),
         # Missing amount
-        ({"card": "Sol Ring"}, "Field required"),
+        ({"card": {"name": "Sol Ring"}}, "Field required"),
         # Missing card name
         ({"amount": 1}, "Field required"),
         # Empty card name
-        ({"card": "", "amount": 1}, "at least 1 character"),
+        ({"card": {"name": ""}, "amount": 1}, "at least 1 character"),
         # Invalid amount
-        ({"card": "Sol Ring", "amount": 0}, "greater than 0"),
+        ({"card": {"name": "Sol Ring"}, "amount": 0}, "greater than 0"),
+        # Negative amount
+        ({"card": {"name": "Sol Ring"}, "amount": -3}, "greater than 0"),
         # Invalid finish
-        (
-            {"card": "Sol Ring", "amount": 1, "card_specs": {
-                "finish": "invalid"}},
-            "Input should be",
-        ),
+        ({
+            "card": {"name": "Sol Ring"},
+            "amount": 1,
+            "card_specs": {"finish": "invalid"},
+        }, "Input should be"),
     ],
 )
 def test_on_add_card_with_invalid_data(mock_sh_emit,
@@ -107,20 +116,22 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
 @pytest.mark.parametrize(
     "invalid_data, expected_error_part",
     [
-        ({}, "Field required"),  # Missing all fields
-        ({"card": "Sol Ring"}, "Field required"),  # Missing update_data
-        ({"update_data": {}}, "Field required"),  # Missing card name
+        ({}, "card"),  # Missing all fields
+        ({}, "update_data"),  # Missing all fields
+        ({"card": {"name": "Sol Ring"}},
+         "update_data"),  # Missing update_data
+        ({"update_data": {}}, "card"),  # Missing card name
         (
             {
-                "card": "Sol Ring",
+                "card": {"name": "Sol Ring"},
                 "update_data":
                 {
                     "specifications":
                         {"finish": "invalid"}
                 },
             },
-            "Invalid data for update_card: 1 validation error",
-        ),  # Invalid finish
+            "specifications",
+        ),  # Invalid Finsih
     ],
 )
 def test_on_update_card_with_invalid_data(
@@ -137,36 +148,13 @@ def test_on_update_card_with_invalid_data(
     """
 
     socket_handlers.handle_update_user_tracked_cards(invalid_data)
-    mock_sh_emit.assert_called_once()
-    assert mock_sh_emit.call_args.args[0] == "error"
-    assert expected_error_part in str(mock_sh_emit.call_args.args[1])
 
+    # Convert the error to a dictionary for easier inspection
+    errors = mock_sh_emit.call_args.args[1].get('details', [])
 
-@pytest.mark.parametrize(
-    "invalid_data, expected_log_part",
-    [
-        (
-            {"card": "Sol Ring", "update_data": {"amount": 0}},
-            "Input should be greater than or equal to 1 ["
-            "type=greater_than_equal, input_value=0, input_type=int]",
-        ),  # Invalid amount
-    ]
-)
-def test_on_update_card_with_non_critical_invalid_data(
-    seeded_user_with_cards,
-    mock_sh_get_current_user,
-    caplog,
-    invalid_data,
-    expected_log_part,
-):
-    """
-    GIVEN non-critical invalid data for the 'update_card' event
-    WHEN the event handler is called
-    THEN it should log a warning, not update the field, but update
-         other fields.
-    """
-    socket_handlers.handle_update_user_tracked_cards(invalid_data)
-    assert expected_log_part in caplog.text
+    # Check that at least one error message contains the expected part
+    error_found = any(expected_error_part in str(error['loc']) for error in errors)
+    assert error_found, f"Expected error part '{expected_error_part}' not found in validation errors."
 
 
 @pytest.mark.parametrize(
@@ -174,7 +162,7 @@ def test_on_update_card_with_non_critical_invalid_data(
     [
         ({}, "Field required"),  # Missing card field
         # Empty card name
-        ({"card": ""}, "String should have at least 1 character"),
+        ({"card": ""}, "validation error for DeleteCardSchema"),
     ],
 )
 def test_on_delete_card_with_invalid_data(

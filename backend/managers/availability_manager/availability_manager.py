@@ -98,7 +98,7 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
     cached_results = {}
     for card in user_cards:
         for store in user_stores:
-            if not store or not store.slug or not card or not card.card_name:
+            if not store or not store.slug or not card or not card.name:
                 continue
 
             cached_data = availability_storage.get_cached_availability_data(

@@ -2,8 +2,10 @@
 Manages a user's tracked card list, including adding, updating, deleting,
 and sending updates back to the client.
 """
+from typing import List
 
 from data import database
+from schema import orm
 from utility import logger
 from managers.socket_manager import socketio
 
@@ -80,7 +82,7 @@ def delete_user_card(username: str, card_name: str):
     _send_updated_card_list(username)
 
 
-def load_card_list(username: str):
+def load_card_list(username: str) -> List[orm.UserTrackedCardSchema]:
     """Loads a user's card list from the database without sending an update."""
     logger.info(f"📖 Loading card list for user: '{username}'")
     if not database.get_user_by_username(username):

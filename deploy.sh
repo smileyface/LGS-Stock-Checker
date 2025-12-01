@@ -15,7 +15,7 @@ main() {
     composer_cmd=$(detect_composer)
 
     # --- Deployment Arguments ---
-    local branch=${1:-stable}
+    local branch=${1:-master}
     export LOG_LEVEL=${2:-INFO} # Export for docker-compose
 
     # --- Configure Environment for Deployment ---
@@ -52,10 +52,19 @@ detect_composer() {
 git_pull() {
     local branch=$1
     echo "�📡 Fetching latest updates from origin..."
-    git fetch origin
-    echo "� Checking out and resetting branch '$branch'..."
+    # Fetch all branches and tags from the remote
+    git fetch origin --force --tags
+
+    echo " Checking out ref '$branch'..."
+    # First, attempt to check out the ref. This works for both branches and tags.
     git checkout "$branch"
-    git reset --hard "origin/$branch"
+
+    # If it's a branch (not a tag), then reset it to match the remote.
+    # We check if a remote branch with that name exists.
+    if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+        echo " -> '$branch' is a branch. Resetting to match 'origin/$branch'..."
+        git reset --hard "origin/$branch"
+    fi
 }
 
 build_images() {

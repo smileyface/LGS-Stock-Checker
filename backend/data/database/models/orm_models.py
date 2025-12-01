@@ -92,6 +92,9 @@ class Set(Base):
     name = Column(String(255), nullable=False)
     release_date = Column(Date, nullable=True)
 
+    def __repr__(self):
+        return f"<Set(code={self.code}, name={self.name})>"
+
 
 class Finish(Base):
     """Represents a card finish type (e.g., Foil, Non-Foil)."""
@@ -158,7 +161,7 @@ class CardSpecification(Base):
     user_card_id = Column(
         Integer, ForeignKey("user_tracked_cards.id"), nullable=False
     )
-    set_code = Column(String, nullable=True)  # NULL = "Any Set"
+    set_code = Column(String, ForeignKey("sets.code"), nullable=True)
     collector_number = Column(
         String, nullable=True
     )  # NULL = "Any Collector Number"
@@ -169,6 +172,13 @@ class CardSpecification(Base):
         "UserTrackedCards", back_populates="specifications"
     )
     finish = relationship("Finish")
+    set = relationship("Set")
+
+    def __repr__(self):
+        return (f"<CardSpecification(user_card_id={self.user_card_id},"
+                f" set_code={self.set_code}, "
+                f" collector_number={self.collector_number},"
+                f" finish_id={self.finish_id})>")
 
 
 class Store(Base):

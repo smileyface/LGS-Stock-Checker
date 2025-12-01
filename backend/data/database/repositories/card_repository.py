@@ -35,10 +35,12 @@ def get_users_cards(
         logger.warning(f"User '{username}' not found. Cannot get cards.")
         return []
 
-    logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
-    return [
-        orm.UserTrackedCardSchema.model_validate(card) for card in user.cards
-    ]
+    if not user.cards:
+        logger.warning(f"User '{username}' has no tracked cards.")
+        return []
+    else:
+        logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
+        return user.cards
 
 
 @db_query
@@ -105,7 +107,8 @@ def add_card_to_user(
         )
         # Load the finish relationship to avoid lazy loading in the loop
         existing_specs_query = existing_specs_query.options(
-            joinedload(CardSpecification.finish))
+            joinedload(CardSpecification.finish),
+            joinedload(CardSpecification.set))
         existing_specs_set = {
             (s.set_code, s.collector_number,
              s.finish.name if s.finish else None)
@@ -115,16 +118,22 @@ def add_card_to_user(
         for card_spec in card_specs:
             # The frontend sends a single spec object, not a list.
             if card_spec.get_key() not in existing_specs_set:
+                set_obj = (
+                    get_set(set_code=card_spec.set_code.code)
+                    if card_spec.set_code and card_spec.set_code.code
+                    else None
+                )
+                finish_obj = (
+                    get_finish(finish_name=card_spec.finish.name)
+                    if card_spec.finish and card_spec.finish.name
+                    else None
+                )
 
                 new_spec = CardSpecification(
                     user_card_id=tracked_card.id,
-                    set_code=(get_set(card_spec.set_code.code)
-                              if card_spec.set_code
-                              else None),
+                    set=set_obj,
                     collector_number=card_spec.collector_number,
-                    finish=(get_finish(card_spec.finish.name)
-                            if card_spec.finish
-                            else None),
+                    finish=finish_obj,
                 )
                 session.add(new_spec)
                 logger.info(
@@ -273,16 +282,13 @@ def update_user_tracked_card_preferences(
 
         # Add new specifications
         for new_spec in valid_updates.specifications:
-            finish_obj = None
-            if new_spec.finish and new_spec.finish.name:
-                finish_obj = (
-                    session.query(Finish)
-                    .filter(Finish.name == new_spec.finish.name)
-                    .first()
-                )
+            finish_obj = get_finish(finish_name=new_spec.finish.name
+                                    if new_spec.finish else None)
+            set_obj = get_set(set_code=new_spec.set_code.code
+                              if new_spec.set_code else None)
             card_spec = CardSpecification(
                 user_card_id=tracked_card.id,
-                set_code=new_spec.set_code,
+                set=set_obj,
                 collector_number=new_spec.collector_number,
                 finish=finish_obj,
             )

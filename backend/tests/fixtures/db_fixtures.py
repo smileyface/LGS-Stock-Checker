@@ -97,44 +97,57 @@ def seeded_store(seeded_stores):
 
 
 @pytest.fixture
-def seeded_card_catalogue(db_session):
-    db_session.add_all(
-        [
-            Card(name="Sol Ring"),
-            Card(name="Thoughtseize"),
-            Card(name="Ugin, the Spirit Dragon"),
-            Card(name="Lightning Bolt"),
-            Card(name="Counterspell"),
-            Card(name="Brainstorm"),
-            Card(name="Lurrus of the Dream-Den"),
-            Card(name="Swords to Plowshares"),
-        ]
-    )
+def seeded_catalog(db_session):
+    """
+    Comprehensive fixture to seed all catalog-related tables: Cards, Sets,
+    Finishes, and Printings. This ensures that all reference data is present
+    for tests that interact with the card catalog.
+    """
+    # 1. Seed Cards
+    cards_to_seed = [
+        Card(name="Sol Ring"),
+        Card(name="Thoughtseize"),
+        Card(name="Ugin, the Spirit Dragon"),
+        Card(name="Lightning Bolt"),
+        Card(name="Counterspell"),
+        Card(name="Brainstorm"),
+        Card(name="Lurrus of the Dream-Den"),
+        Card(name="Black Lotus"),
+        Card(name="Mox Sapphire"),
+        Card(name="Time Walk"),
+        Card(name="Swords to Plowshares"),
+    ]
+    db_session.add_all(cards_to_seed)
+
+    # 2. Seed Sets
+    sets_to_seed = [
+        Set(code="C21", name="Commander 2021"),
+        Set(code="LTC", name="The Lord of the Rings: Tales of Middle-earth Commander"),
+        Set(code="ONE", name="Phyrexia: All Will Be One"),
+        Set(code="MH2", name="Modern Horizons 2"),
+        Set(code="2XM", name="Double Masters"),
+        Set(code="M21", name="Core Set 2021"),
+        Set(code="ICE", name="Ice Age"),
+        Set(code="2ED", name="Unlimited Edition"),
+        Set(code="3ED", name="Revised Edition"),
+        Set(code="4ED", name="Fourth Edition"),
+        Set(code="CMR", name="Commander Legends"),
+    ]
+    db_session.add_all(sets_to_seed)
+
+    # 3. Seed Finishes
+    finishes_to_seed = [
+        Finish(name="non-foil"),
+        Finish(name="foil"),
+        Finish(name="etched"),
+    ]
+    db_session.add_all(finishes_to_seed)
+    db_session.commit()  # Commit cards, sets, and finishes
 
 
 @pytest.fixture
-def seeded_printings(db_session):
+def seeded_printings(db_session, seeded_catalog):
     """Fixture to create a card with multiple printings and finishes."""
-    db_session.add_all(
-        [
-            Card(name="Sol Ring"),
-            Card(name="Thoughtseize"),
-            Card(name="Ugin, the Spirit Dragon"),
-            Set(code="C21", name="Commander 2021"),
-            Set(
-                code="LTC",
-                name="The Lord of the Rings: Tales of Middle-earth Commander",
-            ),
-            Set(code="ONE", name="Phyrexia: All Will Be One"),
-            Set(code="MH2", name="Modern Horizons 2"),
-            Set(code="2XM", name="Double Masters"),
-            Set(code="M21", name="Core Set 2021"),
-            Finish(name="non-foil"),
-            Finish(name="foil"),
-            Finish(name="etched"),
-        ]
-    )
-    db_session.commit()
 
     printings_data = [
         ("Sol Ring", "C21", "125", ["non-foil", "foil"]),
@@ -143,6 +156,7 @@ def seeded_printings(db_session):
         ("Thoughtseize", "MH2", "107", ["etched"]),
         ("Thoughtseize", "2XM", "107", ["non-foil"]),
         ("Ugin, the Spirit Dragon", "M21", "1", ["foil"]),
+        ("Brainstorm", "ICE", "1", ["non-foil"])
     ]
 
     all_finishes = {f.name: f for f in db_session.query(Finish).all()}
@@ -162,31 +176,18 @@ def seeded_printings(db_session):
 
 
 @pytest.fixture
-def seeded_user_with_cards(db_session):
+def seeded_user_with_cards(db_session, seeded_printings):
     """Fixture to create a user with multiple cards and specifications."""
     user = User(
         username="testuser", password_hash=generate_password_hash("password")
     )
 
-    # Create the unique card names in the 'cards' lookup table first
-    db_session.add_all(
-        [
-            Card(name="Lightning Bolt"),
-            Card(name="Counterspell"),
-            Card(name="Sol Ring"),
-            Card(name="Brainstorm"),
-            Card(name="Lurrus of the Dream-Den"),
-        ]
-    )
-    # Commit to ensure these exist before we reference them via foreign key.
-    db_session.commit()
-
-    # Create Finish objects to be associated with specifications
-    finish_nonfoil = Finish(name="non-foil")
-    finish_foil = Finish(name="foil")
-    finish_etched = Finish(name="etched")
-    db_session.add_all([finish_nonfoil, finish_foil, finish_etched])
-    db_session.commit()
+    # Fetch the finish objects that were created by the seeded_catalog fixture.
+    # This is safe because pytest ensures seeded_catalog runs before this fixture.
+    finishes = {f.name: f for f in db_session.query(Finish).all()}
+    finish_nonfoil = finishes.get("non-foil")
+    finish_foil = finishes.get("foil")
+    finish_etched = finishes.get("etched")
 
     # Create the UserTrackedCards instances
     tracked_card1 = UserTrackedCards(card_name="Lightning Bolt", amount=4)
@@ -221,16 +222,9 @@ def seeded_user_with_cards(db_session):
 
 
 @pytest.fixture
-def multiple_users_with_cards(db_session):
+def multiple_users_with_cards(db_session, seeded_printings):
     """Fixture to create multiple users tracking various cards."""
     # Create unique card names
-    cards = [
-        Card(name="Sol Ring"),
-        Card(name="Brainstorm"),
-        Card(name="Lurrus of the Dream-Den"),
-    ]
-    db_session.add_all(cards)
-    db_session.commit()
 
     # User 1 tracks Sol Ring and Brainstorm
     user1 = User(username="user1", password_hash="hash1")

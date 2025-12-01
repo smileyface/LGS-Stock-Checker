@@ -29,7 +29,7 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
         "amount": 4,
         "specifications": [
             {
-                "set_code": "ONE",
+                "set_code": {"code": "ONE"},
                 "finish": {"name": "foil"}
             }
         ]
@@ -68,7 +68,8 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     3. Does NOT update the amount of the existing card.
     """
     # Arrange: Add the card initially with one spec and an amount of 1
-    initial_specs = {"set_code": "MH2", "finish": {"name": "etched"}}
+    initial_specs = {"set_code": {"code": "MH2"},
+                     "finish": {"name": "etched"}}
     add_card_to_user("testuser", {
         "card": {
             "name": "Thoughtseize"
@@ -79,7 +80,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     )
 
     # Act: Call add_user_card again with a new spec and a DIFFERENT amount
-    new_specs = {"set_code": "2XM", "finish": {"name": "non-foil"}}
+    new_specs = {"set_code": {"code": "2XM"}, "finish": {"name": "non-foil"}}
     add_card_to_user("testuser", {
         "card": {
             "name": "Thoughtseize"
@@ -108,7 +109,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     assert ("2XM", "non-foil") in spec_tuples
 
 
-def test_delete_user_card(seeded_user, seeded_card_catalogue):
+def test_delete_user_card(seeded_user, seeded_catalog):
     # Arrange: Use the username from the fixture object to add a card.
     username = seeded_user.username
     add_card_to_user(username, {"card": {"name": "Sol Ring"},
@@ -130,7 +131,7 @@ def test_delete_user_card_cascades_specifications(
     CardSpecification objects due to the cascade="all, delete-orphan" setting.
     """
     # Arrange: Add a card with specifications
-    specs = {"set_code": "M21", "finish": {"name": "foil"}}
+    specs = {"set_code": {"code": "M21"}, "finish": {"name": "foil"}}
     add_card_to_user("testuser", {"card":
                                   {"name": "Ugin, the Spirit Dragon"},
                                   "amount": 1,
@@ -176,7 +177,7 @@ def test_delete_user_card_not_found(seeded_user):
 
 
 def test_update_user_tracked_card_preferences(seeded_user,
-                                              seeded_card_catalogue):
+                                              seeded_catalog):
     add_card_to_user("testuser", {"card": {"name": "Swords to Plowshares"},
                                   "amount": 1})
     update_user_tracked_card_preferences(
@@ -199,7 +200,7 @@ def test_update_user_tracked_card_preferences_user_not_found(db_session):
 
 def test_update_user_tracked_card_preferences_card_not_found(
         seeded_user,
-        seeded_card_catalogue):
+        seeded_catalog):
     """Test updating preferences for a card the user is not tracking."""
     add_card_to_user("testuser", {"card":
                                   {"name": "Lightning Bolt"},

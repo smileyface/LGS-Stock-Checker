@@ -21,6 +21,7 @@ class SetSchema(BaseModel):
     At least one of 'code' or 'name' must be provided.
     """
 
+    model_config = ConfigDict(from_attributes=True)
     code: Optional[str] = None
     name: Optional[str] = None
 

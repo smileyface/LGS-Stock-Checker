@@ -24,7 +24,7 @@ class CardSpecsSchema(BaseModel):
     All fields are optional, allowing for partial or wildcard tracking.
     """
 
-    set_code: SetSchema
+    set_code: Optional[SetSchema] = None
     collector_number: Optional[str] = None
     finish: Optional[FinishSchema] = None
 

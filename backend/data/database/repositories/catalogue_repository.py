@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, joinedload
 
 from ..session_manager import db_query
+from schema.blocks import SetSchema
 from ..models import (
     Card,
     Finish,
@@ -258,13 +259,18 @@ def get_set(set_name: Optional[str] = None,
             set_code: Optional[str] = None,
             *,
             session: Session = Session()) -> Optional[Set]:
+    set_listing = None
     if not set_name and not set_code:
         logger.error("Neither set_name nor set_code provided. Aborting.")
-        return None
     elif set_name:
-        return session.query(Set).filter(Set.name == set_name).first()
+        set_listing = session.query(Set).filter(Set.name == set_name).first()
+        if set_listing is None:
+            logger.error("Set not found in catalog. Aborting.")
     else:
-        return session.query(Set).filter(Set.code == set_code).first()
+        set_listing = session.query(Set).filter(Set.code == set_code).first()
+        if set_listing is None:
+            logger.error("Set not found in catalog. Aborting.")
+    return set_listing
 
 
 @db_query

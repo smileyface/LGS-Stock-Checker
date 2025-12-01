@@ -1,6 +1,5 @@
 import pytest  # noqa
 
-from pydantic import ValidationError
 from managers.socket_manager import socket_handlers
 from schema.messaging import (
     CardSpecsSchema,
@@ -154,7 +153,8 @@ def test_on_update_card_with_invalid_data(
 
     # Check that at least one error message contains the expected part
     error_found = any(expected_error_part in str(error['loc']) for error in errors)
-    assert error_found, f"Expected error part '{expected_error_part}' not found in validation errors."
+    assert error_found, f"Expected error part '{expected_error_part}'\
+    not found in validation errors."
 
 
 @pytest.mark.parametrize(

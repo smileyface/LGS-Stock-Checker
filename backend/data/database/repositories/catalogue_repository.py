@@ -5,7 +5,6 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, joinedload
 
 from ..session_manager import db_query
-from schema.blocks import SetSchema
 from ..models import (
     Card,
     Finish,

@@ -13,7 +13,6 @@ from ..models import (
     Card,
     CardSpecification,
     UserTrackedCards,
-    Finish,
 )
 from utility import logger
 

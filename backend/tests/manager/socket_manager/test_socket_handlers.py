@@ -152,7 +152,8 @@ def test_on_update_card_with_invalid_data(
     errors = mock_sh_emit.call_args.args[1].get('details', [])
 
     # Check that at least one error message contains the expected part
-    error_found = any(expected_error_part in str(error['loc']) for error in errors)
+    error_found = any(expected_error_part in str(error['loc'])
+                      for error in errors)
     assert error_found, f"Expected error part '{expected_error_part}'\
     not found in validation errors."
 

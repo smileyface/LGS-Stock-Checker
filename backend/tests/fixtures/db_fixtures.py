@@ -122,7 +122,8 @@ def seeded_catalog(db_session):
     # 2. Seed Sets
     sets_to_seed = [
         Set(code="C21", name="Commander 2021"),
-        Set(code="LTC", name="The Lord of the Rings: Tales of Middle-earth Commander"),
+        Set(code="LTC", name="The Lord of the Rings: \
+            Tales of Middle-earth Commander"),
         Set(code="ONE", name="Phyrexia: All Will Be One"),
         Set(code="MH2", name="Modern Horizons 2"),
         Set(code="2XM", name="Double Masters"),
@@ -182,8 +183,10 @@ def seeded_user_with_cards(db_session, seeded_printings):
         username="testuser", password_hash=generate_password_hash("password")
     )
 
-    # Fetch the finish objects that were created by the seeded_catalog fixture.
-    # This is safe because pytest ensures seeded_catalog runs before this fixture.
+    # Fetch the finish objects that were created
+    # by the seeded_catalog fixture.
+    # This is safe because pytest ensures seeded_catalog
+    # runs before this fixture.
     finishes = {f.name: f for f in db_session.query(Finish).all()}
     finish_nonfoil = finishes.get("non-foil")
     finish_foil = finishes.get("foil")

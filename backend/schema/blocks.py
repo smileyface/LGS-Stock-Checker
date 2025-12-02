@@ -29,5 +29,6 @@ class SetSchema(BaseModel):
     def check_at_least_one_field(self) -> Self:
         """Ensures that at least one of 'code' or 'name' is provided."""
         if not self.code and not self.name:
-            raise ValueError("At least one of 'code' or 'name' must be provided.")
+            raise ValueError("At least one of 'code' \
+                             or 'name' must be provided.")
         return self

@@ -38,7 +38,8 @@ def get_users_cards(
         logger.warning(f"User '{username}' has no tracked cards.")
         return []
     else:
-        logger.info(f"✅ Found {len(user.cards)} tracked cards for '{username}'.")
+        logger.info(f"✅ Found {len(user.cards)} tracked cards \
+                    for '{username}'.")
         return user.cards
 
 

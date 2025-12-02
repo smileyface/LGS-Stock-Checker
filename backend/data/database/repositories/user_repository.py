@@ -79,13 +79,13 @@ def get_user_orm_by_username(username: str,
     user_orm = (session.query(User)
                 .options(
                     joinedload(User.cards)
-                    .joinedload(UserTrackedCards.card),  # Eagerly load Card
+                    .joinedload(UserTrackedCards.card),
                     joinedload(User.cards)
                     .joinedload(UserTrackedCards.specifications)
-                    .joinedload(CardSpecification.finish),  # Eagerly load Finish
+                    .joinedload(CardSpecification.finish),
                     joinedload(User.cards)
                     .joinedload(UserTrackedCards.specifications)
-                    .joinedload(CardSpecification.set)  # Eagerly load Set
+                    .joinedload(CardSpecification.set)
                 ).filter_by(username=username).first())
     logger.debug(
         f"✅ Found user ORM object for '{username}'."

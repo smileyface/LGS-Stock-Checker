@@ -4,7 +4,7 @@ from managers.availability_manager.availability_manager import (
     check_availability,
     get_cached_availability_or_trigger_check,
 )
-from tests.fixtures.mock_fixtures import MockCard
+from tests.fixtures.mock_fixtures import MockCard, MockUserTrackedCard
 
 
 @patch(
@@ -52,7 +52,9 @@ def test_get_card_availability_with_cached_data(
     mock_store = MagicMock()
     mock_store.slug = "test-store"
     mock_database.get_user_stores.return_value = [mock_store]
-    mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
+    mock_card = MockCard("Test Card")
+    mock_user_manager.load_card_list.return_value = [MockUserTrackedCard(
+        mock_card, "test-store", {})]
     cached_data = [{"price": "1.00"}]
     mock_storage.get_cached_availability_data.return_value = cached_data
 
@@ -88,14 +90,17 @@ def test_get_card_availability_with_no_cached_data(
     mock_store.slug = "test-store"
     mock_database.get_user_stores.return_value = [mock_store]
     mock_card = MockCard("Test Card")
-    mock_user_manager.load_card_list.return_value = [mock_card]
+    mock_user_tracked_card = MockUserTrackedCard(
+        mock_card, "test-store", {}
+    )
+    mock_user_manager.load_card_list.return_value = [mock_user_tracked_card]
     mock_storage.get_cached_availability_data.return_value = None
     expected_command = {
         "type": "availability_request",
         "payload": {
             "username": username,
             "store": "test-store",
-            "card_data": mock_card.model_dump(),
+            "card_data": mock_user_tracked_card.model_dump(),
         },
     }
 
@@ -134,13 +139,17 @@ def test_get_card_availability_handles_invalid_store(
     mock_store_invalid_slug.slug = None
     mock_store_invalid_slug.name = "Invalid Store"
     mock_store_invalid_obj = None
+    mock_card = MockCard("Test Card")
+    mock_user_tracked_card = MockUserTrackedCard(
+        mock_card, "test-store", {}
+    )
 
     mock_database.get_user_stores.return_value = [
         mock_store_invalid_slug,
         mock_store_invalid_obj,
         mock_store_valid,
     ]
-    mock_user_manager.load_card_list.return_value = [MockCard("Test Card")]
+    mock_user_manager.load_card_list.return_value = [mock_user_tracked_card]
 
     # Act
     get_cached_availability_or_trigger_check(username)

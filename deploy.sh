@@ -51,7 +51,7 @@ detect_composer() {
 
 git_pull() {
     local branch=$1
-    echo "�📡 Fetching latest updates from origin..."
+    echo "📡 Fetching latest updates from origin..."
     # Fetch all branches and tags from the remote
     git fetch origin --force --tags
 

@@ -214,7 +214,7 @@ def handle_add_user_tracked_card(data: dict):
         # Delegate to the availability manager to trigger the check
         # adhering to data flow rules.
         card_data_for_task = {
-            "card_name": validated_data.card,
+            "card": validated_data.card,
             "specifications": validated_data.card_specs,
         }
         # Pass _send_user_cards as a callback to be executed *after*

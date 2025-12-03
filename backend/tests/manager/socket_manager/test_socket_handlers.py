@@ -46,7 +46,7 @@ def test_on_add_card_triggers_availability_check(
     # 2. Verify availability check was triggered for the new card ([5.1.6])
     # The availability check uses a dictionary representation
     card_data_for_task = {
-        "card_name": CardSchema(name="Sol Ring"),
+        "card": CardSchema(name="Sol Ring"),
         "specifications": CardSpecsSchema(
             set_code=None, collector_number=None, finish=None
         ),

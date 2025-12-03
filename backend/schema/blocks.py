@@ -7,12 +7,18 @@ class FinishSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: Literal["non-foil", "foil", "etched"]
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class CardSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str = Field(...,
                       description="The name of the card.",
                       min_length=1)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class SetSchema(BaseModel):

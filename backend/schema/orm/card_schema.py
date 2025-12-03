@@ -30,6 +30,13 @@ class CardSpecificationSchema(BaseModel):
             self.finish.name if self.finish else None,
         )
 
+    def to_dict(self) -> dict:
+        return {
+            "set_code": self.set_code.code if self.set_code else None,
+            "collector_number": self.collector_number,
+            "finish": self.finish.name if self.finish else None,
+        }
+
 
 class CardPrintingSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)

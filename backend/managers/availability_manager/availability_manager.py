@@ -39,7 +39,8 @@ def trigger_availability_check_for_card(
     against a user's preferred stores.
     This fulfills requirement [5.1.6] by always queueing a new check.
     """
-    card_name = card_data.get("card_name")
+    card_schema = card_data.get("card_name")
+    card_name = card_schema.name if card_schema else None
     if not card_name:
         logger.error(
             "Cannot trigger availability check; "

@@ -1,4 +1,6 @@
-from data.database.repositories.card_repository import get_printings_for_card
+from data.database.repositories.catalogue_repository import (
+    get_printings_for_card
+)
 
 
 def test_get_printings_for_card(seeded_printings):

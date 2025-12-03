@@ -39,11 +39,12 @@ def trigger_availability_check_for_card(
     against a user's preferred stores.
     This fulfills requirement [5.1.6] by always queueing a new check.
     """
-    card_name = card_data.get("card_name")
+    card_obj = card_data.get("card")
+    card_name = card_obj.name if card_obj else None
     if not card_name:
         logger.error(
             "Cannot trigger availability check; "
-            "card_data is missing 'card_name'."
+            "card_data is missing 'card' object or its 'name' attribute."
         )
         return
 
@@ -98,22 +99,22 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
     cached_results = {}
     for card in user_cards:
         for store in user_stores:
-            if not store or not store.slug or not card or not card.card_name:
+            if not store or not store.slug or not card or not card.card.name:
                 continue
 
             cached_data = availability_storage.get_cached_availability_data(
-                store.slug, card.card_name
+                store.slug, card.card.name
             )
             if cached_data is not None:
                 logger.debug(
-                    f"✅ Cache hit for {card.card_name} at {store.name}."
+                    f"✅ Cache hit for {card.card.name} at {store.name}."
                 )
                 cached_results.setdefault(store.slug, {})[
-                    card.card_name
+                    card.card.name
                 ] = cached_data
             else:
                 logger.info(
-                    f"⏳ Cache miss for {card.card_name} at {store.name}."
+                    f"⏳ Cache miss for {card.card.name} at {store.name}."
                     " Queueing check."
                 )
                 # Publish a command for the scheduler to queue the task.

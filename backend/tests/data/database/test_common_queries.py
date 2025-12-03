@@ -113,6 +113,7 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
     Tests adding a completely new card to a user who is already tracking
     other cards.
     """
+    # The `seeded_catalog` fixture is included to ensure sets like 'ICE' exist.
     username = seeded_user_with_cards.username
 
     # Define a new card to add
@@ -120,7 +121,8 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
         "card": {"name": "Brainstorm"},
         "amount": 3,
         "specifications": [
-            {"set_code": "ICE", "finish": {"name": "non-foil"}}
+            {"set_code": {"code": "ICE"},
+             "finish": {"name": "non-foil"}}
         ],
     }
 
@@ -140,7 +142,9 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
     assert added_card is not None
     assert added_card.amount == 3
     assert len(added_card.specifications) == 1
-    assert added_card.specifications[0].set_code == "ICE"
+    spec = added_card.specifications[0]
+    assert spec.set_code is not None, "Set code not found on specification"
+    assert spec.set_code == "ICE"
 
 
 @pytest.mark.parametrize(
@@ -155,18 +159,21 @@ def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
             {
                 "card_name": "Sol Ring",
                 "update_data": {
-                    "specifications": [{"set_code": "LTC", "finish":
-                                        {"name": "etched"}}]
+                    "specifications": [
+                        {"set_code": {"code": "LTC"},
+                         "finish": {"name": "etched"}
+                         }
+                        ]
                 },
                 "expected_amount": 1,  # Original amount
                 "expected_specs_count": 1,
             },
             {
                 "card_name": "Lightning Bolt",
-                "update_data": {
-                    "specifications": [{"set_code": "4ED", "finish":
-                                        {"name": "non-foil"}}]
-                },
+                "update_data": {"specifications": [
+                    {"set_code": {"code": "4ED"},
+                     "finish": {"name": "non-foil"}
+                     }]},
                 "expected_amount": 4,  # Original amount
                 "expected_specs_count": 1,
                 "expected_set_code": "4ED",

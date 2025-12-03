@@ -1,24 +1,17 @@
-from typing import Optional, Literal
-
+from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
-
-class FinishSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    name: Literal["non-foil", "foil", "etched"]
-
-
-class CardSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    name: str = Field(...,
-                      description="The name of the card.",
-                      min_length=1)
+from ..blocks import (
+    FinishSchema,
+    CardSchema,
+    SetSchema,
+)
 
 
 class CardSpecificationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    set_code: Optional[str] = Field(
+    set_code: Optional[SetSchema] = Field(
         None, description="The set code (e.g., 'ONE'). Null if any set."
     )
     collector_number: Optional[str] = Field(
@@ -29,6 +22,20 @@ class CardSpecificationSchema(BaseModel):
         description="The card's finish ('non-foil', 'foil', 'etched'). "
         "Defaults to None.",
     )
+
+    def get_key(self) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        return (
+            self.set_code.code if self.set_code else None,
+            self.collector_number,
+            self.finish.name if self.finish else None,
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "set_code": self.set_code.code if self.set_code else None,
+            "collector_number": self.collector_number,
+            "finish": self.finish.name if self.finish else None,
+        }
 
 
 class CardPrintingSchema(BaseModel):

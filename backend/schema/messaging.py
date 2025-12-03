@@ -1,6 +1,21 @@
 from typing import Any, Dict, List, Literal, Optional
-
 from pydantic import BaseModel, Field
+
+from .blocks import (
+    FinishSchema,
+    CardSchema,
+    SetSchema,
+)
+
+
+class CardPrintingSchema(BaseModel):
+    """
+    Schema for a card printing, including its set, collector number,
+    and available finishes.
+    """
+    set_code: SetSchema
+    collector_number: str
+    finishes: List[FinishSchema]
 
 
 class CardSpecsSchema(BaseModel):
@@ -9,9 +24,9 @@ class CardSpecsSchema(BaseModel):
     All fields are optional, allowing for partial or wildcard tracking.
     """
 
-    set_code: Optional[str] = None
+    set_code: Optional[SetSchema] = None
     collector_number: Optional[str] = None
-    finish: Optional[Literal["non-foil", "foil", "etched"]] = None
+    finish: Optional[FinishSchema] = None
 
 
 class AvailabilityRequestPayload(BaseModel):
@@ -75,9 +90,7 @@ class AddCardSchema(BaseModel):
     Validates the payload for the 'add_card' event.
     """
 
-    card: str = Field(
-        ..., min_length=1, description="The name of the card to add."
-        )
+    card: CardSchema
     amount: int = Field(
         ..., gt=0, description="The quantity of the card to track."
         )
@@ -91,7 +104,7 @@ class DeleteCardSchema(BaseModel):
     """
     Validates the payload for the 'delete_card' event.
     """
-    card: str = Field(..., min_length=1)
+    card: CardSchema
 
 
 class UpdateCardSchema(BaseModel):
@@ -100,7 +113,7 @@ class UpdateCardSchema(BaseModel):
     Validates the payload for the 'update_card' event.
     """
 
-    card: str = Field(..., min_length=1)
+    card: CardSchema
     update_data: Dict[str, Any]
 
 

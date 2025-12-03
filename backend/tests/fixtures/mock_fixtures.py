@@ -1,6 +1,49 @@
 import pytest
 from unittest.mock import MagicMock
 
+
+# Mock Card class to simulate the structure of card objects from user_manager
+class MockCard:
+    def __init__(self, name):
+        self.name = name
+
+    def model_dump(self):
+        """Simulates Pydantic's model_dump for task queuing."""
+        return {"name": self.name}
+
+
+# Mocking UserTrackedCardSchema
+class MockUserTrackedCard:
+    def __init__(self, card: MockCard, amount, specifications):
+        self.card = card
+        self.amount = amount
+        self.specifications = specifications
+
+    def model_dump(self):
+        """Simulates Pydantic's model_dump for task queuing."""
+        return {
+            "card": self.card.model_dump(),
+            "amount": self.amount,
+            "specifications": [
+                {
+                    "set_code": spec.get("set_code"),
+                    "collector_number": spec.get("collector_number"),
+                    "finish": spec.get("finish"),
+                }
+                for spec in self.specifications
+            ],
+        }
+
+
+class MockCardAvailabilityData:
+    def __init__(self, price: str = "0.00"):
+        self.price = price
+
+    def model_dump(self):
+        """Simulates Pydantic's model_dump for cached data."""
+        return {"price": self.price}
+
+
 # Global variable to hold the mock Redis instance, accessible by fixtures.
 _global_mock_redis_instance = None
 

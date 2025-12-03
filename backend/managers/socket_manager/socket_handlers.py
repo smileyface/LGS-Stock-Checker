@@ -214,7 +214,7 @@ def handle_add_user_tracked_card(data: dict):
         # Delegate to the availability manager to trigger the check
         # adhering to data flow rules.
         card_data_for_task = {
-            "card_name": validated_data.card,
+            "card": validated_data.card,
             "specifications": validated_data.card_specs,
         }
         # Pass _send_user_cards as a callback to be executed *after*
@@ -275,14 +275,18 @@ def handle_update_user_tracked_cards(data: dict):
             return
 
         database.update_user_tracked_card_preferences(
-            username, validated_data.card, validated_data.update_data
+            username, validated_data.card.name, validated_data.update_data
         )
         _send_user_cards(username)
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
-
+        count = e.error_count()
+        details = e.errors()
         socketio.emit(
-            "error", {"message": f"Invalid data for update_card: {e}"}
+            "error", {"message": "Invalid data for update_card",
+                      "details": details,
+                      "count": count
+                      }
         )
 
 

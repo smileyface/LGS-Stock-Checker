@@ -43,6 +43,7 @@ class MockCardAvailabilityData:
         """Simulates Pydantic's model_dump for cached data."""
         return {"price": self.price}
 
+
 # Global variable to hold the mock Redis instance, accessible by fixtures.
 _global_mock_redis_instance = None
 

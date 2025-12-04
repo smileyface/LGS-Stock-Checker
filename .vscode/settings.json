@@ -1,17 +1,24 @@
 {
-    "python.testing.pytestArgs": [
-        "backend"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.envFile": "${workspaceFolder}/.env",
-    "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python-envs.pythonProjects": [
-        "backend"
-    ],
-    "flake8.args": [
-        "--max-line-length=88"
-    ],
-    "python.analysis.typeCheckingMode": "standard",
-    "makefile.configureOnOpen": false
+  // --- General Python Settings ---
+  // Point VS Code directly to the Python interpreter inside your virtual environment.
+  // This is the most important setting for Pylance to find your installed packages.
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+
+  // Tell Pylance to add the 'backend' directory to its search path.
+  // This resolves import errors for your own modules (e.g., 'from managers import ...').
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+
+  // Set the type checking level for Pylance. 'standard' is a good default.
+  "python.analysis.typeCheckingMode": "standard",
+
+  // --- Testing Settings ---
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["backend"],
+
+  // --- Linting Settings ---
+  "flake8.args": ["--max-line-length=88", "--extend-ignore=E203"],
+
+  // --- Environment File ---
+  "python.envFile": "${workspaceFolder}/.env"
 }

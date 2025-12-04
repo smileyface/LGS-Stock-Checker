@@ -42,7 +42,7 @@ test: install-dev
 
 lint: install-dev
 	@echo "Linting backend code..."
-	$(VENV_PYTHON) -m flake8 backend/
+	$(VENV_PYTHON) -m flake8 backend/ --exclude=$(VENV_DIR)
 
 format: install-dev
 	@echo "Formatting backend code with Black..."

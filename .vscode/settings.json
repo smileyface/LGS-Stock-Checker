@@ -12,5 +12,6 @@
     "flake8.args": [
         "--max-line-length=88"
     ],
-    "python.analysis.typeCheckingMode": "standard"
+    "python.analysis.typeCheckingMode": "standard",
+    "makefile.configureOnOpen": false
 }

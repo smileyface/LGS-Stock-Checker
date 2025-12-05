@@ -19,5 +19,6 @@ if __name__ == "__main__":
             Queue(q, connection=redis_manager.get_redis_connection())
             for q in listen
         ]
-        worker = LGSWorker(queues, connection=redis_manager.get_redis_connection())
+        worker = LGSWorker(queues,
+                           connection=redis_manager.get_redis_connection())
         worker.work()

@@ -13,6 +13,8 @@ import time
 # --- Constants ---
 CHUNK_SIZE = 20000
 
+
+# --- Tasks ---
 @task_manager.task()
 def update_card_catalog():
     """
@@ -137,8 +139,8 @@ def update_full_catalog():
             # When a chunk is full, process it.
             if i % CHUNK_SIZE == 0:
                 chunk_duration = time.monotonic() - chunk_start_time
-                logger.info(f"Publishing chunk of {len(printings_chunk)} printings... \
-                            (took {chunk_duration:.2f}s)")
+                logger.info(f"Publishing chunk of {len(printings_chunk)}\
+                             printings... (took {chunk_duration:.2f}s)")
                 redis_manager.publish_pubsub("catalog_printings_chunk_result",
                                              {"printings": printings_chunk})
                 printings_chunk = []
@@ -157,7 +159,8 @@ def update_full_catalog():
                 f"Updating database."
             )
             redis_manager.publish_pubsub("catalog_finishes_chunk_result",
-                                         {"finishes": list(all_finishes_found)})
+                                         {"finishes": list(all_finishes_found)
+                                          })
 
     except Exception as e:
         logger.error(

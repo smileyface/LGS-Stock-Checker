@@ -30,7 +30,9 @@ def app(mocker, db_session):
     # Create the app using the new two-stage factory pattern.
     # 1. Create the base app with test-specific configuration.
     _app = create_base_app(
-        config_name="testing", override_config=test_config, database_url=TEST_DATABASE_URL
+        config_name="testing",
+        override_config=test_config,
+        database_url=TEST_DATABASE_URL
     )
     # 2. Apply web-specific configurations.
     _app = configure_web_app(_app)

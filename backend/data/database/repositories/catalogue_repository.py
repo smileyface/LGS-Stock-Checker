@@ -104,7 +104,7 @@ def bulk_add_finishes(finish_names: List[str],
 @db_query
 def bulk_add_card_printings(printings: List[Dict[str, Any]],
                             *,
-                            session : Session = Session()) -> None:
+                            session: Session = Session()) -> None:
     if not printings:
         return
     stmt = insert(CardPrinting).values(printings)

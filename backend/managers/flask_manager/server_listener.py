@@ -39,7 +39,8 @@ def _handle_catalog_set_data_result(payload: dict):
     """Handler for 'catalog_set_data_result' from workers."""
     set_data = payload.get("sets")
     if set_data and isinstance(set_data, list):
-        logger.info(f"Received {len(set_data)} sets from worker. Updating database.")
+        logger.info(f"Received {len(set_data)} sets from worker. \
+                    Updating database.")
         database.add_set_data_to_catalog(set_data)
     else:
         logger.error(f"Invalid set data payload: {payload}")
@@ -63,10 +64,13 @@ def _handle_catalog_printings_chunk_result(payload: dict):
         logger.error(f"Invalid printings chunk payload: {payload}")
         return
 
-    logger.info(f"Processing chunk of {len(printings_chunk)} printings from worker.")
+    logger.info(f"Processing chunk of {len(printings_chunk)} printings\
+                 from worker.")
     # This logic is moved from the old `_process_catalog_chunk` helper
     printings_to_add = [
-        {k: v for k, v in p.items() if k != "finishes"} for p in printings_chunk
+        {k:
+         v for k,
+         v in p.items() if k != "finishes"} for p in printings_chunk
     ]
     database.bulk_add_card_printings(printings_to_add)
 

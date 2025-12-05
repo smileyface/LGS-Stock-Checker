@@ -1,5 +1,5 @@
 import pytest  # noqa
-from unittest.mock import patch, call
+from unittest.mock import patch
 from tasks.catalog_tasks import (
     update_card_catalog,
     update_set_catalog,
@@ -114,7 +114,8 @@ def test_update_set_catalog_fetch_fails(mock_publish, mock_fetch_sets):
 
 @patch("tasks.catalog_tasks.fetch_all_sets")
 @patch("tasks.catalog_tasks.redis_manager.publish_pubsub")
-def test_update_set_catalog_handles_missing_keys(mock_publish, mock_fetch_sets):
+def test_update_set_catalog_handles_missing_keys(mock_publish,
+                                                 mock_fetch_sets):
     """
     GIVEN fetched set data has items with missing keys
     WHEN update_set_catalog is called
@@ -202,21 +203,22 @@ def test_update_full_catalog_success(
     ]
     expected_finishes = ["foil", "nonfoil", "etched"]
 
-    expected_calls = [
-        call(
-            "catalog_printings_chunk_result",
-            {"printings": expected_printings_chunk},
-        ),
-        call(
-            "catalog_finishes_chunk_result",
-            {"finishes": sorted(expected_finishes)},
-        ),
-    ]
+    #    expected_calls = [
+    #        call(
+    #            "catalog_printings_chunk_result",
+    #            {"printings": expected_printings_chunk},
+    #        ),
+    #        call(
+    #            "catalog_finishes_chunk_result",
+    #            {"finishes": sorted(expected_finishes)},
+    #        ),
+    #    ]
     # Use any_order because the final finishes chunk could be processed
     # before the printings chunk in some async scenarios, though not here.
     # Sorting the list of finishes ensures the test is deterministic.
     # We need to sort the actual call's list as well.
-    # A bit complex to check, so let's check call count and contents separately.
+    # A bit complex to check, so let's check call count
+    # and contents separately.
 
     assert mock_publish.call_count == 2
 

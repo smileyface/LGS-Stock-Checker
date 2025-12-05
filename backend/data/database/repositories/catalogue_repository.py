@@ -17,7 +17,9 @@ from ..models import (
 @db_query
 def add_card_names_to_catalog(card_names: List[str],
                               *,
-                              session: Session = Session()) -> None:
+                              session: Session
+                              ) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Adds a list of card names to the cards table, ignoring any duplicates.
     This uses a PostgreSQL-specific "INSERT ... ON CONFLICT DO NOTHING" for
@@ -50,7 +52,9 @@ def add_card_names_to_catalog(card_names: List[str],
 @db_query
 def add_set_data_to_catalog(set_data: List[Dict[str, Any]],
                             *,
-                            session: Session = Session()) -> None:
+                            session: Session
+                            ) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Adds a list of set data to the sets table, ignoring any duplicates.
 
@@ -77,7 +81,9 @@ def add_set_data_to_catalog(set_data: List[Dict[str, Any]],
 @db_query
 def is_card_in_catalog(card_name: str,
                        *,
-                       session: Session = Session()) -> bool:
+                       session: Session
+                       ) -> bool:
+    assert session is not None, "Session is injected by @db_query decorator"
     """Checks if a card with the given name exists in the catalog."""
     # The correct way to check for existence is to create an exists()
     # subquery and then query for its scalar result.
@@ -92,7 +98,9 @@ def is_card_in_catalog(card_name: str,
 @db_query
 def bulk_add_finishes(finish_names: List[str],
                       *,
-                      session: Session = Session()) -> None:
+                      session: Session
+                      ) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     if not finish_names:
         return
     stmt = insert(Finish).values([{"name": name} for name in finish_names])
@@ -104,7 +112,9 @@ def bulk_add_finishes(finish_names: List[str],
 @db_query
 def bulk_add_card_printings(printings: List[Dict[str, Any]],
                             *,
-                            session: Session = Session()) -> None:
+                            session: Session
+                            ) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     if not printings:
         return
     stmt = insert(CardPrinting).values(printings)
@@ -115,7 +125,9 @@ def bulk_add_card_printings(printings: List[Dict[str, Any]],
 
 @db_query
 def get_all_printings_map(*,
-                          session: Session = Session()) -> Dict[tuple, int]:
+                          session: Session
+                          ) -> Dict[tuple, int]:
+    assert session is not None, "Session is injected by @db_query decorator"
     results = session.query(
         CardPrinting.id,
         CardPrinting.card_name,
@@ -129,7 +141,9 @@ def get_all_printings_map(*,
 
 @db_query
 def get_all_finishes_map(*,
-                         session: Session = Session()) -> Dict[str, int]:
+                         session: Session
+                         ) -> Dict[str, int]:
+    assert session is not None, "Session is injected by @db_query decorator"
     results = session.query(Finish.id, Finish.name).all()
     return {r.name: r.id for r in results}
 
@@ -138,8 +152,9 @@ def get_all_finishes_map(*,
 def bulk_add_printing_finish_associations(
     associations: List[Dict[str, int]],
     *,
-    session: Session = Session()
-):
+    session: Session
+) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Bulk inserts printing-to-finish associations.
     Uses a dialect-specific approach for conflict handling to support both
@@ -165,8 +180,9 @@ def bulk_add_printing_finish_associations(
 @db_query
 def get_printings_for_card(card_name: str,
                            *,
-                           session: Session = Session()) -> List[
-                               Dict[str, Any]]:
+                           session: Session
+                           ) -> List[Dict[str, Any]]:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Retrieves all printings for a given card name, including their available
     finishes.
@@ -204,6 +220,7 @@ def is_valid_printing_specification(
     *,
     session: Session = Session()
 ) -> bool:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Validates if a given specification (set, collector #, finish) is valid for
     a card.
@@ -265,7 +282,9 @@ def is_valid_printing_specification(
 def get_set(set_name: Optional[str] = None,
             set_code: Optional[str] = None,
             *,
-            session: Session = Session()) -> Optional[Set]:
+            session: Session
+            ) -> Optional[Set]:
+    assert session is not None, "Session is injected by @db_query decorator"
     set_listing = None
     if not set_name and not set_code:
         logger.error("Neither set_name nor set_code provided. Aborting.")
@@ -283,7 +302,9 @@ def get_set(set_name: Optional[str] = None,
 @db_query
 def get_finish(finish_name: Optional[str] = None,
                *,
-               session: Session = Session()) -> Optional[Finish]:
+               session: Session
+               ) -> Optional[Finish]:
+    assert session is not None, "Session is injected by @db_query decorator"
     if not finish_name:
         logger.error("No finish name provided. Aborting.")
         return None

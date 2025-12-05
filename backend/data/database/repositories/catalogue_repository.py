@@ -90,7 +90,9 @@ def is_card_in_catalog(card_name: str,
 
 
 @db_query
-def bulk_add_finishes(finish_names: List[str], *, session):
+def bulk_add_finishes(finish_names: List[str],
+                      *,
+                      session: Session = Session()) -> None:
     if not finish_names:
         return
     stmt = insert(Finish).values([{"name": name} for name in finish_names])
@@ -100,7 +102,9 @@ def bulk_add_finishes(finish_names: List[str], *, session):
 
 
 @db_query
-def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
+def bulk_add_card_printings(printings: List[Dict[str, Any]],
+                            *,
+                            session : Session = Session()) -> None:
     if not printings:
         return
     stmt = insert(CardPrinting).values(printings)
@@ -110,7 +114,8 @@ def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session):
 
 
 @db_query
-def get_all_printings_map(*, session) -> Dict[tuple, int]:
+def get_all_printings_map(*,
+                          session: Session = Session()) -> Dict[tuple, int]:
     results = session.query(
         CardPrinting.id,
         CardPrinting.card_name,
@@ -123,14 +128,17 @@ def get_all_printings_map(*, session) -> Dict[tuple, int]:
 
 
 @db_query
-def get_all_finishes_map(*, session) -> Dict[str, int]:
+def get_all_finishes_map(*,
+                         session: Session = Session()) -> Dict[str, int]:
     results = session.query(Finish.id, Finish.name).all()
     return {r.name: r.id for r in results}
 
 
 @db_query
 def bulk_add_printing_finish_associations(
-    associations: List[Dict[str, int]], *, session
+    associations: List[Dict[str, int]],
+    *,
+    session: Session = Session()
 ):
     """
     Bulk inserts printing-to-finish associations.

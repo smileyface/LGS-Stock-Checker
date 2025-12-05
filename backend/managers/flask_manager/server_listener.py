@@ -1,7 +1,9 @@
 import threading
 import json
 import atexit
-from managers import redis_manager, availability_manager
+from managers import (redis_manager,
+                      availability_manager)
+from data import database
 from utility import logger
 
 
@@ -22,9 +24,79 @@ def _handle_availability_result(payload: dict):
         logger.error(f"Invalid availability result payload: {payload}")
 
 
+def _handle_catalog_card_names_result(payload: dict):
+    """Handler for 'catalog_card_names_result' from workers."""
+    card_names = payload.get("names")
+    if card_names and isinstance(card_names, list):
+        logger.info(f"Received {len(card_names)} card names from worker.\
+                     Updating database.")
+        database.add_card_names_to_catalog(card_names)
+    else:
+        logger.error(f"Invalid card names payload: {payload}")
+
+
+def _handle_catalog_set_data_result(payload: dict):
+    """Handler for 'catalog_set_data_result' from workers."""
+    set_data = payload.get("sets")
+    if set_data and isinstance(set_data, list):
+        logger.info(f"Received {len(set_data)} sets from worker. Updating database.")
+        database.add_set_data_to_catalog(set_data)
+    else:
+        logger.error(f"Invalid set data payload: {payload}")
+
+
+def _handle_catalog_finishes_result(payload: dict):
+    """Handler for 'catalog_finishes_result' from workers."""
+    finishes = payload.get("finishes")
+    if finishes and isinstance(finishes, list):
+        logger.info(f"Received {len(finishes)} finishes from worker. \
+                    Updating database.")
+        database.bulk_add_finishes(finishes)
+    else:
+        logger.error(f"Invalid finishes payload: {payload}")
+
+
+def _handle_catalog_printings_chunk_result(payload: dict):
+    """Handler for a chunk of card printings from workers."""
+    printings_chunk = payload.get("printings")
+    if not printings_chunk or not isinstance(printings_chunk, list):
+        logger.error(f"Invalid printings chunk payload: {payload}")
+        return
+
+    logger.info(f"Processing chunk of {len(printings_chunk)} printings from worker.")
+    # This logic is moved from the old `_process_catalog_chunk` helper
+    printings_to_add = [
+        {k: v for k, v in p.items() if k != "finishes"} for p in printings_chunk
+    ]
+    database.bulk_add_card_printings(printings_to_add)
+
+    # Now handle the associations
+    printings_map = database.get_all_printings_map()
+    finishes_map = database.get_all_finishes_map()
+    associations_to_add = []
+    for card in printings_chunk:
+        printing_key = (card.get("card_name"),
+                        card.get("set_code"),
+                        card.get("collector_number"))
+        printing_id = printings_map.get(printing_key)
+        if printing_id:
+            for finish_name in card.get("finishes", []):
+                finish_id = finishes_map.get(finish_name)
+                if finish_id:
+                    associations_to_add.append({"printing_id": printing_id,
+                                                "finish_id": finish_id})
+
+    if associations_to_add:
+        database.bulk_add_printing_finish_associations(associations_to_add)
+
+
 # A map of event types to their corresponding handler functions.
 HANDLER_MAP = {
     "availability_result": _handle_availability_result,
+    "catalog_card_names_result": _handle_catalog_card_names_result,
+    "catalog_set_data_result": _handle_catalog_set_data_result,
+    "catalog_finishes_result": _handle_catalog_finishes_result,
+    "catalog_printings_chunk_result": _handle_catalog_printings_chunk_result,
 }
 
 
@@ -77,7 +149,7 @@ class _Server_Listener:
                     event_type = data.get("type")
                     handler = HANDLER_MAP.get(event_type)
                     logger.debug(f"Server recieved message from worker: "
-                                 f"{data}")
+                                 f"{event_type}")
                     if handler:
                         payload = data.get("payload", {})
                         handler(payload)

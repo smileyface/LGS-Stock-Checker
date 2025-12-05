@@ -1,5 +1,5 @@
 import pytest
-from run import create_app
+from app_factory import create_base_app, configure_web_app
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -27,10 +27,13 @@ def app(mocker, db_session):
     mocker.patch("managers.flask_manager.server_listener."
                  "start_server_listener")
 
-    # Pass the overrides and the test database URL to the app factory.
-    _app = create_app(
-        "testing", override_config=test_config, database_url=TEST_DATABASE_URL
+    # Create the app using the new two-stage factory pattern.
+    # 1. Create the base app with test-specific configuration.
+    _app = create_base_app(
+        config_name="testing", override_config=test_config, database_url=TEST_DATABASE_URL
     )
+    # 2. Apply web-specific configurations.
+    _app = configure_web_app(_app)
     return _app
 
 

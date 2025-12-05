@@ -1,6 +1,6 @@
 # Makefile for LGS Stock Checker development
 
-.PHONY: help install-dev test lint format clean-py run-dev stop-dev migrate
+.PHONY: help install-dev test lint format clean-py run-dev stop-dev
 
 # Use python3 as the default interpreter
 PYTHON := python3

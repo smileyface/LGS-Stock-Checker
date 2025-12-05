@@ -506,24 +506,23 @@ def get_tracking_users_for_cards(
     logger.debug(
         f"📖 Querying for users tracking {len(card_names)} different cards."
     )
-    tracked_cards_with_users = (
-        session.query(UserTrackedCards)
+    # Query for tuples of (card_name, User) to be explicit.
+    # This avoids the Pylance typing issue and is more efficient as it
+    # only loads the data we need.
+    results = (
+        session.query(UserTrackedCards.card_name, User)
+        .join(User, UserTrackedCards.user_id == User.id)
         .filter(UserTrackedCards.card_name.in_(card_names))
-        .options(
-            joinedload(UserTrackedCards.user).joinedload(User.selected_stores)
-        )
+        .options(joinedload(User.selected_stores))
         .all()
     )
 
+    # Use a defaultdict to simplify grouping.
     card_to_users_map = {name: [] for name in card_names}
-    for tracked_card in tracked_cards_with_users:
-        if tracked_card.user:
-            user_schema = orm.UserPublicSchema.model_validate(
-                tracked_card.user
-            )
-            card_to_users_map[tracked_card
-                              .card_name
-                              .name].append(user_schema)
+    for card_name, user_orm in results:
+        # The user_orm object is guaranteed to exist because of the inner join.
+        user_schema = orm.UserPublicSchema.model_validate(user_orm)
+        card_to_users_map[card_name].append(user_schema)
 
     logger.debug("✅ Finished mapping cards to tracking users.")
     return card_to_users_map

@@ -8,7 +8,7 @@ This file creates and configures the Flask app and its extensions.
 import eventlet
 
 # These imports must come AFTER monkey_patching
-from app_factory import create_base_app, configure_web_app
+from app_factory import create_base_app, configure_web_app, configure_database
 from managers import flask_manager
 from utility import logger
 
@@ -28,5 +28,7 @@ app = configure_web_app(app)
 
 # 3. Start the background listener for results from RQ workers
 flask_manager.start_server_listener(app)
+
+app = configure_database(app)  # Configure the database connection
 
 logger.info("✅ App context for server is ready.")

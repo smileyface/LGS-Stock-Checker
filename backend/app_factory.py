@@ -2,7 +2,9 @@ import os
 from utility import logger, set_log_level
 
 
-def create_base_app(config_name=None, override_config=None, database_url=None):
+def create_base_app(config_name=None,
+                    override_config=None,
+                    database_url=None):
     """
     Creates and configures the core Flask application instance.
 
@@ -11,7 +13,6 @@ def create_base_app(config_name=None, override_config=None, database_url=None):
     - Flask app initialization (via flask_manager)
     - Configuration loading
     - Logging setup
-    - Database connection initialization
     - Login manager setup
     - Task manager initialization
 
@@ -27,7 +28,6 @@ def create_base_app(config_name=None, override_config=None, database_url=None):
         Flask: The configured base Flask application instance.
     """
     from managers import flask_manager
-    from managers import task_manager
 
     # 1. Initialize the Flask app using the dedicated manager
     app = flask_manager.initalize_flask_app(override_config, config_name)
@@ -40,7 +40,6 @@ def create_base_app(config_name=None, override_config=None, database_url=None):
 
     # 4. Initialize Core Managers
     flask_manager.login_manager_init(app)
-    task_manager.init_task_manager()
 
     logger.info("✅ Base Flask app created and configured.")
     return app
@@ -58,7 +57,7 @@ def configure_database(app):
         app (Flask): The base Flask application instance.
 
     Returns:
-        None
+        Flask: The Flask application instance with database configured.
     """
     from data import database
 
@@ -129,6 +128,10 @@ def create_worker_app():
     Returns:
         Flask: A basic, configured Flask application instance.
     """
+    from managers import task_manager
+
+    # 1. Initialize the scheduler
+    task_manager.init_task_manager()
     # For the worker, we only need the base app to establish context.
     return create_base_app()
 

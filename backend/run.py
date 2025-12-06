@@ -1,4 +1,4 @@
-from app_factory import create_base_app, configure_web_app
+from app_factory import create_base_app, configure_web_app, configure_database
 
 
 # This block is only for running the local development server
@@ -15,6 +15,7 @@ if __name__ == "__main__":
     # Create and configure the app for development
     app = create_base_app("development")
     app = configure_web_app(app)
+    app = configure_database(app)
 
     # The host and port are passed here for the dev server run.
     # socket_manager.socketio is the same instance as the one in app_factory,

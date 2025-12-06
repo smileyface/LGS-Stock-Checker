@@ -1,4 +1,4 @@
-from app_factory import create_base_app, configure_scheduler_app
+from app_factory import create_base_app, configure_scheduler_app, configure_database
 
 if __name__ == "__main__":
     # Monkey patch for eventlet-based concurrency.
@@ -15,6 +15,7 @@ if __name__ == "__main__":
     # Create and configure the app for scheduling.
     app = create_base_app()
     app = configure_scheduler_app(app)
+    app = configure_database(app)
 
     with app.app_context():
         # Schedule recurring jobs like catalog updates and availability checks.

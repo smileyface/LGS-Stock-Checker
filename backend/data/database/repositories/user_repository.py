@@ -26,7 +26,8 @@ from utility import logger
 
 @db_query
 def get_user_by_username(
-    username: str, session: Session = Session()
+    username: str,
+    session: Session
 ) -> Optional[orm.UserDBSchema]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
@@ -63,7 +64,8 @@ def get_user_by_username(
 
 @db_query
 def get_user_orm_by_username(username: str,
-                             session: Session = Session()) -> Optional[User]:
+                             session: Session
+                             ) -> Optional[User]:
     """
     Retrieve a user ORM object by username from the database.
     This is intended for internal use where the ORM object's methods are
@@ -97,8 +99,8 @@ def get_user_orm_by_username(username: str,
 
 @db_query
 def get_user_orm_by_id(user_id: int,
-                       session: Session = Session()) -> Optional[User]:
-    # This assert tells Pylance that session is not None
+                       session: Session
+                       ) -> Optional[User]:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Retrieve a user ORM object by its primary key ID.
@@ -132,9 +134,8 @@ def get_user_orm_by_id(user_id: int,
 def add_user(
     username: str,
     password_hash: str,
-    session: Session = Session()
+    session: Session
 ) -> Optional[orm.UserPublicSchema]:
-    # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Add a new user to the database with the given username and password hash.
@@ -162,8 +163,8 @@ def add_user(
 
 @db_query
 def update_username(old_username: str, new_username: str,
-                    session: Session = Session()) -> None:
-    # This assert tells Pylance that session is not None
+                    session: Session
+                    ) -> None:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Update a user's username in the database.
@@ -197,8 +198,8 @@ def update_username(old_username: str, new_username: str,
 @db_query
 def update_password(username: str,
                     password_hash: str,
-                    session: Session = Session()) -> None:
-    # This assert tells Pylance that session is not None
+                    session: Session
+                    ) -> None:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Update the password hash for a user identified by username.
@@ -228,8 +229,8 @@ def update_password(username: str,
 
 @db_query
 def get_user_stores(username: str,
-                    session: Session = Session()) -> List[orm.StoreSchema]:
-    # This assert tells Pylance that session is not None
+                    session: Session
+                    ) -> List[orm.StoreSchema]:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Fetches the list of stores selected by the specified user.
@@ -268,8 +269,8 @@ def get_user_stores(username: str,
 @db_query
 def add_user_store(username: str,
                    store_slug: str,
-                   session: Session = Session()) -> None:
-    # This assert tells Pylance that session is not None
+                   session: Session
+                   ) -> None:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Adds a store to the user's selected stores using an idiomatic ORM approach.
@@ -316,8 +317,8 @@ def add_user_store(username: str,
 
 @db_query
 def remove_user_store(username: str, store_slug: str,
-                      session: Session = Session()) -> None:
-    # This assert tells Pylance that session is not None
+                      session: Session
+                      ) -> None:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Removes a store from the user's selected stores.
@@ -359,8 +360,8 @@ def remove_user_store(username: str, store_slug: str,
 
 @db_query
 def set_user_stores(username: str, store_slugs: List[str],
-                    session: Session = Session()) -> None:
-    # This assert tells Pylance that session is not None
+                    session: Session
+                    ) -> None:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Sets the user's selected stores to the exact list provided,
@@ -404,9 +405,9 @@ def set_user_stores(username: str, store_slugs: List[str],
 
 @db_query
 def get_user_for_display(
-    username: str, session: Session = Session()
+    username: str,
+    session: Session
 ) -> Optional[orm.UserPublicSchema]:
-    # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Retrieve a user by username from the database, excluding sensitive fields,
@@ -437,8 +438,8 @@ def get_user_for_display(
 
 
 @db_query
-def get_all_users(session: Session = Session()) -> List[orm.UserPublicSchema]:
-    # This assert tells Pylance that session is not None
+def get_all_users(session: Session
+                  ) -> List[orm.UserPublicSchema]:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Retrieve all users from the database, excluding sensitive fields.
@@ -457,9 +458,9 @@ def get_all_users(session: Session = Session()) -> List[orm.UserPublicSchema]:
 
 @db_query
 def get_users_tracking_card(
-    card_name: str, session: Session = Session()
+    card_name: str,
+    session: Session
 ) -> list[orm.UserPublicSchema]:
-    # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Finds all users who are tracking a specific card.
@@ -485,9 +486,9 @@ def get_users_tracking_card(
 
 @db_query
 def get_tracking_users_for_cards(
-    card_names: list[str], session: Session = Session()
+    card_names: list[str],
+    session: Session
 ) -> dict[str, list[orm.UserPublicSchema]]:
-    # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Efficiently finds all users tracking any of the given card names.
@@ -505,22 +506,23 @@ def get_tracking_users_for_cards(
     logger.debug(
         f"📖 Querying for users tracking {len(card_names)} different cards."
     )
-    tracked_cards_with_users = (
-        session.query(UserTrackedCards)
+    # Query for tuples of (card_name, User) to be explicit.
+    # This avoids the Pylance typing issue and is more efficient as it
+    # only loads the data we need.
+    results = (
+        session.query(UserTrackedCards.card_name, User)
+        .join(User, UserTrackedCards.user_id == User.id)
         .filter(UserTrackedCards.card_name.in_(card_names))
-        .options(
-            joinedload(UserTrackedCards.user).joinedload(User.selected_stores)
-        )
+        .options(joinedload(User.selected_stores))
         .all()
     )
 
+    # Use a defaultdict to simplify grouping.
     card_to_users_map = {name: [] for name in card_names}
-    for tracked_card in tracked_cards_with_users:
-        if tracked_card.user:
-            user_schema = orm.UserPublicSchema.model_validate(
-                tracked_card.user
-            )
-            card_to_users_map[tracked_card.card_name].append(user_schema)
+    for card_name, user_orm in results:
+        # The user_orm object is guaranteed to exist because of the inner join.
+        user_schema = orm.UserPublicSchema.model_validate(user_orm)
+        card_to_users_map[card_name].append(user_schema)
 
     logger.debug("✅ Finished mapping cards to tracking users.")
     return card_to_users_map

@@ -53,7 +53,7 @@ Stores specific criteria for a tracked card (e.g., set, finish).
 | `id`               | Integer | Primary Key, Autoincrement            | Unique identifier for the specification.  |
 | `user_card_id`     | Integer | Foreign Key (user_tracked_cards.id)   | The ID of the tracked card entry this applies to. |
 | `set_code`         | String  | Nullable                              | The 3-4 letter set code (e.g., "M21").    |
-| `collector_number` | Integer  | Nullable                              | The card's collector number in the set.   |
+| `collector_number` | Integer | Nullable                              | The card's collector number in the set.   |
 | `finish`           | String  | Nullable                              | The card's finish (e.g., "foil", "etched"). |
 
 ## `sets`

@@ -21,8 +21,9 @@ from utility import logger
 def get_users_cards(
     username: str,
     *,
-    session: Session = Session()
+    session: Session
 ) -> List[orm.UserTrackedCardSchema]:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Retrieves all tracked cards for a given user using an
     efficient single query.
@@ -48,8 +49,9 @@ def add_card_to_user(
     username: str,
     card_data: Dict[str, Any],
     *,
-    session: Session = Session(),
+    session: Session,
 ) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Adds or updates a tracked card for a user, including its specifications.
     This function handles finding the user, finding/creating the card in the
@@ -149,7 +151,9 @@ def add_card_to_user(
 @db_query
 def get_card(card_name: str,
              *,
-             session: Session = Session()) -> Optional[Card]:
+             session: Session
+             ) -> Optional[Card]:
+    assert session is not None, "Session is injected by @db_query decorator"
     if not card_name:
         logger.error("No card name was passed in")
         return None
@@ -166,7 +170,9 @@ def get_tracked_card(
     username: str,
         card_name: str,
         *,
-        session: Session = Session()) -> Optional[UserTrackedCards]:
+        session: Session
+        ) -> Optional[UserTrackedCards]:
+    assert session is not None, "Session is injected by @db_query decorator"
     user = get_user_orm_by_username(username)
     if not user:
         return None
@@ -180,8 +186,10 @@ def get_tracked_card(
 @db_query
 def search_card_names(query: str,
                       *,
-                      session: Session = Session(),
-                      limit: int = 10) -> List[str]:
+                      session: Session,
+                      limit: int = 10
+                      ) -> List[str]:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Searches for card names in the global 'cards' table that match
     a given query. Uses a case-insensitive LIKE query for partial matching.
@@ -207,7 +215,9 @@ def search_card_names(query: str,
 def delete_user_card(username: str,
                      card_name: str,
                      *,
-                     session: Session = Session()) -> None:
+                     session: Session
+                     ) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Deletes a tracked card for a user, ensuring related specifications are
       also deleted via ORM cascades.
@@ -242,8 +252,9 @@ def update_user_tracked_card_preferences(
     card_name: str,
     preference_updates: Dict[str, Any],
     *,
-    session: Session = Session(),
+    session: Session,
 ) -> None:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Updates specific preferences (e.g., amount) for a single tracked card.
     """
@@ -302,7 +313,11 @@ def update_user_tracked_card_preferences(
 
 
 @db_query
-def filter_existing_card_names(card_names: List[str], *, session) -> set:
+def filter_existing_card_names(card_names: List[str],
+                               *,
+                               session: Session
+                               ) -> set:
+    assert session is not None, "Session is injected by @db_query decorator"
     """
     Given a list of card names, returns a set of the names that exist in the
     'cards' table.

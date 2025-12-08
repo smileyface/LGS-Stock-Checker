@@ -47,14 +47,17 @@ class MockCardAvailabilityData:
 @pytest.fixture(scope="function")
 def fake_redis(mocker):
     """
-    Provides a FakeRedis instance for isolated testing of Redis-dependent features.
-    This fixture ensures that each test gets a fresh, in-memory Redis database.
+    Provides a FakeRedis instance for isolated testing of
+    Redis-dependent features.
+    This fixture ensures that each test gets a fresh, in-memory
+    Redis database.
     """
     # To use fakeredis, you may need to install it: pip install fakeredis
     try:
         import fakeredis
     except ImportError:
-        pytest.fail("fakeredis is not installed. Please run: pip install fakeredis")
+        pytest.fail("fakeredis is not installed. \
+                    Please run: pip install fakeredis")
 
     fake_redis_instance = fakeredis.FakeStrictRedis()
     yield fake_redis_instance

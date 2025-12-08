@@ -20,5 +20,6 @@
   "flake8.args": ["--max-line-length=88", "--extend-ignore=E203"],
 
   // --- Environment File ---
-  "python.envFile": "${workspaceFolder}/.env"
+  "python.envFile": "${workspaceFolder}/.env",
+  "makefile.configureOnOpen": false
 }

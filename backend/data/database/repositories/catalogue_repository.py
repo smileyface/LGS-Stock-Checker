@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 
+from sqlalchemy import tuple_
 from utility import logger
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, joinedload
@@ -137,6 +138,61 @@ def get_all_printings_map(*,
     return {
         (r.card_name, r.set_code, r.collector_number): r.id for r in results
     }
+
+
+@db_query
+def get_chunk_printing_ids(
+        printings_chunk: List[Dict[str, Any]],
+        *,
+        session: Session
+) -> Dict[tuple, int]:
+    assert session is not None, "Session is injected by @db_query decorator"
+    """
+    Given a chunk of printing data, retrieves their corresponding IDs from
+    the database.
+
+    Args:
+        printings_chunk: A list of printing data dictionaries.
+        session: The SQLAlchemy session.
+
+    Returns:
+        A mapping from (card_name, set_code, collector_number) tuples to
+        their database IDs.
+    """
+    keys = [
+        (p.get("card_name"), p.get("set_code"), p.get("collector_number"))
+        for p in printings_chunk
+    ]
+
+    results = session.query(
+        CardPrinting.id,
+        CardPrinting.card_name,
+        CardPrinting.set_code,
+        CardPrinting.collector_number,
+    ).filter(
+        tuple_(
+            CardPrinting.card_name,
+            CardPrinting.set_code,
+            CardPrinting.collector_number,
+        ).in_(keys)
+    ).all()
+
+    return {
+        (r.card_name, r.set_code, r.collector_number): r.id for r in results
+    }
+
+
+@db_query
+def get_chunk_finish_ids(
+        finish_names: List[str],
+        *,
+        session: Session
+) -> Dict[str, int]:
+    assert session is not None, "Session is injected by @db_query decorator"
+    results = session.query(Finish.id, Finish.name).filter(
+        Finish.name.in_(finish_names)
+    ).all()
+    return {r.name: r.id for r in results}
 
 
 @db_query

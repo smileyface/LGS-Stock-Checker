@@ -75,8 +75,8 @@ def _handle_catalog_printings_chunk_result(payload: dict):
     database.bulk_add_card_printings(printings_to_add)
 
     # Now handle the associations
-    printings_map = database.get_all_printings_map()
-    finishes_map = database.get_all_finishes_map()
+    printings_map = database.get_chunk_printing_ids(printings_chunk)
+    finishes_map = database.get_chunk_finish_ids(printings_chunk)
     associations_to_add = []
     for card in printings_chunk:
         printing_key = (card.get("card_name"),

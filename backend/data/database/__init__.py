@@ -55,13 +55,14 @@ from .repositories.catalogue_repository import (
     get_printings_for_card,
     is_card_in_catalog,
     is_valid_printing_specification,
+    get_chunk_printing_ids,
+    get_chunk_finish_ids,
 )
 
 # Define the public API of the `data.database` package.
 __all__ = [
     # Setup
     "initialize_database",
-    "schema",
     # Session Manager
     "get_session",
     "remove_session",
@@ -102,4 +103,6 @@ __all__ = [
     "get_all_finishes_map",
     "bulk_add_printing_finish_associations",
     "is_card_in_catalog",
+    "get_chunk_printing_ids",
+    "get_chunk_finish_ids",
 ]

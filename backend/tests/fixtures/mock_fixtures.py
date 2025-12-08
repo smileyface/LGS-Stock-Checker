@@ -44,33 +44,42 @@ class MockCardAvailabilityData:
         return {"price": self.price}
 
 
-# Global variable to hold the mock Redis instance, accessible by fixtures.
-_global_mock_redis_instance = None
+@pytest.fixture(scope="function")
+def fake_redis(mocker):
+    """
+    Provides a FakeRedis instance for isolated testing of Redis-dependent features.
+    This fixture ensures that each test gets a fresh, in-memory Redis database.
+    """
+    # To use fakeredis, you may need to install it: pip install fakeredis
+    try:
+        import fakeredis
+    except ImportError:
+        pytest.fail("fakeredis is not installed. Please run: pip install fakeredis")
 
-
-def set_global_mock_redis_instance(instance):
-    """Sets the global mock redis instance."""
-    global _global_mock_redis_instance
-    _global_mock_redis_instance = instance
+    fake_redis_instance = fakeredis.FakeStrictRedis()
+    yield fake_redis_instance
+    fake_redis_instance.flushall()
 
 
 @pytest.fixture(autouse=True)
-def mock_redis_manager_objects(mocker):
+def mock_redis_manager_objects(mocker, fake_redis):
     """
-    Automatically mock the low-level Redis connection objects and the
-    import-time Queue/Scheduler objects to prevent any real network calls.
+    Automatically mocks Redis-related objects to use a fake in-memory Redis
+    instance (`fakeredis`) for all tests. This intercepts cache, pubsub, and
+    task queue calls.
     """
-    global _global_mock_redis_instance
-
-    mocker.patch(
-        "managers.redis_manager.redis_manager.get_redis_connection",
-        _global_mock_redis_instance,
-    )
-
     mock_queue = MagicMock()
     mock_queue.task.side_effect = lambda func: func
     mocker.patch("managers.redis_manager.redis_manager.queue", mock_queue)
     mocker.patch("managers.redis_manager.redis_manager.scheduler", MagicMock())
+    mocker.patch(
+        "managers.redis_manager.redis_manager.get_redis_connection",
+        return_value=fake_redis
+    )
+    mocker.patch(
+        "data.cache.cache_manager.redis_manager.get_redis_connection",
+        return_value=fake_redis,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -102,12 +111,3 @@ def mock_fetch_all_card_data(mocker):
     mock = mocker.patch("externals.scryfall_api.fetch_all_card_data")
     mock.return_value = []
     return mock
-
-
-@pytest.fixture
-def mock_cache_availability(mocker):
-    """
-    Mocks the cache_availability function used in socket handlers.
-    """
-    return mocker.patch("managers.availability_manager."
-                        "cache_availability_data")

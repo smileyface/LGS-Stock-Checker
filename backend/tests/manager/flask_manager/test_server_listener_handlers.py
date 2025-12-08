@@ -34,8 +34,8 @@ def test_handle_availability_result():
     assert cached_data == [{"price": 9.99, "stock": 5}]
 
 
-@patch("managers.flask_manager.server_listener.\
-       database.add_card_names_to_catalog")
+@patch("managers.flask_manager.server_listener"
+       ".database.add_card_names_to_catalog")
 def test_handle_catalog_card_names_result(mock_add_names):
     """
     GIVEN a payload with card names
@@ -52,8 +52,8 @@ def test_handle_catalog_card_names_result(mock_add_names):
     mock_add_names.assert_called_once_with(["Sol Ring", "Brainstorm"])
 
 
-@patch("managers.flask_manager.server_listener.\
-       database.add_set_data_to_catalog")
+@patch("managers.flask_manager.server_listener"
+       ".database.add_set_data_to_catalog")
 def test_handle_catalog_set_data_result(mock_add_sets):
     """
     GIVEN a payload with set data
@@ -72,8 +72,8 @@ def test_handle_catalog_set_data_result(mock_add_sets):
     )
 
 
-@patch("managers.flask_manager.server_listener.\
-       database.bulk_add_finishes")
+@patch("managers.flask_manager.server_listener"
+       ".database.bulk_add_finishes")
 def test_handle_catalog_finishes_result(mock_add_finishes):
     """
     GIVEN a payload with finishes
@@ -90,14 +90,14 @@ def test_handle_catalog_finishes_result(mock_add_finishes):
     mock_add_finishes.assert_called_once_with(["foil", "non-foil"])
 
 
-@patch("managers.flask_manager.server_listener.\
-       database.bulk_add_printing_finish_associations")
-@patch("managers.flask_manager.server_listener.\
-       database.get_chunk_finish_ids")
-@patch("managers.flask_manager.server_listener.\
-       database.get_chunk_printing_ids")
-@patch("managers.flask_manager.server_listener.\
-       database.bulk_add_card_printings")
+@patch("managers.flask_manager.server_listener."
+       "database.bulk_add_printing_finish_associations")
+@patch("managers.flask_manager.server_listener."
+       "database.get_chunk_finish_ids")
+@patch("managers.flask_manager.server_listener."
+       "database.get_chunk_printing_ids")
+@patch("managers.flask_manager.server_listener."
+       "database.bulk_add_card_printings")
 def test_handle_catalog_printings_chunk_result(
     mock_add_printings, mock_get_ids, mock_get_finishes, mock_add_associations
 ):

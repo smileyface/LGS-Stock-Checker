@@ -26,7 +26,9 @@ def test_update_card_catalog_success(mock_publish, mock_fetch):
     # Assert
     mock_fetch.assert_called_once()
     mock_publish.assert_called_once_with(
-        "catalog_card_names_result", {"names": card_names}
+        "worker-results",
+        {"type": "catalog_card_names_result",
+         "payload": {"names": card_names}}
     )
 
 
@@ -89,7 +91,11 @@ def test_update_set_catalog_success(mock_publish, mock_fetch_sets):
     # Assert
     mock_fetch_sets.assert_called_once()
     mock_publish.assert_called_once_with(
-        "catalog_set_data_result", {"sets": expected_transformed_data}
+        "worker-results",
+        {
+            "type": "catalog_set_data_result",
+            "payload": {"sets": expected_transformed_data}
+        }
     )
 
 
@@ -143,7 +149,11 @@ def test_update_set_catalog_handles_missing_keys(mock_publish,
         }
     ]
     mock_publish.assert_called_once_with(
-        "catalog_set_data_result", {"sets": expected_call_data}
+        "worker-results",
+        {
+            "type": "catalog_set_data_result",
+            "payload": {"sets": expected_call_data}
+        }
     )
 
 
@@ -224,17 +234,18 @@ def test_update_full_catalog_success(
 
     # Check printings call
     mock_publish.assert_any_call(
-        "catalog_printings_chunk_result",
-        {"printings": expected_printings_chunk},
+        "worker-results",
+        {"type": "catalog_printings_chunk_result",
+         "payload": {"printings": expected_printings_chunk}}
     )
 
     # Check finishes call by inspecting the actual calls made to the mock
     finishes_call = next(
         c
         for c in mock_publish.call_args_list
-        if c[0][0] == "catalog_finishes_chunk_result"
+        if c.args[1].get("type") == "catalog_finishes_chunk_result"
     )
     assert finishes_call is not None
     # Sort both lists to ensure comparison is order-independent
-    actual_finishes = sorted(finishes_call[0][1]["finishes"])
+    actual_finishes = sorted(finishes_call.args[1]["payload"]["finishes"])
     assert actual_finishes == sorted(expected_finishes)

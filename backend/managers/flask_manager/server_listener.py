@@ -66,7 +66,14 @@ def _handle_catalog_printings_chunk_result(payload: dict):
 
     logger.info(f"Processing chunk of {len(printings_chunk)} printings\
                  from worker.")
-    # This logic is moved from the old `_process_catalog_chunk` helper
+
+    # First, add all unique finishes to the database
+    finishes_in_chunk = {finish for card in printings_chunk
+                         for finish in card.get("finishes", [])}
+    if finishes_in_chunk:
+        database.bulk_add_finishes(list(finishes_in_chunk))
+
+    # Next, add the card printings themselves
     printings_to_add = [
         {k:
          v for k,
@@ -76,7 +83,9 @@ def _handle_catalog_printings_chunk_result(payload: dict):
 
     # Now handle the associations
     printings_map = database.get_chunk_printing_ids(printings_chunk)
-    finishes_map = database.get_chunk_finish_ids(printings_chunk)
+    unique_finishes = {finish_name for printing in printings_chunk
+                       for finish_name in printing.get("finishes", [])}
+    finishes_map = database.get_chunk_finish_ids(list(unique_finishes))
     associations_to_add = []
     for card in printings_chunk:
         printing_key = (card.get("card_name"),

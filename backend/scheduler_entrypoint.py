@@ -9,7 +9,7 @@ if __name__ == "__main__":
     eventlet.monkey_patch()
 
     # These imports must come AFTER monkey_patching
-    from managers.flask_manager import scheduler_listener
+    from managers.messaging_manager.service_listener import scheduler_listener
     from managers import redis_manager
     from tasks.scheduler_setup import schedule_recurring_tasks
     from utility import logger

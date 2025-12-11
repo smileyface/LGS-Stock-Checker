@@ -1,8 +1,13 @@
+from typing import Callable
 import threading
 import json
 import atexit
 from managers import redis_manager, task_manager, user_manager
 from utility import logger
+from schema.messaging import (
+    AvailabilityResultMessage,
+    QueueAllAvailabilityChecksCommand
+)
 
 
 def _handle_availability_request(payload: dict):
@@ -47,9 +52,11 @@ def _handle_queue_all_availability_checks(payload: dict):
             )
 
 
-HANDLER_MAP = {
-    "availability_request": _handle_availability_request,
-    "queue_all_availability_checks": _handle_queue_all_availability_checks,
+HANDLER_MAP: dict[str, Callable] = {
+    AvailabilityResultMessage.name:
+    _handle_availability_request,
+    QueueAllAvailabilityChecksCommand.name:
+    _handle_queue_all_availability_checks,
 }
 
 

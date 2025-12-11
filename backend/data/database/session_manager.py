@@ -1,3 +1,4 @@
+from typing import Callable, Any
 from functools import wraps
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import text
@@ -7,11 +8,11 @@ from utility import logger
 SessionLocal = None
 
 
-def db_query(func):
+def db_query(func: Callable) -> Callable:
     """Decorator to manage database session scope for repositories."""
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any:
         session = get_session()
         # Open a new session
         try:

@@ -4,6 +4,7 @@ x-common-backend-env:
   # The deploy.sh script sets and exports this variable.
   # Add the path where pip installs executables to the container's PATH
   &common-backend-env
+  PYTHONPATH: /app
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
   REDIS_HOST: redis
   FLASK_CONFIG: production
@@ -16,8 +17,8 @@ x-common-backend-env:
 services:
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: backend
+      dockerfile: Dockerfile
     container_name: lgs-stock-checker-backend-1
     restart: unless-stopped
     command: >

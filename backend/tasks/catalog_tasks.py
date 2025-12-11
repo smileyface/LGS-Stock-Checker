@@ -3,13 +3,18 @@ from externals import (
     fetch_all_sets,
     fetch_all_card_data,
 )
-from data import database
 from managers import task_manager
+from managers import redis_manager
 from utility import logger
 from datetime import datetime
 import time
 
 
+# --- Constants ---
+CHUNK_SIZE = 20000
+
+
+# --- Tasks ---
 @task_manager.task()
 def update_card_catalog():
     """
@@ -25,9 +30,16 @@ def update_card_catalog():
             f"🗂️ Fetched {len(card_names)} card names from source. "
             f"Updating database catalog..."
         )
-        database.add_card_names_to_catalog(
-            card_names
-        )  # This now handles bulk insertion efficiently
+        redis_manager.publish_pubsub(
+            "worker-results",
+            {
+                "type": "catalog_card_names_result",
+                "payload":
+                {
+                    "names": card_names
+                }
+            }
+        )
 
     logger.info("🏁 Finished background task: update_card_catalog")
 
@@ -52,8 +64,9 @@ def update_set_catalog():
                 "code": s.get("code"),
                 "name": s.get("name"),
                 "release_date": (
-                    datetime.strptime(s.get("released_at"), "%Y-%m-%d").date()
-                    if s.get("released_at")
+                    datetime.strptime(s.get("released_at"),
+                                      "%Y-%m-%d").date()
+                    if s and s.get("released_at")
                     else None
                 ),
             }
@@ -65,7 +78,17 @@ def update_set_catalog():
             f"🗂️ Fetched and processed {len(set_data_to_add)} sets from "
             f"source. Updating database catalog..."
         )
-        database.add_set_data_to_catalog(set_data_to_add)
+        redis_manager.publish_pubsub(
+            "worker-results",
+            {
+                "type": "catalog_set_data_result",
+                "payload":
+                {
+                    "sets": set_data_to_add
+                }
+            }
+        )
+
         logger.info("✅ Successfully updated set catalog in the database.")
     else:
         logger.warning(
@@ -102,63 +125,75 @@ def update_full_catalog():
             return
 
         # Process the stream in chunks to keep memory usage low.
-        chunk_size = 20000
-        all_finishes = set()
+        all_finishes_found = set()
         printings_chunk = []
-        associations_chunk_temp = []
 
         logger.info(f"Processing card data stream in chunks of "
-                    f"{chunk_size}...")
+                    f"{CHUNK_SIZE}...")
         chunk_start_time = time.monotonic()
         for i, card in enumerate(card_data_stream, 1):
             total_cards_processed = i
             # 1. Extract unique finishes
             for finish in card.get("finishes", []):
-                all_finishes.add(finish)
+                all_finishes_found.add(finish)
 
             # 2. Extract printings
             if (
                 card.get("name")
                 and card.get("set")
                 and card.get("collector_number")
+                and card.get("finishes")
             ):
                 printings_chunk.append(
                     {
                         "card_name": card["name"],
                         "set_code": card["set"],
                         "collector_number": card["collector_number"],
+                        "finishes": card["finishes"],
                     }
                 )
-                associations_chunk_temp.append(card)
 
             # When a chunk is full, process it.
-            if i % chunk_size == 0:
+            if i % CHUNK_SIZE == 0:
                 chunk_duration = time.monotonic() - chunk_start_time
-                logger.info(
-                    f"Processing chunk up to card {i}... "
-                    f"(took {chunk_duration:.2f}s)"
+                logger.info(f"Publishing chunk of {len(printings_chunk)}\
+                             printings... (took {chunk_duration:.2f}s)")
+                redis_manager.publish_pubsub(
+                    "worker-results",
+                    {
+                        "type": "catalog_printings_chunk_result",
+                        "payload": {"printings": printings_chunk}
+                    }
                 )
-                _process_catalog_chunk(printings_chunk,
-                                       associations_chunk_temp)
-                # Clear chunks for the next iteration
                 printings_chunk = []
-                associations_chunk_temp = []
-                chunk_start_time = (
-                    time.monotonic()
-                )  # Reset timer for next chunk
+                chunk_start_time = time.monotonic()
 
         # Process any remaining items in the last partial chunk
         if printings_chunk:
             logger.info("Processing final chunk...")
-            _process_catalog_chunk(printings_chunk, associations_chunk_temp)
+            redis_manager.publish_pubsub(
+                "worker-results",
+                {
+                    "type": "catalog_printings_chunk_result",
+                    "payload": {"printings": printings_chunk}
+                }
+            )
 
         # Add all unique finishes found across all chunks at the end
-        if all_finishes:
+        if all_finishes_found:
             logger.info(
-                f"Found {len(all_finishes)} unique finishes. "
+                f"Found {len(all_finishes_found)} unique finishes. "
                 f"Updating database."
             )
-            database.bulk_add_finishes(list(all_finishes))
+            redis_manager.publish_pubsub(
+                "worker-results",
+                {
+                    "type": "catalog_finishes_chunk_result",
+                    "payload": {
+                        "finishes": list(all_finishes_found)
+                    },
+                },
+            )
 
     except Exception as e:
         logger.error(
@@ -171,63 +206,3 @@ def update_full_catalog():
             f"Processed {total_cards_processed} cards in "
             f"{total_duration:.2f} seconds."
         )
-
-
-def _process_catalog_chunk(printings_to_add, associations_to_add_temp):
-    """Helper function to process one chunk of card data."""
-    if not printings_to_add:
-        return
-
-    # --- Pre-validation Step ---
-    # Extract all unique card names from the chunk to validate them.
-    card_names_in_chunk = {p["card_name"] for p in printings_to_add}
-
-    # Find which of these names actually exist in our 'cards' table.
-    valid_card_names = database.filter_existing_card_names(
-        list(card_names_in_chunk)
-    )
-
-    # Filter the printing and association lists to only include valid cards.
-    valid_printings = [
-        p for p in printings_to_add if p["card_name"] in valid_card_names
-    ]
-    valid_associations_temp = [
-        a for a in associations_to_add_temp if a.get("name") in
-        valid_card_names
-    ]
-
-    if not valid_printings:
-        logger.info(
-            "No valid printings in this chunk after filtering. Skipping."
-        )
-        return
-
-    logger.info(f"Adding {len(valid_printings)} valid printings to database.")
-    database.bulk_add_card_printings(valid_printings)
-
-    # Get maps of all printings and finishes to resolve IDs
-    printings_map = database.get_all_printings_map()
-    finishes_map = database.get_all_finishes_map()
-
-    associations_to_add = []
-    for card in valid_associations_temp:
-        printing_key = (
-            card.get("name"),
-            card.get("set"),
-            card.get("collector_number"),
-        )
-        printing_id = printings_map.get(printing_key)
-
-        if printing_id:
-            for finish_name in card.get("finishes", []):
-                finish_id = finishes_map.get(finish_name)
-                if finish_id:
-                    associations_to_add.append(
-                        {"printing_id": printing_id, "finish_id": finish_id}
-                    )
-
-    if associations_to_add:
-        logger.info(
-            f"Adding {len(associations_to_add)} printing-finish associations."
-        )
-        database.bulk_add_printing_finish_associations(associations_to_add)

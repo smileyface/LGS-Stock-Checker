@@ -263,6 +263,8 @@ def test_all_functions_no_crashes(
             "create_app",
             "initialize_redis",
             "configure_socket_io",
+            "get_engine",  # Requires prior initialization
+            "startup_database",  # A startup hook, not a standalone function
         ):
             continue
 

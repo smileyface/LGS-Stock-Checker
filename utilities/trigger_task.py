@@ -13,14 +13,16 @@ import os
 
 try:
     # Add the application root directory (/app) to the Python path.
-    # This ensures that top-level packages like 'managers' and 'utility' can be found.
+    # This ensures that top-level packages like 'managers' and 'utility'
+    # can be found.
     sys.path.insert(
         0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     )
 
-    # Import all task modules to ensure they are registered with the task manager.
-    import tasks.card_availability_tasks
-    import tasks.catalog_tasks
+    # Import all task modules to ensure they are registered with the
+    # task manager.
+    import tasks.card_availability_tasks  # noqa: F401
+    import tasks.catalog_tasks  # noqa: F401
 
     from managers.task_manager import queue_task
     from utility import logger

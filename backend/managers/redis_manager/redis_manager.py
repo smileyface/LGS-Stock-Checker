@@ -5,12 +5,13 @@ This module creates singleton instances of the Redis connection, RQ Queue,
 and RQ Scheduler. This ensures that all parts of the application (web server,
 workers, scripts) interact with the same Redis-backed objects.
 """
-
+from typing import Optional
 from redis import Redis
+from redis.client import PubSub
 from rq import Queue
 from rq_scheduler import Scheduler
 import os
-import json
+from schema.messaging.messages import PubSubMessage
 
 from utility import logger
 
@@ -21,16 +22,13 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379")
 _redis_connections = {}
 
 
-def get_redis_connection(decode_responses=False) -> Redis:
+def get_redis_connection(decode_responses=False) -> Optional[Redis]:
     """
     Returns a Redis connection instance, creating it if it doesn't
     exist for the given `decode_responses` setting. This lazy initialization
     prevents connection attempts at import time and correctly handles requests
     for connections with different decoding settings.
     """
-    # Use the decode_responses value as a key to store separate
-    # connection objects. This is crucial because a connection
-    # must be created with the correct setting.
     conn_key = str(decode_responses)
 
     if conn_key not in _redis_connections:
@@ -56,23 +54,36 @@ queue = Queue(connection=get_redis_connection())
 scheduler = Scheduler(queue=queue, connection=get_redis_connection())
 
 
-def pubsub(**kwargs):
-    return get_redis_connection().pubsub(**kwargs)
+def pubsub(**kwargs) -> Optional[PubSub]:
+    """
+    Returns a PubSub instance from the Redis connection.
+    """
+    redis_conn = get_redis_connection()
+    if redis_conn is None:
+        return None
+    return redis_conn.pubsub(**kwargs)
 
 
-def publish_pubsub(channel: str, payload: dict):
+def publish_pubsub(message: PubSubMessage):
     """
     Publishes a JSON payload to a specified Redis channel using
     the job connection.
     This abstracts the direct Redis publish operation.
     """
-    logger.info(f"Publishing {payload} to {channel}")
-    get_redis_connection().publish(channel, json.dumps(payload))
+    logger.info(f"Publishing {message.payload} to {message.channel}")
+    redis_conn = get_redis_connection()
+    if redis_conn is None:
+        return None
+    redis_conn.publish(message.channel, message.payload.model_dump_json())
 
 
 def health_check():
     try:
-        get_redis_connection().ping()
+        redis_conn = get_redis_connection()
+        if redis_conn is None:
+            logger.error("❌ Redis connection is None")
+            return False
+        redis_conn.ping()
         return True
     except Exception as e:
         logger.error(f"❌ Redis Health check failed: {e}")

@@ -1,5 +1,4 @@
 from typing import List, Dict, Any, Optional
-# SQLAlchemy imports
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.session import Session
 
@@ -22,7 +21,7 @@ def get_users_cards(
     username: str,
     *,
     session: Session
-) -> List[orm.UserTrackedCardSchema]:
+) -> Dict[str, Any]:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Retrieves all tracked cards for a given user using an
@@ -33,15 +32,15 @@ def get_users_cards(
 
     if not user:
         logger.warning(f"User '{username}' not found. Cannot get cards.")
-        return []
+        return {}
 
     if not user.cards:
         logger.warning(f"User '{username}' has no tracked cards.")
-        return []
+        return {}
     else:
         logger.info(f"✅ Found {len(user.cards)} tracked cards \
                     for '{username}'.")
-        return user.cards
+        return orm.UserTrackedCardListSchema.model_validate(user.cards).model_dump()
 
 
 @db_query

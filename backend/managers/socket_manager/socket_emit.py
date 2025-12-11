@@ -11,17 +11,17 @@ from .socket_manager import socketio
 from managers.redis_manager import REDIS_URL
 
 
-def log_and_emit(level: str, message: str, room: str = None):
+def log_and_emit(level: str, message: str, room: str = ""):
     """Logs a message and emits it to a specific room or all clients."""
     logger.info(f"📢 {level.upper()}: {message}")
     payload = {"level": level.upper(), "message": message}
     if room:
-        socketio.emit("server_log", payload, room=room)
+        socketio.emit("server_log", payload, to=room)
     else:
         socketio.emit("server_log", payload)
 
 
-def emit_from_worker(event: str, data: dict, room: str = None):
+def emit_from_worker(event: str, data: dict, room: str = ""):
     """
     Allows a background worker (which doesn't have the Flask app context)
     to emit a Socket.IO event to clients via the Redis message queue.
@@ -31,17 +31,9 @@ def emit_from_worker(event: str, data: dict, room: str = None):
     logger.info(f"📢 Worker emitting event '{event}' {target} via Redis.")
     try:
         external_socketio = SocketIO(message_queue=REDIS_URL)
-        external_socketio.emit(event, data, room=room)
+        external_socketio.emit(event, data, to=room)
         logger.info(f"📢 Worker dispatched event '{event}' {target} via Redis.")
     except Exception as e:
         logger.error(
             f"❌ Worker failed to dispatch event '{event}' {target}: {e}"
         )
-
-
-def emit_card_availability_data(
-    username: str, store_slug: str, card_name: str, items: list
-):
-    """A specific helper for emitting card availability data from a worker."""
-    event_data = {"store": store_slug, "card": card_name, "items": items}
-    emit_from_worker("card_availability_data", event_data, room=username)

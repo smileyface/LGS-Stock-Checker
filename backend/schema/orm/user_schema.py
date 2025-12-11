@@ -53,6 +53,12 @@ class UserTrackedCardSchema(BaseModel):
     )
 
 
+class UserTrackedCardListSchema(BaseModel):
+    tracked_cards: List[UserTrackedCardSchema] = Field(
+        ..., description="List of cards tracked by the user."
+    )
+
+
 class UserTrackedCardUpdateSchema(BaseModel):
     """Schema for updating a user's tracked card, allowing partial updates."""
     amount: Optional[int] = Field(

@@ -68,25 +68,4 @@ def get_tracked_cards():
     """
     cards = user_manager.load_card_list(current_user.username)
 
-    # Serialize the list of ORM/Pydantic objects into a list of dictionaries
-    # so that it can be properly JSON-ified.
-    card_list = [
-        {
-            "card_name": card.card_name,
-            "amount": card.amount,
-            "specifications": (
-                [
-                    {
-                        "set_code": spec.set_code,
-                        "collector_number": spec.collector_number,
-                        "finish": spec.finish,
-                    }
-                    for spec in card.specifications
-                ]
-                if card.specifications
-                else []
-            ),
-        }
-        for card in cards
-    ]
-    return jsonify(card_list)
+    return jsonify(cards)

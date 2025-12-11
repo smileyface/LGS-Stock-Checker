@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional, Callable
 
 # Internal package imports
 from . import availability_storage
@@ -9,18 +9,23 @@ from managers import redis_manager
 
 # Project package imports
 from data import database
-from schema import messaging
+from schema.messaging import AvailabilityRequestCommand
+from schema.messaging.payload import AvailabilityRequestPayload
+from schema.blocks import UserSchema, CardSpecificationSchema
 from utility import logger
 
 
 def check_availability(username: str) -> Dict[str, str]:
     """Manually triggers an availability update for a user's card list."""
     logger.info(f"🔄 User {username} requested a manual availability refresh.")
-    command = {
-        "type": "queue_all_availability_checks",
-        "payload": {"username": username},
-    }
-    redis_manager.publish_pubsub("scheduler-requests", command)
+    command = AvailabilityRequestCommand(
+        payload=AvailabilityRequestPayload(
+            user=UserSchema(username=username),
+            store_slug=None,
+            card_data=None,
+        )
+    )
+    redis_manager.publish_pubsub(command)
     logger.info(
         f"📢 Published 'queue_all_availability_checks' "
         f"command for user '{username}'."
@@ -32,7 +37,9 @@ def check_availability(username: str) -> Dict[str, str]:
 
 
 def trigger_availability_check_for_card(
-    username: str, card_data: dict, on_complete_callback: callable = None
+    username: str,
+    card_data: dict,
+    on_complete_callback: Optional[Callable] = None
 ):
     """
     Forcefully triggers background availability checks for a single card
@@ -66,12 +73,15 @@ def trigger_availability_check_for_card(
         logger.debug(
             f"Publishing command to check '{card_name}' at '{store.slug}'."
         )
-        payload = messaging.AvailabilityRequestPayload(
-            username=username, store_slug=store.slug, card_data=card_data
+        payload = AvailabilityRequestPayload(
+            user=UserSchema(username=username),
+            store_slug=store.slug,
+            card_data=CardSpecificationSchema(
+                **card_data
+            ),
         )
-        command = messaging.SchedulerCommand(command="availability_request",
-                                             payload=payload)
-        redis_manager.publish_pubsub("scheduler-requests", command)
+        command = AvailabilityRequestCommand(payload=payload)
+        redis_manager.publish_pubsub(command)
 
     # After queuing all tasks, call the callback if one was provided.
     # This is used to send the updated card list back to the user
@@ -117,16 +127,15 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
                     f"⏳ Cache miss for {card.card.name} at {store.name}."
                     " Queueing check."
                 )
-                # Publish a command for the scheduler to queue the task.
-                command = {
-                    "type": "availability_request",
-                    "payload": {
-                        "username": username,
-                        "store": store.slug,
-                        "card_data": card.model_dump(),
-                    },
-                }
-                redis_manager.publish_pubsub("scheduler-requests", command)
+                payload = AvailabilityRequestPayload(
+                    user=UserSchema(username=username),
+                    store_slug=store.slug,
+                    card_data=CardSpecificationSchema(
+                        **card.model_dump()
+                    ),
+                )
+                command = AvailabilityRequestCommand(payload=payload)
+                redis_manager.publish_pubsub(command)
 
     return cached_results
 

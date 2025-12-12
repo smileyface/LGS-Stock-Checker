@@ -21,6 +21,10 @@ def get_all_stores():
 @user_bp.route("/api/account/update_stores", methods=["POST"])
 @login_required
 def update_stores():
+    if not request.json:
+        return jsonify({"error": "Request JSON is missing"}), 400
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
     selected_stores = request.json.get("stores", [])
     user_manager.update_selected_stores(current_user.username, selected_stores)
     return jsonify({"message": "Stores updated successfully"})
@@ -29,6 +33,10 @@ def update_stores():
 @user_bp.route("/api/account/update_username", methods=["POST"])
 @login_required
 def change_username():
+    if not request.json:
+        return jsonify({"error": "Request JSON is missing"}), 400
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
     new_username = request.json.get("new_username")
     if not new_username:
         return jsonify({"error": "New username is required"}), 400
@@ -45,6 +53,11 @@ def change_username():
 @user_bp.route("/api/account/update_password", methods=["POST"])
 @login_required
 def change_password():
+    if not request.json:
+        return jsonify({"error": "Request JSON is missing"}), 400
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+
     current_password = request.json.get("current_password")
     new_password = request.json.get("new_password")
     if not (current_password and new_password):

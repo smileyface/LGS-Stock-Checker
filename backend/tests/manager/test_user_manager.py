@@ -6,7 +6,7 @@ from managers.user_manager import (
     add_user,
     update_username,
     authenticate_user,
-    get_selected_stores,
+    get_user_stores,
     load_card_list,
 )
 
@@ -182,7 +182,7 @@ def test_get_selected_stores(mocker):
     mock_database.get_user_stores.return_value = mock_stores
 
     # Act
-    result = get_selected_stores("testuser")
+    result = get_user_stores("testuser")
 
     # Assert
     mock_database.get_user_stores.assert_called_once_with("testuser")

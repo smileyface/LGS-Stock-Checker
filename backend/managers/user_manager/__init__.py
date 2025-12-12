@@ -17,7 +17,7 @@ from .user_auth import (
     authenticate_user,
     update_password,
     load_user_by_id)
-from .user_preferences import update_selected_stores, get_selected_stores
+from .user_preferences import update_selected_stores, get_user_stores
 from .user_cards import (
     load_card_list,
     add_user_card,
@@ -35,7 +35,7 @@ __all__ = [
     "load_user_by_id",
     "update_password",
     "update_selected_stores",
-    "get_selected_stores",
+    "get_user_stores",
     "load_card_list",
     "add_user_card",
     "update_user_card",

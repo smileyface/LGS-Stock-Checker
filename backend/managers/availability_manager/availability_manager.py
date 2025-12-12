@@ -96,7 +96,7 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
     It returns any data found in the cache and queues background tasks for any
     non-cached items.
     """
-    user_stores = database.get_user_stores(username)
+    user_stores = user_manager.get_user_stores(username)
     user_cards = user_manager.load_card_list(username)
 
     if not user_stores:
@@ -107,31 +107,34 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
         return {}
 
     cached_results = {}
-    for card in user_cards:
+    for card in user_cards.keys():
         for store in user_stores:
-            if not store or not store.slug or not card or not card.card.name:
+            if not store or not store.slug or not card:
                 continue
-
+            card_data = user_cards[card]
             cached_data = availability_storage.get_cached_availability_data(
-                store.slug, card.card.name
+                store.slug, card_data["name"]
+            )
+            logger.debug(
+                f"Checking cache for {card_data['name']} at {store.name}."
             )
             if cached_data is not None:
                 logger.debug(
-                    f"✅ Cache hit for {card.card.name} at {store.name}."
+                    f"✅ Cache hit for {card_data['name']} at {store.name}."
                 )
                 cached_results.setdefault(store.slug, {})[
-                    card.card.name
+                    card_data['name']
                 ] = cached_data
             else:
                 logger.info(
-                    f"⏳ Cache miss for {card.card.name} at {store.name}."
+                    f"⏳ Cache miss for {card_data['name']} at {store.name}."
                     " Queueing check."
                 )
                 payload = AvailabilityRequestPayload(
                     user=UserSchema(username=username),
                     store_slug=store.slug,
                     card_data=CardSpecificationSchema(
-                        **card.model_dump()
+                        **card_data
                     ),
                 )
                 command = AvailabilityRequestCommand(payload=payload)

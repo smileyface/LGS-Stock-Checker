@@ -13,7 +13,7 @@ def update_selected_stores(username: str, selected_stores: List[str]):
         return True
 
     # Fetch user's current store preferences
-    current_stores = get_selected_stores(username)
+    current_stores = get_user_stores(username)
 
     if current_stores is None:
         logger.error(f"❌ Failed to retrieve stores for '{username}'")
@@ -32,6 +32,6 @@ def update_selected_stores(username: str, selected_stores: List[str]):
     return True
 
 
-def get_selected_stores(username):
+def get_user_stores(username):
     """Retrieves a user's selected stores."""
     return database.get_user_stores(username)

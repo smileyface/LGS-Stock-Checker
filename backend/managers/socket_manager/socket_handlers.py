@@ -46,38 +46,14 @@ def _send_user_cards(username: str):
     logger.info(f"📜 Fetching and sending tracked cards for user: {username}")
     cards = user_manager.load_card_list(username)
 
-    # Build a complete list of all cards for the user.
-    # user_manager.load_card_list returns an empty list if no cards are found.
-    # The list comprehension will correctly handle an empty list.
-    card_list = [
-        {
-            "card_name": card.card.name,
-            "amount": card.amount,
-            "specifications": (
-                [
-                    {
-                        "set_code": spec.set_code,
-                        "collector_number": spec.collector_number,
-                        "finish": spec.finish,
-                    }
-                    for spec in card.specifications
-                ]
-                if card.specifications
-                else []
-            ),
-        }
-        for card in cards
-        if card and card.card
-    ]
-
     # Emit a single event with the entire list to the user's room.
     socketio.emit(
         "cards_data",
-        {"username": username, "tracked_cards": card_list},
+        {"username": username, "tracked_cards": cards},
         to=username,
     )
     logger.info(
-        f"📡 Sent card list to room '{username}' with {len(card_list)} items."
+        f"📡 Sent card list to room '{username}' with {len(cards)} items."
     )
 
 

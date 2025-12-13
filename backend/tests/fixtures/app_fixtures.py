@@ -21,6 +21,7 @@ def app(mocker, db_session):
         # client to work.
         # The test client is not compatible with a message queue.
         "SOCKETIO_MESSAGE_QUEUE": None,
+        "SOCKETIO_ASYNC_MODE": "threading",
     }
     # Patch the worker listener to prevent the background thread from starting
     #  during tests.

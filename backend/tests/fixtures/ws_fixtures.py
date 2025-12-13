@@ -1,5 +1,6 @@
 import pytest
 import json
+import managers.socket_manager.socket_connections as socket_connections_module
 
 
 @pytest.fixture(params=["anonymous", "authenticated"])
@@ -18,10 +19,8 @@ def websocket_client_factory(request, app, seeded_user, mocker):
         - (MagicMock): The mock for `join_room`.
     """
     # 1. Arrange: Set up mocks
-    mock_logger = mocker.patch("managers.socket_manager."
-                               "socket_connections.logger")
-    mock_join_room = mocker.patch("managers.socket_manager."
-                                  "socket_connections.join_room")
+    mock_logger = mocker.patch.object(socket_connections_module, "logger")
+    mock_join_room = mocker.patch.object(socket_connections_module, "join_room")
 
     # Import socketio locally to ensure a clean instance for each test run.
     from managers.socket_manager import socketio

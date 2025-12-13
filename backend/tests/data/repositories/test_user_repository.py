@@ -26,7 +26,7 @@ def test_get_user_by_username(seeded_user, username, should_find_user):
     user = data.get_user_by_username(username)
     if should_find_user:
         assert user is not None
-        assert user.username == username
+        assert user["username"] == username
     else:
         assert user is None
 
@@ -69,7 +69,7 @@ def test_update_username(seeded_user):
     # Assert
     user = data.get_user_by_username("updateduser")
     assert user is not None
-    assert user.username == "updateduser"
+    assert user["username"] == "updateduser"
     assert data.get_user_by_username("testuser") is None
 
 
@@ -97,8 +97,8 @@ def test_update_password(seeded_user):
     data.update_password("testuser", new_hash)
 
     # Assert
-    user = data.get_user_by_username("testuser")
-    assert user.password_hash == new_hash
+    user = data.get_user_password_hash("testuser")
+    assert user == new_hash
 
 
 def test_update_password_user_not_found(db_session):

@@ -76,12 +76,19 @@ class User(UserMixin, Base):
             "username": self.username,
             # This now correctly uses the relationship to get the store slugs
             "stores": [store.slug for store in self.selected_stores],
+            "cards": [cards.to_dict() for cards in self.cards],
         }
 
 
 class Card(Base):
     __tablename__ = "cards"
     name = Column(String, primary_key=True, index=True)
+
+    def __repr__(self):
+        return f"<Card(name={self.name})>"
+
+    def to_dict(self):
+        return {"name": self.name}
 
 
 class Set(Base):
@@ -95,6 +102,12 @@ class Set(Base):
     def __repr__(self):
         return f"<Set(code={self.code}, name={self.name})>"
 
+    def to_dict(self):
+        return {
+            "code": self.code,
+            "name": self.name
+        }
+
 
 class Finish(Base):
     """Represents a card finish type (e.g., Foil, Non-Foil)."""
@@ -105,6 +118,10 @@ class Finish(Base):
 
     def __repr__(self):
         return f"<Finish(name={self.name})>"
+
+    def to_dict(self):
+        return {"name": self.name,
+                "id": self.id}
 
 
 class CardPrinting(Base):
@@ -153,6 +170,20 @@ class UserTrackedCards(Base):
     # Relationship to the card itself
     card = relationship("Card")
 
+    def __repr__(self):
+        return (f"<UserTrackedCards(user_id={self.user_id}, "
+                f"card_name={self.card_name}, amount={self.amount})>")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.card_name,
+            "amount": self.amount,
+            "specifications": [
+                spec.to_dict() for spec in self.specifications
+            ],
+        }
+
 
 class CardSpecification(Base):
     __tablename__ = "card_specifications"
@@ -179,6 +210,13 @@ class CardSpecification(Base):
                 f" set_code={self.set_code}, "
                 f" collector_number={self.collector_number},"
                 f" finish_id={self.finish_id})>")
+
+    def to_dict(self):
+        return {
+            "set_code": self.set_code,
+            "collector_number": self.collector_number,
+            "finish": self.finish.to_dict()["name"] if self.finish else None,
+        }
 
 
 class Store(Base):

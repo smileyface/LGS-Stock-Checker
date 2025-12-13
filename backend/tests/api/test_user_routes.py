@@ -1,5 +1,4 @@
 import json
-from unittest.mock import MagicMock
 from managers.user_manager import add_user
 from data.database.models.orm_models import User
 
@@ -182,18 +181,20 @@ def test_get_tracked_cards_success(client, seeded_user, mocker):
     )
 
     # Arrange: Mock user_manager.load_card_list to return dummy tracked cards
-    mock_card_1 = MagicMock()
-    mock_card_1.card_name = "Sol Ring"
-    mock_card_1.amount = 1
-    mock_card_1.specifications = [
-        MagicMock(set_code="C21", collector_number="125", finish="non-foil"),
-        MagicMock(set_code="LTC", collector_number="3", finish="foil"),
-    ]
+    mock_card_1 = {
+        "card_name": "Sol Ring",
+        "amount": 1,
+        "specifications": [
+            {"set_code": "C21", "collector_number": "125", "finish": "non-foil"},
+            {"set_code": "LTC", "collector_number": "3", "finish": "foil"},
+        ],
+    }
 
-    mock_card_2 = MagicMock()
-    mock_card_2.card_name = "Lightning Bolt"
-    mock_card_2.amount = 4
-    mock_card_2.specifications = []  # No specifications for this card
+    mock_card_2 = {
+        "card_name": "Lightning Bolt",
+        "amount": 4,
+        "specifications": [],
+    }
 
     mocker.patch(
         "managers.user_manager.load_card_list",

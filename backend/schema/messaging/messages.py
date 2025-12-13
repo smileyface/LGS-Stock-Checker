@@ -25,7 +25,13 @@ class PubSubMessage(BaseModel):
 class APIMessage(BaseModel):
     """Base class for all API messages."""
     name: str
-    pass
+
+    def __init__(self,
+                 name: str,
+                 **data):
+        super().__init__(**data)
+        self.name = name
+        self.payload = Payload()
 # --- End Messaging Base Definitions ---
 
 
@@ -80,8 +86,7 @@ class GetCardPrintingsMessage(APIMessage):
     def __init__(self,
                  payload: GetPrintingsRequestPayload,
                  **data):
-        super().__init__(**data)
-        self.name = "get_card_printings"
+        super().__init__("get_card_printings", **data)
         self.payload = payload
 
 
@@ -94,8 +99,7 @@ class ParseCardListMessage(APIMessage):
     def __init__(self,
                  payload: dict,
                  **data):
-        super().__init__(**data)
-        self.name = "parse_card_list"
+        super().__init__("parse_card_list", **data)
         self.payload = payload
 
 
@@ -108,8 +112,7 @@ class AddCardMessage(APIMessage):
     def __init__(self,
                  payload: UpdateCardRequestPayload,
                  **data):
-        super().__init__(**data)
-        self.name = "add_card"
+        super().__init__("add_card", **data)
         self.payload = payload
 
 
@@ -122,8 +125,7 @@ class DeleteCardMessage(APIMessage):
     def __init__(self,
                  payload: UpdateCardRequestPayload,
                  **data):
-        super().__init__(**data)
-        self.name = "delete_card"
+        super().__init__("delete_card", **data)
         self.payload = payload
 
 
@@ -136,8 +138,7 @@ class UpdateCardMessage(APIMessage):
     def __init__(self,
                  payload: UpdateCardRequestPayload,
                  **data):
-        super().__init__(**data)
-        self.name = "update_card"
+        super().__init__("update_card", **data)
         self.payload = payload
 
 
@@ -150,8 +151,7 @@ class SearchCardNamesMessage(APIMessage):
     def __init__(self,
                  payload: dict,
                  **data):
-        super().__init__(**data)
-        self.name = "search_card_names"
+        super().__init__("search_card_names", **data)
         self.payload = payload
 
 
@@ -164,8 +164,7 @@ class UpdateStoreMessage(APIMessage):
     def __init__(self,
                  stores: list[str],
                  **data):
-        super().__init__(**data)
-        self.name = "update_stores"
+        super().__init__("update_stores", **data)
         self.stores = stores
 # --- End API Message Definitions ---
 

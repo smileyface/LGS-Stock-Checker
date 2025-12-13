@@ -1,10 +1,6 @@
 import pytest  # noqa
 
 from managers.socket_manager import socket_handlers
-from schema.messaging import (
-    CardSpecsSchema,
-    CardSchema
-)
 
 
 def test_on_add_card_triggers_availability_check(
@@ -22,10 +18,10 @@ def test_on_add_card_triggers_availability_check(
     # Arrange
     username = "testuser"
     # This data must match the AddCardSchema
-    card_data_from_client = {
+    card_data_from_client = {"payload": {
         "card": {"name": "Sol Ring"},
         "amount": 1,
-        "card_specs": {}}
+        "card_specs": {}}}
 
     # Mock the return value for the full card list after adding
     mock_sh_user_manager.load_card_list.return_value = []
@@ -38,18 +34,19 @@ def test_on_add_card_triggers_availability_check(
     # correct arguments
     mock_sh_user_manager.add_user_card.assert_called_once_with(
         username,
-        CardSchema(name="Sol Ring"),
+        "Sol Ring",
         1,
-        CardSpecsSchema(set_code=None, collector_number=None, finish=None),
+        {"set_code": None, "collector_number": None, "finish": None}
     )
 
     # 2. Verify availability check was triggered for the new card ([5.1.6])
     # The availability check uses a dictionary representation
     card_data_for_task = {
-        "card": CardSchema(name="Sol Ring"),
-        "specifications": CardSpecsSchema(
-            set_code=None, collector_number=None, finish=None
-        ),
+        "card": {"name": "Sol Ring"},
+        "specifications": {
+            "set_code": None,
+            "collector_number": None,
+            "finish": None},
     }
     mock_sh_trigger_availability_check.assert_called_once()
     # Check the positional arguments passed to the trigger function

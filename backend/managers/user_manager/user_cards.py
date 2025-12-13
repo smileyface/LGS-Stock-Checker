@@ -62,7 +62,7 @@ def add_user_card(username: str,
         "amount": amount,
         "specifications": [card_specs] if card_specs else [],
     }
-    database.add_card_to_user(username, card_data)
+    database.modify_user_tracked_card("add",username, card_data)
     _send_updated_card_list(username)
 
 

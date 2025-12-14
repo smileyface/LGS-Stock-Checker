@@ -18,10 +18,10 @@ def test_on_add_card_triggers_availability_check(
     # Arrange
     username = "testuser"
     # This data must match the AddCardSchema
-    card_data_from_client = {"payload": {
+    card_data_from_client = {
         "card": {"name": "Sol Ring"},
         "amount": 1,
-        "card_specs": {}}}
+        "card_specs": {}}
 
     # Mock the return value for the full card list after adding
     mock_sh_user_manager.load_card_list.return_value = []
@@ -42,7 +42,7 @@ def test_on_add_card_triggers_availability_check(
     # 2. Verify availability check was triggered for the new card ([5.1.6])
     # The availability check uses a dictionary representation
     card_data_for_task = {
-        "card": {"name": "Sol Ring"},
+        "card": "Sol Ring",
         "specifications": {
             "set_code": None,
             "collector_number": None,
@@ -68,7 +68,7 @@ def test_on_add_card_triggers_availability_check(
     mock_sh_emit.assert_called_with(
         "cards_data",
         {"username": "testuser", "tracked_cards": []},
-        room="testuser",
+        to="testuser",
     )
 
 

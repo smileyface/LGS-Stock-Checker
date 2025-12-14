@@ -6,7 +6,7 @@ from data.database.models.orm_models import (
 )
 from data.database.repositories.card_repository import (
     get_users_cards,
-    add_card_to_user,
+    add_tracked_card_to_user,
     delete_user_card,
     update_user_tracked_card_preferences
 )
@@ -21,7 +21,7 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
     assert get_users_cards("testuser") == []
 
     # Add a card with specifications
-    add_card_to_user("testuser", {
+    add_tracked_card_to_user("testuser", {
         "card":
         {
             "name": "Sol Ring"
@@ -37,16 +37,16 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
 
     cards = get_users_cards("testuser")
     assert len(cards) == 1
-    assert cards[0].card.name == "Sol Ring"
-    assert cards[0].amount == 4
-    assert len(cards[0].specifications) == 1
-    assert cards[0].specifications[0].set_code == "ONE"
-    assert cards[0].specifications[0].finish.name == "foil"  # type: ignore
+    assert cards[0]["card"]["name"] == "Sol Ring"
+    assert cards[0]["amount"] == 4
+    assert len(cards[0]["specifications"]) == 1
+    assert cards[0]["specifications"][0]["set_code"] == "ONE"
+    assert cards[0]["specifications"][0]["finish"]["name"] == "foil"  # type: ignore
 
 
 def test_add_user_card_user_not_found(db_session):
     """Test that adding a card for a non-existent user does nothing."""
-    add_card_to_user("nonexistent_user", {
+    add_tracked_card_to_user("nonexistent_user", {
         "card": {
             "name": "Some Card"
             },
@@ -70,7 +70,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     # Arrange: Add the card initially with one spec and an amount of 1
     initial_specs = {"set_code": {"code": "MH2"},
                      "finish": {"name": "etched"}}
-    add_card_to_user("testuser", {
+    add_tracked_card_to_user("testuser", {
         "card": {
             "name": "Thoughtseize"
             },
@@ -81,7 +81,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
 
     # Act: Call add_user_card again with a new spec and a DIFFERENT amount
     new_specs = {"set_code": {"code": "2XM"}, "finish": {"name": "non-foil"}}
-    add_card_to_user("testuser", {
+    add_tracked_card_to_user("testuser", {
         "card": {
             "name": "Thoughtseize"
             },

@@ -173,7 +173,20 @@ def handle_add_user_tracked_card(data: dict):
     """Add tracked card to the database and send an updated card list."""
     username = ""
     try:
-        validated_data = messages.AddCardMessage.model_validate(data)
+        # temporary bridge until the modify user card messages
+        # are implemented in the front end.
+        if "card" not in data:
+            raise exceptions.InvalidMessageError("Field required: 'card'")
+        if "amount" not in data:
+            raise exceptions.InvalidMessageError("Field required: 'amount'")
+        data = {
+            "name": f"add_card_{data['card']['name']}",
+            "payload":
+                {"command": "add",
+                 "update_data": {**data}
+                 }
+                }
+        validated_data = messages.UpdateCardRequest.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to add a card.")
@@ -193,7 +206,8 @@ def handle_add_user_tracked_card(data: dict):
         # adhering to data flow rules.
         card_data_for_task = {
             "card": update_data.card.name,
-            "specifications": update_data.card_specs,
+            "specifications": update_data.card_specs.model_dump() if
+            update_data.card_specs else {},
         }
         # Pass _send_user_cards as a callback to be executed *after*
         # the availability checks have been queued. This ensures the
@@ -203,7 +217,7 @@ def handle_add_user_tracked_card(data: dict):
             card_data_for_task,
             on_complete_callback=lambda: _send_user_cards(username),
         )
-    except ValidationError as e:
+    except (ValidationError, exceptions.InvalidMessageError) as e:
         logger.error(f"❌ Invalid 'add_card' data received: {e}")
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
     except exceptions.InvalidSpecificationError as e:
@@ -213,6 +227,10 @@ def handle_add_user_tracked_card(data: dict):
         )
         # Send a specific, user-friendly error message to the client.
         socketio.emit("error", {"message": str(e)})
+    except Exception as e:
+        logger.error(f"❌ Unexpected error occurred: {e}")
+        socketio.emit("error", {"message": f"Unexpected error: {e}"})
+
 
 
 @socketio.on("delete_card")
@@ -243,7 +261,18 @@ def handle_delete_user_tracked_card(data: dict):
 def handle_update_user_tracked_cards(data: dict):
     logger.info("📩 Received 'update_card' request from front end.")
     try:
-        validated_data = messages.UpdateCardMessage.model_validate(data)
+        # temporary bridge until the modify user card messages
+        # are implemented in the front end.
+        if "card" not in data:
+            raise exceptions.InvalidMessageError("Field required: 'card'")
+        data = {
+            "name": f"update_card_{data['card']['name']}",
+            "payload":
+                {"command": "update",
+                 "update_data": {**data}
+                 }
+                }
+        validated_data = messages.UpdateCardRequest.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to update a card.")

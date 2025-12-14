@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Literal
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 from .payload import (
@@ -27,11 +27,8 @@ class APIMessage(BaseModel):
     name: str
 
     def __init__(self,
-                 name: str,
                  **data):
         super().__init__(**data)
-        self.name = name
-        self.payload = Payload()
 # --- End Messaging Base Definitions ---
 
 
@@ -86,7 +83,8 @@ class GetCardPrintingsMessage(APIMessage):
     def __init__(self,
                  payload: GetPrintingsRequestPayload,
                  **data):
-        super().__init__("get_card_printings", **data)
+        super().__init__(**data)
+        self.name = "get_card_printings"
         self.payload = payload
 
 
@@ -99,8 +97,23 @@ class ParseCardListMessage(APIMessage):
     def __init__(self,
                  payload: dict,
                  **data):
-        super().__init__("parse_card_list", **data)
+        super().__init__(**data)
         self.payload = payload
+
+
+class UpdateCardRequest(APIMessage):
+    """
+    A unified update message to handle add, delete, and update requests.
+    """
+    payload: UpdateCardRequestPayload
+
+    def __init__(self,
+                 payload: UpdateCardRequestPayload,
+                 **data):
+        # temporary bridge until the modify user card messages
+        # are implemented in the front end.
+        data["payload"] = payload
+        super().__init__(**data)
 
 
 class AddCardMessage(APIMessage):
@@ -112,7 +125,8 @@ class AddCardMessage(APIMessage):
     def __init__(self,
                  payload: UpdateCardRequestPayload,
                  **data):
-        super().__init__("add_card", **data)
+        super().__init__(**data)
+        self.name = "add_card"
         self.payload = payload
 
 
@@ -138,6 +152,7 @@ class UpdateCardMessage(APIMessage):
     def __init__(self,
                  payload: UpdateCardRequestPayload,
                  **data):
+        data["payload"] = payload
         super().__init__("update_card", **data)
         self.payload = payload
 

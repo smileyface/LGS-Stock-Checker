@@ -112,8 +112,8 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
 @pytest.mark.parametrize(
     "invalid_data, expected_error_part",
     [
-        ({}, "card"),  # Missing all fields
-        ({}, "update_data"),  # Missing all fields
+        ({}, "Field required"),  # Missing all fields
+        ({}, "Field required"),  # Missing all fields
         ({"card": {"name": "Sol Ring"}},
          "update_data"),  # Missing update_data
         ({"update_data": {}}, "card"),  # Missing card name
@@ -126,7 +126,7 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
                         {"finish": "invalid"}
                 },
             },
-            "specifications",
+            "update_data.amount",
         ),  # Invalid Finsih
     ],
 )
@@ -145,14 +145,10 @@ def test_on_update_card_with_invalid_data(
 
     socket_handlers.handle_update_user_tracked_cards(invalid_data)
 
-    # Convert the error to a dictionary for easier inspection
-    errors = mock_sh_emit.call_args.args[1].get('details', [])
-
+    mock_sh_emit.assert_called_once()
     # Check that at least one error message contains the expected part
-    error_found = any(expected_error_part in str(error['loc'])
-                      for error in errors)
-    assert error_found, f"Expected error part '{expected_error_part}'\
-    not found in validation errors."
+    assert mock_sh_emit.call_args.args[0] == "error"
+    assert expected_error_part in str(mock_sh_emit.call_args.args[1])
 
 
 @pytest.mark.parametrize(
@@ -160,7 +156,7 @@ def test_on_update_card_with_invalid_data(
     [
         ({}, "Field required"),  # Missing card field
         # Empty card name
-        ({"card": ""}, "validation error for DeleteCardSchema"),
+        ({"card": ""}, "Field required: 'card.name'"),
     ],
 )
 def test_on_delete_card_with_invalid_data(

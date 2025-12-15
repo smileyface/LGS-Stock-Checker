@@ -227,17 +227,26 @@ def handle_add_user_tracked_card(data: dict):
         )
         # Send a specific, user-friendly error message to the client.
         socketio.emit("error", {"message": str(e)})
-    except Exception as e:
-        logger.error(f"❌ Unexpected error occurred: {e}")
-        socketio.emit("error", {"message": f"Unexpected error: {e}"})
-
 
 
 @socketio.on("delete_card")
 def handle_delete_user_tracked_card(data: dict):
     logger.info("📩 Received 'delete_card' request from front end.")
     try:
-        validated_data = messages.DeleteCardMessage.model_validate(data)
+        # temporary bridge until the modify user card messages
+        # are implemented in the front end.
+        if "card" not in data:
+            raise exceptions.InvalidMessageError("Field required: 'card'")
+        if "name" not in data["card"]:
+            raise exceptions.InvalidMessageError("Field required: 'card.name'")
+        data = {
+            "name": f"delete_card_{data['card']['name']}",
+            "payload":
+                {"command": "delete",
+                 "update_data": {**data}
+                 }
+                }
+        validated_data = messages.UpdateCardRequest.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to delete a card.")
@@ -250,7 +259,7 @@ def handle_delete_user_tracked_card(data: dict):
         user_manager.delete_user_card(
             username, validated_data.payload.update_data.card.name
         )
-    except ValidationError as e:
+    except (ValidationError, exceptions.InvalidMessageError) as e:
         logger.error(f"❌ Invalid 'delete_card' data received: {e}")
         socketio.emit(
             "error", {"message": f"Invalid data for delete_card: {e}"}
@@ -287,16 +296,9 @@ def handle_update_user_tracked_cards(data: dict):
                 validated_data.payload.update_data.card.name,
                 validated_data.payload.update_data.model_dump(),
             )
-    except ValidationError as e:
+    except (ValidationError, exceptions.InvalidMessageError) as e:
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
-        count = e.error_count()
-        details = e.errors()
-        socketio.emit(
-            "error", {"message": "Invalid data for update_card",
-                      "details": details,
-                      "count": count
-                      }
-        )
+        socketio.emit("error", {"message": f"Invalid data for update_card: {e}"})
 
 
 @socketio.on("update_stores")

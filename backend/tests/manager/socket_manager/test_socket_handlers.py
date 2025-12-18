@@ -181,7 +181,7 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     """
     # Arrange
     card_name = "Sol Ring"
-    client_data = {"card_name": card_name}
+    client_data = {"card": {"name": card_name}}
     mock_printings = [
         {
             "set_code": "C21",

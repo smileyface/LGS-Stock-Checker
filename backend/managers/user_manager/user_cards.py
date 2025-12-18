@@ -21,25 +21,35 @@ def _send_updated_card_list(username: str):
 
     # Serialize the list of Pydantic objects into a JSON-serializable format.
     # This is crucial for the data to be correctly interpreted by the frontend.
-    card_list = [
-        {
-            "card_name": card.card.name if card.card else None,
-            "amount": card.amount,
-            "specifications": (
-                [
-                    {
-                        "set_code": spec.set_code,
-                        "collector_number": spec.collector_number,
-                        "finish": spec.finish,
-                    }
-                    for spec in card.specifications
-                ]
-                if card.specifications
-                else []
-            ),
-        }
-        for card in cards
-    ]
+    card_list = []
+    for card in cards:
+        if isinstance(card, dict):
+            card_obj = card.get("card")
+            card_name = card_obj.get("name") if isinstance(card_obj, dict) else None
+            amount = card.get("amount")
+            specs = card.get("specifications") or []
+            formatted_specs = [
+                {
+                    "set_code": spec.get("set_code"),
+                    "collector_number": spec.get("collector_number"),
+                    "finish": spec.get("finish"),
+                }
+                for spec in specs
+            ]
+        else:
+            card_name = card.card.name if card.card else None
+            amount = card.amount
+            specs = card.specifications or []
+            formatted_specs = [
+                {
+                    "set_code": spec.set_code,
+                    "collector_number": spec.collector_number,
+                    "finish": spec.finish,
+                }
+                for spec in specs
+            ]
+
+        card_list.append({"card_name": card_name, "amount": amount, "specifications": formatted_specs})
 
     socket_manager.emit_from_worker(
         "cards_data", {"username": username, "tracked_cards": card_list},

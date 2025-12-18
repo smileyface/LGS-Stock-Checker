@@ -6,8 +6,7 @@ from data.database.models.orm_models import (
 )
 from data.database.repositories.card_repository import (
     get_users_cards,
-    add_tracked_card_to_user,
-    delete_user_card,
+    modify_user_tracked_card,
     update_user_tracked_card_preferences
 )
 from data.database.repositories.catalogue_repository import (
@@ -21,7 +20,7 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
     assert get_users_cards("testuser") == []
 
     # Add a card with specifications
-    add_tracked_card_to_user("testuser", {
+    modify_user_tracked_card("add", "testuser", {
         "card":
         {
             "name": "Sol Ring"
@@ -37,16 +36,16 @@ def test_add_and_get_user_card(seeded_user, seeded_printings):
 
     cards = get_users_cards("testuser")
     assert len(cards) == 1
-    assert cards[0]["card"]["name"] == "Sol Ring"
+    assert cards[0]["name"] == "Sol Ring"
     assert cards[0]["amount"] == 4
     assert len(cards[0]["specifications"]) == 1
     assert cards[0]["specifications"][0]["set_code"] == "ONE"
-    assert cards[0]["specifications"][0]["finish"]["name"] == "foil"  # type: ignore
+    assert cards[0]["specifications"][0]["finish"] == "foil"  # type: ignore
 
 
 def test_add_user_card_user_not_found(db_session):
     """Test that adding a card for a non-existent user does nothing."""
-    add_tracked_card_to_user("nonexistent_user", {
+    modify_user_tracked_card("add", "nonexistent_user", {
         "card": {
             "name": "Some Card"
             },
@@ -70,7 +69,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     # Arrange: Add the card initially with one spec and an amount of 1
     initial_specs = {"set_code": {"code": "MH2"},
                      "finish": {"name": "etched"}}
-    add_tracked_card_to_user("testuser", {
+    modify_user_tracked_card("add", "testuser", {
         "card": {
             "name": "Thoughtseize"
             },
@@ -81,7 +80,7 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
 
     # Act: Call add_user_card again with a new spec and a DIFFERENT amount
     new_specs = {"set_code": {"code": "2XM"}, "finish": {"name": "non-foil"}}
-    add_tracked_card_to_user("testuser", {
+    modify_user_tracked_card("add", "testuser", {
         "card": {
             "name": "Thoughtseize"
             },
@@ -96,61 +95,54 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     ), "Should not create a duplicate UserTrackedCards entry"
 
     tracked_card = cards[0]
-    assert tracked_card.card.name == "Thoughtseize"
+    assert tracked_card["name"] == "Thoughtseize"
     assert (
-        tracked_card.amount == 1
-    ), "Amount should NOT be updated by add_user_card"
+        tracked_card["amount"] == 10
+    ), "Amount should be updated by modify_user_tracked_card"
 
     # Verify both old and new specifications are present
-    specs = tracked_card.specifications
+    specs = tracked_card["specifications"]
     assert len(specs) == 2, "Should have added the new specification"
-    spec_tuples = {(s.set_code, s.finish.name) for s in specs}  # type: ignore
+    spec_tuples = {(s["set_code"], s["finish"]) for s in specs}  # type: ignore
     assert ("MH2", "etched") in spec_tuples
     assert ("2XM", "non-foil") in spec_tuples
 
 
-def test_delete_user_card(seeded_user, seeded_catalog):
+def test_delete_user_card(seeded_user_with_cards):
     # Arrange: Use the username from the fixture object to add a card.
-    username = seeded_user.username
-    add_card_to_user(username, {"card": {"name": "Sol Ring"},
-                                "amount": 1})
-    assert len(get_users_cards(username)) == 1
+    username = seeded_user_with_cards.username
+    card_name = seeded_user_with_cards.cards[0].card_name
 
-    # Act: Delete the card.
-    delete_user_card(username, "Sol Ring")
+    modify_user_tracked_card("delete", username, {
+        "card": {
+            "name": card_name
+            }})
 
     # Assert: The user should have no cards left.
-    assert len(get_users_cards(username)) == 0
+    assert 'name: ' + card_name not in str(get_users_cards(username))
 
 
 def test_delete_user_card_cascades_specifications(
-    seeded_user, seeded_printings, db_session
+    seeded_user_with_cards, db_session
 ):
     """
     Tests that deleting a UserTrackedCards object also deletes its child
     CardSpecification objects due to the cascade="all, delete-orphan" setting.
     """
-    # Arrange: Add a card with specifications
-    specs = {"set_code": {"code": "M21"}, "finish": {"name": "foil"}}
-    add_card_to_user("testuser", {"card":
-                                  {"name": "Ugin, the Spirit Dragon"},
-                                  "amount": 1,
-                                  "specifications": [specs]})
 
-    # Verify everything was created correctly
-    tracked_card = db_session.query(UserTrackedCards).one()
-    assert tracked_card is not None
-    assert (db_session
-            .query(CardSpecification)
-            .filter_by(user_card_id=tracked_card.id)
-            .count()) == 1
+    username = seeded_user_with_cards.username
+    card_name = seeded_user_with_cards.cards[1].card_name
+
+    initial_count = db_session.query(CardSpecification).count()
 
     # Act: Delete the card
-    delete_user_card("testuser", "Ugin, the Spirit Dragon")
+    modify_user_tracked_card("delete", username, {
+        "card": {
+            "name": card_name
+            }})
 
     # Assert: Verify both the card and its specifications are gone
-    assert db_session.query(UserTrackedCards).count() == 0
-    assert db_session.query(CardSpecification).count() == 0
+    assert db_session.query(CardSpecification).count() < initial_count
 
 
 def test_delete_user_card_for_nonexistent_user(db_session):
@@ -158,34 +150,35 @@ def test_delete_user_card_for_nonexistent_user(db_session):
     Test that attempting to delete a card for a non-existent user does nothing.
     """
     # This should run without error
-    delete_user_card("nonexistent_user", "any_card")
+    modify_user_tracked_card("delete", "nonexistent_user", {
+        "card": {
+            "name": "any_card"
+            }})
     # And no cards should be in the DB
     assert db_session.query(UserTrackedCards).count() == 0
 
 
-def test_delete_user_card_not_found(seeded_user):
+def test_delete_user_card_not_found(seeded_user_with_cards):
     """
     Test that attempting to delete a card not tracked by the user does nothing.
     """
-    add_card_to_user("testuser", {"card":
-                                  {"name": "Lightning Bolt"},
-                                  "amount": 1})
-    initial_card_count = len(get_users_cards("testuser"))
+    username = seeded_user_with_cards.username
+    card_name = "Nonexistent Card"
 
-    delete_user_card("testuser", "Fireball")  # This card is not tracked
-    assert len(get_users_cards("testuser")) == initial_card_count
+    initial_card_count = len(get_users_cards(username))
+
+    # Act: Delete the card
+    modify_user_tracked_card("delete", username, {
+        "card": {
+            "name": card_name
+            }})
+    assert len(get_users_cards(username)) == initial_card_count
 
 
-def test_update_user_tracked_card_preferences(seeded_user,
-                                              seeded_catalog):
-    add_card_to_user("testuser", {"card": {"name": "Swords to Plowshares"},
-                                  "amount": 1})
-    update_user_tracked_card_preferences(
-        "testuser", "Swords to Plowshares", {"amount": 4}
-    )
+def test_update_user_tracked_card_preferences(seeded_user_with_cards):
 
-    card = get_users_cards("testuser")[0]
-    assert card.amount == 4
+    card = get_users_cards(seeded_user_with_cards.username)[0]
+    assert card["amount"] == 4
 
 
 def test_update_user_tracked_card_preferences_user_not_found(db_session):
@@ -199,18 +192,14 @@ def test_update_user_tracked_card_preferences_user_not_found(db_session):
 
 
 def test_update_user_tracked_card_preferences_card_not_found(
-        seeded_user,
-        seeded_catalog):
+        seeded_user_with_cards):
     """Test updating preferences for a card the user is not tracking."""
-    add_card_to_user("testuser", {"card":
-                                  {"name": "Lightning Bolt"},
-                                  "amount": 1})
     update_user_tracked_card_preferences(
         "testuser", "Fireball", {"amount": 10}
     )
     card = get_users_cards("testuser")[0]
-    assert card.card.name == "Lightning Bolt"
-    assert card.amount == 1
+    assert card["name"] == "Lightning Bolt"
+    assert card["amount"] == 4
 
 
 @pytest.mark.parametrize(

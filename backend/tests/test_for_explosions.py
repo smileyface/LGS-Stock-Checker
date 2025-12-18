@@ -12,6 +12,7 @@ from tests.fixtures.db_fixtures import seed_user, seed_stores
 from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
 from data.database.models.orm_models import Store, User
+from schema.messaging.messages import PubSubMessage, APIMessage
 import managers
 import utility
 import data
@@ -105,6 +106,10 @@ def _get_arg_from_type_hint(param, live_user, live_store):
         return lambda: "dummy function"
     if annotation is SocketIO:
         return MagicMock()
+    if annotation is PubSubMessage or origin is PubSubMessage:
+        return MagicMock()
+    if annotation is APIMessage or origin is APIMessage:
+        return MagicMock()
 
     # Fallback to generic types
     if hasattr(annotation, "__total__"):  # Heuristic for TypedDict
@@ -136,21 +141,30 @@ def _generate_test_args(func, params, live_user, live_store):
 
     # A mapping for functions that expect a specific 'data' payload.
     data_payloads = {
-        "handle_get_card_printings": {"card_name": "test_card"},
+        "handle_get_card_printings": {"card": {"name": "test_card"}},
         "handle_add_user_tracked_card": {
-            "card": "test_card",
+            "card": {"name": "test_card"},
             "amount": 1,
             "card_specs": {},
         },
-        "handle_delete_user_tracked_card": {"card": "test_card"},
+        "handle_delete_user_tracked_card": {"card": {"name": "test_card"}},
         "handle_update_user_tracked_cards": {
-            "card": "test_card",
-            "update_data": {"amount": 2},
+            "card": {"name": "test_card"},
+            "amount": 2,
         },
         "handle_update_user_stores": {"stores": ["test_store"]},
         "add_card_to_user": {
             "card": {"name": "test_card"},
             "amount": 1,
+            "specifications": [],
+        },
+        "modify_user_tracked_card": {
+            "card": {"name": "test_card"},
+            "amount": 1,
+            "specifications": [],
+        },
+        "trigger_availability_check_for_card": {
+            "card": MagicMock(),
             "specifications": [],
         },
     }

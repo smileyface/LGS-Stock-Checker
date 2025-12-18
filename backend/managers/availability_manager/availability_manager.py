@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Callable
+from typing import Dict, Optional, Callable, Any
 
 # Internal package imports
 from . import availability_storage
@@ -15,16 +15,19 @@ from schema.blocks import UserSchema, CardSpecificationSchema
 from utility import logger
 
 
-def check_availability(username: str) -> Dict[str, str]:
+def check_availability(username: str,
+                       store_slug: Optional[str] = "",
+                       card_data: Optional[Dict[str, Any]] = {}) -> Dict[str, str]:
     """Manually triggers an availability update for a user's card list."""
     logger.info(f"🔄 User {username} requested a manual availability refresh.")
-    command = AvailabilityRequestCommand(
-        payload=AvailabilityRequestPayload(
-            user=UserSchema(username=username),
-            store_slug=None,
-            card_data=None,
-        )
+    payload = AvailabilityRequestPayload(
+        user=UserSchema(username=username),
+        store_slug=store_slug,
+        card_data=(CardSpecificationSchema(**card_data)
+                   if card_data is not None
+                   else None),
     )
+    command = AvailabilityRequestCommand(payload=payload)
     redis_manager.publish_pubsub(command)
     logger.info(
         f"📢 Published 'queue_all_availability_checks' "

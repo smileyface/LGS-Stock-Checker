@@ -24,8 +24,12 @@ def handle_get_card_printings(data: dict):
     Handles a client's request for all valid printings of a specific card.
     Implements requirement [4.3.5].
     """
+    data = {
+        "name": "get_card_printings",
+        "payload": data
+        }
     validated_data = messages.GetCardPrintingsMessage.model_validate(data)
-    card_name = validated_data.payload.card_name.name
+    card_name = validated_data.payload.card.name
     logger.info(f"📩 Received 'get_card_printings' request for '{card_name}'.")
     if not database.is_card_in_catalog(card_name):
         logger.info(f"{card_name} not in catalog")

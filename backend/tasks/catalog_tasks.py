@@ -30,6 +30,7 @@ def update_card_catalog():
             f"🗂️ Fetched {len(card_names)} card names from source. "
             f"Updating database catalog..."
         )
+        
         redis_manager.publish_pubsub(
             "worker-results",
             {

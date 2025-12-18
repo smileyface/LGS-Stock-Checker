@@ -145,6 +145,21 @@ def get_card(card_name: str,
         return card.to_dict()
 
 
+@db_query
+def get_tracked_card_orm(
+    username: str,
+    card_name: str,
+    *,
+    session: Session
+):
+    tracked_card = get_tracked_card(username, card_name)
+    if not tracked_card:
+        return None
+    return session.query(UserTrackedCards).filter(
+            UserTrackedCards.id == tracked_card["id"]
+        ).first()
+
+
 def get_tracked_card(
     username: str,
         card_name: str,
@@ -206,7 +221,7 @@ def delete_user_card(username: str,
         f"for user '{username}'."
     )
     user = get_user_by_username(username)
-    tracked_card = get_tracked_card(username, card_name)
+    tracked_card = get_tracked_card_orm(username, card_name)
 
     if not user:
         logger.warning(

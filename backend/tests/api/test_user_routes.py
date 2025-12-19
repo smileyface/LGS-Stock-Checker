@@ -185,8 +185,12 @@ def test_get_tracked_cards_success(client, seeded_user, mocker):
         "card_name": "Sol Ring",
         "amount": 1,
         "specifications": [
-            {"set_code": "C21", "collector_number": "125", "finish": "non-foil"},
-            {"set_code": "LTC", "collector_number": "3", "finish": "foil"},
+            {"set_code": "C21",
+             "collector_number": "125",
+             "finish": "non-foil"},
+            {"set_code": "LTC",
+             "collector_number": "3",
+             "finish": "foil"},
         ],
     }
 

@@ -25,7 +25,9 @@ def _send_updated_card_list(username: str):
     for card in cards:
         if isinstance(card, dict):
             card_obj = card.get("card")
-            card_name = card_obj.get("name") if isinstance(card_obj, dict) else None
+            card_name = (card_obj.get("name")
+                         if isinstance(card_obj, dict)
+                         else None)
             amount = card.get("amount")
             specs = card.get("specifications") or []
             formatted_specs = [
@@ -49,7 +51,9 @@ def _send_updated_card_list(username: str):
                 for spec in specs
             ]
 
-        card_list.append({"card_name": card_name, "amount": amount, "specifications": formatted_specs})
+        card_list.append({"card_name": card_name,
+                          "amount": amount,
+                          "specifications": formatted_specs})
 
     socket_manager.emit_from_worker(
         "cards_data", {"username": username, "tracked_cards": card_list},
@@ -72,7 +76,7 @@ def add_user_card(username: str,
         "amount": amount,
         "specifications": [card_specs] if card_specs else [],
     }
-    database.modify_user_tracked_card("add",username, card_data)
+    database.modify_user_tracked_card("add", username, card_data)
     _send_updated_card_list(username)
 
 

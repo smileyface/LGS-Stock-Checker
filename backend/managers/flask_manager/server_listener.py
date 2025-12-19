@@ -185,7 +185,7 @@ class _Server_Listener:
                         # for worker results
                         redis_conn = redis_manager.get_redis_connection()
                         if redis_conn:
-                            redis_conn.rpush("worker-results-dlq", 
+                            redis_conn.rpush("worker-results-dlq",
                                              message.get("data"))
                         else:
                             logger.error("Cannot push to DLQ; "

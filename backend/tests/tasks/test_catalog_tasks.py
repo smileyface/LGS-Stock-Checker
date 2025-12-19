@@ -107,7 +107,9 @@ def test_update_set_catalog_success(mock_get_redis, mock_fetch_sets):
     assert call_args[0][0] == "worker-results"
 
     payload = json.loads(call_args[0][1])
-    expected_sets_json = json.loads(json.dumps(expected_transformed_data, default=str))
+    expected_sets_json = json.loads(json.dumps(
+        expected_transformed_data,
+        default=str))
     assert payload == {"sets": expected_sets_json}
 
 
@@ -167,7 +169,9 @@ def test_update_set_catalog_handles_missing_keys(mock_get_redis,
     mock_redis.publish.assert_called_once()
     call_args = mock_redis.publish.call_args
     payload = json.loads(call_args[0][1])
-    expected_sets_json = json.loads(json.dumps(expected_call_data, default=str))
+    expected_sets_json = json.loads(json.dumps(
+        expected_call_data,
+        default=str))
     assert payload == {"sets": expected_sets_json}
 
 

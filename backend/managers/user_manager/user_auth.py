@@ -30,11 +30,10 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
     user_orm = database.get_user_orm_by_username(username)
     password_hash = database.get_user_password_hash(username)
 
-
     if not user_orm:
         logger.warning(f"❌ User '{username}' not found.")
         return None
-    
+
     if not password_hash:
         logger.warning(f"❌ User '{username}' has no password hash.")
         return None

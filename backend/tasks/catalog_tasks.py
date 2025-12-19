@@ -33,7 +33,8 @@ def update_card_catalog():
         )
         redis_manager.publish_pubsub(
             messages.CatalogCardNamesResultMessage(
-                payload=messages.CatalogCardNamesResultPayload(names=card_names))
+                payload=(messages
+                         .CatalogCardNamesResultPayload(names=card_names)))
         )
 
     logger.info("🏁 Finished background task: update_card_catalog")
@@ -75,7 +76,9 @@ def update_set_catalog():
         )
         redis_manager.publish_pubsub(
             messages.CatalogSetDataResultMessage(
-                payload=messages.CatalogSetDataResultPayload(sets=set_data_to_add))
+                payload=(messages
+                         .CatalogSetDataResultPayload(sets=set_data_to_add))
+            )
         )
 
         logger.info("✅ Successfully updated set catalog in the database.")

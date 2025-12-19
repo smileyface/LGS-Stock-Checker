@@ -41,7 +41,8 @@ class AvailabilityRequestCommand(PubSubMessage[AvailabilityRequestPayload]):
 
 class QueueAllAvailabilityChecksCommand(PubSubMessage[Payload]):
     """A specific command to queue checks for all of a user's cards."""
-    name: Literal["queue_all_availability_checks"] = "queue_all_availability_checks"
+    name: Literal["queue_all_availability_checks"] = "queue_all" \
+                                                     "_availability_checks"
     channel: ClassVar[str] = "scheduler-requests"
 
 
@@ -55,7 +56,8 @@ class AvailabilityResultMessage(PubSubMessage[AvailabilityResultPayload]):
     payload: AvailabilityResultPayload
 
 
-class CatalogCardNamesResultMessage(PubSubMessage[CatalogCardNamesResultPayload]):
+class CatalogCardNamesResultMessage(PubSubMessage[
+                                    CatalogCardNamesResultPayload]):
     """
     Defines the structure for a message published by a worker to the
     'worker-results' Redis channel after completing a catalog card names task.
@@ -79,9 +81,11 @@ class CatalogPrintingsChunkResultMessage(PubSubMessage[
                                         CatalogPrintingsChunkResultPayload]):
     """
     Defines the structure for a message published by a worker to the
-    'worker-results' Redis channel after completing a catalog printings chunk task.
+    'worker-results' Redis channel after completing a catalog printings
+    chunk task.
     """
-    name: Literal["catalog_printings_chunk_result"] = "catalog_printings_chunk_result"
+    name: Literal["catalog_printings_chunk_result"] = "catalog_printings" \
+                                                      "_chunk_result"
     channel: ClassVar[str] = "worker-results"
     payload: CatalogPrintingsChunkResultPayload
 
@@ -90,9 +94,11 @@ class CatalogFinishesChunkResultMessage(PubSubMessage[
                                       CatalogFinishesChunkResultPayload]):
     """
     Defines the structure for a message published by a worker to the
-    'worker-results' Redis channel after completing a catalog finishes chunk task.
+    'worker-results' Redis channel after completing a catalog
+    finishes chunk task.
     """
-    name: Literal["catalog_finishes_chunk_result"] = "catalog_finishes_chunk_result"
+    name: Literal["catalog_finishes_chunk_result"] = "catalog_finishes" \
+                                                     "_chunk_result"
     channel: ClassVar[str] = "worker-results"
     payload: CatalogFinishesChunkResultPayload
 # --- End Pub-Sub Message Definitions ---
@@ -119,7 +125,8 @@ class UpdateCardRequest(APIMessage):
     """
     A unified update message to handle add, delete, and update requests.
     """
-    # This message uses dynamic names (e.g. "add_card_CardName"), so we keep it as str.
+    # This message uses dynamic names
+    # (e.g. "add_card_CardName"), so we keep it as str.
     name: str
     payload: UpdateCardRequestPayload
 

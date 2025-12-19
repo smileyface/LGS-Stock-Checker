@@ -50,7 +50,8 @@ def test_get_card_availability_with_cached_data(
     mock_store = MagicMock()
     mock_store.slug = "test-store"
     mock_user_manager.get_user_stores.return_value = [mock_store]
-    mock_user_manager.load_card_list.return_value = {"Test Card": {"name": "Test Card"}}
+    mock_user_manager.load_card_list.return_value = {"Test Card":
+                                                     {"name": "Test Card"}}
     cached_data = [{"price": "1.00"}]
     mock_storage.get_cached_availability_data.return_value = cached_data
 
@@ -85,7 +86,8 @@ def test_get_card_availability_with_no_cached_data(
     mock_store = MagicMock()
     mock_store.slug = "test-store"
     mock_user_manager.get_user_stores.return_value = [mock_store]
-    mock_user_manager.load_card_list.return_value = {"Test Card": {"name": "Test Card"}}
+    mock_user_manager.load_card_list.return_value = {"Test Card":
+                                                     {"name": "Test Card"}}
     mock_storage.get_cached_availability_data.return_value = None
 
     # Act
@@ -132,7 +134,8 @@ def test_get_card_availability_handles_invalid_store(
         mock_store_invalid_obj,
         mock_store_valid,
     ]
-    mock_user_manager.load_card_list.return_value = {"Test Card": {"name": "Test Card"}}
+    mock_user_manager.load_card_list.return_value = {"Test Card":
+                                                     {"name": "Test Card"}}
 
     # Act
     get_cached_availability_or_trigger_check(username)

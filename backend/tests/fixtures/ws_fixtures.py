@@ -20,7 +20,8 @@ def websocket_client_factory(request, app, seeded_user, mocker):
     """
     # 1. Arrange: Set up mocks
     mock_logger = mocker.patch.object(socket_connections_module, "logger")
-    mock_join_room = mocker.patch.object(socket_connections_module, "join_room")
+    mock_join_room = mocker.patch.object(socket_connections_module,
+                                         "join_room")
 
     # Import socketio locally to ensure a clean instance for each test run.
     from managers.socket_manager import socketio

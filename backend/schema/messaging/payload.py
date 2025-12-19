@@ -83,7 +83,9 @@ class CatalogCardChunkPayload(Payload):
     """
     Payload for a chunk of card data to be processed.
     """
-    printings: list[CardSchema] = Field(..., description="A list of card printings.")
+    printings: list[CardSchema] = Field(...,
+                                        description="A list of "
+                                        "card printings.")
 
 
 class CatalogFinishesChunkPayload(Payload):

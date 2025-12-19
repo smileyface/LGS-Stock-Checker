@@ -51,7 +51,8 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
     try:
         redis_conn = redis_manager.get_redis_connection(decode_responses=False)
         assert redis_conn is not None, "Redis connection is None"
-        raw_data = redis_conn.hget(key, field) if field else redis_conn.get(key)
+        raw_data = (redis_conn.hget(key, field)
+                    if field else redis_conn.get(key))
         data = cast(Optional[bytes], raw_data)
         if data:
             logger.info(f"🔍 Redis GET [{key}]: {len(data)} bytes")

@@ -15,9 +15,11 @@ from schema.blocks import UserSchema, CardSpecificationSchema
 from utility import logger
 
 
-def check_availability(username: str,
-                       store_slug: Optional[str] = "",
-                       card_data: Optional[Dict[str, Any]] = {}) -> Dict[str, str]:
+def check_availability(
+        username: str,
+        store_slug: Optional[str] = "",
+        card_data: Optional[Dict[str, Any]] = {}
+        ) -> Dict[str, str]:
     """Manually triggers an availability update for a user's card list."""
     logger.info(f"🔄 User {username} requested a manual availability refresh.")
     payload = AvailabilityRequestPayload(

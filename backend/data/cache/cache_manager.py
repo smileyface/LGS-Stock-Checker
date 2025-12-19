@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from managers import redis_manager
 from utility import logger
@@ -19,6 +19,7 @@ def save_data(
     """
     try:
         redis_conn = redis_manager.get_redis_connection(decode_responses=True)
+        assert redis_conn is not None, "Redis connection is None"
         value_json = json.dumps(value)  # Ensure value is serialized
 
         if field:
@@ -48,12 +49,13 @@ def load_data(key: str, field: Optional[str] = None) -> Optional[Any]:
     Load data from Redis.
     """
     try:
-        redis_conn = redis_manager.get_redis_connection(decode_responses=True)
-        data = redis_conn.hget(key, field) if field else redis_conn.get(key)
-
+        redis_conn = redis_manager.get_redis_connection(decode_responses=False)
+        assert redis_conn is not None, "Redis connection is None"
+        raw_data = redis_conn.hget(key, field) if field else redis_conn.get(key)
+        data = cast(Optional[bytes], raw_data)
         if data:
             logger.info(f"🔍 Redis GET [{key}]: {len(data)} bytes")
-            return json.loads(data)
+            return json.loads(data.decode("utf-8"))
         else:
             logger.debug(f"⚠️ Redis key {key} is empty or missing.")
             return None
@@ -67,7 +69,9 @@ def get_all_hash_fields(key: str) -> Dict[str, Any]:
     redis_conn = redis_manager.get_redis_connection(
         decode_responses=False
     )  # hgetall returns bytes
+    assert redis_conn is not None, "Redis connection is None"
     data = redis_conn.hgetall(key)
+    data = cast(Dict[bytes, bytes], redis_conn.hgetall(key))
     return (
         {k.decode("utf-8"): json.loads(v) for k, v in data.items()}
         if data
@@ -84,6 +88,7 @@ def delete_data(key: str, field=None) -> None:
     """
     try:
         redis_conn = redis_manager.get_redis_connection(decode_responses=True)
+        assert redis_conn is not None, "Redis connection is None"
         if field:
             redis_conn.hdel(key, field)
             logger.info(f"🗑️ Deleted field {field} from Redis Hash {key}")

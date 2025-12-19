@@ -4,10 +4,6 @@ import json
 import atexit
 from managers import redis_manager, task_manager, user_manager
 from utility import logger
-from schema.messaging import (
-    AvailabilityResultMessage,
-    QueueAllAvailabilityChecksCommand
-)
 
 
 def _handle_availability_request(payload: dict):
@@ -38,7 +34,7 @@ def _handle_queue_all_availability_checks(payload: dict):
         )
         return
 
-    stores = user_manager.get_selected_stores(username)
+    stores = user_manager.get_user_stores(username)
     user_cards = user_manager.load_card_list(username)
 
     for store in stores:
@@ -48,14 +44,14 @@ def _handle_queue_all_availability_checks(payload: dict):
                 task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD,
                 username,
                 store.slug,
-                card.model_dump(),
+                card,
             )
 
 
 HANDLER_MAP: dict[str, Callable] = {
-    AvailabilityResultMessage.name:
+    "availability_request":
     _handle_availability_request,
-    QueueAllAvailabilityChecksCommand.name:
+    "queue_all_availability_checks":
     _handle_queue_all_availability_checks,
 }
 

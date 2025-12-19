@@ -203,7 +203,9 @@ def handle_add_user_tracked_card(data: dict):
             username,
             update_data.card.name,
             update_data.amount if update_data.amount else 1,
-            update_data.card_specs.model_dump() if update_data.card_specs else {},
+            (update_data.card_specs.model_dump()
+             if update_data.card_specs
+             else {}),
         )
 
         # Delegate to the availability manager to trigger the check

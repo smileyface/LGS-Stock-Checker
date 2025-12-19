@@ -190,7 +190,10 @@ class CardSpecification(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_card_id = Column(
-        Integer, ForeignKey("user_tracked_cards.id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("user_tracked_cards.id",
+                   ondelete="CASCADE"),
+        nullable=False
     )
     set_code = Column(String, ForeignKey("sets.code"), nullable=True)
     collector_number = Column(

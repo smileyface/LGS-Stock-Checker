@@ -1,5 +1,6 @@
 import pytest  # noqa
-from unittest.mock import patch
+import json
+from unittest.mock import patch, MagicMock
 from tasks.catalog_tasks import (
     update_card_catalog,
     update_set_catalog,
@@ -9,14 +10,17 @@ from datetime import date
 
 
 @patch("tasks.catalog_tasks.fetch_scryfall_card_names")
-@patch("tasks.catalog_tasks.redis_manager.publish_pubsub")
-def test_update_card_catalog_success(mock_publish, mock_fetch):
+@patch("managers.redis_manager.redis_manager.get_redis_connection")
+def test_update_card_catalog_success(mock_get_redis, mock_fetch):
     """
     GIVEN a list of card names is successfully fetched
     WHEN update_card_catalog is called
     THEN it should publish the card names to the correct Redis channel.
     """
     # Arrange
+    mock_redis = MagicMock()
+    mock_get_redis.return_value = mock_redis
+
     card_names = ["Sol Ring", "Command Tower"]
     mock_fetch.return_value = card_names
 
@@ -25,22 +29,27 @@ def test_update_card_catalog_success(mock_publish, mock_fetch):
 
     # Assert
     mock_fetch.assert_called_once()
-    mock_publish.assert_called_once_with(
-        "worker-results",
-        {"type": "catalog_card_names_result",
-         "payload": {"names": card_names}}
-    )
+    mock_redis.publish.assert_called_once()
+
+    # Verify arguments
+    call_args = mock_redis.publish.call_args
+    assert call_args[0][0] == "worker-results"
+
+    payload = json.loads(call_args[0][1])
+    assert payload == {"names": card_names}
 
 
 @patch("tasks.catalog_tasks.fetch_scryfall_card_names")
-@patch("tasks.catalog_tasks.redis_manager.publish_pubsub")
-def test_update_card_catalog_fetch_fails(mock_publish, mock_fetch):
+@patch("managers.redis_manager.redis_manager.get_redis_connection")
+def test_update_card_catalog_fetch_fails(mock_get_redis, mock_fetch):
     """
     GIVEN fetching card names returns nothing (e.g., API is down)
     WHEN update_card_catalog is called
     THEN it should not publish anything.
     """
     # Arrange
+    mock_redis = MagicMock()
+    mock_get_redis.return_value = mock_redis
     mock_fetch.return_value = None
 
     # Act
@@ -48,12 +57,12 @@ def test_update_card_catalog_fetch_fails(mock_publish, mock_fetch):
 
     # Assert
     mock_fetch.assert_called_once()
-    mock_publish.assert_not_called()
+    mock_redis.publish.assert_not_called()
 
 
 @patch("tasks.catalog_tasks.fetch_all_sets")
-@patch("tasks.catalog_tasks.redis_manager.publish_pubsub")
-def test_update_set_catalog_success(mock_publish, mock_fetch_sets):
+@patch("managers.redis_manager.redis_manager.get_redis_connection")
+def test_update_set_catalog_success(mock_get_redis, mock_fetch_sets):
     """
     GIVEN a list of set data is successfully fetched
     WHEN update_set_catalog is called
@@ -61,6 +70,8 @@ def test_update_set_catalog_success(mock_publish, mock_fetch_sets):
          channel.
     """
     # Arrange
+    mock_redis = MagicMock()
+    mock_get_redis.return_value = mock_redis
 
     raw_set_data = [
         {"code": "M21", "name": "Core Set 2021", "released_at": "2020-06-25"},
@@ -90,24 +101,27 @@ def test_update_set_catalog_success(mock_publish, mock_fetch_sets):
 
     # Assert
     mock_fetch_sets.assert_called_once()
-    mock_publish.assert_called_once_with(
-        "worker-results",
-        {
-            "type": "catalog_set_data_result",
-            "payload": {"sets": expected_transformed_data}
-        }
-    )
+    mock_redis.publish.assert_called_once()
+
+    call_args = mock_redis.publish.call_args
+    assert call_args[0][0] == "worker-results"
+
+    payload = json.loads(call_args[0][1])
+    expected_sets_json = json.loads(json.dumps(expected_transformed_data, default=str))
+    assert payload == {"sets": expected_sets_json}
 
 
 @patch("tasks.catalog_tasks.fetch_all_sets")
-@patch("tasks.catalog_tasks.redis_manager.publish_pubsub")
-def test_update_set_catalog_fetch_fails(mock_publish, mock_fetch_sets):
+@patch("managers.redis_manager.redis_manager.get_redis_connection")
+def test_update_set_catalog_fetch_fails(mock_get_redis, mock_fetch_sets):
     """
     GIVEN fetching set data returns nothing
     WHEN update_set_catalog is called
     THEN it should not publish anything.
     """
     # Arrange
+    mock_redis = MagicMock()
+    mock_get_redis.return_value = mock_redis
     mock_fetch_sets.return_value = None
 
     # Act
@@ -115,12 +129,12 @@ def test_update_set_catalog_fetch_fails(mock_publish, mock_fetch_sets):
 
     # Assert
     mock_fetch_sets.assert_called_once()
-    mock_publish.assert_not_called()
+    mock_redis.publish.assert_not_called()
 
 
 @patch("tasks.catalog_tasks.fetch_all_sets")
-@patch("tasks.catalog_tasks.redis_manager.publish_pubsub")
-def test_update_set_catalog_handles_missing_keys(mock_publish,
+@patch("managers.redis_manager.redis_manager.get_redis_connection")
+def test_update_set_catalog_handles_missing_keys(mock_get_redis,
                                                  mock_fetch_sets):
     """
     GIVEN fetched set data has items with missing keys
@@ -128,6 +142,8 @@ def test_update_set_catalog_handles_missing_keys(mock_publish,
     THEN it should filter out the invalid items before publishing.
     """
     # Arrange
+    mock_redis = MagicMock()
+    mock_get_redis.return_value = mock_redis
     raw_set_data = [
         {"code": "M21", "name": "Core Set 2021", "released_at": "2020-06-25"},
         {"name": "Incomplete Set", "released_at": "2020-01-01"},
@@ -148,21 +164,19 @@ def test_update_set_catalog_handles_missing_keys(mock_publish,
             "release_date": date(2020, 6, 25),
         }
     ]
-    mock_publish.assert_called_once_with(
-        "worker-results",
-        {
-            "type": "catalog_set_data_result",
-            "payload": {"sets": expected_call_data}
-        }
-    )
+    mock_redis.publish.assert_called_once()
+    call_args = mock_redis.publish.call_args
+    payload = json.loads(call_args[0][1])
+    expected_sets_json = json.loads(json.dumps(expected_call_data, default=str))
+    assert payload == {"sets": expected_sets_json}
 
 
 @patch("tasks.catalog_tasks.fetch_all_card_data")
-@patch("tasks.catalog_tasks.redis_manager.publish_pubsub")
+@patch("managers.redis_manager.redis_manager.get_redis_connection")
 @patch("tasks.catalog_tasks.update_card_catalog")
 @patch("tasks.catalog_tasks.update_set_catalog")
 def test_update_full_catalog_success(
-    mock_update_set, mock_update_card, mock_publish, mock_fetch_cards
+    mock_update_set, mock_update_card, mock_get_redis, mock_fetch_cards
 ):
     """
     GIVEN a stream of card data is fetched
@@ -170,6 +184,8 @@ def test_update_full_catalog_success(
     THEN it should publish printings and finishes in chunks to Redis.
     """
     # Arrange
+    mock_redis = MagicMock()
+    mock_get_redis.return_value = mock_redis
     card_stream = [
         {
             "name": "Sol Ring",
@@ -230,22 +246,23 @@ def test_update_full_catalog_success(
     # A bit complex to check, so let's check call count
     # and contents separately.
 
-    assert mock_publish.call_count == 2
+    assert mock_redis.publish.call_count == 2
 
     # Check printings call
-    mock_publish.assert_any_call(
-        "worker-results",
-        {"type": "catalog_printings_chunk_result",
-         "payload": {"printings": expected_printings_chunk}}
-    )
+    # We iterate through calls to find the printings chunk
+    calls = mock_redis.publish.call_args_list
+    printings_payload = None
+    finishes_payload = None
 
-    # Check finishes call by inspecting the actual calls made to the mock
-    finishes_call = next(
-        c
-        for c in mock_publish.call_args_list
-        if c.args[1].get("type") == "catalog_finishes_chunk_result"
-    )
-    assert finishes_call is not None
-    # Sort both lists to ensure comparison is order-independent
-    actual_finishes = sorted(finishes_call.args[1]["payload"]["finishes"])
-    assert actual_finishes == sorted(expected_finishes)
+    for call_args in calls:
+        payload = json.loads(call_args[0][1])
+        if "printings" in payload:
+            printings_payload = payload
+        elif "finishes" in payload:
+            finishes_payload = payload
+
+    assert printings_payload is not None
+    assert printings_payload["printings"] == expected_printings_chunk
+
+    assert finishes_payload is not None
+    assert sorted(finishes_payload["finishes"]) == sorted(expected_finishes)

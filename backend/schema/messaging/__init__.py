@@ -9,6 +9,7 @@ from .messages import (
     UpdateCardMessage,
     SearchCardNamesMessage,
     UpdateStoreMessage,
+    CatalogCardNamesResultMessage
 )
 
 
@@ -23,4 +24,5 @@ __all__ = [
     "UpdateCardMessage",
     "SearchCardNamesMessage",
     "UpdateStoreMessage",
+    "CatalogCardNamesResultMessage"
 ]

@@ -1,5 +1,5 @@
-from typing import Union, Literal
-from pydantic import BaseModel, Field
+from typing import Union, Literal, TypeVar, Generic, ClassVar
+from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import Annotated
 from .payload import (
     Payload,
@@ -7,69 +7,94 @@ from .payload import (
     AvailabilityResultPayload,
     GetPrintingsRequestPayload,
     UpdateCardRequestPayload,
+    CatalogPrintingsChunkResultPayload,
+    CatalogFinishesChunkResultPayload,
+    CatalogCardNamesResultPayload,
+    CatalogSetDataResultPayload,
 )
 
 
 # --- Messaging Base Definitions ---
-class PubSubMessage(BaseModel):
-    """Base class for pub-sub messages."""
-    name: str
-    channel: str
+T = TypeVar("T", bound=Payload)
 
-    def __init__(self,
-                 **data):
-        super().__init__(**data)
-        self.payload = Payload()
+
+class PubSubMessage(BaseModel, Generic[T]):
+    """Base class for pub-sub messages."""
+    channel: ClassVar[str]
+    payload: T
 
 
 class APIMessage(BaseModel):
     """Base class for all API messages."""
-    name: str
-
-    def __init__(self,
-                 **data):
-        super().__init__(**data)
+    pass
 # --- End Messaging Base Definitions ---
 
 
 # --- Pub-Sub Message Definitions ---
-class AvailabilityRequestCommand(PubSubMessage):
+class AvailabilityRequestCommand(PubSubMessage[AvailabilityRequestPayload]):
     """A specific command to request a single availability check."""
+    model_config = ConfigDict(from_attributes=True)
+    name: Literal["availability_request"] = "availability_request"
+    channel: ClassVar[str] = "scheduler-requests"
     payload: AvailabilityRequestPayload
 
-    def __init__(self,
-                 payload: AvailabilityRequestPayload,
-                 **data):
-        super().__init__(**data)
-        self.name = "availability_request"
-        self.channel = "scheduler-requests"
-        self.payload = payload
 
-
-class QueueAllAvailabilityChecksCommand(PubSubMessage):
+class QueueAllAvailabilityChecksCommand(PubSubMessage[Payload]):
     """A specific command to queue checks for all of a user's cards."""
-
-    def __init__(self,
-                 **data):
-        super().__init__(**data)
-        self.name = "queue_all_availability_checks"
-        self.channel = "scheduler-requests"
+    name: Literal["queue_all_availability_checks"] = "queue_all_availability_checks"
+    channel: ClassVar[str] = "scheduler-requests"
 
 
-class AvailabilityResultMessage(PubSubMessage):
+class AvailabilityResultMessage(PubSubMessage[AvailabilityResultPayload]):
     """
     Defines the structure for a message published by a worker to the
     'worker-results' Redis channel after completing a scraping task.
     """
+    name: Literal["availability_result"] = "availability_result"
+    channel: ClassVar[str] = "worker-results"
     payload: AvailabilityResultPayload
 
-    def __init__(self,
-                 payload: AvailabilityResultPayload,
-                 **data):
-        super().__init__(**data)
-        self.name = "availability_result"
-        self.channel = "worker-results"
-        self.payload = payload
+
+class CatalogCardNamesResultMessage(PubSubMessage[CatalogCardNamesResultPayload]):
+    """
+    Defines the structure for a message published by a worker to the
+    'worker-results' Redis channel after completing a catalog card names task.
+    """
+    name: Literal["catalog_card_names_result"] = "catalog_card_names_result"
+    channel: ClassVar[str] = "worker-results"
+    payload: CatalogCardNamesResultPayload
+
+
+class CatalogSetDataResultMessage(PubSubMessage[CatalogSetDataResultPayload]):
+    """
+    Defines the structure for a message published by a worker to the
+    'worker-results' Redis channel after completing a catalog set data task.
+    """
+    name: Literal["catalog_set_data_result"] = "catalog_set_data_result"
+    channel: ClassVar[str] = "worker-results"
+    payload: CatalogSetDataResultPayload
+
+
+class CatalogPrintingsChunkResultMessage(PubSubMessage[
+                                        CatalogPrintingsChunkResultPayload]):
+    """
+    Defines the structure for a message published by a worker to the
+    'worker-results' Redis channel after completing a catalog printings chunk task.
+    """
+    name: Literal["catalog_printings_chunk_result"] = "catalog_printings_chunk_result"
+    channel: ClassVar[str] = "worker-results"
+    payload: CatalogPrintingsChunkResultPayload
+
+
+class CatalogFinishesChunkResultMessage(PubSubMessage[
+                                      CatalogFinishesChunkResultPayload]):
+    """
+    Defines the structure for a message published by a worker to the
+    'worker-results' Redis channel after completing a catalog finishes chunk task.
+    """
+    name: Literal["catalog_finishes_chunk_result"] = "catalog_finishes_chunk_result"
+    channel: ClassVar[str] = "worker-results"
+    payload: CatalogFinishesChunkResultPayload
 # --- End Pub-Sub Message Definitions ---
 
 
@@ -78,109 +103,65 @@ class GetCardPrintingsMessage(APIMessage):
     """
     Message to request card printings from the API.
     """
+    name: Literal["get_card_printings"] = "get_card_printings"
     payload: GetPrintingsRequestPayload
-
-    def __init__(self,
-                 payload: GetPrintingsRequestPayload,
-                 **data):
-        super().__init__(**data)
-        self.name = "get_card_printings"
-        self.payload = payload
 
 
 class ParseCardListMessage(APIMessage):
     """
     Message to parse a card list from the API.
     """
+    name: Literal["parse_card_list"] = "parse_card_list"
     payload: dict
-
-    def __init__(self,
-                 payload: dict,
-                 **data):
-        super().__init__(**data)
-        self.payload = payload
 
 
 class UpdateCardRequest(APIMessage):
     """
     A unified update message to handle add, delete, and update requests.
     """
+    # This message uses dynamic names (e.g. "add_card_CardName"), so we keep it as str.
+    name: str
     payload: UpdateCardRequestPayload
-
-    def __init__(self,
-                 payload: UpdateCardRequestPayload,
-                 **data):
-        # temporary bridge until the modify user card messages
-        # are implemented in the front end.
-        data["payload"] = payload
-        super().__init__(**data)
 
 
 class AddCardMessage(APIMessage):
     """
     Message to add a card to the API.
     """
+    name: Literal["add_card"] = "add_card"
     payload: UpdateCardRequestPayload
-
-    def __init__(self,
-                 payload: UpdateCardRequestPayload,
-                 **data):
-        super().__init__(**data)
-        self.name = "add_card"
-        self.payload = payload
 
 
 class DeleteCardMessage(APIMessage):
     """
     Message to delete a card from the API.
     """
+    name: Literal["delete_card"] = "delete_card"
     payload: UpdateCardRequestPayload
-
-    def __init__(self,
-                 payload: UpdateCardRequestPayload,
-                 **data):
-        super().__init__("delete_card", **data)
-        self.payload = payload
 
 
 class UpdateCardMessage(APIMessage):
     """
     Message to update a card in the API.
     """
+    name: Literal["update_card"] = "update_card"
     payload: UpdateCardRequestPayload
-
-    def __init__(self,
-                 payload: UpdateCardRequestPayload,
-                 **data):
-        data["payload"] = payload
-        super().__init__("update_card", **data)
-        self.payload = payload
 
 
 class SearchCardNamesMessage(APIMessage):
     """
     Message to search for card names in the API.
     """
+    name: Literal["search_card_names"] = "search_card_names"
     payload: dict
-
-    def __init__(self,
-                 payload: dict,
-                 **data):
-        super().__init__("search_card_names", **data)
-        self.payload = payload
 
 
 class UpdateStoreMessage(APIMessage):
     """
     Message to update a user's preferred stores in the API.
     """
+    name: Literal["update_stores"] = "update_stores"
     stores: list[str]
-
-    def __init__(self,
-                 stores: list[str],
-                 **data):
-        super().__init__("update_stores", **data)
-        self.stores = stores
 # --- End API Message Definitions ---
 
 

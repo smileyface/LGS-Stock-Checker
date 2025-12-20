@@ -1,6 +1,6 @@
 # --- Stage 1: Builder ---
 # Use the full Python image which includes all the necessary build tools.
-FROM python:3.9 as builder
+FROM python:3.9 AS builder
 
 # Set the working directory
 WORKDIR /app

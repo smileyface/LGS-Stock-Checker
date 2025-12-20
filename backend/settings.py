@@ -10,6 +10,7 @@ LOGGER_NAME = "LGS_Stock_Checker"
 class Config:
     # Use environment variable for security in production
     SECRET_KEY = os.environ.get("SECRET_KEY") or "a-very-secret-key"
+    DATABASE_URL = os.environ.get("DATABASE_URL")
 
     # Configure Redis-based session storage
     SESSION_TYPE = "redis"

@@ -9,7 +9,7 @@ import eventlet
 
 # These imports must come AFTER monkey_patching
 from app_factory import create_base_app, configure_web_app, configure_database
-from managers import flask_manager
+from managers import messaging_manager
 from utility import logger
 
 eventlet.monkey_patch()
@@ -27,7 +27,7 @@ app = create_base_app()
 app = configure_web_app(app)
 
 # 3. Start the background listener for results from RQ workers
-flask_manager.start_server_listener(app)
+messaging_manager.start_server_listener(app)
 
 app = configure_database(app)  # Configure the database connection
 

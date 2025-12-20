@@ -53,6 +53,6 @@ def app_context(app):
     with app.test_request_context():
         from flask import request
 
-        request.sid = "test_sid_12345"
-        request.namespace = "/"
+        setattr(request, "sid", "test_sid_12345")
+        setattr(request, "namespace", "/")
         yield

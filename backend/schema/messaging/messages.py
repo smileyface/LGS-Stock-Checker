@@ -21,6 +21,7 @@ T = TypeVar("T", bound=Payload)
 class PubSubMessage(BaseModel, Generic[T]):
     """Base class for pub-sub messages."""
     channel: ClassVar[str]
+    name: ClassVar[str]
     payload: T
 
 
@@ -34,15 +35,14 @@ class APIMessage(BaseModel):
 class AvailabilityRequestCommand(PubSubMessage[AvailabilityRequestPayload]):
     """A specific command to request a single availability check."""
     model_config = ConfigDict(from_attributes=True)
-    name: Literal["availability_request"] = "availability_request"
+    name: ClassVar[str] = "availability_request"
     channel: ClassVar[str] = "scheduler-requests"
     payload: AvailabilityRequestPayload
 
 
 class QueueAllAvailabilityChecksCommand(PubSubMessage[Payload]):
     """A specific command to queue checks for all of a user's cards."""
-    name: Literal["queue_all_availability_checks"] = "queue_all" \
-                                                     "_availability_checks"
+    name: ClassVar[str] = "queue_all_availability_checks"
     channel: ClassVar[str] = "scheduler-requests"
 
 
@@ -51,7 +51,7 @@ class AvailabilityResultMessage(PubSubMessage[AvailabilityResultPayload]):
     Defines the structure for a message published by a worker to the
     'worker-results' Redis channel after completing a scraping task.
     """
-    name: Literal["availability_result"] = "availability_result"
+    name: ClassVar[str] = "availability_result"
     channel: ClassVar[str] = "worker-results"
     payload: AvailabilityResultPayload
 
@@ -62,7 +62,7 @@ class CatalogCardNamesResultMessage(PubSubMessage[
     Defines the structure for a message published by a worker to the
     'worker-results' Redis channel after completing a catalog card names task.
     """
-    name: Literal["catalog_card_names_result"] = "catalog_card_names_result"
+    name: ClassVar[str] = "catalog_card_names_result"
     channel: ClassVar[str] = "worker-results"
     payload: CatalogCardNamesResultPayload
 
@@ -72,7 +72,7 @@ class CatalogSetDataResultMessage(PubSubMessage[CatalogSetDataResultPayload]):
     Defines the structure for a message published by a worker to the
     'worker-results' Redis channel after completing a catalog set data task.
     """
-    name: Literal["catalog_set_data_result"] = "catalog_set_data_result"
+    name: ClassVar[str] = "catalog_set_data_result"
     channel: ClassVar[str] = "worker-results"
     payload: CatalogSetDataResultPayload
 
@@ -84,8 +84,7 @@ class CatalogPrintingsChunkResultMessage(PubSubMessage[
     'worker-results' Redis channel after completing a catalog printings
     chunk task.
     """
-    name: Literal["catalog_printings_chunk_result"] = "catalog_printings" \
-                                                      "_chunk_result"
+    name: ClassVar[str] = "catalog_printings_chunk_result"
     channel: ClassVar[str] = "worker-results"
     payload: CatalogPrintingsChunkResultPayload
 
@@ -97,8 +96,7 @@ class CatalogFinishesChunkResultMessage(PubSubMessage[
     'worker-results' Redis channel after completing a catalog
     finishes chunk task.
     """
-    name: Literal["catalog_finishes_chunk_result"] = "catalog_finishes" \
-                                                     "_chunk_result"
+    name: ClassVar[str] = "catalog_finishes_chunk_result"
     channel: ClassVar[str] = "worker-results"
     payload: CatalogFinishesChunkResultPayload
 # --- End Pub-Sub Message Definitions ---

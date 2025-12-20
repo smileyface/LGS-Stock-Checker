@@ -107,9 +107,16 @@ def _get_arg_from_type_hint(param, live_user, live_store):
     if annotation is SocketIO:
         return MagicMock()
     if annotation is PubSubMessage or origin is PubSubMessage:
-        return MagicMock()
+        mock_msg = MagicMock()
+        mock_msg.name = "test_message"
+        mock_msg.channel = "test_channel"
+        mock_msg.payload.model_dump.return_value = {"test": "data"}
+        return mock_msg
     if annotation is APIMessage or origin is APIMessage:
-        return MagicMock()
+        mock_msg = MagicMock()
+        mock_msg.name = "test_api_message"
+        mock_msg.payload.model_dump.return_value = {"test": "data"}
+        return mock_msg
 
     # Fallback to generic types
     if hasattr(annotation, "__total__"):  # Heuristic for TypedDict

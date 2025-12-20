@@ -36,6 +36,9 @@ def test_update_card_catalog_success(mock_get_redis, mock_fetch):
     assert call_args[0][0] == "worker-results"
 
     payload = json.loads(call_args[0][1])
+    message_type = payload.pop("type")
+    payload = payload["payload"]
+    assert message_type == "catalog_card_names_result"
     assert payload == {"names": card_names}
 
 
@@ -107,6 +110,9 @@ def test_update_set_catalog_success(mock_get_redis, mock_fetch_sets):
     assert call_args[0][0] == "worker-results"
 
     payload = json.loads(call_args[0][1])
+    message_type = payload.pop("type")
+    payload = payload["payload"]
+    assert message_type == "catalog_set_data_result"
     expected_sets_json = json.loads(json.dumps(
         expected_transformed_data,
         default=str))
@@ -169,6 +175,10 @@ def test_update_set_catalog_handles_missing_keys(mock_get_redis,
     mock_redis.publish.assert_called_once()
     call_args = mock_redis.publish.call_args
     payload = json.loads(call_args[0][1])
+    message_type = payload.pop("type")
+    payload = payload["payload"]
+    assert message_type == "catalog_set_data_result"
+    assert len(payload["sets"]) == 1
     expected_sets_json = json.loads(json.dumps(
         expected_call_data,
         default=str))
@@ -259,11 +269,12 @@ def test_update_full_catalog_success(
     finishes_payload = None
 
     for call_args in calls:
-        payload = json.loads(call_args[0][1])
-        if "printings" in payload:
-            printings_payload = payload
-        elif "finishes" in payload:
-            finishes_payload = payload
+        data = json.loads(call_args[0][1])
+        inner_payload = data.get("payload", {})
+        if "printings" in inner_payload:
+            printings_payload = inner_payload
+        elif "finishes" in inner_payload:
+            finishes_payload = inner_payload
 
     assert printings_payload is not None
     assert printings_payload["printings"] == expected_printings_chunk

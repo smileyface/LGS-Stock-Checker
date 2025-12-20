@@ -10,6 +10,7 @@ from redis import Redis
 from redis.client import PubSub
 from rq import Queue
 from rq_scheduler import Scheduler
+import json
 import os
 from schema.messaging.messages import PubSubMessage
 
@@ -74,7 +75,13 @@ def publish_pubsub(message: PubSubMessage):
     redis_conn = get_redis_connection()
     if redis_conn is None:
         return None
-    redis_conn.publish(message.channel, message.payload.model_dump_json())
+
+    payload_data = message.payload
+    if not isinstance(payload_data, dict):
+        payload_data = payload_data.model_dump(mode="json")
+
+    data = {"type": message.name, "payload": payload_data}
+    redis_conn.publish(message.channel, json.dumps(data))
 
 
 def health_check():

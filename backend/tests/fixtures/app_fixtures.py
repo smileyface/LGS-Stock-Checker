@@ -25,8 +25,8 @@ def app(mocker, db_session):
     }
     # Patch the worker listener to prevent the background thread from starting
     #  during tests.
-    mocker.patch("managers.flask_manager.server_listener."
-                 "start_server_listener")
+    mocker.patch("managers.messaging_manager.service_listener."
+                 "server_listener.start_server_listener")
 
     # Create the app using the new two-stage factory pattern.
     # 1. Create the base app with test-specific configuration.

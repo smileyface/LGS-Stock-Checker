@@ -1,10 +1,29 @@
-import { ref, readonly } from 'vue';
-import { io } from 'socket.io-client';
+import { ref, readonly, Ref } from 'vue';
+import { io, Socket } from 'socket.io-client';
+import type {
+    UserTrackedCardListSchema,
+    UserTrackedCardSchema,
+    UpdateCardRequestPayload,
+} from '../schema/server_types';
+
+/**
+ * Local type definitions for data structures not covered by the generated server types.
+ */
+interface AvailabilityStatus {
+    status: 'searching' | 'completed' | 'stalled';
+    items: any[]; // Consider creating a specific type for these items if the structure is known
+}
+
+interface CardAvailabilityData {
+    card: string;
+    store_slug: string;
+    items: any[];
+}
 
 // --- State ---
 // These are reactive and will be shared across any component using this composable.
-const trackedCards = ref([]);
-const availabilityMap = ref({});
+const trackedCards: Ref<UserTrackedCardSchema[]> = ref([]);
+const availabilityMap: Ref<Record<string, AvailabilityStatus>> = ref({});
 
 // --- Socket Connection (Singleton pattern) ---
 // Create the socket instance once. It will be shared across the application.
@@ -12,7 +31,7 @@ const availabilityMap = ref({});
 // you might use an environment variable for this (e.g., import.meta.env.VITE_API_URL).
 // For this setup, we'll hardcode it to the backend's exposed port.
 // const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-const socket = io({
+const socket: Socket = io({
     withCredentials: true, 
     autoConnect: false // We will connect manually when the composable is first used.
 });
@@ -27,12 +46,12 @@ socket.on('connect', () => {
     socket.emit("get_card_availability");
 });
 
-socket.on('cards_data', (data) => {
+socket.on('cards_data', (data: UserTrackedCardListSchema) => {
     console.log("🛠️ Received 'cards_data':", data);
     trackedCards.value = data.tracked_cards || [];
 });
 
-socket.on('availability_check_started', (data) => {
+socket.on('availability_check_started', (data: { card: string }) => {
     if (!data || !data.card) return;
     const cardName = data.card;
     console.log(`⏳ Received 'availability_check_started' for: ${cardName}`);
@@ -45,7 +64,7 @@ socket.on('availability_check_started', (data) => {
     };
 });
 
-socket.on('card_availability_data', (data) => {
+socket.on('card_availability_data', (data: CardAvailabilityData) => {
     if (!data || !data.card || !data.store_slug) return;
 
     const cardName = data.card;
@@ -75,7 +94,7 @@ socket.on('card_availability_data', (data) => {
     availabilityMap.value[cardName].status = 'completed';
 });
 
-socket.on('job_interrupted', (data) => {
+socket.on('job_interrupted', (data: { card: string }) => {
     if (!data || !data.card) return;
     const cardName = data.card;
     console.warn(`🚦 Received 'job_interrupted' for: ${cardName}.`);
@@ -89,35 +108,38 @@ socket.on('job_interrupted', (data) => {
     }
 });
 
-socket.on('user_stores_data', (data) => {
+socket.on('user_stores_data', (data: { stores: string[] }) => {
     // This event is sent from the backend but was not being handled.
     // You can now use this data to update the UI, for example in a settings page.
     console.log("🏬 Received 'user_stores_data':", data.stores);
 });
 
-socket.on('stock_data', (data) => {
+socket.on('stock_data', (data: { card: string }) => {
     if (!data || !data.card) return;
     const cardName = data.card;
     console.log(`📦 Received 'stock_data' for: ${cardName}`);
 });
 
 // --- Emitter Functions ---
-function deleteCard(cardName) {
-    console.log(`🗑️ Emitting 'delete_card' for: ${cardName}`);
-    socket.emit('delete_card', { card: cardName });
+function deleteCard(cardData: UpdateCardRequestPayload) {
+    console.log("💾 Emitting 'add_card' with data:", cardData);
+    cardData.command = "delete";
+    socket.emit('delete_card', cardData);
 }
 
-function saveCard(cardData) {
+function addCard(cardData: UpdateCardRequestPayload) {
     console.log("💾 Emitting 'add_card' with data:", cardData);
+    cardData.command = "add";
     socket.emit('add_card', cardData);
 }
 
-function updateCard(cardData) {
+function updateCard(cardData: UpdateCardRequestPayload) {
     console.log("🔄 Emitting 'update_card' with data:", cardData);
+    cardData.command = "update";
     socket.emit('update_card', cardData);
 }
 
-function getStockData(cardName) {
+function getStockData(cardName: string) {
     console.log(`🔍 Emitting 'stock_data_request' for: ${cardName}`);
     socket.emit('stock_data_request', { card_name: cardName });
 }
@@ -135,7 +157,7 @@ export function useSocket() {
         trackedCards: readonly(trackedCards),
         availabilityMap: readonly(availabilityMap),
         deleteCard,
-        saveCard,
+        addCard,
         updateCard,
         getStockData
     };

@@ -48,3 +48,4 @@ coverage.xml
 package-lock.json
 code-cli
 code-cli.Updating CLI
+frontend/src/schema/server_types.ts

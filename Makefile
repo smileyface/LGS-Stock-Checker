@@ -1,6 +1,6 @@
 # Makefile for LGS Stock Checker development
 
-.PHONY: help install-dev test lint format clean-py run-dev stop-dev
+.PHONY: help install-dev test lint format clean-py clean run-dev stop-dev
 
 # Use python3 as the default interpreter
 PYTHON := python3
@@ -20,6 +20,7 @@ help:
 	@echo "  make lint          - Lints the backend Python code with flake8."
 	@echo "  make format        - Formats the backend Python code with Black."
 	@echo "  make clean-py      - Removes the Python virtual environment and __pycache__ directories."
+	@echo "  make clean         - Removes build artifacts from both frontend and backend."
 	@echo "  make run-dev       - Starts the local development environment using Docker Compose."
 	@echo "  make stop-dev      - Stops the local development environment."
 	@echo ""
@@ -52,6 +53,10 @@ clean-py:
 	@echo "Cleaning Python artifacts..."
 	rm -rf $(VENV_DIR)
 	find . -type d -name "__pycache__" -exec rm -r {} +
+
+clean: clean-py
+	@echo "Cleaning frontend artifacts..."
+	rm -rf frontend/node_modules frontend/dist frontend/build frontend/.next
 
 run-dev:
 	@echo "Starting development containers..."

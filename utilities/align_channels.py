@@ -8,23 +8,33 @@ from pydantic import BaseModel
 # Add the project root to sys.path so we can import backend modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import backend.schema as schema  # noqa
+from backend.schema.messaging.messages import PubSubMessage  # noqa
+from backend.schema.orm.base_schema import DatabaseSchema  # noqa
+
 
 FRONTEND_SCHEMA_DIR = "frontend/src/schema"
 
 
 def get_messages():
-    """Recursively finds all Pydantic models in the backend.schema package."""
+    """
+    Recursively finds all Pydantic models in the backend.schema package,
+    excluding PubSub messages which are for internal backend communication.
+    """
     models = []
     for _, name, _ in pkgutil.walk_packages(schema.__path__, schema.__name__ + "."):
         try:
             module = importlib.import_module(name)
             for _, obj in inspect.getmembers(module):
                 if (inspect.isclass(obj)
-                    and issubclass(obj, BaseModel)
+                        and issubclass(obj, BaseModel)
                         and obj is not BaseModel):
-                    # Only include models defined in the module (not imported ones)
+                    # Only include models defined in their own module
+                    # (not imported ones)
                     if obj.__module__ == name:
-                        models.append(obj)
+                        # Exclude PubSubMessages and their children
+                        if (not issubclass(obj, PubSubMessage)
+                           and not issubclass(obj, DatabaseSchema)):
+                            models.append(obj)
         except ImportError as e:
             print(f"Failed to import {name}: {e}")
     return models

@@ -1,7 +1,7 @@
 from rq import Queue
 
 # Import the application factory
-from app_factory import create_worker_app
+from app_factory import create_worker_app, configure_database
 from tasks.custom_worker import LGSWorker
 from managers import redis_manager
 
@@ -12,13 +12,12 @@ if __name__ == "__main__":
     # application context that background tasks will run in, giving them
     # access to the database and other Flask extensions.
     app = create_worker_app()
+    app = configure_database(app, create_tables=False)
 
     # The app context is pushed so that tasks have access to app resources.
     with app.app_context():
         queues = [
-            Queue(q, connection=redis_manager.get_redis_connection())
-            for q in listen
+            Queue(q, connection=redis_manager.get_redis_connection()) for q in listen
         ]
-        worker = LGSWorker(queues,
-                           connection=redis_manager.get_redis_connection())
+        worker = LGSWorker(queues, connection=redis_manager.get_redis_connection())
         worker.work()

@@ -69,7 +69,9 @@ from .session_manager import init_session
 engine = None
 
 
-def initialize_database(database_url: str, for_testing: bool = False):
+def initialize_database(database_url: str,
+                        for_testing: bool = False,
+                        create_tables: bool = True):
     """
     Initializes the database engine and session factory.
     In testing, uses a StaticPool to ensure a single connection
@@ -98,9 +100,10 @@ def initialize_database(database_url: str, for_testing: bool = False):
         return
 
     init_session(engine)
-    logger.info("🔄 Creating database tables...")
-    Base.metadata.create_all(bind=get_engine())
-    logger.info("✅ Database tables created successfully.")
+    if create_tables:
+        logger.info("🔄 Creating database tables...")
+        Base.metadata.create_all(bind=get_engine())
+        logger.info("✅ Database tables created successfully.")
 
 
 def get_engine():

@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # Create and configure the app for scheduling.
     app = create_base_app()
     app = configure_scheduler_app(app)
-    app = configure_database(app)
+    app = configure_database(app, create_tables=False)
 
     with app.app_context():
         # Schedule recurring jobs like catalog updates and availability checks.

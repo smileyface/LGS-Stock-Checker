@@ -29,6 +29,6 @@ app = configure_web_app(app)
 # 3. Start the background listener for results from RQ workers
 messaging_manager.start_server_listener(app)
 
-app = configure_database(app)  # Configure the database connection
+app = configure_database(app, create_tables=True)  # Configure the database connection
 
 logger.info("✅ App context for server is ready.")

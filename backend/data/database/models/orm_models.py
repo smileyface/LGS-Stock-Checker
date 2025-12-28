@@ -51,7 +51,10 @@ class User(UserMixin, Base):
 
     # Relationship to the cards the user is tracking
     cards = relationship(
-        "UserTrackedCards", back_populates="user", cascade="all, delete-orphan"
+        "UserTrackedCards",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
 
     def __init__(self, username: str,
@@ -162,6 +165,7 @@ class UserTrackedCards(Base):
         "CardSpecification",
         back_populates="user_card",
         cascade="all, delete-orphan",
+        lazy="selectin"
     )
 
     # Relationship back to the user
@@ -205,7 +209,7 @@ class CardSpecification(Base):
     user_card = relationship(
         "UserTrackedCards", back_populates="specifications"
     )
-    finish = relationship("Finish")
+    finish = relationship("Finish", lazy="joined")
     set = relationship("Set")
 
     def __repr__(self):

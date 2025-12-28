@@ -1,5 +1,10 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useSocket } from '@/composables/useSocket';
+import {
+    createGetCardPrintingsMessage,
+    createGetPrintingsRequestPayload,
+    createCardSchema
+} from '@/schema/server_types';
 
 /**
  * A Vue composable to manage fetching and deriving card printing data.
@@ -19,7 +24,13 @@ export function useCardPrintings(cardNameRef, selectedSetRef, selectedCollectorN
         if (name && socketManager.socket) {
             console.log(`[useCardPrintings] 📡 Requesting printings for card: ${name}`);
             printings.value = []; // Clear old data before new fetch
-            socketManager.socket.emit('get_card_printings', { card_name: name });
+
+            // Use factories to ensure strict adherence to backend types
+            const msg = createGetCardPrintingsMessage(
+                createGetPrintingsRequestPayload(createCardSchema(name))
+            );
+
+            socketManager.socket.emit(msg.type, msg.payload);
         }
     };
 
@@ -65,7 +76,7 @@ export function useCardPrintings(cardNameRef, selectedSetRef, selectedCollectorN
         const printing = printings.value.find(
             p => p.set_code === selectedSetRef.value && p.collector_number === selectedCollectorNumberRef.value
         );
-        return printing ? printing.finishes : [];
+        return printing ? printing.available_finishes : [];
     });
 
     return { printings, setOptions, collectorNumberOptions, finishOptions, fetchPrintings };

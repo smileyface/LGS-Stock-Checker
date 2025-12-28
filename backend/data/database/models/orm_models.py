@@ -152,6 +152,15 @@ class CardPrinting(Base):
         ),
     )
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "card_name": self.card_name,
+            "set_code": self.set_code,
+            "collector_number": self.collector_number,
+            "available_finishes": [f.to_dict() for f in self.available_finishes]
+        }
+
 
 class UserTrackedCards(Base):
     __tablename__ = "user_tracked_cards"

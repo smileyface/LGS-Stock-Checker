@@ -31,9 +31,8 @@ def get_messages():
                     # Only include models defined in their own module
                     # (not imported ones)
                     if obj.__module__ == name:
-                        # Exclude PubSubMessages and their children
-                        if (not issubclass(obj, PubSubMessage)
-                           and not issubclass(obj, DatabaseSchema)):
+                        # Exclude DatabaseSchema but allow PubSubMessage
+                        if not issubclass(obj, DatabaseSchema):
                             models.append(obj)
         except ImportError as e:
             print(f"Failed to import {name}: {e}")
@@ -119,6 +118,39 @@ def generate_typescript_definitions(models: typing.List[typing.Type[BaseModel]],
 
             lines.append(f"  {field_name}{'?' if is_optional else ''}: {ts_type};")
 
+        lines.append("}")
+        lines.append("")
+
+        # Factory Generation
+        factory_params = []
+        factory_assignments = []
+
+        for field_name, field_schema in props.items():
+            ts_type = map_json_type_to_ts(field_schema)
+            is_optional = field_name not in required
+            if "null" in ts_type.split(" | "):
+                is_optional = True
+                ts_type = ts_type.replace(" | null", "").replace("null | ", "")
+
+            # Check for const/literal
+            fixed_val = None
+            if "const" in field_schema:
+                fixed_val = field_schema["const"]
+            elif "enum" in field_schema and len(field_schema["enum"]) == 1:
+                fixed_val = field_schema["enum"][0]
+
+            if fixed_val is not None:
+                val_str = f'"{fixed_val}"' if isinstance(fixed_val, str) else str(fixed_val)
+                factory_assignments.append(f"{field_name}: {val_str}")
+            else:
+                factory_params.append(f"{field_name}{'?' if is_optional else ''}: {ts_type}")
+                factory_assignments.append(field_name)
+
+        lines.append("/**")
+        lines.append(f" * Factory to create a typed {name} object.")
+        lines.append(" */")
+        lines.append(f"export function create{name}({', '.join(factory_params)}): {name} {{")
+        lines.append(f"  return {{ {', '.join(factory_assignments)} }};")
         lines.append("}")
         lines.append("")
 

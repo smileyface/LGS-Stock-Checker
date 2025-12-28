@@ -1,5 +1,6 @@
 import { ref, readonly, Ref } from 'vue';
 import { io, Socket } from 'socket.io-client';
+import { createCardPreferenceSchema } from '../schema/server_types';
 import type {
     UserTrackedCardSchema,
     CardPreferenceSchema,
@@ -103,6 +104,8 @@ function addCard(cardData: CardPreferenceSchema) {
     // Backend expects strict Pydantic structure now
     console.log("💾 Emitting 'add_card' with data:", cardData);
     socket.emit('add_card', cardData);
+    const payload = createCardPreferenceSchema(cardData.card_name, cardData.amount, cardData.specifications);
+    socket.emit('add_card', payload);
 }
 
 function updateCard(cardData: CardPreferenceSchema) {

@@ -3,11 +3,19 @@
 .PHONY: help install-dev test lint format clean-py clean run-dev stop-dev reset-db db-init db-migrate db-upgrade
 
 # Use python3 as the default interpreter
-PYTHON := python3
+ifeq ($(OS),Windows_NT)
+	PYTHON := python
+else
+	PYTHON := python3
+endif
 
 # Define the virtual environment directory within the backend folder
 VENV_DIR := backend/.venv
-VENV_PYTHON := $(VENV_DIR)/bin/python
+ifeq ($(OS),Windows_NT)
+	VENV_PYTHON := $(VENV_DIR)/Scripts/python
+else
+	VENV_PYTHON := $(VENV_DIR)/bin/python
+endif
 
 # Default target when running `make`
 help:

@@ -1,4 +1,11 @@
+<script setup>
+import DebugSocket from './components/DebugSocket.vue';
+
+const isDev = import.meta.env.DEV;
+</script>
+
 <template>
+  <DebugSocket v-if="isDev" />
   <!-- This is the main entry point for your views. -->
   <!-- Vue Router will render the component for the current URL here. -->
   <router-view />

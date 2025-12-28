@@ -1,159 +1,137 @@
 import { ref, readonly, Ref } from 'vue';
 import { io, Socket } from 'socket.io-client';
 import type {
-    UserTrackedCardListSchema,
     UserTrackedCardSchema,
+    CardPreferenceSchema,
     UpdateCardRequestPayload,
-} from '../schema/server_types';
+    CardSpecificationSchema,
+    AvailabilityResultPayload,
+    UserTrackedCardListSchema
+} from '../schema/server_types'; // Adjust path if needed
 
-/**
- * Local type definitions for data structures not covered by the generated server types.
- */
-interface AvailabilityStatus {
-    status: 'searching' | 'completed' | 'stalled';
-    items: any[]; // Consider creating a specific type for these items if the structure is known
+// --- Wire Types (To handle current backend response format) ---
+// This matches what backend/managers/user_manager/user_cards.py currently emits.
+interface WireUserTrackedCard {
+    card_name: string;
+    amount: number;
+    specifications: CardSpecificationSchema[];
 }
 
-interface CardAvailabilityData {
-    card: string;
-    store_slug: string;
+interface WireCardsDataPayload {
+    username: string;
+    tracked_cards: WireUserTrackedCard[];
+}
+
+// --- Local Types for State ---
+interface AvailabilityStatus {
+    status: 'searching' | 'completed' | 'stalled';
     items: any[];
 }
 
 // --- State ---
-// These are reactive and will be shared across any component using this composable.
 const trackedCards: Ref<UserTrackedCardSchema[]> = ref([]);
 const availabilityMap: Ref<Record<string, AvailabilityStatus>> = ref({});
+const isConnected = ref(false);
 
-// --- Socket Connection (Singleton pattern) ---
-// Create the socket instance once. It will be shared across the application.
-// The backend URL is explicitly provided. In a production environment,
-// you might use an environment variable for this (e.g., import.meta.env.VITE_API_URL).
-// For this setup, we'll hardcode it to the backend's exposed port.
+// --- Socket Connection ---
 // const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const socket: Socket = io({
-    withCredentials: true, 
-    autoConnect: false // We will connect manually when the composable is first used.
+    withCredentials: true,
+    autoConnect: false 
 });
 
 // --- Event Handlers ---
 socket.on('connect', () => {
+    isConnected.value = true;
     console.log("🔗 Connected to WebSocket Server!");
-    // Now that we are connected, request initial data.
-    console.log("📡 Emitting 'get_cards' to fetch user's tracked cards.");
     socket.emit("get_cards");
-    console.log("📡 Emitting 'get_card_availability' to fetch initial availability.");
     socket.emit("get_card_availability");
 });
 
-socket.on('cards_data', (data: UserTrackedCardListSchema) => {
-    console.log("🛠️ Received 'cards_data':", data);
-    trackedCards.value = data.tracked_cards || [];
+socket.on('disconnect', () => {
+    isConnected.value = false;
+    console.log("🔌 Disconnected from WebSocket Server");
+});
+
+socket.on('cards_data', (data: WireCardsDataPayload) => {
+    console.log("🛠️ Received 'cards_data' (Wire Format):", data);
+    
+    // TRANSFORM: Convert flat wire format to strictly typed Schema format
+    // This allows the rest of the frontend to use 'card.name' consistently.
+    const transformedCards: UserTrackedCardSchema[] = (data.tracked_cards || []).map(wireCard => ({
+        card: { name: wireCard.card_name },
+        amount: wireCard.amount,
+        specifications: wireCard.specifications
+    }));
+
+    trackedCards.value = transformedCards;
 });
 
 socket.on('availability_check_started', (data: { card: string }) => {
-    if (!data || !data.card) return;
+    if (!data?.card) return;
     const cardName = data.card;
-    console.log(`⏳ Received 'availability_check_started' for: ${cardName}`);
-    // Ensure the base object exists with an items array before setting status.
     const existingEntry = availabilityMap.value[cardName] || { items: [] };
-    // Set the status to 'searching' to trigger the spinner in the UI, preserving existing items if any.
-    availabilityMap.value[cardName] = {
-        ...existingEntry,
-        status: 'searching'
-    };
+    availabilityMap.value[cardName] = { ...existingEntry, status: 'searching' };
 });
 
-socket.on('card_availability_data', (data: CardAvailabilityData) => {
-    if (!data || !data.card || !data.store_slug) return;
-
+socket.on('card_availability_data', (data: { card: string, store_slug: string, items: any[] }) => {
+    if (!data?.card || !data.store_slug) return;
     const cardName = data.card;
     const newItems = data.items || [];
-    console.log(`📥 Received 'card_availability_data' for '${cardName}' from '${data.store_slug}'. Found: ${newItems.length} items.`);
 
-    // Ensure the entry for the card exists.
     if (!availabilityMap.value[cardName]) {
         availabilityMap.value[cardName] = { status: 'completed', items: [] };
     }
 
-    // Get the existing items for this card, or an empty array if none.
-    const existingItems = availabilityMap.value[cardName]?.items || [];
-
-    // 1. Filter out all items from the store that sent the update.
-    const otherStoreItems = existingItems.filter(
-        item => item.store_slug !== data.store_slug
-    );
-
-    // 2. Add the new items, ensuring they have the store slug for future identification.
+    const existingItems = availabilityMap.value[cardName].items || [];
+    // Replace items for this specific store
+    const otherStoreItems = existingItems.filter(item => item.store_slug !== data.store_slug);
     const itemsForCurrentStore = newItems.map(item => ({ ...item, store_slug: data.store_slug }));
 
-    // 3. Combine the lists.
-    const updatedItems = [...otherStoreItems, ...itemsForCurrentStore];
-
-    availabilityMap.value[cardName].items = updatedItems;
+    availabilityMap.value[cardName].items = [...otherStoreItems, ...itemsForCurrentStore];
     availabilityMap.value[cardName].status = 'completed';
 });
 
-socket.on('job_interrupted', (data: { card: string }) => {
-    if (!data || !data.card) return;
-    const cardName = data.card;
-    console.warn(`🚦 Received 'job_interrupted' for: ${cardName}.`);
-
-    // If we have an entry for this card, mark its status as stalled.
-    if (availabilityMap.value[cardName]) {
-        availabilityMap.value[cardName] = {
-            ...availabilityMap.value[cardName],
-            status: 'stalled' // A new status to indicate interruption.
-        };
-    }
-});
-
-socket.on('user_stores_data', (data: { stores: string[] }) => {
-    // This event is sent from the backend but was not being handled.
-    // You can now use this data to update the UI, for example in a settings page.
-    console.log("🏬 Received 'user_stores_data':", data.stores);
-});
-
-socket.on('stock_data', (data: { card: string }) => {
-    if (!data || !data.card) return;
-    const cardName = data.card;
-    console.log(`📦 Received 'stock_data' for: ${cardName}`);
+socket.on('stock_data', (data: { card_name: string, items: any[] }) => {
+    // Handle aggregate stock data if needed
+    console.log(`📦 Received stock data for ${data.card_name}`);
 });
 
 // --- Emitter Functions ---
-function deleteCard(cardData: UpdateCardRequestPayload) {
-    console.log("💾 Emitting 'add_card' with data:", cardData);
-    cardData.command = "delete";
-    socket.emit('delete_card', cardData);
-}
 
-function addCard(cardData: UpdateCardRequestPayload) {
+function addCard(cardData: CardPreferenceSchema) {
+    // Backend expects strict Pydantic structure now
     console.log("💾 Emitting 'add_card' with data:", cardData);
-    cardData.command = "add";
     socket.emit('add_card', cardData);
 }
 
-function updateCard(cardData: UpdateCardRequestPayload) {
+function updateCard(cardData: CardPreferenceSchema) {
     console.log("🔄 Emitting 'update_card' with data:", cardData);
-    cardData.command = "update";
     socket.emit('update_card', cardData);
 }
 
+function deleteCard(cardName: string) {
+    // We construct the schema subset required for deletion
+    // The backend looks for data['card']['name']
+    const payload = { 
+        card: { name: cardName } 
+    }; 
+    console.log("❌ Emitting 'delete_card' with data:", payload);
+    socket.emit('delete_card', payload);
+}
+
 function getStockData(cardName: string) {
-    console.log(`🔍 Emitting 'stock_data_request' for: ${cardName}`);
     socket.emit('stock_data_request', { card_name: cardName });
 }
 
-/**
- * The main composable function.
- */
 export function useSocket() {
     if (!socket.connected) {
         socket.connect();
     }
 
     return {
-        socket, // Expose the raw socket instance for custom event handling
+        socket,
+        isConnected: readonly(isConnected),
         trackedCards: readonly(trackedCards),
         availabilityMap: readonly(availabilityMap),
         deleteCard,
@@ -162,10 +140,3 @@ export function useSocket() {
         getStockData
     };
 }
-
-// Export for testing purposes only
-export { socket };
-export const _internal = {
-    trackedCards,
-    availabilityMap,
-};

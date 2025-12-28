@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import Field, ConfigDict
 
 from ..blocks import (
     FinishSchema,
@@ -7,8 +7,10 @@ from ..blocks import (
     SetSchema,
 )
 
+from .base_schema import DatabaseSchema
 
-class CardSpecificationSchema(BaseModel):
+
+class CardSpecificationSchema(DatabaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
     set_code: Optional[SetSchema] = Field(
@@ -38,7 +40,7 @@ class CardSpecificationSchema(BaseModel):
         }
 
 
-class CardPrintingSchema(BaseModel):
+class CardPrintingSchema(DatabaseSchema):
     model_config = ConfigDict(from_attributes=True)
     id: int
     card_name: CardSchema

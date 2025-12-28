@@ -1,15 +1,16 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import Field, ConfigDict
 
 from .card_schema import CardSpecificationSchema
 from .store_schema import StoreSchema
+from .base_schema import DatabaseSchema
 
 from ..blocks import (
     CardSchema,
 )
 
 
-class UserTrackedCardSchema(BaseModel):
+class UserTrackedCardSchema(DatabaseSchema):
     model_config = ConfigDict(
         from_attributes=True
         )
@@ -26,13 +27,13 @@ class UserTrackedCardSchema(BaseModel):
     )
 
 
-class UserTrackedCardListSchema(BaseModel):
+class UserTrackedCardListSchema(DatabaseSchema):
     tracked_cards: List[UserTrackedCardSchema] = Field(
         ..., description="List of cards tracked by the user."
     )
 
 
-class UserTrackedCardUpdateSchema(BaseModel):
+class UserTrackedCardUpdateSchema(DatabaseSchema):
     """Schema for updating a user's tracked card, allowing partial updates."""
     amount: Optional[int] = Field(
         None,
@@ -46,7 +47,7 @@ class UserTrackedCardUpdateSchema(BaseModel):
 
 # Schema for User data including sensitive password_hash,
 # used internally by backend.
-class UserDBSchema(BaseModel):
+class UserDBSchema(DatabaseSchema):
     model_config = ConfigDict(
         from_attributes=True
     )  # Crucial for converting ORM User objects
@@ -63,7 +64,7 @@ class UserDBSchema(BaseModel):
     )
 
 
-class UserPublicSchema(BaseModel):
+class UserPublicSchema(DatabaseSchema):
     model_config = ConfigDict(
         from_attributes=True
     )

@@ -11,6 +11,8 @@ from .payload import (
     CatalogFinishesChunkResultPayload,
     CatalogCardNamesResultPayload,
     CatalogSetDataResultPayload,
+    UpdateStoresPayload,
+    LoginUserPayload
 )
 
 
@@ -166,7 +168,15 @@ class UpdateStoreMessage(APIMessage):
     Message to update a user's preferred stores in the API.
     """
     name: Literal["update_stores"] = "update_stores"
-    stores: list[str]
+    stores: UpdateStoresPayload
+
+
+class LoginUserMessage(APIMessage):
+    """
+    Message to retrieve the currently authenticated user's information.
+    """
+    name: Literal["login_user_me"] = "login_user_me"
+    payload: LoginUserPayload
 # --- End API Message Definitions ---
 
 

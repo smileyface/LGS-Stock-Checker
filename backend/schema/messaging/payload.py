@@ -128,3 +128,19 @@ class CatalogFinishesChunkResultPayload(Payload):
     Payload for the result of processing finishes in chunks.
     """
     finishes: list[str] = Field(..., description="A list of finishes.")
+
+
+class LoginUserPayload(Payload):
+    """
+    Payload for the result of fetching user data.
+    """
+    user: UserSchema = Field(..., description="The user data.")
+    password: str = Field(..., description="The user's password.")
+
+
+class UpdateStoresPayload(Payload):
+    """
+    Payload for updating a user's preferred stores.
+    """
+    stores: list[str] = Field(..., description="A list of store slugs.")
+    user: UserSchema = Field(..., description="The user data.")

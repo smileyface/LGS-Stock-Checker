@@ -177,19 +177,6 @@ def handle_add_user_tracked_card(data: dict):
     """Add tracked card to the database and send an updated card list."""
     username = ""
     try:
-        # temporary bridge until the modify user card messages
-        # are implemented in the front end.
-        if "card" not in data:
-            raise exceptions.InvalidMessageError("Field required: 'card'")
-        if "amount" not in data:
-            raise exceptions.InvalidMessageError("Field required: 'amount'")
-        data = {
-            "name": f"add_card_{data['card']['name']}",
-            "payload":
-                {"command": "add",
-                 "update_data": {**data}
-                 }
-                }
         validated_data = messages.UpdateCardRequest.model_validate(data)
         username = get_username()
         if not username:

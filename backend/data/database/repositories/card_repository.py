@@ -95,6 +95,7 @@ def modify_user_tracked_card(
     global card table, and then creating/updating the user-specific tracking
       information.
     """
+    logger.info(f"{command}ing tracked card for user '{username}'.")
     valid_card_data = orm.UserTrackedCardSchema.model_validate(card_data)
     card_name = valid_card_data.card.name
     amount = valid_card_data.amount

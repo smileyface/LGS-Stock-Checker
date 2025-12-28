@@ -7,7 +7,7 @@ import type {
     UpdateCardRequestPayload,
     CardSpecificationSchema,
     AvailabilityResultPayload,
-    UserTrackedCardListSchema
+    AddCardMessage
 } from '../schema/server_types'; // Adjust path if needed
 
 // --- Wire Types (To handle current backend response format) ---
@@ -38,7 +38,7 @@ const isConnected = ref(false);
 // const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const socket: Socket = io({
     withCredentials: true,
-    autoConnect: false 
+    autoConnect: false
 });
 
 // --- Event Handlers ---
@@ -56,7 +56,7 @@ socket.on('disconnect', () => {
 
 socket.on('cards_data', (data: WireCardsDataPayload) => {
     console.log("🛠️ Received 'cards_data' (Wire Format):", data);
-    
+
     // TRANSFORM: Convert flat wire format to strictly typed Schema format
     // This allows the rest of the frontend to use 'card.name' consistently.
     const transformedCards: UserTrackedCardSchema[] = (data.tracked_cards || []).map(wireCard => ({
@@ -100,12 +100,10 @@ socket.on('stock_data', (data: { card_name: string, items: any[] }) => {
 
 // --- Emitter Functions ---
 
-function addCard(cardData: CardPreferenceSchema) {
+function addCard(cardData: AddCardMessage) {
     // Backend expects strict Pydantic structure now
     console.log("💾 Emitting 'add_card' with data:", cardData);
     socket.emit('add_card', cardData);
-    const payload = createCardPreferenceSchema(cardData.card_name, cardData.amount, cardData.specifications);
-    socket.emit('add_card', payload);
 }
 
 function updateCard(cardData: CardPreferenceSchema) {
@@ -116,9 +114,9 @@ function updateCard(cardData: CardPreferenceSchema) {
 function deleteCard(cardName: string) {
     // We construct the schema subset required for deletion
     // The backend looks for data['card']['name']
-    const payload = { 
-        card: { name: cardName } 
-    }; 
+    const payload = {
+        card: { name: cardName }
+    };
     console.log("❌ Emitting 'delete_card' with data:", payload);
     socket.emit('delete_card', payload);
 }

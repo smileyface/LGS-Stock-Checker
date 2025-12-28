@@ -13,6 +13,8 @@ services:
     volumes:
       # Mount the source code into the container.
       - ./backend:/app
+      # Anonymous volume to prevent host .venv from leaking into container
+      - /app/.venv
     environment:
       <<: *common-backend-env
 
@@ -33,6 +35,14 @@ services:
   worker:
     volumes:
       - ./backend:/app
+      - /app/.venv
+    environment:
+      <<: *common-backend-env
+
+  scheduler:
+    volumes:
+      - ./backend:/app
+      - /app/.venv
     environment:
       <<: *common-backend-env
 

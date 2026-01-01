@@ -12,7 +12,7 @@ from tests.fixtures.db_fixtures import seed_user, seed_stores
 from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
 from data.database.models.orm_models import Store, User
-from schema.messaging.messages import PubSubMessage, APIMessage
+from schema.messaging.messages import PubSubMessage, APIMessage, APIMessageResponses
 import managers
 import utility
 import data
@@ -117,6 +117,12 @@ def _get_arg_from_type_hint(param, live_user, live_store):
         mock_msg.name = "test_api_message"
         mock_msg.payload.model_dump.return_value = {"test": "data"}
         return mock_msg
+    if annotation is APIMessageResponses:
+        mock_msg = MagicMock()
+        mock_msg.name = "test_response_message"
+        mock_msg.model_dump.return_value = {"name": "test_response_message",
+                                            "payload": {}}
+        return mock_msg
 
     # Fallback to generic types
     if hasattr(annotation, "__total__"):  # Heuristic for TypedDict
@@ -148,18 +154,47 @@ def _generate_test_args(func, params, live_user, live_store):
 
     # A mapping for functions that expect a specific 'data' payload.
     data_payloads = {
-        "handle_get_card_printings": {"card": {"name": "test_card"}},
+        "handle_get_card_printings": {
+            "name": "get_card_printings",
+            "payload": {"card": {"name": "test_card"}}
+        },
         "handle_add_user_tracked_card": {
-            "card": {"name": "test_card"},
-            "amount": 1,
-            "card_specs": {},
+            "name": "add_card",
+            "payload": {
+                "command": "add",
+                "update_data": {
+                    "card": {"name": "test_card"},
+                    "amount": 1,
+                    "card_specs": {},
+                }
+            }
         },
-        "handle_delete_user_tracked_card": {"card": {"name": "test_card"}},
+        "handle_delete_user_tracked_card": {
+            "name": "delete_card",
+            "payload": {
+                "command": "delete",
+                "update_data": {
+                    "card": {"name": "test_card"}
+                }
+            }
+        },
         "handle_update_user_tracked_cards": {
-            "card": {"name": "test_card"},
-            "amount": 2,
+            "name": "update_card",
+            "payload": {
+                "command": "update",
+                "update_data": {
+                    "card": {"name": "test_card"},
+                    "amount": 2,
+                }
+            }
         },
-        "handle_update_user_stores": {"stores": ["test_store"]},
+        "handle_update_user_stores": {
+            "name": "update_stores",
+            "stores": {
+                "stores": [live_store.slug],
+                "user": live_user.to_dict()
+            }
+        },
         "add_card_to_user": {
             "card": {"name": "test_card"},
             "amount": 1,

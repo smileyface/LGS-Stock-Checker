@@ -52,7 +52,7 @@ class CardSpecificationSchema(BaseModel):
     Represents the specific printing details of a card.
     All fields are optional, allowing for partial or wildcard tracking.
     """
-
+    model_config = ConfigDict(from_attributes=True)
     set_code: Optional[SetSchema] = None
     collector_number: Optional[str] = None
     finish: Optional[FinishSchema] = None
@@ -93,7 +93,7 @@ class CardPreferenceSchema(BaseModel):
     Schema representing a user's preference for a specific card,
     including optional specifications.
     """
-
+    model_config = ConfigDict(from_attributes=True)
     card: CardSchema = Field(..., description="The card being tracked.")
     amount: Optional[int] = Field(...,
                                   gt=0,

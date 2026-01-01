@@ -19,9 +19,18 @@ def test_on_add_card_triggers_availability_check(
     username = "testuser"
     # This data must match the AddCardSchema
     card_data_from_client = {
-        "card": {"name": "Sol Ring"},
-        "amount": 1,
-        "card_specs": {}}
+        "name": "add_card",
+        "payload": {
+            "command": "add",
+            "update_data": {
+                "card": {
+                    "name": "Sol Ring"
+                },
+                "amount": 1,
+                "card_specs": {}
+            }
+        }
+    }
 
     # Mock the return value for the full card list after adding
     mock_sh_user_manager.load_card_list.return_value = []
@@ -42,7 +51,8 @@ def test_on_add_card_triggers_availability_check(
     # 2. Verify availability check was triggered for the new card ([5.1.6])
     # The availability check uses a dictionary representation
     card_data_for_task = {
-        "card": "Sol Ring",
+        "card": {
+            "name": "Sol Ring"},
         "specifications": {
             "set_code": None,
             "collector_number": None,
@@ -78,20 +88,50 @@ def test_on_add_card_triggers_availability_check(
         # Missing all fields
         ({}, "Field required"),
         # Missing amount
-        ({"card": {"name": "Sol Ring"}}, "Field required"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"card": {"name": "Sol Ring"}}
+            }
+        }, "Field required"),
         # Missing card name
-        ({"amount": 1}, "Field required"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"amount": 1}
+            }
+        }, "Field required"),
         # Empty card name
-        ({"card": {"name": ""}, "amount": 1}, "at least 1 character"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"card": {"name": ""}, "amount": 1}
+            }
+        }, "at least 1 character"),
         # Invalid amount
-        ({"card": {"name": "Sol Ring"}, "amount": 0}, "greater than 0"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"card": {"name": "Sol Ring"}, "amount": 0}
+            }
+        }, "greater than 0"),
         # Negative amount
-        ({"card": {"name": "Sol Ring"}, "amount": -3}, "greater than 0"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"card": {"name": "Sol Ring"}, "amount": -3}
+            }
+        }, "greater than 0"),
         # Invalid finish
         ({
-            "card": {"name": "Sol Ring"},
-            "amount": 1,
-            "card_specs": {"finish": "invalid"},
+            "payload": {
+                "command": "add",
+                "update_data": {
+                    "card": {"name": "Sol Ring"},
+                    "amount": 1,
+                    "card_specs": {"finish": "invalid"},
+                }
+            }
         }, "Input should be"),
     ],
 )
@@ -112,22 +152,31 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
 @pytest.mark.parametrize(
     "invalid_data, expected_error_part",
     [
-        ({}, "Field required"),  # Missing all fields
-        ({}, "Field required"),  # Missing all fields
-        ({"card": {"name": "Sol Ring"}},
-         "update_data"),  # Missing update_data
-        ({"update_data": {}}, "card"),  # Missing card name
-        (
-            {
-                "card": {"name": "Sol Ring"},
-                "update_data":
-                {
-                    "specifications":
-                        {"finish": "invalid"}
-                },
-            },
-            "update_data.amount",
-        ),  # Invalid Finsih
+        ({}, "Field required"),
+        # Missing update_data
+        ({
+            "payload": {
+                "command": "update"
+            }
+        }, "Field required"),
+        # Missing card name
+        ({
+            "payload": {
+                "command": "update",
+                "update_data": {}
+            }
+        }, "Field required"),
+        # Invalid Finish
+        ({
+            "payload": {
+                "command": "update",
+                "update_data": {
+                    "card": {"name": "Sol Ring"},
+                    "amount": 1,
+                    "card_specs": {"finish": "invalid"}
+                }
+            }
+        }, "Input should be"),
     ],
 )
 def test_on_update_card_with_invalid_data(
@@ -147,7 +196,7 @@ def test_on_update_card_with_invalid_data(
 
     mock_sh_emit.assert_called_once()
     # Check that at least one error message contains the expected part
-    assert mock_sh_emit.call_args.args[0] == "error"
+    assert mock_sh_emit.call_args.args[0] == "server_log"
     assert expected_error_part in str(mock_sh_emit.call_args.args[1])
 
 
@@ -156,7 +205,14 @@ def test_on_update_card_with_invalid_data(
     [
         ({}, "Field required"),  # Missing card field
         # Empty card name
-        ({"card": ""}, "Field required: 'card.name'"),
+        ({
+            "payload": {
+                "command": "delete",
+                "update_data": {
+                    "card": {"name": ""}
+                }
+            }
+        }, "at least 1 character"),
     ],
 )
 def test_on_delete_card_with_invalid_data(
@@ -181,7 +237,10 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     """
     # Arrange
     card_name = "Sol Ring"
-    client_data = {"card": {"name": card_name}}
+    client_data = {
+        "name": "get_card_printings",
+        "payload": {"card": {"name": card_name}}
+    }
     mock_printings = [
         {
             "set_code": "C21",
@@ -199,9 +258,13 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     # Assert
     mock_sh_database.is_card_in_catalog.assert_called_once_with(card_name)
     mock_sh_database.get_printings_for_card.assert_called_once_with(card_name)
-    expected_payload = {"card_name": card_name, "printings": mock_printings}
+    expected_message = {
+        "name": "card_printings_data",
+        "payload": {"card_name": card_name, "printings": mock_printings}
+    }
     mock_sh_emit.assert_called_once_with("card_printings_data",
-                                         expected_payload)
+                                         expected_message,
+                                         to="")
 
 
 @pytest.mark.parametrize(

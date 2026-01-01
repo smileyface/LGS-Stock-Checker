@@ -8,6 +8,7 @@ from managers import user_manager
 from managers import availability_manager
 
 from .socket_manager import socketio
+from .socket_emit import emit_message, log_and_emit
 from utility import logger
 
 
@@ -24,10 +25,6 @@ def handle_get_card_printings(data: dict):
     Handles a client's request for all valid printings of a specific card.
     Implements requirement [4.3.5].
     """
-    data = {
-        "name": "get_card_printings",
-        "payload": data
-        }
     validated_data = messages.GetCardPrintingsMessage.model_validate(data)
     card_name = validated_data.payload.card.name
     logger.info(f"📩 Received 'get_card_printings' request for '{card_name}'.")
@@ -36,8 +33,9 @@ def handle_get_card_printings(data: dict):
         return
 
     printings = database.get_printings_for_card(card_name)
-    payload = {"card_name": card_name, "printings": printings}
-    socketio.emit("card_printings_data", payload)
+    response_data = {"card_name": card_name, "printings": printings}
+    message = messages.CardPrintingsDataMessage(payload=response_data)
+    emit_message(message)
     logger.info(f"📡 Sent {len(printings)} printings for '{card_name}'.")
 
 
@@ -51,6 +49,7 @@ def _send_user_cards(username: str):
     cards = user_manager.load_card_list(username)
 
     # Emit a single event with the entire list to the user's room.
+
     socketio.emit(
         "cards_data",
         {"username": username, "tracked_cards": cards},
@@ -177,7 +176,7 @@ def handle_add_user_tracked_card(data: dict):
     """Add tracked card to the database and send an updated card list."""
     username = ""
     try:
-        validated_data = messages.UpdateCardRequest.model_validate(data)
+        validated_data = messages.AddCardMessage.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to add a card.")
@@ -198,7 +197,7 @@ def handle_add_user_tracked_card(data: dict):
         # Delegate to the availability manager to trigger the check
         # adhering to data flow rules.
         card_data_for_task = {
-            "card": update_data.card.name,
+            "card": update_data.card.model_dump(),
             "specifications": update_data.card_specs.model_dump() if
             update_data.card_specs else {},
         }
@@ -226,20 +225,7 @@ def handle_add_user_tracked_card(data: dict):
 def handle_delete_user_tracked_card(data: dict):
     logger.info("📩 Received 'delete_card' request from front end.")
     try:
-        # temporary bridge until the modify user card messages
-        # are implemented in the front end.
-        if "card" not in data:
-            raise exceptions.InvalidMessageError("Field required: 'card'")
-        if "name" not in data["card"]:
-            raise exceptions.InvalidMessageError("Field required: 'card.name'")
-        data = {
-            "name": f"delete_card_{data['card']['name']}",
-            "payload":
-                {"command": "delete",
-                 "update_data": {**data}
-                 }
-                }
-        validated_data = messages.UpdateCardRequest.model_validate(data)
+        validated_data = messages.DeleteCardMessage.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to delete a card.")
@@ -263,18 +249,7 @@ def handle_delete_user_tracked_card(data: dict):
 def handle_update_user_tracked_cards(data: dict):
     logger.info("📩 Received 'update_card' request from front end.")
     try:
-        # temporary bridge until the modify user card messages
-        # are implemented in the front end.
-        if "card" not in data:
-            raise exceptions.InvalidMessageError("Field required: 'card'")
-        data = {
-            "name": f"update_card_{data['card']['name']}",
-            "payload":
-                {"command": "update",
-                 "update_data": {**data}
-                 }
-                }
-        validated_data = messages.UpdateCardRequest.model_validate(data)
+        validated_data = messages.UpdateCardMessage.model_validate(data)
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to update a card.")
@@ -291,8 +266,8 @@ def handle_update_user_tracked_cards(data: dict):
             )
     except (ValidationError, exceptions.InvalidMessageError) as e:
         logger.error(f"❌ Invalid 'update_card' data received: {e}")
-        socketio.emit("error", {"message":
-                                f"Invalid data for update_card: {e}"})
+        log_and_emit("error", f"Invalid data for update_card: {e}")
+
 
 
 @socketio.on("update_stores")
@@ -310,7 +285,7 @@ def handle_update_user_stores(data: dict):
 
     try:
         validated_data = messages.UpdateStoreMessage.model_validate(data)
-        database.set_user_stores(username, validated_data.stores)
+        database.set_user_stores(username, validated_data.stores.stores)
         _send_user_stores(username)
         logger.info(f"✅ Updated preferred stores for user '{username}'.")
     except ValidationError as e:

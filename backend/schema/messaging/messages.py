@@ -12,7 +12,8 @@ from .payload import (
     CatalogCardNamesResultPayload,
     CatalogSetDataResultPayload,
     UpdateStoresPayload,
-    LoginUserPayload
+    LoginUserPayload,
+    CardListPayload
 )
 
 
@@ -180,12 +181,94 @@ class LoginUserMessage(APIMessage):
 # --- End API Message Definitions ---
 
 
+# --- Begin API Response Message Definitions ---
+class CardsDataMessage(APIMessage):
+    """
+    Message to send a user's tracked cards to the frontend.
+    """
+    name: Literal["cards_data"] = "cards_data"
+    payload: CardListPayload
+
+
+class CardPrintingsDataMessage(APIMessage):
+    """
+    Message to send card printings data to the frontend.
+    """
+    name: Literal["card_printings_data"] = "card_printings_data"
+    payload: dict
+
+
+class CardAvailabilityDataMessage(APIMessage):
+    """
+    Message to send card availability data to the frontend.
+    """
+    name: Literal["card_availability_data"] = "card_availability_data"
+    payload: dict
+
+
+class CardNameSearchResultsMessage(APIMessage):
+    """
+    Message to send card name search results to the frontend.
+    """
+    name: Literal["card_name_search_results"] = "card_name_search_results"
+    payload: dict
+
+
+class UserStoresDataMessage(APIMessage):
+    """
+    Message to send a user's preferred stores to the frontend.
+    """
+    name: Literal["user_stores_data"] = "user_stores_data"
+    payload: dict
+
+
+class StockDataMessage(APIMessage):
+    """
+    Message to send aggregated stock data for a card to the frontend.
+    """
+    name: Literal["stock_data"] = "stock_data"
+    payload: dict
+
+
+class ErrorMessage(APIMessage):
+    """
+    Message to send error information to the frontend.
+    """
+    name: Literal["error"] = "error"
+    payload: dict
+# --- End API Response Message Definitions ---)
+
+
 # --- Discriminated Union ---
 Messages = Annotated[
     # pub-sub message types
     Union[AvailabilityRequestCommand,
           QueueAllAvailabilityChecksCommand,
           AvailabilityResultMessage],
+    Field(discriminator="name"),
+]
+
+APIMessages = Annotated[
+    Union[GetCardPrintingsMessage,
+          ParseCardListMessage,
+          UpdateCardRequest,
+          AddCardMessage,
+          DeleteCardMessage,
+          UpdateCardMessage,
+          SearchCardNamesMessage,
+          UpdateStoreMessage,
+          LoginUserMessage],
+    Field(discriminator="name"),
+]
+
+APIMessageResponses = Annotated[
+    Union[CardsDataMessage,
+          CardPrintingsDataMessage,
+          CardAvailabilityDataMessage,
+          CardNameSearchResultsMessage,
+          UserStoresDataMessage,
+          StockDataMessage,
+          ErrorMessage],
     Field(discriminator="name"),
 ]
 # --- End Discriminated Union ---

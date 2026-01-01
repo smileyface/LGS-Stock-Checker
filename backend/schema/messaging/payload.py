@@ -79,7 +79,7 @@ class SearchCardNamesSchema(Payload):
     )
 
 
-class CatalogCardChunkPayload(Payload):
+class CardListPayload(Payload):
     """
     Payload for a chunk of card data to be processed.
     """

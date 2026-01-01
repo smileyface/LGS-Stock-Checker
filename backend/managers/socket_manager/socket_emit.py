@@ -9,6 +9,7 @@ from flask_socketio import SocketIO
 from utility import logger
 from .socket_manager import socketio
 from managers.redis_manager import REDIS_URL
+from schema.messaging import messages
 
 
 def log_and_emit(level: str, message: str, room: str = ""):
@@ -34,6 +35,11 @@ def emit_from_worker(event: str, data: dict, room: str = ""):
         external_socketio.emit(event, data, to=room)
         logger.info(f"📢 Worker dispatched event '{event}' {target} via Redis.")
     except Exception as e:
-        logger.error(
-            f"❌ Worker failed to dispatch event '{event}' {target}: {e}"
-        )
+        logger.error(f"❌ Worker failed to dispatch event '{event}' {target}: {e}")
+
+
+def emit_message(message: messages.APIMessageResponses, room: str = "") -> None:
+    target = f"to room '{room}'" if room else "as a broadcast"
+    logger.info(f"📢 Server emitting message '{message.name}' {target}.")
+    socketio.emit(message.name, message.model_dump(), to=room)
+    logger.info(f"📢 Server dispatched message '{message.name}' {target}.")

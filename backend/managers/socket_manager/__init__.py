@@ -6,6 +6,7 @@ from .socket_manager import (
 )
 from .socket_emit import (
     log_and_emit,
+    emit_message,
     emit_from_worker,
 )
 
@@ -16,5 +17,6 @@ __all__ = [
     "health_check",
     # Emitter functions
     "log_and_emit",
+    "emit_message",
     "emit_from_worker",
 ]

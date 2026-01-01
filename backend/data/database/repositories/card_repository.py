@@ -287,9 +287,9 @@ def update_user_tracked_card_preferences(
                               if new_spec.set_code else None)
             card_spec = CardSpecification(
                 user_card_id=tracked_card["id"],
-                set_code=set_obj["code"],
+                set_code=set_obj["code"] if set_obj else None,
                 collector_number=new_spec.collector_number,
-                finish_id=finish_obj["id"],
+                finish_id=finish_obj["id"] if finish_obj else None,
             )
             logger.debug(
                 f"Added new specification for '{card_name}'.")

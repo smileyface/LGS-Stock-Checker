@@ -27,7 +27,7 @@ def test_on_add_card_triggers_availability_check(
                     "name": "Sol Ring"
                 },
                 "amount": 1,
-                "card_specs": {}
+                "card_specs": [{}]
             }
         }
     }
@@ -75,9 +75,13 @@ def test_on_add_card_triggers_availability_check(
         "on_complete_callback"
     ]
     callback()
+    expected_message = {
+        "name": "cards_data",
+        "payload": {"cards": []}
+    }
     mock_sh_emit.assert_called_with(
         "cards_data",
-        {"username": "testuser", "tracked_cards": []},
+        expected_message,
         to="testuser",
     )
 
@@ -283,3 +287,56 @@ def test_handle_get_card_printings_invalid_data(mock_sh_emit, invalid_data):
     with pytest.raises(Exception):  # Pydantic raises ValidationError
         socket_handlers.handle_get_card_printings(data=invalid_data)
     mock_sh_emit.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "fixture_name, username, expect_emit",
+    [
+        ("seeded_user_with_cards", "testuser", True),
+        ("seeded_user", "testuser", True),
+        ("seeded_user", "", False),
+    ],
+    ids=["success", "empty_list", "missing_username"]
+)
+def test_send_user_cards(request, mock_sh_emit, fixture_name,
+                         username, expect_emit):
+    """
+    GIVEN a username and a database state (seeded with cards or empty)
+    WHEN _send_user_cards is called
+    THEN it should fetch from the DB and emit the correct 'cards_data' event.
+    """
+    # Arrange
+    # Initialize the database state using the fixture
+    request.getfixturevalue(fixture_name)
+
+    # Act
+    socket_handlers.send_user_cards(username)
+
+    # Assert
+    if expect_emit:
+        mock_sh_emit.assert_called_once()
+        args, kwargs = mock_sh_emit.call_args
+        assert args[0] == "cards_data"
+        assert kwargs["to"] == username
+
+        actual_payload = args[1]["payload"]
+        actual_cards = actual_payload["cards"]
+
+        if fixture_name == "seeded_user_with_cards":
+            # Verify the presence of seeded cards
+            # We check for specific cards known to be in the fixture
+            card_names = [c["card"]["name"] for c in actual_cards]
+            assert "Lightning Bolt" in card_names
+            assert "Counterspell" in card_names
+            assert "Sol Ring" in card_names
+
+            # Spot check one card's details
+            bolt = next(c for c in actual_cards
+                        if c["card"]["name"] == "Lightning Bolt")
+            assert bolt["amount"] == 4
+            assert len(bolt["card_specs"]) == 2
+        else:
+            # For seeded_user (empty list)
+            assert actual_cards == []
+    else:
+        mock_sh_emit.assert_not_called()

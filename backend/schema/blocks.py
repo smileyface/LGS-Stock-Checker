@@ -99,6 +99,6 @@ class CardPreferenceSchema(BaseModel):
                                   gt=0,
                                   description="The quantity of "
                                   "the card to track.")
-    card_specs: Optional[CardSpecificationSchema] = Field(
+    card_specs: Optional[list[CardSpecificationSchema]] = Field(
         None, description="Optional printing specifications for the card."
     )

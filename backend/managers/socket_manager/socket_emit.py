@@ -8,7 +8,9 @@ from flask_socketio import SocketIO
 
 from utility import logger
 from .socket_manager import socketio
+from .packing import pack_card
 from managers.redis_manager import REDIS_URL
+from managers import user_manager
 from schema.messaging import messages
 
 
@@ -43,3 +45,26 @@ def emit_message(message: messages.APIMessageResponses, room: str = "") -> None:
     logger.info(f"📢 Server emitting message '{message.name}' {target}.")
     socketio.emit(message.name, message.model_dump(), to=room)
     logger.info(f"📢 Server dispatched message '{message.name}' {target}.")
+
+
+def send_user_cards(username: str):
+    """Fetches a user's card list, formats it, and emits it over Socket.IO."""
+    if not username:
+        logger.error("❌ Attempted to send card list for an empty username.")
+        return
+
+    logger.info(f"📜 Fetching and sending tracked cards for user: {username}")
+    cards = user_manager.load_card_list(username)
+
+    # Format the cards to match the structure expected by the frontend.
+    # This flattens the nested 'card' object into 'card_name'.
+    packed_cards = []
+    for card in cards:
+        packed_cards.append(pack_card(**card))
+
+    # Emit a single event with the entire list to the user's room.
+    payload = messages.CardListPayload.model_validate({"cards": packed_cards})
+    message = messages.CardsDataMessage(payload=payload)
+    emit_message(message, room=username)
+
+    logger.info(f"📡 Sent card list to room '{username}' with {len(cards)} items.")

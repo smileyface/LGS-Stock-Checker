@@ -81,11 +81,9 @@ class SearchCardNamesSchema(Payload):
 
 class CardListPayload(Payload):
     """
-    Payload for a chunk of card data to be processed.
+    Payload for a list of cards.
     """
-    printings: list[CardSchema] = Field(...,
-                                        description="A list of "
-                                        "card printings.")
+    cards: list[CardPreferenceSchema] = Field(..., description="A list of cards.")
 
 
 class CatalogFinishesChunkPayload(Payload):

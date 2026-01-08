@@ -38,7 +38,7 @@
                             </div>
                         </td>
                         <td>{{ card.amount }}</td>
-                        <td>{{ card.card_name }}</td>
+                        <td>{{ card.card.name }}</td>
                         <td>{{ card.specifications?.[0]?.set_code || "N/A" }}</td>
                         <td>{{ card.specifications?.[0]?.collector_number || "N/A" }}</td>
                         <td>{{ card.specifications?.[0]?.finish || "Non-Foil" }}</td>

@@ -30,7 +30,7 @@ export function useCardPrintings(cardNameRef, selectedSetRef, selectedCollectorN
                 createGetPrintingsRequestPayload(createCardSchema(name))
             );
 
-            socketManager.socket.emit(msg.type, msg.payload);
+            socketManager.socket.emit(msg.type, msg);
         }
     };
 

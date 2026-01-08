@@ -165,7 +165,7 @@ const handleSave = () => {
         createCardSchema(
           cardName.value),
         amount.value,
-        [spec]),
+        spec),
     ),
   );
 

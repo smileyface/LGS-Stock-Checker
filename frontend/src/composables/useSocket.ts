@@ -1,13 +1,21 @@
 import { ref, readonly, Ref } from 'vue';
 import { io, Socket } from 'socket.io-client';
-import { createCardPreferenceSchema } from '../schema/server_types';
+import {
+    createCardPreferenceSchema,
+    createUpdateCardRequest,
+    createUpdateCardRequestPayload,
+    createDeleteCardMessage,
+    createCardSchema
+} from '../schema/server_types';
 import type {
     UserTrackedCardSchema,
     CardPreferenceSchema,
     UpdateCardRequestPayload,
     CardSpecificationSchema,
     AvailabilityResultPayload,
-    AddCardMessage
+    AddCardMessage,
+    DeleteCardMessage,
+    CardsDataMessage
 } from '../schema/server_types'; // Adjust path if needed
 
 // --- Wire Types (To handle current backend response format) ---
@@ -54,16 +62,12 @@ socket.on('disconnect', () => {
     console.log("🔌 Disconnected from WebSocket Server");
 });
 
-socket.on('cards_data', (data: WireCardsDataPayload) => {
+socket.on('cards_data', (data: CardsDataMessage) => {
     console.log("🛠️ Received 'cards_data' (Wire Format):", data);
 
     // TRANSFORM: Convert flat wire format to strictly typed Schema format
     // This allows the rest of the frontend to use 'card.name' consistently.
-    const transformedCards: UserTrackedCardSchema[] = (data.tracked_cards || []).map(wireCard => ({
-        card: { name: wireCard.card_name },
-        amount: wireCard.amount,
-        specifications: wireCard.specifications
-    }));
+    const transformedCards: UserTrackedCardSchema[] = (data.payload.cards || []);
 
     trackedCards.value = transformedCards;
 });
@@ -108,15 +112,26 @@ function addCard(cardData: AddCardMessage) {
 
 function updateCard(cardData: CardPreferenceSchema) {
     console.log("🔄 Emitting 'update_card' with data:", cardData);
-    socket.emit('update_card', cardData);
+    const payload = createUpdateCardRequest(
+        createUpdateCardRequestPayload(
+            "update",
+            // cardData is already a CardPreferenceSchema, so we pass it directly
+            cardData
+        )
+    );
+    socket.emit('update_card', payload);
 }
 
 function deleteCard(cardName: string) {
-    // We construct the schema subset required for deletion
-    // The backend looks for data['card']['name']
-    const payload = {
-        card: { name: cardName }
-    };
+    // We construct the full message required for deletion
+    const payload = createDeleteCardMessage(
+        createUpdateCardRequestPayload(
+            "delete",
+            createCardPreferenceSchema(
+                createCardSchema(cardName),
+                0)
+        )
+    );
     console.log("❌ Emitting 'delete_card' with data:", payload);
     socket.emit('delete_card', payload);
 }

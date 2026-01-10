@@ -39,8 +39,8 @@
                         </td>
                         <td>{{ card.amount }}</td>
                         <td>{{ card.card.name }}</td>
-                        <td>{{ card.specifications?.[0]?.set_code || "N/A" }}</td>
-                        <td>{{ card.specifications?.[0]?.collector_number || "N/A" }}</td>
+                        <td>{{ card.specifications?.[0]?.set_code || "Any" }}</td>
+                        <td>{{ card.specifications?.[0]?.collector_number || "Any" }}</td>
                         <td>{{ card.specifications?.[0]?.finish || "Non-Foil" }}</td>
                         <td v-html="renderAvailability(card.card_name)"></td>
                     </tr>

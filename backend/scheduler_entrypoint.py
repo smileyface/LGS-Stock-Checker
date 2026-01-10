@@ -3,12 +3,6 @@ from app_factory import (create_base_app,
                          configure_database)
 
 if __name__ == "__main__":
-    # Monkey patch for eventlet-based concurrency.
-    import eventlet
-
-    eventlet.monkey_patch()
-
-    # These imports must come AFTER monkey_patching
     from managers.messaging_manager.service_listener import scheduler_listener
     from managers import redis_manager
     from tasks.scheduler_setup import schedule_recurring_tasks

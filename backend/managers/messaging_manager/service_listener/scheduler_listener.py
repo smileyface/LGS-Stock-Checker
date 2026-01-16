@@ -1,9 +1,7 @@
 from typing import Callable
-import threading
-import json
-import atexit
-from managers import redis_manager, task_manager, user_manager
+from managers import task_manager, user_manager
 from utility import logger
+from .listener import Listener
 
 
 def _handle_availability_request(payload: dict):
@@ -56,83 +54,12 @@ HANDLER_MAP: dict[str, Callable] = {
 }
 
 
-class _Scheduler_Listener:
-    """
-    Manages a background thread to listen for results from
-    workers on a Redis Pub/Sub channel.
-    This is implemented as a singleton to ensure only one
-    listener thread is active.
-    """
-
-    def __init__(self):
-        self.thread = None
-        self.pubsub = None
-
-    def start(self):
-        """Starts the listener thread if it's not already running."""
-        if self.thread and self.thread.is_alive():
-            logger.warning("Scheduler listener thread is already running.")
-            return
-
-        self.thread = threading.Thread(target=self._listen, daemon=True)
-        self.thread.start()
-        # Register the stop method to be called on application exit.
-        atexit.register(self.stop)
-
-    def stop(self):
-        """Signals the listener thread to stop and cleans up resources."""
-        logger.info("🛑 Shutting down worker results listener...")
-        if self.pubsub:
-            # This will cause the loop in _listen() to exit.
-            self.pubsub.close()
-        if self.thread:
-            # Wait for the thread to finish cleanly.
-            self.thread.join(timeout=5)
-        logger.info("✅ Scheduler results listener shut down gracefully.")
-
-    def _listen(self):
-        """The actual listener function that runs in the background thread."""
-        self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe("scheduler-requests")
-        logger.info(
-            "🎧 Scheduler results listener started. Subscribed to "
-            "'scheduler-requests' channel."
-        )
-
-        try:
-            for message in self.pubsub.listen():
-                try:
-                    data = json.loads(message["data"])
-                    command_type = data.get("type")
-                    handler = HANDLER_MAP.get(command_type)
-                    if handler:
-                        payload = data.get("payload", {})
-                        handler(payload)
-                    else:
-                        raise ValueError(f"No handler found for command type "
-                                         f"'{command_type}' on "
-                                         "'scheduler-requests' channel.")
-                except Exception as e:
-                    logger.error(
-                        f"Failed to process scheduler-requests message: {e}."
-                        f" Message: {message.get('data')}"
-                    )
-                    try:
-                        # Move the failed message to a dead-letter queue
-                        redis_manager.get_redis_connection().rpush(
-                            "scheduler-requests-dlq", message.get("data")
-                        )
-                    except Exception as dlq_e:
-                        logger.error(f"Failed to push message to DLQ: {dlq_e}")
-
-        except Exception as e:
-            # This block will be reached when self.pubsub.close() is called,
-            # or if there's a connection error.
-            logger.info(f"Scheduler listener loop exiting: {e}")
-
-
 # Create a single instance of the listener.
-_listener_instance = _Scheduler_Listener()
+_listener_instance = Listener(
+    service_name="Scheduler", channel="scheduler-requests"
+)
+for command, handler in HANDLER_MAP.items():
+    _listener_instance.register_handler(command, handler)
 
 
 def start_scheduler_listener(app):

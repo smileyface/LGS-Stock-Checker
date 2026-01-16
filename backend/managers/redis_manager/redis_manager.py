@@ -12,7 +12,7 @@ from rq import Queue
 from rq_scheduler import Scheduler
 import json
 import os
-from schema.messaging.messages import PubSubMessage
+from schema.messaging.messages import PubSubMessages
 
 from utility import logger
 
@@ -65,7 +65,7 @@ def pubsub(**kwargs) -> Optional[PubSub]:
     return redis_conn.pubsub(**kwargs)
 
 
-def publish_pubsub(message: PubSubMessage):
+def publish_pubsub(message: PubSubMessages):
     """
     Publishes a JSON payload to a specified Redis channel using
     the job connection.
@@ -95,6 +95,3 @@ def health_check():
     except Exception as e:
         logger.error(f"❌ Redis Health check failed: {e}")
         return False
-
-
-scheduler = Scheduler(queue=queue, connection=get_redis_connection())

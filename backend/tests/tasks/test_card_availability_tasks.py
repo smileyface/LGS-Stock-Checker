@@ -14,7 +14,7 @@ def mock_publish_pubsub(mocker):
 
 
 def test_update_availability_single_card_success(
-    mock_store, mock_publish_pubsub, mock_socket_emit
+    mock_store, mock_publish_pubsub, mock_socket_emit, seeded_user_with_cards
 ):
     """
     GIVEN a card and store
@@ -23,9 +23,17 @@ def test_update_availability_single_card_success(
          events.
     """
     # Arrange
-    username = "testuser"
+    username = seeded_user_with_cards.username
     store_name = "test-store"
-    card_data = {"card_name": "Sol Ring", "specifications": []}
+    # Use the first card from the seeded user
+    card_name = seeded_user_with_cards.cards[0].card_name
+    card_data = {"user": {"username": username},
+                 "store_slug": store_name,
+                 "card_data": {
+                     "card_name": card_name,
+                     "specifications": []
+                     }
+                 }
     available_items = [{"price": 1.99, "condition": "NM"}]
 
     mock_store_instance = MagicMock()
@@ -39,21 +47,19 @@ def test_update_availability_single_card_success(
     assert result is True
     mock_store.get_store.assert_called_once_with(store_name)
     mock_store_instance.fetch_card_availability.assert_called_once_with(
-        "Sol Ring", []
+        card_name, []
     )
 
     # Verify result publishing
-    mock_publish_pubsub.assert_called_once_with(
-        "worker-results",
-        {
-            "type": "availability_result",
-            "payload": {
-                "store": store_name,
-                "card": "Sol Ring",
-                "items": available_items,
-            },
-        },
-    )
+    # The implementation uses a Message object, so we verify the call args
+    assert mock_publish_pubsub.called
+    call_args = mock_publish_pubsub.call_args
+    message = call_args[0][0]
+    assert message.channel == "worker-results"
+    assert message.name == "availability_result"
+    assert message.payload.store == store_name
+    assert message.payload.card == card_name
+    assert message.payload.items == available_items
 
     # Verify socket emission
     # The task should emit two events: one when it starts, one when it
@@ -61,7 +67,7 @@ def test_update_availability_single_card_success(
     expected_calls = [
         call(
             "availability_check_started",
-            {"store": store_name, "card": "Sol Ring"},
+            {"store": store_name, "card": card_name},
             room=username,
         ),
         call(
@@ -69,7 +75,7 @@ def test_update_availability_single_card_success(
             {
                 "username": username,
                 "store": store_name,
-                "card": "Sol Ring",
+                "card": card_name,
                 "items": available_items,
             },
             room=username,

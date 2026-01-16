@@ -12,6 +12,10 @@ from .messages import (
     CatalogCardNamesResultMessage
 )
 
+from .generator import (
+    GenerateAvailabilityRequestCommand,
+)
+
 
 __all__ = [
     "AvailabilityRequestCommand",
@@ -24,5 +28,7 @@ __all__ = [
     "UpdateCardMessage",
     "SearchCardNamesMessage",
     "UpdateStoreMessage",
-    "CatalogCardNamesResultMessage"
+    "CatalogCardNamesResultMessage",
+    #Generators
+    "GenerateAvailabilityRequestCommand",
 ]

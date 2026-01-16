@@ -102,3 +102,33 @@ class CardPreferenceSchema(BaseModel):
     card_specs: Optional[list[CardSpecificationSchema]] = Field(
         None, description="Optional printing specifications for the card."
     )
+
+
+class StoreSchema(BaseModel):
+    """
+    Schema for a store, including its slug and name.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+    slug: str = Field(...,
+                      description="The unique slug identifier for the store.",
+                      min_length=1)
+    name: Optional[str] = Field(...,
+                                description="The display name of the store.",
+                                min_length=1)
+
+    def __str__(self) -> str:
+        return self.name if self.name else self.slug
+
+
+class CardListingSchema(BaseModel):
+    """
+    Schema for a single card listing found at a store.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+    price: float = Field(..., gt=0, description="The price of the card.")
+    condition: str = Field(..., description="The condition of the card.")
+    foil: bool = Field(..., description="Whether the card is foil.")
+    quantity: int = Field(..., gt=0, description="The quantity available.")
+    url: str = Field(..., description="URL to the listing.")

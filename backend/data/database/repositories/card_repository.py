@@ -64,6 +64,22 @@ def update_card_amount(tracked_card_id: int,
         )
 
 
+@db_query
+def get_all_tracked_cards(
+    *,
+    session: Session
+) -> List[Dict[str, Any]]:
+    assert session is not None, "Session is injected by @db_query decorator"
+    logger.debug("📖 Querying for all tracked cards."
+                 )
+    tracked_cards = session.query(UserTrackedCards).all()
+    if not tracked_cards:
+        logger.warning("No tracked cards found.")
+        return []
+    else:
+        return [card.to_dict() for card in tracked_cards]
+
+
 def get_users_cards(
     username: str
 ) -> List[Dict[str, Any]]:

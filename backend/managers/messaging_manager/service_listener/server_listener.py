@@ -1,10 +1,7 @@
-import threading
-import json
-import atexit
-from managers import (redis_manager,
-                      availability_manager)
+from managers import availability_manager
 from data import database
 from utility import logger
+from .listener import Listener
 
 
 def _handle_availability_result(payload: dict):
@@ -113,84 +110,10 @@ HANDLER_MAP = {
 }
 
 
-class _Server_Listener:
-    """
-    Manages a background thread on the server to listen for results from
-    workers on a Redis Pub/Sub channel.
-    This is implemented as a singleton to ensure only one listener
-    thread is active.
-    """
-
-    def __init__(self):
-        self.thread = None
-        self.pubsub = None
-
-    def start(self):
-        """Starts the listener thread if it's not already running."""
-        if self.thread and self.thread.is_alive():
-            logger.warning("Server listener thread is already running.")
-            return
-
-        self.thread = threading.Thread(target=self._listen, daemon=True)
-        self.thread.start()
-        # Register the stop method to be called on application exit.
-        atexit.register(self.stop)
-
-    def stop(self):
-        """Signals the listener thread to stop and cleans up resources."""
-        logger.info("🛑 Shutting down server listener...")
-        if self.pubsub:
-            # This will cause the loop in _listen() to exit.
-            self.pubsub.close()
-        if self.thread:
-            # Wait for the thread to finish cleanly.
-            self.thread.join(timeout=5)
-        logger.info("✅ Server listener shut down gracefully.")
-
-    def _listen(self):
-        """The actual listener function that runs in the background thread."""
-        self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe("worker-results")
-        logger.info(
-            "🎧 Server results listener started. Subscribed to "
-            "'worker-results' channel."
-        )
-        try:
-            for message in self.pubsub.listen():
-                try:
-                    data = json.loads(message["data"])
-                    event_type = data.get("type")
-                    handler = HANDLER_MAP.get(event_type)
-                    logger.debug(f"Server recieved message from worker: "
-                                 f"{event_type}")
-                    if handler:
-                        payload = data.get("payload", {})
-                        handler(payload)
-                    else:
-                        logger.warning(
-                            f"No handler found for event type '{event_type}' "
-                            f"on 'worker-results' channel. Payload: {data}"
-                        )
-                except Exception as e:
-                    logger.error(
-                        f"Error processing message in server listener: {e}",
-                        exc_info=True,
-                    )
-                    try:
-                        # Move the failed message to a dead-letter queue
-                        # for worker results
-                        redis_manager.get_redis_connection().rpush(
-                            "worker-results-dlq", message.get("data")
-                        )
-                    except Exception as dlq_e:
-                        logger.error(f"Failed to push message to DLQ: {dlq_e}")
-        except Exception as e:
-            # This block will be reached when self.pubsub.close() is called,
-            # or if there's a connection error.
-            logger.info(f"Server listener loop exiting: {e}")
-
-
-_listener_instance = _Server_Listener()
+# Create a single instance of the listener.
+_listener_instance = Listener(service_name="Server", channel="worker-results")
+for command, handler in HANDLER_MAP.items():
+    _listener_instance.register_handler(command, handler)
 
 
 # Create a single instance of the listener.

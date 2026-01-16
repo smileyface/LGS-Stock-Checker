@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Union
 from datetime import timedelta, datetime
 
 from managers import redis_manager
@@ -15,7 +15,7 @@ AVAILABILITY_UPDATE_INTERVAL_MINUTES = 15
 
 def _schedule_if_not_exists(
     task_id: str,
-    func: Callable,
+    func: Union[Callable, str],
     interval_seconds: float,
     description: str,
     initial_run_time: datetime,

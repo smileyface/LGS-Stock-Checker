@@ -3,6 +3,7 @@ from app_factory import (create_base_app,
                          configure_database)
 
 if __name__ == "__main__":
+    import time
     from managers.messaging_manager.service_listener import scheduler_listener
     from managers import redis_manager
     from tasks.scheduler_setup import schedule_recurring_tasks
@@ -21,4 +22,9 @@ if __name__ == "__main__":
         logger.info(
             "🎧 Scheduler process is now up and listening for commands."
         )
-        redis_manager.scheduler.run()
+        while True:
+            try:
+                redis_manager.scheduler.run()
+            except Exception as e:
+                logger.error(f"Scheduler crashed: {e}")
+                time.sleep(5)

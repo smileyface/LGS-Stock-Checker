@@ -25,10 +25,10 @@ class AvailabilityRequestPayload(Payload):
         ..., description="The user requesting the availability check."
     )
     store: Optional[StoreSchema] = Field(
-        ..., description="The slug of the store to check."
+        None, description="The slug of the store to check."
     )
     card_data: Optional[CardPreferenceSchema] = Field(
-        ..., description="The card details, including name and specifications."
+        None, description="The card details, including name and specifications."
     )
 
 

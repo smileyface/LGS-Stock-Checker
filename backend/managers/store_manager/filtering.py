@@ -1,12 +1,13 @@
 from typing import Any, Dict, List
 
+from schema.blocks import CardListingSchema
 from utility import logger
 
 
 def filter_listings(
     card_name: str,
-    listings: List[Dict[str, Any]],
-    specifications: List[Dict[str, Any]] = None,
+    listings: List[CardListingSchema],
+    specifications: List[Dict[str, Any]] = [],
 ) -> List[Dict[str, Any]]:
     """
     Filters a list of scraped card listings based on
@@ -30,11 +31,11 @@ def filter_listings(
     for listing in listings:
         logger.debug(
             f"🔍 Filtering for '{card_name}' from "
-            f"{listing.get('name')} with specifications: "
+            f"{listing.name} with specifications: "
             f"{specifications}"
         )
         # Basic requirement: card name must match (case-insensitive).
-        listing_name = listing.get("name", "")
+        listing_name = listing.name
         if card_name.lower() != listing_name.lower().split(" - ")[0]:
             continue
 
@@ -56,18 +57,18 @@ def filter_listings(
             set_match = (
                 not filter_set_code
                 or filter_set_code.lower() == "unknown"
-                or filter_set_code.upper() == listing.get("set", "").upper()
+                or filter_set_code.upper() == listing.set_code.upper()
             )
             collector_match = (
                 not filter_collector_id
                 or str(filter_collector_id).lower() == "n/a"
                 or str(filter_collector_id)
-                == str(listing.get("collector_number"))
+                == str(listing.collector_number)
             )
             finish_match = (
                 not filter_finish
                 or filter_finish.lower() == "any"
-                or filter_finish.lower() == listing.get("finish", "").lower()
+                or filter_finish.lower() == listing.finish.lower()
             )
 
             if set_match and collector_match and finish_match:

@@ -13,9 +13,7 @@ class FinishSchema(BaseModel):
 
 class CardSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    name: str = Field(...,
-                      description="The name of the card.",
-                      min_length=1)
+    name: str = Field(..., description="The name of the card.", min_length=1)
 
     def __str__(self) -> str:
         return self.name
@@ -26,6 +24,7 @@ class SetSchema(BaseModel):
     Schema for a set, including its code and name.
     At least one of 'code' or 'name' must be provided.
     """
+
     model_config = ConfigDict(from_attributes=True)
     code: Optional[str] = None
     name: Optional[str] = None
@@ -34,8 +33,10 @@ class SetSchema(BaseModel):
     def check_at_least_one_field(self) -> Self:
         """Ensures that at least one of 'code' or 'name' is provided."""
         if not self.code and not self.name:
-            raise ValueError("At least one of 'code' \
-                             or 'name' must be provided.")
+            raise ValueError(
+                "At least one of 'code' \
+                             or 'name' must be provided."
+            )
         return self
 
     def __str__(self) -> str:
@@ -52,14 +53,13 @@ class CardSpecificationSchema(BaseModel):
     Represents the specific printing details of a card.
     All fields are optional, allowing for partial or wildcard tracking.
     """
+
     model_config = ConfigDict(from_attributes=True)
     set_code: Optional[SetSchema] = None
     collector_number: Optional[str] = None
     finish: Optional[FinishSchema] = None
 
-    def get_key(self) -> tuple[Optional[str],
-                               Optional[str],
-                               Optional[str]]:
+    def get_key(self) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (
             self.set_code.code if self.set_code else None,
             self.collector_number,
@@ -80,9 +80,7 @@ class UserSchema(BaseModel):
     """
 
     model_config = ConfigDict(from_attributes=True)
-    username: str = Field(...,
-                          description="The username of the user.",
-                          min_length=1)
+    username: str = Field(..., description="The username of the user.", min_length=1)
 
     def __str__(self) -> str:
         return self.username
@@ -93,12 +91,12 @@ class CardPreferenceSchema(BaseModel):
     Schema representing a user's preference for a specific card,
     including optional specifications.
     """
+
     model_config = ConfigDict(from_attributes=True)
     card: CardSchema = Field(..., description="The card being tracked.")
-    amount: Optional[int] = Field(...,
-                                  gt=0,
-                                  description="The quantity of "
-                                  "the card to track.")
+    amount: Optional[int] = Field(
+        0, gt=0, description="The quantity of " "the card to track."
+    )
     card_specs: Optional[list[CardSpecificationSchema]] = Field(
         None, description="Optional printing specifications for the card."
     )
@@ -110,12 +108,11 @@ class StoreSchema(BaseModel):
     """
 
     model_config = ConfigDict(from_attributes=True)
-    slug: str = Field(...,
-                      description="The unique slug identifier for the store.",
-                      min_length=1)
-    name: Optional[str] = Field(...,
-                                description="The display name of the store.",
-                                min_length=1)
+    slug: str = Field(
+        ..., description="The unique slug identifier for the store.", min_length=1
+    )
+    name: Optional[str] = Field(
+        None, description="The display name of the store.")
 
     def __str__(self) -> str:
         return self.name if self.name else self.slug
@@ -127,8 +124,11 @@ class CardListingSchema(BaseModel):
     """
 
     model_config = ConfigDict(from_attributes=True)
+    name: str = Field(..., description="The name of the card.")
+    set_code: str = Field(..., description="The set code of the card.")
+    collector_number: str = Field(..., description="The collector number.")
+    finish: str = Field(..., description="The finish type of the card.")
     price: float = Field(..., gt=0, description="The price of the card.")
     condition: str = Field(..., description="The condition of the card.")
-    foil: bool = Field(..., description="Whether the card is foil.")
     quantity: int = Field(..., gt=0, description="The quantity available.")
     url: str = Field(..., description="URL to the listing.")

@@ -104,7 +104,7 @@ def test_get_card_availability_with_no_cached_data(
     assert isinstance(args[0], AvailabilityRequestCommand)
     assert args[0].channel == "scheduler-requests"
     assert args[0].payload.user.username == username
-    assert args[0].payload.store_slug == "test-store"
+    assert args[0].payload.store.slug == "test-store"
     assert cached_results == {}
 
 

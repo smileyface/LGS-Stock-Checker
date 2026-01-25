@@ -7,9 +7,10 @@ implementation for `_scrape_listings` that always returns an empty list,
 effectively indicating that no listings can be found for such stores.
 """
 
-from typing import Any, Dict, List
+from typing import List
 
-from managers.store_manager.stores.store import Store
+from ..store import Store
+from schema.blocks import CardListingSchema
 from utility import logger
 
 
@@ -34,7 +35,7 @@ class DefaultStore(Store):
             "not return any card listings."
         )
 
-    def _scrape_listings(self, card_name: str) -> List[Dict[str, Any]]:
+    def _scrape_listings(self, card_name: str) -> List[CardListingSchema]:
         """
         Default implementation for scraping listings.
 

@@ -27,14 +27,11 @@ def test_update_availability_single_card_success(
     store_name = "test-store"
     # Use the first card from the seeded user
     card_name = seeded_user_with_cards.cards[0].card_name
-    card_data = {"user": {"username": username},
-                 "store_slug": store_name,
-                 "card_data": {
-                     "card_name": card_name,
-                     "specifications": []
-                     }
-                 }
-    available_items = [{"price": 1.99, "condition": "NM"}]
+    card_data = {"name": card_name,
+                 "card_specs": []}
+    available_items = [
+        {"price": 1.99, "condition": "NM"},
+    ]
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = available_items
@@ -46,9 +43,7 @@ def test_update_availability_single_card_success(
     # Assert
     assert result is True
     mock_store.get_store.assert_called_once_with(store_name)
-    mock_store_instance.fetch_card_availability.assert_called_once_with(
-        card_name, []
-    )
+    mock_store_instance.fetch_card_availability.assert_called_once_with(card_name, [])
 
     # Verify result publishing
     # The implementation uses a Message object, so we verify the call args
@@ -57,8 +52,8 @@ def test_update_availability_single_card_success(
     message = call_args[0][0]
     assert message.channel == "worker-results"
     assert message.name == "availability_result"
-    assert message.payload.store == store_name
-    assert message.payload.card == card_name
+    assert message.payload.store.slug == store_name
+    assert message.payload.card.card.name == card_name
     assert message.payload.items == available_items
 
     # Verify socket emission
@@ -130,7 +125,7 @@ def test_update_availability_single_card_no_items_found(
     # Arrange
     username = "testuser"
     store_name = "test-store"
-    card_data = {"card_name": "Obscure Card", "specifications": []}
+    card_data = {"name": "Obscure Card", "specifications": []}
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = []

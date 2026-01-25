@@ -119,7 +119,7 @@ def update_availability_for_user(username: str):
         logger.warning(
             f"User '{username}' has no cards or stores to check. Skipping."
         )
-        return
+        return False
 
     for card in user_cards:
         for store in user_stores:
@@ -141,15 +141,16 @@ def update_availability_for_user(username: str):
 @task_manager.task(
     task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD
 )
-def update_availability_single_card(username, store_name, card):
+def update_availability_single_card(username: str,
+                                    store_name: str,
+                                    card: dict) -> bool:
     """
     Background task to update the availability for a single card at a store.
     """
     if not store_name:
         logger.warning(f"🚨 Invalid store name: {store_name}. Task aborted.")
         return False
-
-    card_name = card.get("card_name")
+    card_name = card.get("name")
     if not card_name:
         logger.error(
             f"❌ Task received card data without a 'card_name'. "
@@ -180,7 +181,7 @@ def update_availability_single_card(username, store_name, card):
     logger.info(f"🔍 Checking availability for {card_name} at {store_name}")
 
     # Fetch availability using the specific store's implementation
-    card_specs = card.get("specifications")
+    card_specs = card.get("card_specs")
     available_items = store.fetch_card_availability(card_name, card_specs)
 
     if available_items:
@@ -195,10 +196,15 @@ def update_availability_single_card(username, store_name, card):
         )
 
     redis_manager.publish_pubsub(messaging.generator.GenerateAvailabilityResult(
-        card=card,
-        store=store_name,
-        items=available_items
-    )
+            card={"card": {
+                "name": card_name,
+                "card_specs": card_specs or []
+                }
+                },
+            store={
+                "slug": store_name},
+            items=available_items
+        )
     )
 
     # --- Emit results to the client ---

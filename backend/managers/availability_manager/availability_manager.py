@@ -11,7 +11,7 @@ from managers import redis_manager
 from data import database
 from schema.messaging import AvailabilityRequestCommand
 from schema.messaging.payload import AvailabilityRequestPayload
-from schema.blocks import UserSchema, CardSpecificationSchema
+from schema.blocks import UserSchema, CardSpecificationSchema, StoreSchema, CardPreferenceSchema
 from utility import logger
 
 
@@ -24,9 +24,9 @@ def check_availability(
     logger.info(f"🔄 User {username} requested a manual availability refresh.")
     payload = AvailabilityRequestPayload(
         user=UserSchema(username=username),
-        store_slug=store_slug,
-        card_data=(CardSpecificationSchema(**card_data)
-                   if card_data is not None
+        store=StoreSchema(slug=store_slug, name=store_slug) if store_slug else None,
+        card_data=(CardPreferenceSchema(**card_data)
+                   if card_data
                    else None),
     )
     command = AvailabilityRequestCommand(payload=payload)
@@ -80,10 +80,8 @@ def trigger_availability_check_for_card(
         )
         payload = AvailabilityRequestPayload(
             user=UserSchema(username=username),
-            store_slug=store.slug,
-            card_data=CardSpecificationSchema(
-                **card_data
-            ),
+            store=StoreSchema(slug=store.slug, name=store.name),
+            card_data=CardPreferenceSchema(**card_data),
         )
         command = AvailabilityRequestCommand(payload=payload)
         redis_manager.publish_pubsub(command)
@@ -135,12 +133,21 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
                     f"⏳ Cache miss for {card_data['name']} at {store.name}."
                     " Queueing check."
                 )
+
+                # Construct CardPreferenceSchema from card_data
+                # Handle potential flat dictionary from legacy/test data
+                if "card" in card_data:
+                    pref_data = card_data
+                else:
+                    pref_data = {
+                        "card": {"name": card_data.get("name")},
+                        "amount": card_data.get("amount", 1),
+                        "card_specs": card_data.get("specifications")
+                    }
                 payload = AvailabilityRequestPayload(
                     user=UserSchema(username=username),
-                    store_slug=store.slug,
-                    card_data=CardSpecificationSchema(
-                        **card_data
-                    ),
+                    store=StoreSchema(slug=store.slug, name=store.name),
+                    card_data=CardPreferenceSchema(**pref_data),
                 )
                 command = AvailabilityRequestCommand(payload=payload)
                 redis_manager.publish_pubsub(command)
@@ -162,6 +169,25 @@ def get_all_available_items_for_card(username: str, card_name: str) -> list:
         )
         return []
 
+    all_available_items = []
+    for store in user_stores:
+        # Fetch from cache
+        cached_data = availability_storage.get_cached_availability_data(
+            store.slug, card_name
+        )
+        if cached_data:  # cached_data is a list of item dicts
+            # Add the store name to each item before adding it to
+            # the aggregated list.
+            for item in cached_data:
+                item_with_store = item.copy()
+                item_with_store["store_name"] = store.name
+                all_available_items.append(item_with_store)
+
+    logger.info(
+        f"Aggregated {len(all_available_items)} available items for"
+        f" '{card_name}' for user '{username}'."
+    )
+    return all_available_items
     all_available_items = []
     for store in user_stores:
         # Fetch from cache

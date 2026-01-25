@@ -17,7 +17,7 @@ from managers import set_manager
 from utility import logger
 
 from ..store import Store
-from ..listing import Listing
+from schema.blocks import CardListingSchema
 
 
 def _make_request_with_retries(
@@ -94,7 +94,7 @@ class CrystalCommerceStore(Store):
             return BeautifulSoup(response.text, "html.parser")
         return None
 
-    def _scrape_listings(self, card_name: str) -> List[Listing]:
+    def _scrape_listings(self, card_name: str) -> List[CardListingSchema]:
         """
         Scrapes the store's website for raw card listings based on the
         provided card name.

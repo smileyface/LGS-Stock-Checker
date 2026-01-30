@@ -15,13 +15,16 @@ import data.database as data
         ),  # Case: Check case-sensitivity (assuming it should be exact)
     ],
 )
-def test_get_user_by_username(seeded_user, username, should_find_user):
+def test_get_user_by_username(user_factory, username, should_find_user):
     """
     GIVEN a seeded user in the database
     WHEN get_user_by_username is called with various usernames
     THEN the function returns a user object for an existing user and
          None otherwise.
     """
+    # Arrange
+    user_factory(username="testuser")
+
     # Act
     user = data.get_user_by_username(username)
     if should_find_user:
@@ -45,24 +48,30 @@ def test_add_user(db_session):
     assert user.username == "newuser"
 
 
-def test_add_user_already_exists(seeded_user):
+def test_add_user_already_exists(user_factory):
     """
     GIVEN a user with a specific username already exists
     WHEN add_user is called with the same username
     THEN an IntegrityError is raised.
     """
+    # Arrange
+    user_factory(username="testuser")
+
     # Act & Assert
     with pytest.raises(IntegrityError):
         data.add_user("testuser", "some_other_hash")
 
 
-def test_update_username(seeded_user):
+def test_update_username(user_factory):
     """
     GIVEN a user exists in the database
     WHEN update_username is called with a new username
     THEN the user's username is updated, and the old username is no
          longer found.
     """
+    # Arrange
+    user_factory(username="testuser")
+
     # Act
     data.update_username("testuser", "updateduser")
 
@@ -86,12 +95,15 @@ def test_update_username_user_not_found(db_session):
     assert data.get_user_by_username("new_username") is None
 
 
-def test_update_password(seeded_user):
+def test_update_password(user_factory):
     """
     GIVEN a user exists in the database
     WHEN update_password is called with a new password hash
     THEN the user's password_hash is updated in the database.
     """
+    # Arrange
+    user_factory(username="testuser")
+
     # Act
     new_hash = generate_password_hash("newpassword")
     data.update_password("testuser", new_hash)
@@ -114,13 +126,17 @@ def test_update_password_user_not_found(db_session):
     assert data.get_user_by_username("nonexistent_user") is None
 
 
-def test_user_store_preferences(seeded_user, seeded_store):
+def test_user_store_preferences(user_factory, store_factory):
     """
     GIVEN a user and store exist in the database
     WHEN user store preferences are added
     THEN the preferences are saved, and duplicates or non-existent stores
          are ignored.
     """
+    # Arrange
+    user_factory(username="testuser")
+    store_factory(slug="test_store")
+
     # Assert initial state
     assert data.get_user_stores("testuser") == []
 
@@ -146,13 +162,16 @@ def test_user_store_preferences(seeded_user, seeded_store):
     assert len(data.get_user_stores("testuser")) == initial_store_count
 
 
-def test_remove_user_store_preference(seeded_user, seeded_store):
+def test_remove_user_store_preference(user_factory, store_factory):
     """
     GIVEN a user has a saved store preference
     WHEN remove_user_store is called for that preference
     THEN the preference is removed from the database.
     """
     # Arrange
+    user_factory(username="testuser")
+    store_factory(slug="test_store")
+
     data.add_user_store("testuser", "test_store")
     assert len(data.get_user_stores("testuser")) == 1
 
@@ -163,13 +182,18 @@ def test_remove_user_store_preference(seeded_user, seeded_store):
     assert len(data.get_user_stores("testuser")) == 0
 
 
-def test_set_user_stores(seeded_user, seeded_stores):
+def test_set_user_stores(user_factory, store_factory):
     """
     GIVEN a user and several stores exist
     WHEN set_user_stores is called with a list of store slugs
     THEN the user's preferences should exactly match the provided list.
     """
-    # Arrange: User starts with no stores
+    # Arrange
+    user_factory(username="testuser")
+    store_factory(slug="test_store")
+    store_factory(slug="another_store")
+
+    # User starts with no stores
     assert len(data.get_user_stores("testuser")) == 0
 
     # Act 1: Set initial preferences
@@ -210,12 +234,15 @@ def test_get_user_stores_user_not_found(db_session):
     assert stores == []
 
 
-def test_get_user_for_display(seeded_user):
+def test_get_user_for_display(user_factory):
     """
     GIVEN a user exists in the database
     WHEN get_user_for_display is called
     THEN a user object is returned without the password_hash attribute.
     """
+    # Arrange
+    user_factory(username="testuser")
+
     # Act
     user = data.get_user_for_display("testuser")
 
@@ -238,13 +265,14 @@ def test_get_user_for_display_not_found(db_session):
     assert user is None
 
 
-def test_get_all_users(seeded_user):
+def test_get_all_users(user_factory):
     """
     GIVEN multiple users exist in the database
     WHEN get_all_users is called
     THEN a list of all user objects is returned.
     """
     # Arrange
+    user_factory(username="testuser")
     data.add_user("user2", "hash2")
 
     # Act

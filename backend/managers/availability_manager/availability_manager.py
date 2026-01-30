@@ -11,7 +11,9 @@ from managers import redis_manager
 from data import database
 from schema.messaging import AvailabilityRequestCommand
 from schema.messaging.payload import AvailabilityRequestPayload
-from schema.blocks import UserSchema, CardSpecificationSchema, StoreSchema, CardPreferenceSchema
+from schema.blocks import (UserSchema,
+                           StoreSchema,
+                           CardPreferenceSchema)
 from utility import logger
 
 

@@ -167,7 +167,7 @@ def test_update_invalid_password(client, seeded_user):
 # --- Tests for /api/account/get_tracked_cards ---
 
 
-def test_get_tracked_cards_success(client, seeded_user, mocker):
+def test_get_tracked_cards_success(client, seeded_user_with_cards, mocker):
     """
     GIVEN a logged-in user with tracked cards
     WHEN a GET request is made to /api/account/get_tracked_cards
@@ -180,60 +180,35 @@ def test_get_tracked_cards_success(client, seeded_user, mocker):
         content_type="application/json",
     )
 
-    # Arrange: Mock user_manager.load_card_list to return dummy tracked cards
-    mock_card_1 = {
-        "card_name": "Sol Ring",
-        "amount": 1,
-        "specifications": [
-            {"set_code": "C21",
-             "collector_number": "125",
-             "finish": "non-foil"},
-            {"set_code": "LTC",
-             "collector_number": "3",
-             "finish": "foil"},
-        ],
-    }
-
-    mock_card_2 = {
-        "card_name": "Lightning Bolt",
-        "amount": 4,
-        "specifications": [],
-    }
-
-    mocker.patch(
-        "managers.user_manager.load_card_list",
-        return_value=[mock_card_1, mock_card_2],
-    )
-
     # Act: Make the GET request
     response = client.get("/api/account/get_tracked_cards")
 
     # Assert: Check the response
     assert response.status_code == 200
     assert isinstance(response.json, list)
-    assert len(response.json) == 2
+    assert len(response.json) == 3
 
     # Assert details of the first card
     card_data_1 = response.json[0]
-    assert card_data_1["card_name"] == "Sol Ring"
+    assert card_data_1["name"] == "Sol Ring"
     assert card_data_1["amount"] == 1
-    assert len(card_data_1["specifications"]) == 2
+    assert len(card_data_1["specifications"]) == 0
+
+    # Assert details of the second card
+    card_data_2 = response.json[1]
+    assert card_data_2["name"] == "Lightning Bolt"
+    assert card_data_2["amount"] == 4
+    assert len(card_data_2["specifications"]) == 2
     assert {
         "set_code": "C21",
         "collector_number": "125",
         "finish": "non-foil",
-    } in card_data_1["specifications"]
+    } in card_data_2["specifications"]
     assert {
         "set_code": "LTC",
         "collector_number": "3",
         "finish": "foil",
-    } in card_data_1["specifications"]
-
-    # Assert details of the second card
-    card_data_2 = response.json[1]
-    assert card_data_2["card_name"] == "Lightning Bolt"
-    assert card_data_2["amount"] == 4
-    assert card_data_2["specifications"] == []
+    } in card_data_2["specifications"]
 
 
 def test_get_tracked_cards_no_cards(client, seeded_user, mocker):

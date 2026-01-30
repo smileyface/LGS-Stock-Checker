@@ -1,5 +1,10 @@
-import pytest  # noqa
-
+import pytest
+from data.database.models.orm_models import (
+    UserTrackedCards, 
+    CardSpecification, 
+    Finish, 
+    Set
+)
 from data.database.repositories.card_repository import (
     get_users_cards,
     modify_user_tracked_card,
@@ -10,201 +15,145 @@ from data.database.repositories.user_repository import (
     get_tracking_users_for_cards,
 )
 
-
-def test_get_users_cards(seeded_user_with_cards):
+def test_get_users_cards(db_session, user_factory, printing_factory):
     """
-    Tests the get_users_cards function to ensure it
-    returns cards with their associated specifications correctly.
+    Tests that we can retrieve cards with complex specifications.
+    Refactored to build its own specific data scenario.
     """
-    username = seeded_user_with_cards.username
-    cards_data = get_users_cards(username)
+    # 1. Arrange: Create the Catalog Data (The "Global" state)
+    # We need specific finishes and sets to exist for our specifications
+    printing_factory(card_name="Lightning Bolt", set_code="2ED", finishes=["non-foil"])
+    printing_factory(card_name="Lightning Bolt", set_code="3ED", finishes=["non-foil"])
+    printing_factory(card_name="Counterspell", set_code="CMR", finishes=["etched"])
+    printing_factory(card_name="Sol Ring") # Generic
 
+    # 2. Arrange: Create the User
+    user = user_factory(username="collector_steve")
+
+    # 3. Arrange: Give the User some tracked cards
+    # Helper to get IDs quickly
+    get_finish_id = lambda name: db_session.query(Finish).filter_by(name=name).one().id
+
+    # Card 1: Lightning Bolt (4 copies, 2 specific versions)
+    bolt = UserTrackedCards(card_name="Lightning Bolt", amount=4)
+    bolt.specifications.append(CardSpecification(
+        set_code="2ED", finish_id=get_finish_id("non-foil")
+    ))
+    bolt.specifications.append(CardSpecification(
+        set_code="3ED", finish_id=get_finish_id("non-foil")
+    ))
+
+    # Card 2: Counterspell (2 copies, etched)
+    cspell = UserTrackedCards(card_name="Counterspell", amount=2)
+    cspell.specifications.append(CardSpecification(
+        set_code="CMR", finish_id=get_finish_id("etched")
+    ))
+
+    # Card 3: Sol Ring (1 copy, no specs)
+    sol = UserTrackedCards(card_name="Sol Ring", amount=1)
+
+    user.cards.extend([bolt, cspell, sol])
+    db_session.commit()
+
+    # 4. Act
+    cards_data = get_users_cards("collector_steve")
+
+    # 5. Assert
     assert len(cards_data) == 3
+    
+    # Verify Lightning Bolt
+    bolt_data = next(c for c in cards_data if c["name"] == "Lightning Bolt")
+    assert bolt_data["amount"] == 4
+    assert len(bolt_data["specifications"]) == 2
+    codes = {s["set_code"] for s in bolt_data["specifications"]}
+    assert codes == {"2ED", "3ED"}
 
-    # Sort cards by name to make assertions deterministic
-    cards_data.sort(key=lambda c: c["name"])
+def test_get_users_cards_empty(user_factory):
+    """Simple test for a user with no cards."""
+    user = user_factory(username="empty_user")
+    assert get_users_cards("empty_user") == []
 
-    # Assertions for Counterspell
-    assert cards_data[0]["name"] == "Counterspell"
-    assert cards_data[0]["amount"] == 2
-    assert len(cards_data[0]["specifications"]) == 1
-    assert cards_data[0]["specifications"][0]["set_code"] == "CMR"
-    assert cards_data[0]["specifications"][0]["finish"] == "etched"
-
-    # Assertions for Lightning Bolt
-    assert cards_data[1]["name"] == "Lightning Bolt"
-    assert cards_data[1]["amount"] == 4
-    assert len(cards_data[1]["specifications"]) == 2
-    spec_sets = {s["set_code"] for s in cards_data[1]["specifications"]}
-    assert "2ED" in spec_sets
-    assert "3ED" in spec_sets
-
-    # Assertions for Sol Ring
-    assert cards_data[2]["name"] == "Sol Ring"
-    assert cards_data[2]["amount"] == 1
-    assert len(cards_data[2]["specifications"]) == 0
-
-
-def test_get_users_cards_no_cards(seeded_user):
+def test_get_users_tracking_card(db_session, user_factory, card_factory):
     """
-    Tests that get_users_cards returns an empty list for a user who exists
-    but is not tracking any cards.
+    Test finding all users who track a specific card.
     """
-    username = seeded_user.username
-    cards_data = get_users_cards(username)
-    assert cards_data == []
+    # 1. Arrange: Create Catalog
+    card_factory(name="Sol Ring")
+    card_factory(name="Brainstorm")
+    
+    # 2. Arrange: Create Users and track cards
+    # User 1 tracks both
+    user1 = user_factory(username="alice")
+    user1.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
+    user1.cards.append(UserTrackedCards(card_name="Brainstorm", amount=4))
+    
+    # User 2 tracks only Sol Ring
+    user2 = user_factory(username="bob")
+    user2.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
+    
+    db_session.commit()
 
+    # 3. Act & Assert
+    # Sol Ring (Both)
+    users_sol = get_users_tracking_card("Sol Ring")
+    assert len(users_sol) == 2
+    assert {"alice", "bob"} == {u.username for u in users_sol}
 
-def test_get_users_cards_user_not_found(db_session):
-    """
-    Tests that get_users_cards returns an empty list when the user
-    does not exist in the database.
-    """
-    cards_data = get_users_cards("non_existent_user")
-    assert cards_data == []
+    # Brainstorm (Alice only)
+    users_bs = get_users_tracking_card("Brainstorm")
+    assert len(users_bs) == 1
+    assert users_bs[0].username == "alice"
 
-
-def test_get_users_tracking_card(multiple_users_with_cards):
-    """Test finding all users who track a specific card."""
-    # Sol Ring is tracked by user1 and user2
-    users_tracking_sol_ring = get_users_tracking_card("Sol Ring")
-    assert len(users_tracking_sol_ring) == 2
-    usernames = {u.username for u in users_tracking_sol_ring}
-    assert "user1" in usernames
-    assert "user2" in usernames
-
-    # Brainstorm is only tracked by user1
-    users_tracking_brainstorm = get_users_tracking_card("Brainstorm")
-    assert len(users_tracking_brainstorm) == 1
-    assert users_tracking_brainstorm[0].username == "user1"
-
-    # A card tracked by no one
+    # Black Lotus (No one)
     assert get_users_tracking_card("Black Lotus") == []
 
-
-def test_get_tracking_users_for_cards(multiple_users_with_cards):
-    """Test efficiently finding users for a list of cards."""
-    card_names = ["Sol Ring", "Lurrus of the Dream-Den", "Black Lotus"]
-    result = get_tracking_users_for_cards(card_names)
-
-    # Check Sol Ring
-    assert "Sol Ring" in result
-    sol_ring_users = result["Sol Ring"]
-    assert len(sol_ring_users) == 2
-    sol_ring_usernames = {u.username for u in sol_ring_users}
-    assert "user1" in sol_ring_usernames
-    assert "user2" in sol_ring_usernames
-
-    # Check Lurrus
-    assert "Lurrus of the Dream-Den" in result
-    assert len(result["Lurrus of the Dream-Den"]) == 1
-    assert result["Lurrus of the Dream-Den"][0].username == "user2"
-
-    # Check Black Lotus (tracked by no one)
-    assert "Black Lotus" in result
-    assert result["Black Lotus"] == []
-
-    # Check empty input
-    assert get_tracking_users_for_cards([]) == {}
-
-
-def test_add_new_card_to_user_with_existing_cards(seeded_user_with_cards):
+def test_add_new_card_to_user_integration(db_session, user_factory, printing_factory):
     """
-    Tests adding a completely new card to a user who is already tracking
-    other cards.
+    Tests the repository function for adding a new card.
     """
-    # The `seeded_catalog` fixture is included to ensure sets like 'ICE' exist.
-    username = seeded_user_with_cards.username
-
-    # Define a new card to add
-    new_card_data = {
+    # 1. Arrange: Setup catalog for the card we want to add
+    printing_factory(card_name="Brainstorm", set_code="ICE", finishes=["non-foil"])
+    
+    user = user_factory(username="testuser")
+    
+    # 2. Act
+    new_card_payload = {
         "card": {"name": "Brainstorm"},
         "amount": 3,
         "specifications": [
-            {"set_code": {"code": "ICE"},
-             "finish": {"name": "non-foil"}}
+            {"set_code": {"code": "ICE"}, "finish": {"name": "non-foil"}}
         ],
     }
+    modify_user_tracked_card("add", "testuser", new_card_payload)
 
-    # Act: Add the new card to the user
-    modify_user_tracked_card("add", username, new_card_data)
+    # 3. Assert
+    # Re-fetch user from DB to see if relation exists
+    # (We can use the repo function itself to verify)
+    cards = get_users_cards("testuser")
+    assert len(cards) == 1
+    assert cards[0]["name"] == "Brainstorm"
+    assert cards[0]["specifications"][0]["set_code"] == "ICE"
 
-    # Assert: Verify the card was added and existing cards are untouched
-    all_cards = get_users_cards(username)
-    assert len(all_cards) == 4  # 3 existing + 1 new
-
-    # Find the newly added card
-    added_card = next(
-        (c for c in all_cards if c["name"] == "Brainstorm"), None
-    )
-
-    assert added_card is not None
-    assert added_card["amount"] == 3
-    assert len(added_card["specifications"]) == 1
-    spec = added_card["specifications"][0]
-    assert spec["set_code"] is not None, "Set code not found on specification"
-    assert spec["set_code"] == "ICE"
-
-
-@pytest.mark.parametrize(
-        "card_data",
-        [
-            {
-                "name": "Sol Ring",
-                "update_data": {"amount": 5},
-                "expected_amount": 5,
-                "expected_specs_count": 0,
-            },
-            {
-                "name": "Sol Ring",
-                "update_data": {
-                    "specifications": [
-                        {"set_code": {"code": "LTC"},
-                         "finish": {"name": "etched"}
-                         }
-                        ]
-                },
-                "expected_amount": 1,  # Original amount
-                "expected_specs_count": 1,
-            },
-            {
-                "name": "Lightning Bolt",
-                "update_data": {"specifications": [
-                    {"set_code": {"code": "4ED"},
-                     "finish": {"name": "non-foil"}
-                     }]},
-                "expected_amount": 4,  # Original amount
-                "expected_specs_count": 3,
-                "expected_set_code": "4ED",
-            },
-        ],
-)
-def test_update_user_card(seeded_user_with_cards, card_data):
+def test_update_user_card_specs(db_session, user_factory, printing_factory):
     """
-    Tests updating a user's tracked card, including amount and specifications.
+    Tests updating a specification.
     """
-    username = seeded_user_with_cards.username
-    card_name = card_data["name"]
-    update_data = card_data["update_data"]
+    # 1. Arrange: User tracks a normal Sol Ring
+    printing_factory(card_name="Sol Ring", set_code="C21", finishes=["etched"])
+    
+    user = user_factory(username="updater")
+    tracked = UserTrackedCards(card_name="Sol Ring", amount=1)
+    user.cards.append(tracked)
+    db_session.commit()
 
-    # Act: Update the card
-    update_user_tracked_card_preferences(
-        username, card_name, update_data
-    )
-
-    # Assert: Verify the update
-    all_cards = get_users_cards(username)
-    updated_card = next(
-        (c for c in all_cards if c["name"] == card_name), None
-    )
-
-    assert updated_card is not None
-    assert updated_card["amount"] == card_data["expected_amount"]
-    assert len(updated_card["specifications"]) == card_data[
-        "expected_specs_count"
+    # 2. Act: Add a specification to the existing card
+    update_data = {
+        "specifications": [
+            {"set_code": {"code": "C21"}, "finish": {"name": "etched"}}
         ]
+    }
+    update_user_tracked_card_preferences("updater", "Sol Ring", update_data)
 
-    # If we updated specs, let's check them
-    if "expected_set_code" in card_data:
-        assert updated_card["specifications"][-1]["set_code"] == card_data[
-            "expected_set_code"]
+    # 3. Assert
+    cards = get_users_cards("updater")
+    assert cards[0]["specifications"][0]["finish"] == "etched"

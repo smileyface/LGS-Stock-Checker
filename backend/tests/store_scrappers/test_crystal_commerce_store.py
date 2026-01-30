@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup
 from managers.store_manager.stores.storefronts.crystal_commerce_store import (
     CrystalCommerceStore,
 )
-from managers.store_manager.stores.listing import Listing
 
 # --- Sample HTML Payloads ---
 # This is a simplified version of the search results page HTML.
@@ -173,9 +172,8 @@ class TestCrystalCommerceStore(
         "managers.store_manager.stores.storefronts.crystal_commerce_store."
         "_make_request_with_retries"
     )
-    @patch.object(Listing, "set_code", new_callable=PropertyMock)
     def test_scrape_listings_success(
-        self, mock_set_code, mock_make_request, mock_set_manager_set_code
+        self, mock_make_request, mock_set_manager_set_code
     ):
         """
         Test the full scraping process for a card, mocking both network calls.
@@ -184,7 +182,6 @@ class TestCrystalCommerceStore(
         # --- Arrange ---
         # Configure the mock to use our side_effect function
         mock_make_request.side_effect = self.mock_requests_get
-        mock_set_code.return_value = "tst"
         mock_set_manager_set_code.return_value = "tst"
 
         # --- Execute ---
@@ -201,7 +198,7 @@ class TestCrystalCommerceStore(
         listing1 = listings[0]
         self.assertEqual(listing1.name, "Test Card")
         self.assertEqual(listing1.price, 10.00)
-        self.assertEqual(listing1.stock, 2)
+        self.assertEqual(listing1.quantity, 2)
         self.assertEqual(listing1.condition, "Near Mint")
         self.assertEqual(listing1.finish, "non-foil")
         self.assertEqual(listing1.set_code, "tst")
@@ -212,7 +209,7 @@ class TestCrystalCommerceStore(
         listing2 = listings[1]
         self.assertEqual(listing2.name, "Test Card")
         self.assertEqual(listing2.price, 25.00)
-        self.assertEqual(listing2.stock, 1)
+        self.assertEqual(listing2.quantity, 1)
         self.assertEqual(listing2.condition, "Near Mint")
         self.assertEqual(listing2.finish, "foil")
         self.assertEqual(
@@ -243,17 +240,13 @@ class TestCrystalCommerceStore(
         mock_set_manager_set_code.assert_any_call(
             "Magic The Gathering: Test Set"
         )
-        # 2. Assert that the LISTING was set with the SET CODE
-        #  from the SET MANAGER
-        mock_set_code.assert_any_call("tst")
 
     @patch(
         "managers.store_manager.stores.storefronts."
         "crystal_commerce_store._make_request_with_retries"
     )
-    @patch.object(Listing, "set_code")
     def test_scrape_listings_deduplicates_results(
-        self, mock_set_code, mock_make_request
+        self, mock_make_request
     ):
         """
         Test that the scraper correctly deduplicates listings when the
@@ -277,7 +270,6 @@ class TestCrystalCommerceStore(
             mock_search_response,
             mock_product_response,
         ]
-        mock_set_code.return_value = "tst"
 
         # --- Execute ---
         card_name = "Test Card"
@@ -296,9 +288,8 @@ class TestCrystalCommerceStore(
         "managers.store_manager.stores.storefronts."
         "crystal_commerce_store._make_request_with_retries"
     )
-    @patch.object(Listing, "set_code")
     def test_scrape_listings_stops_on_non_matching_card(
-        self, mock_set_code, mock_make_request
+        self, mock_make_request
     ):
         """
         Test that the scraper stops processing once it encounters a card that
@@ -318,7 +309,6 @@ class TestCrystalCommerceStore(
             mock_search_response,
             mock_product_response,
         ]
-        mock_set_code.return_value = "tst"
 
         # --- Execute ---
         card_name = "Test Card"
@@ -495,7 +485,7 @@ class TestCrystalCommerceStore(
             12.34,
             "Price should be parsed from the data-price attribute.",
         )
-        self.assertEqual(variants[0]["stock"], 5)
+        self.assertEqual(variants[0]["quantity"], 5)
         self.assertEqual(variants[0]["condition"], "Near Mint")
 
 

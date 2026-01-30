@@ -52,7 +52,9 @@ def trigger_availability_check_for_card(
     This fulfills requirement [5.1.6] by always queueing a new check.
     """
     card_obj = card_data.get("card")
-    card_name = card_obj.name if card_obj else None
+    card_name = card_obj.get("name") if card_obj else None
+    if not card_name:
+        logger.error if card_obj else None
     if not card_name:
         logger.error(
             "Cannot trigger availability check; "

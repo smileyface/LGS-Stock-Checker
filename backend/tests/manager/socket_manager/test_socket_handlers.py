@@ -5,7 +5,8 @@ from managers.socket_manager import socket_handlers
 
 def test_on_add_card_triggers_availability_check(
     mock_sh_user_manager,
-    mock_sh_get_current_user,
+    logged_in_user,
+    seeded_user,
     mock_sh_emit,
     mock_sh_trigger_availability_check,
 ):
@@ -16,7 +17,7 @@ def test_on_add_card_triggers_availability_check(
     and the updated card list is emitted back to the user.
     """
     # Arrange
-    username = "testuser"
+    username = seeded_user.username
     # This data must match the AddCardSchema
     card_data_from_client = {
         "name": "add_card",
@@ -82,7 +83,7 @@ def test_on_add_card_triggers_availability_check(
     mock_sh_emit.assert_called_with(
         "cards_data",
         expected_message,
-        to="testuser",
+        to=username,
     )
 
 
@@ -139,7 +140,8 @@ def test_on_add_card_triggers_availability_check(
         }, "Input should be"),
     ],
 )
-def test_on_add_card_with_invalid_data(mock_sh_emit,
+def test_on_add_card_with_invalid_data(mock_sh_get_current_user,
+                                       mock_sh_emit,
                                        invalid_data,
                                        expected_error_part):
     """
@@ -186,7 +188,6 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
 def test_on_update_card_with_invalid_data(
     seeded_user_with_cards,
     mock_sh_emit,
-    mock_sh_get_current_user,
     invalid_data,
     expected_error_part,
 ):

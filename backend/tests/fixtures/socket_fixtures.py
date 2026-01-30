@@ -58,6 +58,17 @@ def mock_sh_get_current_user(mocker):
 
 
 @pytest.fixture
+def logged_in_user(mock_sh_get_current_user):
+    """
+    Fixture that provides a simple user object with a username,
+    ensuring the get_username mock is active.
+    """
+    class User:
+        username = "testuser"
+    return User()
+
+
+@pytest.fixture
 def mock_sh_emit(mocker):
     """Mocks the socketio.emit function used in the socket handlers."""
     return mocker.patch("managers.socket_manager."

@@ -190,8 +190,8 @@ def test_set_user_stores(user_factory, store_factory):
     """
     # Arrange
     user_factory(username="testuser")
-    store_factory(slug="test_store")
-    store_factory(slug="another_store")
+    store_factory(name="Test Store 1", slug="test_store")
+    store_factory(name="Test Store 2", slug="another_store")
 
     # User starts with no stores
     assert len(data.get_user_stores("testuser")) == 0

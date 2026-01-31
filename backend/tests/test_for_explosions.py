@@ -8,7 +8,6 @@ from unittest.mock import MagicMock
 
 from datetime import datetime
 import pytest
-from tests.fixtures.db_fixtures import seed_user, seed_stores
 from werkzeug.exceptions import HTTPException
 from flask_socketio import SocketIO
 from data.database.models.orm_models import Store, User
@@ -261,7 +260,11 @@ def _generate_test_args(func, params, live_user, live_store):
     "package", PACKAGES_TO_TEST, ids=[p.__name__ for p in PACKAGES_TO_TEST]
 )
 def test_all_functions_no_crashes(
-    package, db_session, mocker, seeded_user, seeded_store
+    package,
+    db_session,
+    mocker,
+    user_factory,
+    store_factory
 ):
     """
     Smoke test to ensure that functions can be called with basic, safe inputs
@@ -331,8 +334,8 @@ def test_all_functions_no_crashes(
         for table in reversed(User.metadata.sorted_tables):
             db_session.execute(table.delete())
         db_session.commit()
-        live_user = seed_user(db_session)
-        live_store = seed_stores(db_session)[0]  # Get the first store
+        live_user = user_factory()
+        live_store = store_factory()
 
         params = inspect.signature(func).parameters
         pos_args, kw_args = _generate_test_args(func,

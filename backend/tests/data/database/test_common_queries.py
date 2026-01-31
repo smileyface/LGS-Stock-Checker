@@ -1,9 +1,7 @@
-import pytest
 from data.database.models.orm_models import (
-    UserTrackedCards, 
-    CardSpecification, 
-    Finish, 
-    Set
+    UserTrackedCards,
+    CardSpecification,
+    Finish
 )
 from data.database.repositories.card_repository import (
     get_users_cards,
@@ -12,8 +10,8 @@ from data.database.repositories.card_repository import (
 )
 from data.database.repositories.user_repository import (
     get_users_tracking_card,
-    get_tracking_users_for_cards,
 )
+
 
 def test_get_users_cards(db_session, user_factory, printing_factory):
     """
@@ -25,7 +23,7 @@ def test_get_users_cards(db_session, user_factory, printing_factory):
     printing_factory(card_name="Lightning Bolt", set_code="2ED", finishes=["non-foil"])
     printing_factory(card_name="Lightning Bolt", set_code="3ED", finishes=["non-foil"])
     printing_factory(card_name="Counterspell", set_code="CMR", finishes=["etched"])
-    printing_factory(card_name="Sol Ring") # Generic
+    printing_factory(card_name="Sol Ring")  # Generic
 
     # 2. Arrange: Create the User
     user = user_factory(username="collector_steve")
@@ -60,7 +58,7 @@ def test_get_users_cards(db_session, user_factory, printing_factory):
 
     # 5. Assert
     assert len(cards_data) == 3
-    
+
     # Verify Lightning Bolt
     bolt_data = next(c for c in cards_data if c["name"] == "Lightning Bolt")
     assert bolt_data["amount"] == 4
@@ -68,10 +66,12 @@ def test_get_users_cards(db_session, user_factory, printing_factory):
     codes = {s["set_code"] for s in bolt_data["specifications"]}
     assert codes == {"2ED", "3ED"}
 
+
 def test_get_users_cards_empty(user_factory):
     """Simple test for a user with no cards."""
-    user = user_factory(username="empty_user")
+    user_factory(username="empty_user")
     assert get_users_cards("empty_user") == []
+
 
 def test_get_users_tracking_card(db_session, user_factory, card_factory):
     """
@@ -80,17 +80,17 @@ def test_get_users_tracking_card(db_session, user_factory, card_factory):
     # 1. Arrange: Create Catalog
     card_factory(name="Sol Ring")
     card_factory(name="Brainstorm")
-    
+
     # 2. Arrange: Create Users and track cards
     # User 1 tracks both
     user1 = user_factory(username="alice")
     user1.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
     user1.cards.append(UserTrackedCards(card_name="Brainstorm", amount=4))
-    
+
     # User 2 tracks only Sol Ring
     user2 = user_factory(username="bob")
     user2.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
-    
+
     db_session.commit()
 
     # 3. Act & Assert
@@ -107,15 +107,16 @@ def test_get_users_tracking_card(db_session, user_factory, card_factory):
     # Black Lotus (No one)
     assert get_users_tracking_card("Black Lotus") == []
 
+
 def test_add_new_card_to_user_integration(db_session, user_factory, printing_factory):
     """
     Tests the repository function for adding a new card.
     """
     # 1. Arrange: Setup catalog for the card we want to add
     printing_factory(card_name="Brainstorm", set_code="ICE", finishes=["non-foil"])
-    
-    user = user_factory(username="testuser")
-    
+
+    user_factory(username="testuser")
+
     # 2. Act
     new_card_payload = {
         "card": {"name": "Brainstorm"},
@@ -134,13 +135,14 @@ def test_add_new_card_to_user_integration(db_session, user_factory, printing_fac
     assert cards[0]["name"] == "Brainstorm"
     assert cards[0]["specifications"][0]["set_code"] == "ICE"
 
+
 def test_update_user_card_specs(db_session, user_factory, printing_factory):
     """
     Tests updating a specification.
     """
     # 1. Arrange: User tracks a normal Sol Ring
     printing_factory(card_name="Sol Ring", set_code="C21", finishes=["etched"])
-    
+
     user = user_factory(username="updater")
     tracked = UserTrackedCards(card_name="Sol Ring", amount=1)
     user.cards.append(tracked)

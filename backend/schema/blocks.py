@@ -95,7 +95,7 @@ class CardPreferenceSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     card: CardSchema = Field(..., description="The card being tracked.")
     amount: Optional[int] = Field(
-        0, gt=0, description="The quantity of " "the card to track."
+        ..., gt=0, description="The quantity of " "the card to track."
     )
     card_specs: Optional[list[CardSpecificationSchema]] = Field(
         None, description="Optional printing specifications for the card."

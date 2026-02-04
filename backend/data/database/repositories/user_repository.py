@@ -28,7 +28,7 @@ from utility import logger
 def get_user_by_username(
     username: str,
     session: Session
-) -> Optional[Dict[str, Any]]:
+) -> User:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -56,7 +56,7 @@ def get_user_by_username(
     if user_orm:
         logger.debug(f"✅ Found user '{username}'.")
         # Use UserDBSchema.model_validate to convert the ORM object
-        return user_orm.to_dict()
+        return user_orm
 
     logger.debug(f"❌ User '{username}' not found in database.")
     return None

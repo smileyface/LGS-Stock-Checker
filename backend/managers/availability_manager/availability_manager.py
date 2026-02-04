@@ -114,39 +114,38 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
         return {}
 
     cached_results = {}
-    for card in user_cards.keys():
+    for card in user_cards:
         for store in user_stores:
             if not store or not store.slug or not card:
                 continue
-            card_data = user_cards[card]
             cached_data = availability_storage.get_cached_availability_data(
-                store.slug, card_data["name"]
+                store.slug, card["name"]
             )
             logger.debug(
-                f"Checking cache for {card_data['name']} at {store.name}."
+                f"Checking cache for {card['name']} at {store.name}."
             )
             if cached_data is not None:
                 logger.debug(
-                    f"✅ Cache hit for {card_data['name']} at {store.name}."
+                    f"✅ Cache hit for {card['name']} at {store.name}."
                 )
                 cached_results.setdefault(store.slug, {})[
-                    card_data['name']
+                    card['name']
                 ] = cached_data
             else:
                 logger.info(
-                    f"⏳ Cache miss for {card_data['name']} at {store.name}."
+                    f"⏳ Cache miss for {card['name']} at {store.name}."
                     " Queueing check."
                 )
 
                 # Construct CardPreferenceSchema from card_data
                 # Handle potential flat dictionary from legacy/test data
-                if "card" in card_data:
-                    pref_data = card_data
+                if "card" in card:
+                    pref_data = card
                 else:
                     pref_data = {
-                        "card": {"name": card_data.get("name")},
-                        "amount": card_data.get("amount", 1),
-                        "card_specs": card_data.get("specifications")
+                        "card": {"name": card.get("name")},
+                        "amount": card.get("amount", 1),
+                        "card_specs": card.get("specifications")
                     }
                 payload = AvailabilityRequestPayload(
                     user=UserSchema(username=username),

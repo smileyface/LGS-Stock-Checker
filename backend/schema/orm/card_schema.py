@@ -1,48 +1,35 @@
-from typing import Optional
-from pydantic import Field, ConfigDict
+from typing import List
+from pydantic import (ConfigDict,
+                      Field,
+                      computed_field)
 
 from ..blocks import (
-    FinishSchema,
     CardSchema,
-    SetSchema,
+    CardSpecificationSchema,
 )
 
 from .base_schema import DatabaseSchema
 
 
-class CardSpecificationSchema(DatabaseSchema):
-    model_config = ConfigDict(from_attributes=True)
-
-    set_code: Optional[SetSchema] = Field(
-        None, description="The set code (e.g., 'ONE'). Null if any set."
-    )
-    collector_number: Optional[str] = Field(
-        None, description="The collector number. Null if any."
-    )
-    finish: Optional[FinishSchema] = Field(
-        None,
-        description="The card's finish ('non-foil', 'foil', 'etched'). "
-        "Defaults to None.",
-    )
-
-    def get_key(self) -> tuple[Optional[str], Optional[str], Optional[str]]:
-        return (
-            self.set_code.code if self.set_code else None,
-            self.collector_number,
-            self.finish.name if self.finish else None,
-        )
-
-    def to_dict(self) -> dict:
-        return {
-            "set_code": self.set_code.code if self.set_code else None,
-            "collector_number": self.collector_number,
-            "finish": self.finish.name if self.finish else None,
-        }
-
-
 class CardPrintingSchema(DatabaseSchema):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    card_name: CardSchema
-    specification: Optional[CardSpecificationSchema]
-    available_finishes: Optional[FinishSchema]
+
+    id: int = Field(..., description="Database ID.")
+
+    # The ORM has 'card_name' (string)
+    card_name: str = Field(..., description="Name of the card.")
+
+    amount: int = Field(..., description="Quantity.")
+
+    # We use the schema from blocks.py that handles the Union[SetSchema, str] logic
+    specifications: List[CardSpecificationSchema] = Field(default_factory=list)
+
+    # COMPATIBILITY LAYER:
+    # The database model likely doesn't have a populated 'card' relationship
+    # (or it's lazy loaded and currently None).
+    # However, the frontend or API contract might expect a nested 'card' object.
+    # We compute this field dynamically from 'card_name' to
+    # ensure it's always present and valid.
+    @computed_field
+    def card(self) -> CardSchema:
+        return CardSchema(name=self.card_name)

@@ -1,5 +1,5 @@
-from typing import Literal, Optional
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from typing import Literal, Optional, Any
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
 from typing_extensions import Self
 
 
@@ -59,6 +59,18 @@ class CardSpecificationSchema(BaseModel):
     collector_number: Optional[str] = None
     finish: Optional[FinishSchema] = None
 
+    @field_validator("set_code", mode="before")
+    @classmethod
+    def parse_set_code(cls, v: Any) -> Any:
+        """
+        Handles the case where the ORM returns a string (the FK) instead of
+          a relationship object.
+        Wraps it in a SetSchema so downstream consistency is maintained.
+        """
+        if isinstance(v, str):
+            return SetSchema(code=v)
+        return v
+
     def get_key(self) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (
             self.set_code.code if self.set_code else None,
@@ -111,8 +123,7 @@ class StoreSchema(BaseModel):
     slug: str = Field(
         ..., description="The unique slug identifier for the store.", min_length=1
     )
-    name: Optional[str] = Field(
-        None, description="The display name of the store.")
+    name: Optional[str] = Field(None, description="The display name of the store.")
 
     def __str__(self) -> str:
         return self.name if self.name else self.slug

@@ -190,24 +190,25 @@ def test_get_tracked_cards_success(client, seeded_user_with_cards, mocker):
 
     # Assert details of the first card
     card_data_1 = response.json[0]
-    assert card_data_1["name"] == "Sol Ring"
+    print(card_data_1)
+    assert card_data_1["card"]["name"] == "Sol Ring"
     assert card_data_1["amount"] == 1
     assert len(card_data_1["specifications"]) == 0
 
     # Assert details of the second card
     card_data_2 = response.json[1]
-    assert card_data_2["name"] == "Lightning Bolt"
+    assert card_data_2["card"]["name"] == "Lightning Bolt"
     assert card_data_2["amount"] == 4
     assert len(card_data_2["specifications"]) == 2
     assert {
-        "set_code": "C21",
+        'set_code': {'code': 'C21', 'name': None},
         "collector_number": "125",
-        "finish": "non-foil",
+        "finish": {"name": "non-foil"},
     } in card_data_2["specifications"]
     assert {
-        "set_code": "LTC",
+        "set_code": {'code': "LTC", 'name': None},
         "collector_number": "3",
-        "finish": "foil",
+        "finish": {"name": "foil"},
     } in card_data_2["specifications"]
 
 

@@ -4,6 +4,8 @@ from flask_login import login_required, current_user
 from managers import store_manager
 from managers import user_manager
 
+from schema import orm
+
 from utility import logger
 
 
@@ -79,6 +81,20 @@ def get_tracked_cards():
     Returns the currently authenticated user's list of tracked cards
     in a JSON-serializable format.
     """
-    cards = user_manager.load_card_list(current_user.username)
-
-    return jsonify(cards)
+    try:
+        # 1. Fetch ORM objects from the manager/repo
+        # (This now returns UserTrackedCards objects per your repo update)
+        cards_orm = user_manager.load_card_list(current_user.username)
+        
+        # 2. Convert ORM objects to Pydantic Models for serialization
+        # This handles nested fields like 'specifications' automatically
+        validated_cards = [
+            orm.UserTrackedCardSchema.model_validate(card).model_dump()
+            for card in cards_orm
+        ]
+        
+        return jsonify(validated_cards)
+        
+    except Exception as e:
+        logger.error(f"Error fetching tracked cards for {current_user.username}: {e}")
+        return jsonify({"error": "Failed to fetch tracked cards"}), 500

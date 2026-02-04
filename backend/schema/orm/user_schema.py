@@ -1,21 +1,23 @@
 from typing import List, Optional
-from pydantic import Field, ConfigDict
+from pydantic import Field, ConfigDict, computed_field
 
-from .card_schema import CardSpecificationSchema
+
 from .store_schema import StoreSchema
 from .base_schema import DatabaseSchema
 
 from ..blocks import (
     CardSchema,
+    CardSpecificationSchema,
 )
 
 
 class UserTrackedCardSchema(DatabaseSchema):
     model_config = ConfigDict(
         from_attributes=True
-        )
+    )
 
-    card: CardSchema = Field(..., description="The card being tracked.")
+    # The ORM model has 'card_name', not a populated 'card' relationship by default
+    card_name: str = Field(..., description="The name of the card.")
 
     amount: int = Field(
         1,
@@ -25,6 +27,12 @@ class UserTrackedCardSchema(DatabaseSchema):
     specifications: List[CardSpecificationSchema] = Field(
         [], description="List of specific versions of the card."
     )
+
+    # Compute the nested 'card' object dynamically to satisfy frontend expectations
+    # without relying on the ORM relationship being loaded.
+    @computed_field
+    def card(self) -> CardSchema:
+        return CardSchema(name=self.card_name)
 
 
 class UserTrackedCardListSchema(DatabaseSchema):

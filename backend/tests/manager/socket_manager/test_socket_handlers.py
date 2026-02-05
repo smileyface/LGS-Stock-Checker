@@ -2,89 +2,100 @@ import pytest  # noqa
 
 from managers.socket_manager import socket_handlers
 
+from data.database.models.orm_models import (
+    User,
+    UserTrackedCards,
+)
+
 
 def test_on_add_card_triggers_availability_check(
-    mock_sh_user_manager,
-    logged_in_user,
-    seeded_user,
+    db_session,
+    user_factory,
     mock_sh_emit,
     mock_sh_trigger_availability_check,
+    mock_sh_get_current_user
 ):
     """
-    GIVEN a user with preferred stores
+    GIVEN a user exists (via factory)
     WHEN they add a new card via the 'add_card' socket event
-    THEN the card is added, an availability check is queued for each store,
-    and the updated card list is emitted back to the user.
+    THEN the card is added to the DB, availability check is triggered,
+    and the updated list is emitted.
     """
     # Arrange
-    username = seeded_user.username
-    # This data must match the AddCardSchema
+    # 1. Create a real user.
+    # mock_sh_get_current_user is configured to return "testuser" by default
+    # in socket_fixtures.py. So we create a user with that name.
+    user_factory(username="testuser")
+
+    # 2. Prepare Payload
     card_data_from_client = {
         "name": "add_card",
         "payload": {
             "command": "add",
             "update_data": {
-                "card": {
-                    "name": "Sol Ring"
-                },
+                "card": {"name": "Sol Ring"},
                 "amount": 1,
-                "card_specs": [{}]
+                "card_specs": []
             }
         }
     }
-
-    # Mock the return value for the full card list after adding
-    mock_sh_user_manager.load_card_list.return_value = []
 
     # Act
     socket_handlers.handle_add_user_tracked_card(card_data_from_client)
 
     # Assert
-    # 1. Verify the card was added to the user's list with the
-    # correct arguments
-    mock_sh_user_manager.add_user_card.assert_called_once_with(
-        username,
-        "Sol Ring",
-        1,
-        {"set_code": None, "collector_number": None, "finish": None}
-    )
+    # 1. Verify DB State (Black Box)
+    # We check if the card actually ended up in the database.
+    tracked_card = db_session.query(UserTrackedCards).join(User).filter(
+        User.username == "testuser",
+        UserTrackedCards.card_name == "Sol Ring"
+    ).first()
 
-    # 2. Verify availability check was triggered for the new card ([5.1.6])
-    # The availability check uses a dictionary representation
-    card_data_for_task = {
-        "card": {
-            "name": "Sol Ring"},
-        "specifications": {
-            "set_code": None,
-            "collector_number": None,
-            "finish": None},
-    }
+    assert tracked_card is not None
+    assert tracked_card.amount == 1
+
+    # 2. Verify Availability Check Triggered
+    # We still mock this because we don't want to spin up Redis/Workers here
     mock_sh_trigger_availability_check.assert_called_once()
-    # Check the positional arguments passed to the trigger function
-    assert mock_sh_trigger_availability_check.call_args.args[0] == username
-    assert (mock_sh_trigger_availability_check.call_args.args[1] ==
-            card_data_for_task)
-    # Check that a callback was passed
-    assert ("on_complete_callback" in
-            mock_sh_trigger_availability_check.call_args.kwargs)
 
-    # 3. Verify the client was notified with the updated card list via
-    # the callback
-    # To test this properly, we execute the callback that was passed to
-    # the mock
-    callback = mock_sh_trigger_availability_check.call_args.kwargs[
-        "on_complete_callback"
+    call_args = mock_sh_trigger_availability_check.call_args
+    assert call_args.args[0] == "testuser"
+    assert call_args.args[1]["card"]["name"] == "Sol Ring"
+
+    # 3. Verify Emission via Callback
+    # Execute the callback passed to the trigger function
+    callback = call_args.kwargs.get("on_complete_callback")
+    assert callback is not None
+
+    callback()  # This triggers user_manager.send_user_cards("testuser")
+
+    # Verify the emit happened with the correct data structure
+    mock_sh_emit.assert_called()
+
+    # Find the 'cards_data' emission
+    emit_calls = [
+        c for c in mock_sh_emit.call_args_list 
+        if c.args[0] == "cards_data"
     ]
-    callback()
-    expected_message = {
-        "name": "cards_data",
-        "payload": {"cards": []}
-    }
-    mock_sh_emit.assert_called_with(
-        "cards_data",
-        expected_message,
-        to=username,
-    )
+    assert len(emit_calls) > 0
+
+    last_call = emit_calls[-1]
+    event_name = last_call.args[0]
+    # Check payload which might be arg 1 or 2 depending on how emit is called
+    payload = last_call.args[1]
+    kwargs = last_call.kwargs
+
+    assert "payload" in payload
+    payload = payload["payload"]
+
+    assert event_name == "cards_data"
+    assert kwargs.get("to") == "testuser"
+
+    # Verify the payload contains our new card
+    # Payload structure: {"username": str, "cards": list}
+    assert "cards" in payload
+    cards_list = payload["cards"]
+    assert any(c["card"]["name"] == "Sol Ring" for c in cards_list)
 
 
 @pytest.mark.parametrize(

@@ -2,8 +2,8 @@
 Manages a user's tracked card list, including adding, updating, deleting,
 and sending updates back to the client.
 """
-from typing import Dict, Any, List
-
+from typing import Optional
+from  data.database.models.orm_models import UserTrackedCards
 from data import database
 from managers import socket_manager
 from utility import logger
@@ -18,6 +18,8 @@ def _send_updated_card_list(username: str):
         f"📜 Fetching and sending updated tracked cards for user: {username}"
     )
     cards = database.get_users_cards(username)
+    if cards is None:
+        cards = []
 
     # Serialize the list of Pydantic objects into a JSON-serializable format.
     # This is crucial for the data to be correctly interpreted by the frontend.
@@ -72,7 +74,7 @@ def add_user_card(username: str,
     """Adds a card to a user's list and sends an update."""
     logger.info(f"Adding card '{card_name}' for user '{username}'.")
     card_data = {
-        "card": {"name": card_name},
+        "card_name": card_name,
         "amount": amount,
         "specifications": [card_specs] if card_specs else [],
     }
@@ -96,15 +98,17 @@ def delete_user_card(username: str, card_name: str):
     _send_updated_card_list(username)
 
 
-def load_card_list(username: str) -> List[Dict[str, Any]]:
+def load_card_list(username: str) -> Optional[UserTrackedCards]:
     """Loads a user's card list from the database without sending an update."""
     logger.info(f"📖 Loading card list for user: '{username}'")
     if not database.get_user_by_username(username):
         logger.warning(
             f"User '{username}' not found when trying to load card list."
         )
-        return []
+        return None
 
     cards = database.get_users_cards(username)
+    if cards is None:
+        cards = []
     logger.info(f"✅ Loaded {len(cards)} cards for user: '{username}'")
     return cards

@@ -119,34 +119,32 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
             if not store or not store.slug or not card:
                 continue
             cached_data = availability_storage.get_cached_availability_data(
-                store.slug, card["name"]
+                store.slug, card.card.name
             )
             logger.debug(
-                f"Checking cache for {card['name']} at {store.name}."
+                f"Checking cache for {card.card.name} at {store.name}."
             )
             if cached_data is not None:
                 logger.debug(
-                    f"✅ Cache hit for {card['name']} at {store.name}."
+                    f"✅ Cache hit for {card.card.name} at {store.name}."
                 )
                 cached_results.setdefault(store.slug, {})[
-                    card['name']
+                    card.card.name
                 ] = cached_data
             else:
                 logger.info(
-                    f"⏳ Cache miss for {card['name']} at {store.name}."
+                    f"⏳ Cache miss for {card.card.name} at {store.name}."
                     " Queueing check."
                 )
 
                 # Construct CardPreferenceSchema from card_data
                 # Handle potential flat dictionary from legacy/test data
-                if "card" in card:
-                    pref_data = card
-                else:
-                    pref_data = {
-                        "card": {"name": card.get("name")},
-                        "amount": card.get("amount", 1),
-                        "card_specs": card.get("specifications")
-                    }
+
+                pref_data = {
+                    "card": {"name": card.card.name},
+                    "amount": card.amount,
+                    "card_specs": card.specifications
+                }
                 payload = AvailabilityRequestPayload(
                     user=UserSchema(username=username),
                     store=StoreSchema(slug=store.slug, name=store.name),

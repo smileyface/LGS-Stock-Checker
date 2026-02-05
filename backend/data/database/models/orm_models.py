@@ -231,7 +231,7 @@ class CardSpecification(Base):
         return {
             "set_code": self.set_code,
             "collector_number": self.collector_number,
-            "finish": self.finish.to_dict()["name"] if self.finish else None,
+            "finish": self.finish.name if self.finish else None,
         }
 
 

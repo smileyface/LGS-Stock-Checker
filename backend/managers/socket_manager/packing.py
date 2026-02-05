@@ -1,11 +1,13 @@
 from schema.blocks import (CardSchema,
                            CardSpecificationSchema,
                            SetSchema,
-                           FinishSchema
+                           FinishSchema,
                            )
+from data.database.models.orm_models import (UserTrackedCards,
+                                             CardSpecification)
 
 
-def pack_specifications(specifications: list[dict]) -> list[dict]:
+def pack_specifications(specification: CardSpecification) -> dict:
     """
     Packs a list of specification dictionaries into a standardized format for messaging.
 
@@ -17,31 +19,17 @@ def pack_specifications(specifications: list[dict]) -> list[dict]:
         list[dict]: A list of dictionaries, where each dictionary is a
                     CardSpecificationSchema model_dump.
     """
-    specs = []
-    for spec in specifications:
-        if not isinstance(spec, dict):
-            continue
-        if "set_code" in spec and spec["set_code"] is not None:
-            spec["set_code"] = SetSchema(code=spec["set_code"]).model_dump()
-        else:
-            del spec["set_code"]
-        if "finish" in spec and spec["finish"] is not None:
-            spec["finish"] = FinishSchema(name=spec["finish"]).model_dump()
-        else:
-            del spec["finish"]
-        if "collector_number" in spec and spec["collector_number"] is not None:
-            spec["collector_number"] = spec["collector_number"]
-        else:
-            del spec["collector_number"]
-
-        specs.append(CardSpecificationSchema(**spec).model_dump())
-    return specs
+    spec = {}
+    if specification.set_code is not None:
+        spec["set_code"] = specification.set_code
+    if specification.finish is not None:
+        spec["finish"] = specification.finish.name
+    if specification.collector_number is not None:
+        spec["collector_number"] = specification.collector_number
+    return spec
 
 
-def pack_card(name: str,
-              amount: int,
-              specifications: list[dict] = [],
-              **kwargs) -> dict:
+def pack_card(card: UserTrackedCards) -> dict:
     """
     Packs a card dictionary into a standardized format for messaging.
 
@@ -54,11 +42,10 @@ def pack_card(name: str,
               'card' (CardSchema), 'amount', and 'specifications'
               (list of CardSpecificationSchema).
     """
-    specifications = pack_specifications(specifications)
 
-    card_name_obj = CardSchema(name=name).model_dump()
-
-    packed = {"card": card_name_obj, "amount": amount}
-    if specifications:
-        packed["card_specs"] = specifications
+    packed = {"card": {"name": card.card_name},
+              "amount": card.amount,
+              "card_specs": []}
+    for spec in card.specifications:
+        packed["card_specs"].append(pack_specifications(spec))
     return packed

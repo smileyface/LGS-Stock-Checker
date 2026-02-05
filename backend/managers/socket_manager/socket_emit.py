@@ -60,7 +60,7 @@ def send_user_cards(username: str):
     # This flattens the nested 'card' object into 'card_name'.
     packed_cards = []
     for card in cards:
-        packed_cards.append(pack_card(**card))
+        packed_cards.append(pack_card(card))
 
     # Emit a single event with the entire list to the user's room.
     payload = messages.CardListPayload.model_validate({"cards": packed_cards})

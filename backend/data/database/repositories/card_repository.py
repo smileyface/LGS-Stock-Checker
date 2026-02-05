@@ -62,7 +62,7 @@ def add_tracked_card_to_user(
     else:
         logger.info(f"➕ User '{username}' is now tracking '{card_name}'.")
         tracked_card = UserTrackedCards(
-            user_id=user["id"],
+            user_id=user.id,
             card_name=card_name,
             amount=amount,
         )
@@ -161,7 +161,7 @@ def update_user_tracked_card_preferences(
     valid_updates = (orm.UserTrackedCardUpdateSchema
                      .model_validate(preference_updates))
 
-    update_card_amount(tracked_card["id"], valid_updates.amount)
+    update_card_amount(tracked_card.id, valid_updates.amount)
 
     # Handle updating specifications.
     # This replaces all existing specs for the card.
@@ -175,10 +175,10 @@ def update_user_tracked_card_preferences(
             set_obj = get_set(set_code=new_spec.set_code.code
                               if new_spec.set_code else None)
             card_spec = CardSpecification(
-                user_card_id=tracked_card["id"],
-                set_code=set_obj["code"] if set_obj else None,
+                user_card_id=tracked_card.id,
+                set_code=set_obj.code if set_obj else None,
                 collector_number=new_spec.collector_number,
-                finish_id=finish_obj["id"] if finish_obj else None,
+                finish_id=finish_obj.id if finish_obj else None,
             )
             logger.debug(
                 f"Added new specification for '{card_name}'.")

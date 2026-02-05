@@ -339,7 +339,7 @@ def get_set(set_name: Optional[str] = None,
             set_code: Optional[str] = None,
             *,
             session: Session
-            ) -> Optional[Dict[str, Any]]:
+            ) -> Optional[Set]:
     assert session is not None, "Session is injected by @db_query decorator"
     set_listing = None
     if not set_name and not set_code:
@@ -352,14 +352,14 @@ def get_set(set_name: Optional[str] = None,
         logger.error("Set not found in catalog. Aborting.")
         return None
     else:
-        return set_listing.to_dict()
+        return set_listing
 
 
 @db_query
 def get_finish(finish_name: Optional[str] = None,
                *,
                session: Session
-               ) -> Optional[Dict[str, Any]]:
+               ) -> Optional[Finish]:
     assert session is not None, "Session is injected by @db_query decorator"
     if not finish_name:
         logger.error("No finish name provided. Aborting.")
@@ -368,4 +368,4 @@ def get_finish(finish_name: Optional[str] = None,
     if not finish:
         logger.error("Finish not found in catalog. Aborting.")
         return None
-    return finish.to_dict()
+    return finish

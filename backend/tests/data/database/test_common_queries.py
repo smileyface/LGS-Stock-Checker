@@ -60,17 +60,17 @@ def test_get_users_cards(db_session, user_factory, printing_factory):
     assert len(cards_data) == 3
 
     # Verify Lightning Bolt
-    bolt_data = next(c for c in cards_data if c["name"] == "Lightning Bolt")
-    assert bolt_data["amount"] == 4
-    assert len(bolt_data["specifications"]) == 2
-    codes = {s["set_code"] for s in bolt_data["specifications"]}
+    bolt_data = next(c for c in cards_data if c.card.name == "Lightning Bolt")
+    assert bolt_data.amount == 4
+    assert len(bolt_data.specifications) == 2
+    codes = {s.set_code for s in bolt_data.specifications}
     assert codes == {"2ED", "3ED"}
 
 
 def test_get_users_cards_empty(user_factory):
     """Simple test for a user with no cards."""
     user_factory(username="empty_user")
-    assert get_users_cards("empty_user") == []
+    assert get_users_cards("empty_user") is None
 
 
 def test_get_users_tracking_card(db_session, user_factory, card_factory):
@@ -119,7 +119,7 @@ def test_add_new_card_to_user_integration(db_session, user_factory, printing_fac
 
     # 2. Act
     new_card_payload = {
-        "card": {"name": "Brainstorm"},
+        "card_name": "Brainstorm",
         "amount": 3,
         "specifications": [
             {"set_code": {"code": "ICE"}, "finish": {"name": "non-foil"}}
@@ -132,8 +132,8 @@ def test_add_new_card_to_user_integration(db_session, user_factory, printing_fac
     # (We can use the repo function itself to verify)
     cards = get_users_cards("testuser")
     assert len(cards) == 1
-    assert cards[0]["name"] == "Brainstorm"
-    assert cards[0]["specifications"][0]["set_code"] == "ICE"
+    assert cards[0].card_name == "Brainstorm"
+    assert cards[0].specifications[0].set_code == "ICE"
 
 
 def test_update_user_card_specs(db_session, user_factory, printing_factory):
@@ -158,4 +158,5 @@ def test_update_user_card_specs(db_session, user_factory, printing_factory):
 
     # 3. Assert
     cards = get_users_cards("updater")
-    assert cards[0]["specifications"][0]["finish"] == "etched"
+    assert len(cards) == 1
+    assert cards[0].specifications[0].finish.name == "etched"

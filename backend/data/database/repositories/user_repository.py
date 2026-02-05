@@ -28,7 +28,7 @@ from utility import logger
 def get_user_by_username(
     username: str,
     session: Session
-) -> User:
+) -> Optional[User]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """

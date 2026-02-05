@@ -29,7 +29,7 @@ def test_get_user_by_username(user_factory, username, should_find_user):
     user = data.get_user_by_username(username)
     if should_find_user:
         assert user is not None
-        assert user["username"] == username
+        assert user.username == username
     else:
         assert user is None
 
@@ -78,7 +78,7 @@ def test_update_username(user_factory):
     # Assert
     user = data.get_user_by_username("updateduser")
     assert user is not None
-    assert user["username"] == "updateduser"
+    assert user.username == "updateduser"
     assert data.get_user_by_username("testuser") is None
 
 

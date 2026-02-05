@@ -19,9 +19,7 @@ from utility import logger
 # --- Internal Helpers ---
 @db_query
 def _get_tracked_card_instance(
-    username: str,
-    card_name: str,
-    session: Session
+    username: str, card_name: str, session: Session
 ) -> Optional[UserTrackedCards]:
     """
     Internal helper to fetch a UserTrackedCards ORM object efficiently.
@@ -70,25 +68,19 @@ def add_tracked_card_to_user(
 
 
 @db_query
-def update_card_amount(tracked_card_id: int,
-                       amount: Optional[int],
-                       *,
-                       session: Session
-                       ) -> None:
+def update_card_amount(
+    tracked_card_id: int, amount: Optional[int], *, session: Session
+) -> None:
     assert session is not None, "Session is injected by @db_query decorator"
     if amount is not None:
         session.query(UserTrackedCards).filter(
             UserTrackedCards.id == tracked_card_id
         ).update({"amount": amount})
-        logger.debug(
-            f"Updated amount to {amount} for '{tracked_card_id}'."
-        )
+        logger.debug(f"Updated amount to {amount} for '{tracked_card_id}'.")
 
 
 def modify_user_tracked_card(
-    command: str,
-    username: str,
-    card_data: Dict[str, Any]
+    command: str, username: str, card_data: Dict[str, Any]
 ) -> None:
     """
     Adds or updates a tracked card for a user, including its specifications.
@@ -102,31 +94,18 @@ def modify_user_tracked_card(
     amount = valid_card_data.amount
     card_specs = valid_card_data.specifications
     if not card_name:
-        logger.warning(
-            "🚨 Attempted to add a card with no name. Operation aborted."
-        )
+        logger.warning("🚨 Attempted to add a card with no name. Operation aborted.")
         return
-
-    logger.info(
-        f"➕ Adding/updating tracked card '{card_name}' "
-        f"for user '{username}'."
-    )
 
     if command == "add":
         add_tracked_card_to_user(username, card_name, amount)
-        update_user_tracked_card_preferences(
-            username, card_name, card_data
-        )
+        update_user_tracked_card_preferences(username, card_name, card_data)
     elif command == "update":
-        update_user_tracked_card_preferences(
-            username, card_name, card_specs
-        )
+        update_user_tracked_card_preferences(username, card_name, card_specs)
     elif command == "delete":
         delete_user_card(username, card_name)
     else:
-        logger.error(
-            f"🚨 Unknown command '{command}' for modifying tracked card."
-        )
+        logger.error(f"🚨 Unknown command '{command}' for modifying tracked card.")
         return
 
 
@@ -143,8 +122,7 @@ def update_user_tracked_card_preferences(
     Updates specific preferences (e.g., amount) for a single tracked card.
     """
     logger.info(
-        f"✏️ Updating preferences for card '{card_name}' "
-        f"for user '{username}'."
+        f"✏️ Updating preferences for card '{card_name}' " f"for user '{username}'."
     )
 
     # Find the specific card tracked by the user in a single query
@@ -158,8 +136,7 @@ def update_user_tracked_card_preferences(
         return
 
     # Update preferences based on the provided dictionary
-    valid_updates = (orm.UserTrackedCardUpdateSchema
-                     .model_validate(preference_updates))
+    valid_updates = orm.UserTrackedCardUpdateSchema.model_validate(preference_updates)
 
     update_card_amount(tracked_card.id, valid_updates.amount)
 
@@ -170,36 +147,31 @@ def update_user_tracked_card_preferences(
 
         # Add new specifications
         for new_spec in valid_updates.specifications:
-            finish_obj = get_finish(finish_name=new_spec.finish.name
-                                    if new_spec.finish else None)
-            set_obj = get_set(set_code=new_spec.set_code.code
-                              if new_spec.set_code else None)
+            finish_obj = get_finish(
+                finish_name=new_spec.finish.name if new_spec.finish else None
+            )
+            set_obj = get_set(
+                set_code=new_spec.set_code.code if new_spec.set_code else None
+            )
             card_spec = CardSpecification(
                 user_card_id=tracked_card.id,
                 set_code=set_obj.code if set_obj else None,
                 collector_number=new_spec.collector_number,
                 finish_id=finish_obj.id if finish_obj else None,
             )
-            logger.debug(
-                f"Added new specification for '{card_name}'.")
+            logger.debug(f"Added new specification for '{card_name}'.")
             session.add(card_spec)
 
-    logger.info(
-        f"✅ Preferences updated for card '{card_name}' for user '{username}'."
-    )
+    logger.info(f"✅ Preferences updated for card '{card_name}' for user '{username}'.")
 
 
 # --- QUERIES ---
 
 
 @db_query
-def get_all_tracked_cards(
-    *,
-    session: Session
-) -> List[Dict[str, Any]]:
+def get_all_tracked_cards(*, session: Session) -> List[Dict[str, Any]]:
     assert session is not None, "Session is injected by @db_query decorator"
-    logger.debug("📖 Querying for all tracked cards."
-                 )
+    logger.debug("📖 Querying for all tracked cards.")
     tracked_cards = session.query(UserTrackedCards).all()
     if not tracked_cards:
         logger.warning("No tracked cards found.")
@@ -208,9 +180,7 @@ def get_all_tracked_cards(
         return [card.to_dict() for card in tracked_cards]
 
 
-def get_users_cards(
-    username: str
-) -> Optional[UserTrackedCards]:
+def get_users_cards(username: str) -> Optional[UserTrackedCards]:
     """
     Retrieves all tracked cards for a given user using an
     efficient single query.
@@ -229,15 +199,12 @@ def get_users_cards(
 
 
 @db_query
-def get_card(card_name: str,
-             *,
-             session: Session
-             ) -> Optional[Card]:
+def get_card(card_name: str, *, session: Session) -> Optional[Card]:
     assert session is not None, "Session is injected by @db_query decorator"
     if not card_name:
         logger.error("No card name was passed in")
         return None
-    card = (session.query(Card).filter(Card.name == card_name).first())
+    card = session.query(Card).filter(Card.name == card_name).first()
     if not card:
         logger.error("Card not found in catalogue")
         return None
@@ -258,18 +225,12 @@ def get_tracked_card_orm(
     tracked_card = get_users_cards(username)
     if not tracked_card:
         return None
-    tracked_card = next(
-        (c for c in tracked_card if c["name"] == card_name), None
-    )
+    tracked_card = next((c for c in tracked_card if c.card_name == card_name), None)
     return tracked_card
 
 
 @db_query
-def search_card_names(query: str,
-                      *,
-                      session: Session,
-                      limit: int = 10
-                      ) -> List[str]:
+def search_card_names(query: str, *, session: Session, limit: int = 10) -> List[str]:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Searches for card names in the global 'cards' table that match
@@ -293,27 +254,20 @@ def search_card_names(query: str,
 
 
 @db_query
-def delete_user_card(username: str,
-                     card_name: str,
-                     *,
-                     session: Session
-                     ) -> None:
+def delete_user_card(username: str, card_name: str, *, session: Session) -> None:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Deletes a tracked card for a user, ensuring related specifications are
       also deleted via ORM cascades.
     """
     logger.info(
-        f"🗑️ Attempting to delete tracked card '{card_name}' "
-        f"for user '{username}'."
+        f"🗑️ Attempting to delete tracked card '{card_name}' " f"for user '{username}'."
     )
     user = get_user_by_username(username)
     tracked_card = get_tracked_card_orm(username, card_name)
 
     if not user:
-        logger.warning(
-            f"🚨 User '{username}' not found. Cannot delete card."
-        )
+        logger.warning(f"🚨 User '{username}' not found. Cannot delete card.")
     elif not tracked_card:
         logger.warning(
             f"⚠️ No tracked card named '{card_name}' found "
@@ -328,10 +282,7 @@ def delete_user_card(username: str,
 
 
 @db_query
-def filter_existing_card_names(card_names: List[str],
-                               *,
-                               session: Session
-                               ) -> set:
+def filter_existing_card_names(card_names: List[str], *, session: Session) -> set:
     assert session is not None, "Session is injected by @db_query decorator"
     """
     Given a list of card names, returns a set of the names that exist in the
@@ -341,9 +292,7 @@ def filter_existing_card_names(card_names: List[str],
         return set()
 
     # Query the Card table for names that are in the provided list
-    existing_names_query = session.query(Card.name).filter(
-        Card.name.in_(card_names)
-    )
+    existing_names_query = session.query(Card.name).filter(Card.name.in_(card_names))
 
     # Return the results as a set for efficient `in` checks.
     return {name for name, in existing_names_query}

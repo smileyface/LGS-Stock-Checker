@@ -1,17 +1,14 @@
 import pytest
 
-from data.database.models.orm_models import (
-    CardSpecification,
-    UserTrackedCards
-)
+from data.database.models.orm_models import CardSpecification, UserTrackedCards
 from data.database.repositories.card_repository import (
     get_users_cards,
     modify_user_tracked_card,
-    update_user_tracked_card_preferences
+    update_user_tracked_card_preferences,
 )
 from data.database.repositories.catalogue_repository import (
     get_printings_for_card,
-    is_valid_printing_specification
+    is_valid_printing_specification,
 )
 
 
@@ -21,41 +18,37 @@ def test_add_and_get_user_card(user_factory, printing_factory):
     printing_factory(card_name="Sol Ring", set_code="ONE", finishes=["foil"])
 
     # Initially, no cards
-    assert get_users_cards("testuser") == []
+    assert get_users_cards("testuser") is None
 
     # Add a card with specifications
-    modify_user_tracked_card("add", "testuser", {
-        "card":
+    modify_user_tracked_card(
+        "add",
+        "testuser",
         {
-            "name": "Sol Ring"
+            "card_name": "Sol Ring",
+            "amount": 4,
+            "specifications": [
+                {"set_code": {"code": "ONE"}, "finish": {"name": "foil"}}
+            ],
         },
-        "amount": 4,
-        "specifications": [
-            {
-                "set_code": {"code": "ONE"},
-                "finish": {"name": "foil"}
-            }
-        ]
-    })
+    )
 
     cards = get_users_cards("testuser")
+    assert cards is not None
     assert len(cards) == 1
-    assert cards[0]["name"] == "Sol Ring"
-    assert cards[0]["amount"] == 4
-    assert len(cards[0]["specifications"]) == 1
-    assert cards[0]["specifications"][0]["set_code"] == "ONE"
-    assert cards[0]["specifications"][0]["finish"] == "foil"  # type: ignore
+    assert cards[0].card_name == "Sol Ring"
+    assert cards[0].amount == 4
+    assert len(cards[0].specifications) == 1
+    assert cards[0].specifications[0].set.code == "ONE"
+    assert cards[0].specifications[0].finish.name == "foil"  # type: ignore
 
 
 def test_add_user_card_user_not_found(db_session):
     """Test that adding a card for a non-existent user does nothing."""
-    modify_user_tracked_card("add", "nonexistent_user", {
-        "card": {
-            "name": "Some Card"
-            },
-        "amount": 1,
-        "specifications": []
-        }
+    modify_user_tracked_card(
+        "add",
+        "nonexistent_user",
+        {"card_name": "Some Card", "amount": 1, "specifications": []},
     )
     # Verify no UserTrackedCards were created
     assert db_session.query(UserTrackedCards).count() == 0
@@ -76,43 +69,35 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     printing_factory(card_name="Thoughtseize", set_code="2XM", finishes=["non-foil"])
 
     # Arrange: Add the card initially with one spec and an amount of 1
-    initial_specs = {"set_code": {"code": "MH2"},
-                     "finish": {"name": "etched"}}
-    modify_user_tracked_card("add", "testuser", {
-        "card": {
-            "name": "Thoughtseize"
-            },
-        "amount": 1,
-        "specifications": [initial_specs]
-        }
+    initial_specs = {"set_code": {"code": "MH2"}, "finish": {"name": "etched"}}
+    modify_user_tracked_card(
+        "add",
+        "testuser",
+        {"card_name": "Thoughtseize", "amount": 1, "specifications": [initial_specs]},
     )
 
     # Act: Call add_user_card again with a new spec and a DIFFERENT amount
     new_specs = {"set_code": {"code": "2XM"}, "finish": {"name": "non-foil"}}
-    modify_user_tracked_card("add", "testuser", {
-        "card": {
-            "name": "Thoughtseize"
-            },
-        "amount": 10,
-        "specifications": [new_specs]
-        })
+    modify_user_tracked_card(
+        "add",
+        "testuser",
+        {"card_name": "Thoughtseize", "amount": 10, "specifications": [new_specs]},
+    )
 
     # Assert
     cards = get_users_cards("testuser")
-    assert (
-        len(cards) == 1
-    ), "Should not create a duplicate UserTrackedCards entry"
-
+    assert len(cards) == 1, "Should not create a duplicate UserTrackedCards entry"
+    assert cards is not None
     tracked_card = cards[0]
-    assert tracked_card["name"] == "Thoughtseize"
+    assert tracked_card.card_name == "Thoughtseize"
     assert (
-        tracked_card["amount"] == 10
+        tracked_card.amount == 10
     ), "Amount should be updated by modify_user_tracked_card"
 
     # Verify both old and new specifications are present
-    specs = tracked_card["specifications"]
+    specs = tracked_card.specifications
     assert len(specs) == 2, "Should have added the new specification"
-    spec_tuples = {(s["set_code"], s["finish"]) for s in specs}  # type: ignore
+    spec_tuples = {(s.set_code, s.finish.name) for s in specs}  # type: ignore
     assert ("MH2", "etched") in spec_tuples
     assert ("2XM", "non-foil") in spec_tuples
 
@@ -124,17 +109,16 @@ def test_delete_user_card(user_factory, printing_factory):
     user_factory(username=username)
     printing_factory(card_name=card_name)
 
-    modify_user_tracked_card("add", username, {
-        "card": {"name": card_name}, "amount": 1, "specifications": []
-    })
+    modify_user_tracked_card(
+        "add",
+        username,
+        {"card_name": card_name, "amount": 1, "specifications": []},
+    )
 
-    modify_user_tracked_card("delete", username, {
-        "card": {
-            "name": card_name
-            }})
+    modify_user_tracked_card("delete", username, {"card_name": card_name})
 
     # Assert: The user should have no cards left.
-    assert 'name: ' + card_name not in str(get_users_cards(username))
+    assert "name: " + card_name not in str(get_users_cards(username))
 
 
 def test_delete_user_card_cascades_specifications(
@@ -150,19 +134,22 @@ def test_delete_user_card_cascades_specifications(
     printing_factory(card_name=card_name, set_code="TST", finishes=["foil"])
 
     # Add card with spec
-    modify_user_tracked_card("add", username, {
-        "card": {"name": card_name},
-        "amount": 1,
-        "specifications": [{"set_code": {"code": "TST"}, "finish": {"name": "foil"}}]
-    })
+    modify_user_tracked_card(
+        "add",
+        username,
+        {
+            "card_name": card_name,
+            "amount": 1,
+            "specifications": [
+                {"set_code": {"code": "TST"}, "finish": {"name": "foil"}}
+            ],
+        },
+    )
 
     initial_count = db_session.query(CardSpecification).count()
 
     # Act: Delete the card
-    modify_user_tracked_card("delete", username, {
-        "card": {
-            "name": card_name
-            }})
+    modify_user_tracked_card("delete", username, {"card_name": card_name})
 
     # Assert: Verify both the card and its specifications are gone
     assert db_session.query(CardSpecification).count() < initial_count
@@ -173,10 +160,9 @@ def test_delete_user_card_for_nonexistent_user(db_session):
     Test that attempting to delete a card for a non-existent user does nothing.
     """
     # This should run without error
-    modify_user_tracked_card("delete", "nonexistent_user", {
-        "card": {
-            "name": "any_card"
-            }})
+    modify_user_tracked_card(
+        "delete", "nonexistent_user", {"card_name": "any_card"}
+    )
     # And no cards should be in the DB
     assert db_session.query(UserTrackedCards).count() == 0
 
@@ -189,14 +175,13 @@ def test_delete_user_card_not_found(user_factory):
     user_factory(username=username)
     card_name = "Nonexistent Card"
 
-    initial_card_count = len(get_users_cards(username))
+    initial_card_count = (len(get_users_cards(username)) if get_users_cards(username)
+                          else 0)
 
     # Act: Delete the card
-    modify_user_tracked_card("delete", username, {
-        "card": {
-            "name": card_name
-            }})
-    assert len(get_users_cards(username)) == initial_card_count
+    modify_user_tracked_card("delete", username, {"card_name": card_name})
+    assert (len(get_users_cards(username)) if get_users_cards(username)
+            else 0 == initial_card_count)
 
 
 def test_update_user_tracked_card_preferences(user_factory, printing_factory):
@@ -204,49 +189,72 @@ def test_update_user_tracked_card_preferences(user_factory, printing_factory):
     user_factory(username=username)
     printing_factory(card_name="Lightning Bolt")
 
-    modify_user_tracked_card("add", username, {
-        "card": {"name": "Lightning Bolt"}, "amount": 4, "specifications": []
-    })
+    modify_user_tracked_card(
+        "add",
+        username,
+        {"card_name": "Lightning Bolt", "amount": 4, "specifications": []},
+    )
 
-    card = get_users_cards(username)[0]
-    assert card["amount"] == 4
+    cards = get_users_cards(username)
+    assert cards
+    assert len(cards) == 1
+    card = cards[0]
+    assert card.amount == 4
 
 
 def test_update_user_tracked_card_preferences_user_not_found(db_session):
     """Test updating preferences for a card when the user does not exist."""
     # This should run without error
-    update_user_tracked_card_preferences(
-        "nonexistent_user", "any_card", {"amount": 10}
-    )
+    update_user_tracked_card_preferences("nonexistent_user", "any_card", {"amount": 10})
     # And no cards should be in the DB
     assert db_session.query(UserTrackedCards).count() == 0
 
 
 def test_update_user_tracked_card_preferences_card_not_found(
-        user_factory, printing_factory):
+    user_factory, printing_factory
+):
     """Test updating preferences for a card the user is not tracking."""
     username = "testuser"
     user_factory(username=username)
     printing_factory(card_name="Lightning Bolt")
 
-    modify_user_tracked_card("add", username, {
-        "card": {"name": "Lightning Bolt"}, "amount": 4, "specifications": []
-    })
-
-    update_user_tracked_card_preferences(
-        username, "Fireball", {"amount": 10}
+    modify_user_tracked_card(
+        "add",
+        username,
+        {"card_name": "Lightning Bolt", "amount": 4, "specifications": []},
     )
-    card = get_users_cards(username)[0]
-    assert card["name"] == "Lightning Bolt"
-    assert card["amount"] == 4
+
+    update_user_tracked_card_preferences(username, "Fireball", {"amount": 10})
+    cards = get_users_cards(username)
+    assert cards
+    assert len(cards) == 1
+    card = cards[0]
+    assert card.card_name == "Lightning Bolt"
+    assert card.amount == 4
 
 
 @pytest.fixture
 def sol_ring_printings(printing_factory):
     """Sets up Sol Ring printings for validation tests."""
-    printing_factory(card_name="Sol Ring", set_code="C21", collector_number="125", finishes=["foil", "non-foil"])
-    printing_factory(card_name="Sol Ring", set_code="LTC", collector_number="3", finishes=["etched", "non-foil"])
-    printing_factory(card_name="Sol Ring", set_code="ONE", collector_number="254", finishes=["foil", "non-foil"])
+    printing_factory(
+        card_name="Sol Ring",
+        set_code="C21",
+        collector_number="125",
+        finishes=["foil", "non-foil"],
+    )
+    printing_factory(
+        card_name="Sol Ring",
+        set_code="LTC",
+        collector_number="3",
+        finishes=["etched", "non-foil"],
+    )
+    printing_factory(
+        card_name="Sol Ring",
+        set_code="ONE",
+        collector_number="254",
+        finishes=["foil", "non-foil"],
+    )
+
 
 @pytest.mark.parametrize(
     "card_name, spec, expected",
@@ -320,9 +328,7 @@ def sol_ring_printings(printing_factory):
         "empty_spec_nonexistent_card",
     ],
 )
-def test_is_valid_printing_specification(
-    sol_ring_printings, card_name, spec, expected
-):
+def test_is_valid_printing_specification(sol_ring_printings, card_name, spec, expected):
     """
     Tests the is_valid_printing_specification function with various valid and
     invalid inputs.

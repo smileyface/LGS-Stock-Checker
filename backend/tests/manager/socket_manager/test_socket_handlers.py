@@ -74,7 +74,7 @@ def test_on_add_card_triggers_availability_check(
 
     # Find the 'cards_data' emission
     emit_calls = [
-        c for c in mock_sh_emit.call_args_list 
+        c for c in mock_sh_emit.call_args_list
         if c.args[0] == "cards_data"
     ]
     assert len(emit_calls) > 0

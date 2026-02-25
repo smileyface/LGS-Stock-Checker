@@ -23,7 +23,7 @@ def pack_specifications(specification: CardSpecification) -> dict:
     if specification.set_code is not None:
         spec["set_code"] = specification.set_code
     if specification.finish is not None:
-        spec["finish"] = specification.finish.name
+        spec["finish"] = specification.finish.to_dict()
     if specification.collector_number is not None:
         spec["collector_number"] = specification.collector_number
     return spec

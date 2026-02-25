@@ -2,7 +2,7 @@
   // --- General Python Settings ---
   // Point VS Code directly to the Python interpreter inside your virtual environment.
   // This is the most important setting for Pylance to find your installed packages.
-  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
 
   // Tell Pylance to add the 'backend' directory to its search path.
   // This resolves import errors for your own modules (e.g., 'from managers import ...').

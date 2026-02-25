@@ -104,9 +104,9 @@ class CrystalCommerceStore(Store):
             listings.
 
         Returns:
-            List[CardListingSchema]: A list of validated Pydantic models containing details of
-                                     available products, including their URLs,
-                                     names, and other relevant attributes. If no
+            List[CardListingSchema]: A list of validated Pydantic models containing
+                                     details of available products, including their
+                                     URLs, names, and other relevant attributes. If no
                                      listings are found or if the response is
                                      empty, an empty list is returned.
         """
@@ -177,7 +177,8 @@ class CrystalCommerceStore(Store):
                             available_products.append(listing)
                             seen_listings.add(listing_key)
                     except ValidationError as e:
-                        logger.debug(f"Skipping invalid variant for {scraped_card_name}: {e}")
+                        logger.debug("Skipping invalid variant for "
+                                     f"{scraped_card_name}: {e}")
         return available_products
 
     def _get_product_listings(self, soup: BeautifulSoup) -> List[Any]:

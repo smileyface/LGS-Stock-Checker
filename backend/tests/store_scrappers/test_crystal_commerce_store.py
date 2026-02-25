@@ -242,7 +242,8 @@ class TestCrystalCommerceStore(
             "Magic The Gathering: Test Set"
         )
 
-    @patch("managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries")
+    @patch("managers.store_manager.stores.storefronts.crystal_commerce_store."
+           "_make_request_with_retries")
     def test_scrape_listings_deduplicates_results(self, mock_make_request):
         """
         Test that the scraper correctly deduplicates listings when the
@@ -280,7 +281,8 @@ class TestCrystalCommerceStore(
 
         # --- Assert ---
         # Use standard Pytest asserts
-        assert len(listings) == 2, "Should find exactly 2 unique listings after deduplication"
+        assert len(listings) == 2, "Should find exactly 2 unique listings"
+        " after deduplication"
 
         # Verify the output is actually the new Pydantic model
         assert isinstance(listings[0], CardListingSchema)

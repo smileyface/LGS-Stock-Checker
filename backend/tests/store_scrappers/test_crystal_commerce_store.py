@@ -3,7 +3,8 @@ Unit tests for the CrystalCommerceStore base scraper.
 """
 
 import unittest
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
+from schema.blocks import CardListingSchema
 from bs4 import BeautifulSoup
 
 from managers.store_manager.stores.storefronts.crystal_commerce_store import (
@@ -241,48 +242,49 @@ class TestCrystalCommerceStore(
             "Magic The Gathering: Test Set"
         )
 
-    @patch(
-        "managers.store_manager.stores.storefronts."
-        "crystal_commerce_store._make_request_with_retries"
-    )
-    def test_scrape_listings_deduplicates_results(
-        self, mock_make_request
-    ):
+    @patch("managers.store_manager.stores.storefronts.crystal_commerce_store._make_request_with_retries")
+    def test_scrape_listings_deduplicates_results(self, mock_make_request):
         """
         Test that the scraper correctly deduplicates listings when the
         source HTML contains identical variants.
         """
         # --- Arrange ---
-        # Mock the response for the search page to return the HTML
-        # with duplicates.
-        mock_search_response = MagicMock()
-        mock_search_response.raise_for_status.return_value = None
-        mock_search_response.text = SEARCH_RESULTS_HTML_WITH_DUPLICATES
+        # 1. Create a helper function to route the mocked requests intelligently
+        # instead of relying on a strict sequential list.
+        def mock_request_router(url, *args, **kwargs):
+            mock_resp = MagicMock()
+            mock_resp.raise_for_status.return_value = None
 
-        # Mock the response for the product detail page.
-        mock_product_response = MagicMock()
-        mock_product_response.raise_for_status.return_value = None
-        mock_product_response.text = PRODUCT_PAGE_HTML
+            if "search" in url:
+                mock_resp.text = SEARCH_RESULTS_HTML_WITH_DUPLICATES
+            else:
+                # WARNING: Ensure this HTML has price > 0 and stock > 0,
+                # or the new Pydantic schema will filter them out!
+                mock_resp.text = PRODUCT_PAGE_HTML
 
-        # Set the side_effect to return the correct mock response based
-        # on the URL.
-        mock_make_request.side_effect = [
-            mock_search_response,
-            mock_product_response,
-        ]
+            return mock_resp
+
+        # Initialize it directly instead of using a fixture
+        scraper = CrystalCommerceStore(
+            name="Test Store",
+            slug="test_store",
+            homepage="https://test.com",
+            search_url="https://test.com/search"
+        )
+
+        mock_make_request.side_effect = mock_request_router
 
         # --- Execute ---
         card_name = "Test Card"
-        listings = self.scraper._scrape_listings(card_name)
+        listings = scraper._scrape_listings(card_name)
 
         # --- Assert ---
-        # The source HTML has 3 variants, but 2 are identical.
-        # The scraper should return only 2 unique listings.
-        self.assertEqual(
-            len(listings),
-            2,
-            "Should find 2 unique listings after deduplication",
-        )
+        # Use standard Pytest asserts
+        assert len(listings) == 2, "Should find exactly 2 unique listings after deduplication"
+
+        # Verify the output is actually the new Pydantic model
+        assert isinstance(listings[0], CardListingSchema)
+        assert listings[0].price > 0
 
     @patch(
         "managers.store_manager.stores.storefronts."

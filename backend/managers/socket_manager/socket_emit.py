@@ -37,10 +37,12 @@ def emit_from_worker(event: str, data: dict, room: str = ""):
         external_socketio.emit(event, data, to=room)
         logger.info(f"📢 Worker dispatched event '{event}' {target} via Redis.")
     except Exception as e:
-        logger.error(f"❌ Worker failed to dispatch event '{event}' {target}: {e}")
+        logger.error(
+            f"❌ Worker failed to dispatch event '{event}' {target}: {e}")
 
 
-def emit_message(message: messages.APIMessageResponses, room: str = "") -> None:
+def emit_message(message: messages.APIMessageResponses,
+                 room: str = "") -> None:
     target = f"to room '{room}'" if room else "as a broadcast"
     logger.info(f"📢 Server emitting message '{message.name}' {target}.")
     socketio.emit(message.name, message.model_dump(), to=room)
@@ -67,4 +69,5 @@ def send_user_cards(username: str):
     message = messages.CardsDataMessage(payload=payload)
     emit_message(message, room=username)
 
-    logger.info(f"📡 Sent card list to room '{username}' with {len(cards)} items.")
+    logger.info(
+        f"📡 Sent card list to room '{username}' with {len(cards)} items.")

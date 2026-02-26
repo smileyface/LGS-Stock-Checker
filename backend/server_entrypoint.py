@@ -9,11 +9,11 @@ import eventlet
 eventlet.monkey_patch()
 
 # These imports must come AFTER monkey_patching
-from app_factory import (create_base_app,
+from app_factory import (create_base_app,  # noqa: E402
                          configure_web_app,
                          configure_database)
-from managers import messaging_manager
-from utility import logger
+from managers import messaging_manager  # noqa: E402
+from utility import logger  # noqa: E402
 
 
 # When Gunicorn starts, it will load this file and look for an 'app' variable.
@@ -30,7 +30,8 @@ app = configure_web_app(app)
 # 3. Start the background listener for results from RQ workers
 messaging_manager.start_server_listener(app)
 
-app = configure_database(app, create_tables=True)  # Configure the database connection
+
+app = configure_database(app, create_tables=True)
 
 logger.info("✅ App context for server is ready.")
 logger.info("✅ App context for server is ready.")

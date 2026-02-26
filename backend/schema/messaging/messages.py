@@ -66,7 +66,8 @@ class AvailabilityResultMessage(PubSubMessage[AvailabilityResultPayload]):
     payload: AvailabilityResultPayload
 
 
-class CatalogCardNamesResultMessage(PubSubMessage[CatalogCardNamesResultPayload]):
+class CatalogCardNamesResultMessage(
+        PubSubMessage[CatalogCardNamesResultPayload]):
     """
     Defines the structure for a message published by a worker to the
     'worker-results' Redis channel after completing a catalog card names task.

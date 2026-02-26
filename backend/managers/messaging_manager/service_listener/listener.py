@@ -29,7 +29,8 @@ class Listener:
     def start(self):
         """Starts the listener thread if it's not already running."""
         if self.thread and self.thread.is_alive():
-            logger.warning(f"{self.service_name} listener thread is already running.")
+            logger.warning(
+                f"{self.service_name} listener thread is already running.")
             return
 
         self.thread = threading.Thread(target=self._listen, daemon=True)
@@ -52,7 +53,8 @@ class Listener:
         """The actual listener function that runs in the background thread."""
         self.pubsub = redis_manager.pubsub(ignore_subscribe_messages=True)
         if self.pubsub is None:
-            logger.critical(f"{self.service_name} cannot talk on pubsub. Exiting")
+            logger.critical(
+                f"{self.service_name} cannot talk on pubsub. Exiting")
             return
         self.pubsub.subscribe(self.channel)
         logger.info(

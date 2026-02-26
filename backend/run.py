@@ -7,7 +7,9 @@ if __name__ == "__main__":
 
     eventlet.monkey_patch()
 
-    from app_factory import create_base_app, configure_web_app, configure_database
+    from app_factory import (create_base_app,
+                             configure_web_app,
+                             configure_database)
     from managers import socket_manager
 
     # Create and configure the app for development

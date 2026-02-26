@@ -250,8 +250,9 @@ class TestCrystalCommerceStore(
         source HTML contains identical variants.
         """
         # --- Arrange ---
-        # 1. Create a helper function to route the mocked requests intelligently
-        # instead of relying on a strict sequential list.
+        # 1. Create a helper function to route the mocked
+        # requests intelligently instead of relying on a
+        # strict sequential list.
         def mock_request_router(url, *args, **kwargs):
             mock_resp = MagicMock()
             mock_resp.raise_for_status.return_value = None

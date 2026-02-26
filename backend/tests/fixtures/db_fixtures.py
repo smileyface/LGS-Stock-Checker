@@ -134,14 +134,17 @@ def finish_factory(db_session):
 @pytest.fixture
 def printing_factory(db_session, card_factory, set_factory, finish_factory):
     """
-    Creates a fully linked CardPrinting. This is the 'Master Factory' for catalog data.
+    Creates a fully linked CardPrinting.
+    This is the 'Master Factory' for catalog data.
 
     Usage:
         # Simplest:
         p = printing_factory()
 
         # Custom:
-        p = printing_factory(card_name="Sol Ring", set_code="C21", finishes=["foil"])
+        p = printing_factory(card_name="Sol Ring",
+        set_code="C21",
+        finishes=["foil"])
     """
     def _create_printing(card_name="Test Card",
                          set_code="TST",
@@ -194,7 +197,8 @@ def seeded_stores(store_factory):
 def seeded_user_with_stores(db_session, seeded_user, seeded_stores):
     """Provides a user who has selected the standard stores."""
     # Re-query to ensure attached to current session
-    user = db_session.query(User).filter_by(username=seeded_user.username).one()
+    user = db_session.query(User).filter_by(
+        username=seeded_user.username).one()
     user.selected_stores.extend(seeded_stores)
     db_session.commit()
     return user
@@ -261,11 +265,13 @@ def seeded_printings(db_session, seeded_catalog):
 @pytest.fixture
 def seeded_user_with_cards(db_session, seeded_user, seeded_printings):
     """
-    Example of how to manually add complex tracked cards using the data we just seeded.
+    Example of how to manually add complex tracked cards
+     using the data we just seeded.
     """
     # NOTE: We can't easily factory-ize UserTrackedCards because it has complex
     # relationships that depend on specific DB IDs. It's usually easier to do
-    # this manually in tests or keep this specific fixture for the "standard" scenario.
+    # this manually in tests or keep this
+    # specific fixture for the "standard" scenario.
 
     # ... (Keep existing implementation for seeded_user_with_cards
     # or refactor similarly)
@@ -279,7 +285,8 @@ def seeded_user_with_cards(db_session, seeded_user, seeded_printings):
     bolt = UserTrackedCards(card_name="Lightning Bolt", amount=4)
     bolt.specifications.append(CardSpecification(set_code="C21",
                                                  collector_number="125",
-                                                 finish_id=finishes["non-foil"]))
+                                                 finish_id=finishes["non-foil"]
+                                                 ))
     bolt.specifications.append(CardSpecification(set_code="LTC",
                                                  collector_number="3",
                                                  finish_id=finishes["foil"]))

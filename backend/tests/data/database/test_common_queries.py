@@ -20,9 +20,15 @@ def test_get_users_cards(db_session, user_factory, printing_factory):
     """
     # 1. Arrange: Create the Catalog Data (The "Global" state)
     # We need specific finishes and sets to exist for our specifications
-    printing_factory(card_name="Lightning Bolt", set_code="2ED", finishes=["non-foil"])
-    printing_factory(card_name="Lightning Bolt", set_code="3ED", finishes=["non-foil"])
-    printing_factory(card_name="Counterspell", set_code="CMR", finishes=["etched"])
+    printing_factory(card_name="Lightning Bolt",
+                     set_code="2ED",
+                     finishes=["non-foil"])
+    printing_factory(card_name="Lightning Bolt",
+                     set_code="3ED",
+                     finishes=["non-foil"])
+    printing_factory(card_name="Counterspell",
+                     set_code="CMR",
+                     finishes=["etched"])
     printing_factory(card_name="Sol Ring")  # Generic
 
     # 2. Arrange: Create the User
@@ -30,7 +36,8 @@ def test_get_users_cards(db_session, user_factory, printing_factory):
 
     # 3. Arrange: Give the User some tracked cards
     # Helper to get IDs quickly
-    get_finish_id = lambda name: db_session.query(Finish).filter_by(name=name).one().id
+    def get_finish_id(name): return db_session.query(Finish)\
+        .filter_by(name=name).one().id
 
     # Card 1: Lightning Bolt (4 copies, 2 specific versions)
     bolt = UserTrackedCards(card_name="Lightning Bolt", amount=4)
@@ -108,12 +115,15 @@ def test_get_users_tracking_card(db_session, user_factory, card_factory):
     assert get_users_tracking_card("Black Lotus") == []
 
 
-def test_add_new_card_to_user_integration(db_session, user_factory, printing_factory):
+def test_add_new_card_to_user_integration(db_session,
+                                          user_factory,
+                                          printing_factory):
     """
     Tests the repository function for adding a new card.
     """
     # 1. Arrange: Setup catalog for the card we want to add
-    printing_factory(card_name="Brainstorm", set_code="ICE", finishes=["non-foil"])
+    printing_factory(card_name="Brainstorm",
+                     set_code="ICE", finishes=["non-foil"])
 
     user_factory(username="testuser")
 

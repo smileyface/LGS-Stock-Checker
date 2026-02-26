@@ -2,7 +2,7 @@ import pytest  # noqa
 from unittest.mock import MagicMock, patch
 from managers.availability_manager.availability_manager import (
     check_availability,
-    get_cached_availability_or_trigger_check,
+    fetch_availability,
 )
 from data.database.models.orm_models import UserTrackedCards
 from schema.messaging.messages import AvailabilityRequestCommand
@@ -36,7 +36,8 @@ def test_check_availability(mock_publish_pubsub):
 
 @patch("managers.availability_manager.availability_manager."
        "redis_manager.publish_pubsub")
-@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch("managers.availability_manager."
+       "availability_manager.availability_storage")
 def test_get_card_availability_with_cached_data(
     mock_storage,
     mock_publish_pubsub,
@@ -68,7 +69,10 @@ def test_get_card_availability_with_cached_data(
     # 2. Arrange: Mock the Cache Hit
     # -------------------------------------------------------------------------
     cached_items = [
-        {"name": "Sol Ring", "price": 5.00, "condition": "NM", "url": "http://.."}
+        {"name": "Sol Ring",
+         "price": 5.00,
+         "condition": "NM",
+         "url": "http://.."}
     ]
     # The manager calls this with (store_slug, card_name)
     mock_storage.get_cached_availability_data.return_value = cached_items
@@ -76,7 +80,7 @@ def test_get_card_availability_with_cached_data(
     # -------------------------------------------------------------------------
     # 3. Act
     # -------------------------------------------------------------------------
-    results = get_cached_availability_or_trigger_check("cached_user")
+    results = fetch_availability("cached_user")
 
     # -------------------------------------------------------------------------
     # 4. Assert
@@ -92,7 +96,8 @@ def test_get_card_availability_with_cached_data(
 
 @patch("managers.availability_manager.availability_manager."
        "redis_manager.publish_pubsub")
-@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch("managers.availability_manager.availability_manager."
+       "availability_storage")
 def test_get_card_availability_with_no_cached_data(
     mock_storage,
     mock_publish_pubsub,
@@ -113,7 +118,8 @@ def test_get_card_availability_with_no_cached_data(
 
     # Create the Catalog Entry
     # This ensures 'Sol Ring' exists as a valid card in the system
-    printing_factory(card_name="Sol Ring", set_code="C21", finishes=["non-foil"])
+    printing_factory(card_name="Sol Ring", set_code="C21",
+                     finishes=["non-foil"])
 
     # Create the Store
     store = store_factory(name="Test Store", slug="test_store")
@@ -139,7 +145,7 @@ def test_get_card_availability_with_no_cached_data(
     # 2. Act
     # -------------------------------------------------------------------------
     # We pass the username of the user we just created in the DB
-    results = get_cached_availability_or_trigger_check("real_user")
+    results = fetch_availability("real_user")
 
     # -------------------------------------------------------------------------
     # 3. Assert
@@ -151,7 +157,8 @@ def test_get_card_availability_with_no_cached_data(
     assert mock_publish_pubsub.called
 
     # Optional: Dig deeper to ensure the payload was correct
-    # This confirms the Manager correctly read "Sol Ring" and "test_store" from the DB
+    # This confirms the Manager correctly read "Sol Ring" and "test_store"
+    #  from the DB
     args, _ = mock_publish_pubsub.call_args
     message = args[0]
     # Assuming the message payload structure:
@@ -161,7 +168,8 @@ def test_get_card_availability_with_no_cached_data(
 
 @patch("managers.availability_manager.availability_manager."
        "redis_manager.publish_pubsub")
-@patch("managers.availability_manager.availability_manager.availability_storage")
+@patch("managers.availability_manager.availability_manager."
+       "availability_storage")
 @patch("managers.availability_manager.availability_manager."
        "user_manager.get_user_stores")
 def test_get_card_availability_handles_invalid_store(
@@ -187,14 +195,16 @@ def test_get_card_availability_handles_invalid_store(
     valid_store = store_factory(name="Valid Store", slug="valid-store")
     user = user_factory(username="testuser")
 
-    # Add a tracked card so 'load_card_list' (which runs for real) finds something
+    # Add a tracked card so 'load_card_list' (which runs for real)
+    #  finds something
     user.cards.append(UserTrackedCards(card_name="Sol Ring", amount=1))
     db_session.commit()
 
     # -------------------------------------------------------------------------
     # 2. Arrange: Inject Invalid Data via Mock
     # -------------------------------------------------------------------------
-    # Since the DB won't let us save a Store with slug=None, we mock the retrieval
+    # Since the DB won't let us save a Store with slug=None,
+    #  we mock the retrieval
     # to return a list containing: [Real Store, None, Bad Mock Store]
 
     mock_bad_store = MagicMock()
@@ -210,12 +220,13 @@ def test_get_card_availability_handles_invalid_store(
     # -------------------------------------------------------------------------
     # 3. Act
     # -------------------------------------------------------------------------
-    get_cached_availability_or_trigger_check("testuser")
+    fetch_availability("testuser")
 
     # -------------------------------------------------------------------------
     # 4. Assert
     # -------------------------------------------------------------------------
-    # Verify logic: The manager should have called storage ONLY for 'valid-store'
+    # Verify logic: The manager should have called storage ONLY
+    #  for 'valid-store'
     mock_storage.get_cached_availability_data.assert_called_once_with(
         "valid-store", "Sol Ring"
     )

@@ -195,12 +195,13 @@ def update_availability_single_card(username: str,
             f"at {store_name}. Caching empty result."
         )
 
-    redis_manager.publish_pubsub(messaging.generator.GenerateAvailabilityResult(
+    redis_manager.publish_pubsub(
+        messaging.generator.GenerateAvailabilityResult(
             card={"card": {
                 "name": card_name,
                 "card_specs": card_specs or []
-                }
-                },
+            }
+            },
             store={
                 "slug": store_name},
             items=available_items
@@ -249,7 +250,8 @@ def queue_all_availability_checks():
         }
         store_name = card.store.slug
 
-        redis_manager.publish_pubsub(messaging.GenerateAvailabilityRequestCommand(
+        redis_manager.publish_pubsub(
+            messaging.GenerateAvailabilityRequestCommand(
                 username,
                 store_name,
                 card_data

@@ -104,11 +104,12 @@ class CrystalCommerceStore(Store):
             listings.
 
         Returns:
-            List[CardListingSchema]: A list of validated Pydantic models containing
-                                     details of available products, including their
-                                     URLs, names, and other relevant attributes. If no
-                                     listings are found or if the response is
-                                     empty, an empty list is returned.
+            List[CardListingSchema]: A list of validated Pydantic models
+                                     containing details of available products,
+                                     including their URLs, names, and other
+                                     relevant attributes. If no listings are
+                                     found or if the response is empty,
+                                     an empty list is returned.
         """
         search_params = {"q": card_name, "c": 1}
         response = _make_request_with_retries(
@@ -165,13 +166,15 @@ class CrystalCommerceStore(Store):
                             url=full_product_url,
                             name=scraped_card_name,
                             set_code=static_details.get("set_code") or "",
-                            collector_number=static_details.get("collector_number") or "",
+                            collector_number=static_details.get(
+                                "collector_number") or "",
                             finish=variant_details.get("finish", "non-foil"),
                             price=price,
                             condition=variant_details.get("condition") or "",
                             quantity=quantity
                         )
-                        listing_key = (listing.url, listing.condition, listing.finish)
+                        listing_key = (
+                            listing.url, listing.condition, listing.finish)
 
                         if listing_key not in seen_listings:
                             available_products.append(listing)

@@ -52,7 +52,9 @@ def auth_client(client, seeded_user):
     """
     # The password must match what the seeded_user fixture uses
     client.post(
-        "/api/login", json={"username": seeded_user.username, "password": "password"}
+        "/api/login",
+        json={"username": seeded_user.username,
+              "password": "password"}
     )
     return client
 

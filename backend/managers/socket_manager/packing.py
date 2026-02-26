@@ -1,19 +1,16 @@
-from schema.blocks import (CardSchema,
-                           CardSpecificationSchema,
-                           SetSchema,
-                           FinishSchema,
-                           )
 from data.database.models.orm_models import (UserTrackedCards,
                                              CardSpecification)
 
 
 def pack_specifications(specification: CardSpecification) -> dict:
     """
-    Packs a list of specification dictionaries into a standardized format for messaging.
+    Packs a list of specification dictionaries into a standardized
+    format for messaging.
 
     Args:
         specifications (list[dict]): A list of dictionaries, where each
-                                     dictionary represents a card specification.
+                                     dictionary represents a card
+                                     specification.
 
     Returns:
         list[dict]: A list of dictionaries, where each dictionary is a

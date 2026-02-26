@@ -158,7 +158,8 @@ class CardPrinting(Base):
             "card_name": self.card_name,
             "set_code": self.set_code,
             "collector_number": self.collector_number,
-            "available_finishes": [f.to_dict() for f in self.available_finishes]
+            "available_finishes": [f.to_dict()
+                                   for f in self.available_finishes]
         }
 
 

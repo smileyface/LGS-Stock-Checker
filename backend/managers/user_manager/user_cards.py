@@ -3,7 +3,7 @@ Manages a user's tracked card list, including adding, updating, deleting,
 and sending updates back to the client.
 """
 from typing import Optional
-from  data.database.models.orm_models import UserTrackedCards
+from data.database.models.orm_models import UserTrackedCards
 from data import database
 from managers import socket_manager
 from utility import logger

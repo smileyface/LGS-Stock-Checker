@@ -19,7 +19,8 @@ def test_update_availability_single_card_success(
     """
     GIVEN a card and store
     WHEN update_availability_single_card is called and finds available items
-    THEN it should fetch data, publish the result to Redis, and emit socket events.
+    THEN it should fetch data, publish the result to Redis,
+         and emit socket events.
     """
     # --- Arrange ---
     username = "testuser"
@@ -59,12 +60,13 @@ def test_update_availability_single_card_success(
     assert result is True
     mock_store.get_store.assert_called_once_with(store_name)
     # The task should unpack card_data to fetch by name and specs
-    mock_store_instance.fetch_card_availability.assert_called_once_with(card_name, [])
+    mock_store_instance.fetch_card_availability.assert_called_once_with(
+        card_name, [])
 
     # Verify result publishing to Redis
     mock_publish_pubsub.assert_called_once()
     published_msg = mock_publish_pubsub.call_args.args[0]
-    
+
     assert published_msg.name == "availability_result"
     assert published_msg.payload.store.slug == store_name
     assert published_msg.payload.card.card.name == card_name
@@ -93,7 +95,9 @@ def test_update_availability_single_card_success(
     mock_socket_emit_worker.assert_has_calls(expected_calls, any_order=False)
 
 
-def test_update_all_tracked_cards_availability(user_factory, db_session, mocker):
+def test_update_all_tracked_cards_availability(user_factory,
+                                               db_session,
+                                               mocker):
     """
     GIVEN users exist in the database (via factories)
     WHEN the system-wide task 'update_all_tracked_cards_availability' is called
@@ -155,7 +159,7 @@ def test_update_availability_single_card_no_items_found(
     # Verify publishing was called and check the model
     mock_publish_pubsub.assert_called_once()
     published_msg = mock_publish_pubsub.call_args.args[0]
-    
+
     assert published_msg.name == "availability_result"
     assert published_msg.payload.store.slug == store_name
     assert published_msg.payload.card.card.name == card_name

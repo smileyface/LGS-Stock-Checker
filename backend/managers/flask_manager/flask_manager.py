@@ -20,7 +20,8 @@ def initalize_flask_app(override_config=None, config_name=None):
     # Apply ProxyFix middleware to make the app aware of proxy headers.
     # This is crucial for correct URL generation and security features when
     # running behind a reverse proxy like Nginx in Docker.
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1,
+                            x_proto=1, x_host=1, x_prefix=1)
 
     # --- Configuration Loading ---
     from settings import config

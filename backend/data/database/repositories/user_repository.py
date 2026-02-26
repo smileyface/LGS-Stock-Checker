@@ -7,7 +7,7 @@ and passwords, retrieve selected stores, and manage user store preferences.
 Utilizes internal schema models and database session management patterns.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from sqlalchemy.orm import joinedload, Session
 
 # Internal package imports (relative to the data.database package)
@@ -88,7 +88,7 @@ def get_user_orm_by_username(username: str,
                     joinedload(User.cards)
                     .joinedload(UserTrackedCards.specifications)
                     .joinedload(CardSpecification.set)
-                ).filter_by(username=username).first())
+    ).filter_by(username=username).first())
     logger.debug(
         f"✅ Found user ORM object for '{username}'."
         if user_orm

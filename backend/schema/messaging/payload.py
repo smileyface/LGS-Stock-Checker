@@ -28,7 +28,8 @@ class AvailabilityRequestPayload(Payload):
         None, description="The slug of the store to check."
     )
     card_data: Optional[CardPreferenceSchema] = Field(
-        None, description="The card details, including name and specifications."
+        None,
+        description="The card details, including name and specifications."
     )
 
 
@@ -81,7 +82,8 @@ class SearchCardNamesSchema(Payload):
     """
 
     query: str = Field(
-        ..., min_length=3, description="The search term for card name autocomplete."
+        ..., min_length=3,
+        description="The search term for card name autocomplete."
     )
 
 
@@ -90,7 +92,8 @@ class CardListPayload(Payload):
     Payload for a list of cards.
     """
 
-    cards: list[CardPreferenceSchema] = Field(..., description="A list of cards.")
+    cards: list[CardPreferenceSchema] = Field(...,
+                                              description="A list of cards.")
 
 
 class CatalogFinishesChunkPayload(Payload):
@@ -155,5 +158,6 @@ class UpdateStoresPayload(Payload):
     Payload for updating a user's preferred stores.
     """
 
-    stores: list[StoreSchema] = Field(..., description="A list of store slugs.")
+    stores: list[StoreSchema] = Field(...,
+                                      description="A list of store slugs.")
     user: UserSchema = Field(..., description="The user data.")

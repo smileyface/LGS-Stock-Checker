@@ -65,15 +65,21 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     """
     # Arrange
     user_factory(username="testuser")
-    printing_factory(card_name="Thoughtseize", set_code="MH2", finishes=["etched"])
-    printing_factory(card_name="Thoughtseize", set_code="2XM", finishes=["non-foil"])
+    printing_factory(card_name="Thoughtseize",
+                     set_code="MH2",
+                     finishes=["etched"])
+    printing_factory(card_name="Thoughtseize",
+                     set_code="2XM",
+                     finishes=["non-foil"])
 
     # Arrange: Add the card initially with one spec and an amount of 1
     initial_specs = {"set_code": {"code": "MH2"}, "finish": {"name": "etched"}}
     modify_user_tracked_card(
         "add",
         "testuser",
-        {"card_name": "Thoughtseize", "amount": 1, "specifications": [initial_specs]},
+        {"card_name": "Thoughtseize",
+         "amount": 1,
+         "specifications": [initial_specs]},
     )
 
     # Act: Call add_user_card again with a new spec and a DIFFERENT amount
@@ -81,12 +87,15 @@ def test_add_user_card_for_existing_card_adds_specs_but_ignores_amount(
     modify_user_tracked_card(
         "add",
         "testuser",
-        {"card_name": "Thoughtseize", "amount": 10, "specifications": [new_specs]},
+        {"card_name": "Thoughtseize",
+         "amount": 10,
+         "specifications": [new_specs]},
     )
 
     # Assert
     cards = get_users_cards("testuser")
-    assert len(cards) == 1, "Should not create a duplicate UserTrackedCards entry"
+    assert len(cards) == 1, "Should not create a "
+    "duplicate UserTrackedCards entry"
     assert cards is not None
     tracked_card = cards[0]
     assert tracked_card.card_name == "Thoughtseize"
@@ -175,7 +184,8 @@ def test_delete_user_card_not_found(user_factory):
     user_factory(username=username)
     card_name = "Nonexistent Card"
 
-    initial_card_count = (len(get_users_cards(username)) if get_users_cards(username)
+    initial_card_count = (len(get_users_cards(username))
+                          if get_users_cards(username)
                           else 0)
 
     # Act: Delete the card
@@ -205,7 +215,8 @@ def test_update_user_tracked_card_preferences(user_factory, printing_factory):
 def test_update_user_tracked_card_preferences_user_not_found(db_session):
     """Test updating preferences for a card when the user does not exist."""
     # This should run without error
-    update_user_tracked_card_preferences("nonexistent_user", "any_card", {"amount": 10})
+    update_user_tracked_card_preferences(
+        "nonexistent_user", "any_card", {"amount": 10})
     # And no cards should be in the DB
     assert db_session.query(UserTrackedCards).count() == 0
 
@@ -328,7 +339,10 @@ def sol_ring_printings(printing_factory):
         "empty_spec_nonexistent_card",
     ],
 )
-def test_is_valid_printing_specification(sol_ring_printings, card_name, spec, expected):
+def test_is_valid_printing_specification(sol_ring_printings,
+                                         card_name,
+                                         spec,
+                                         expected):
     """
     Tests the is_valid_printing_specification function with various valid and
     invalid inputs.

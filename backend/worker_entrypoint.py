@@ -17,7 +17,9 @@ if __name__ == "__main__":
     # The app context is pushed so that tasks have access to app resources.
     with app.app_context():
         queues = [
-            Queue(q, connection=redis_manager.get_redis_connection()) for q in listen
+            Queue(q, connection=redis_manager.get_redis_connection())
+            for q in listen
         ]
-        worker = LGSWorker(queues, connection=redis_manager.get_redis_connection())
+        worker = LGSWorker(
+            queues, connection=redis_manager.get_redis_connection())
         worker.work()

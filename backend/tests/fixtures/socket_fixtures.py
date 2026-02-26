@@ -40,9 +40,11 @@ def mock_store():
 def mock_socket_emit_worker():
     """
     Mocks emit_from_worker.
-    (Renamed from mock_socket_emit to avoid confusion with the main socket mock)
+    (Renamed from mock_socket_emit to avoid
+    confusion with the main socket mock)
     """
-    with patch("tasks.card_availability_tasks.socket_emit.emit_from_worker") as mock:
+    with patch("tasks.card_availability_tasks"
+               ".socket_emit.emit_from_worker") as mock:
         yield mock
 
 

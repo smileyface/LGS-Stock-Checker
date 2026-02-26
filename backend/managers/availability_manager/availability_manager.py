@@ -21,12 +21,13 @@ def check_availability(
         username: str,
         store_slug: Optional[str] = "",
         card_data: Optional[Dict[str, Any]] = {}
-        ) -> Dict[str, str]:
+) -> Dict[str, str]:
     """Manually triggers an availability update for a user's card list."""
     logger.info(f"🔄 User {username} requested a manual availability refresh.")
     payload = AvailabilityRequestPayload(
         user=UserSchema(username=username),
-        store=StoreSchema(slug=store_slug, name=store_slug) if store_slug else None,
+        store=StoreSchema(
+            slug=store_slug, name=store_slug) if store_slug else None,
         card_data=(CardPreferenceSchema(**card_data)
                    if card_data
                    else None),
@@ -97,7 +98,7 @@ def trigger_availability_check_for_card(
         on_complete_callback()
 
 
-def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
+def fetch_availability(username: str) -> Dict[str, dict]:
     """
     Orchestrates the availability check for all of a user's tracked cards.
     It returns any data found in the cache and queues background tasks for any

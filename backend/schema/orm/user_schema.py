@@ -16,7 +16,8 @@ class UserTrackedCardSchema(DatabaseSchema):
         from_attributes=True
     )
 
-    # The ORM model has 'card_name', not a populated 'card' relationship by default
+    # The ORM model has 'card_name', not a populated 'card'
+    # relationship by default
     card_name: str = Field(..., description="The name of the card.")
 
     amount: int = Field(
@@ -28,8 +29,9 @@ class UserTrackedCardSchema(DatabaseSchema):
         [], description="List of specific versions of the card."
     )
 
-    # Compute the nested 'card' object dynamically to satisfy frontend expectations
-    # without relying on the ORM relationship being loaded.
+    # Compute the nested 'card' object dynamically to
+    # satisfy frontend expectations without relying on
+    # the ORM relationship being loaded.
     @computed_field
     def card(self) -> CardSchema:
         return CardSchema(name=self.card_name)

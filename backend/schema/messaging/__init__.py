@@ -29,6 +29,6 @@ __all__ = [
     "SearchCardNamesMessage",
     "UpdateStoreMessage",
     "CatalogCardNamesResultMessage",
-    #Generators
+    # Generators
     "GenerateAvailabilityRequestCommand",
 ]

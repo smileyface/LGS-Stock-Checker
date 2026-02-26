@@ -13,6 +13,7 @@ from .socket_emit import emit_message, log_and_emit, send_user_cards
 
 # --- Helpers ---
 
+
 def get_username():
     """Helper function to get the username from the current_user proxy."""
     if current_user.is_authenticated:
@@ -37,6 +38,7 @@ def _send_user_stores(username: str):
     )
 
 # --- Handlers ---
+
 
 @socketio.on("get_card_printings")
 def handle_get_card_printings(data: dict):
@@ -72,7 +74,7 @@ def handle_get_card_availability(data: dict = {}):
         # TODO: In the future, use the `data` payload to check a specific card.
         # For now, this function triggers a check for all cards.
         #    items and returns any data that was already in the cache.
-        cached_data = availability_manager.get_cached_availability_or_trigger_check(
+        cached_data = availability_manager.fetch_availability(
             username
         )
 
@@ -94,15 +96,19 @@ def handle_get_card_availability(data: dict = {}):
                         "card": card_name,
                         "items": items,
                     }
-                    socketio.emit("card_availability_data", event_data, to=username)
+                    socketio.emit("card_availability_data",
+                                  event_data, to=username)
         else:
-            logger.info(f"No cached availability data found for user '{username}'.")
+            logger.info(
+                f"No cached availability data found for user '{username}'.")
 
         logger.info(
-            "✅ Card availability check process initiated for user " f"'{username}'."
+            "✅ Card availability check process initiated for user "
+            f"'{username}'."
         )
     else:
-        logger.warning("🚨 No username found for 'get_card_availability' request.")
+        logger.warning(
+            "🚨 No username found for 'get_card_availability' request.")
 
 
 @socketio.on("get_cards")
@@ -122,7 +128,8 @@ def handle_search_card_names(data: dict):
     logger.info("📩 Received 'search_card_names' request from front end.")
     query = data.get("query", "").strip()
     if not query or len(query) < 3:
-        socketio.emit("card_name_search_results", {"query": query, "card_names": []})
+        socketio.emit("card_name_search_results", {
+                      "query": query, "card_names": []})
         return
 
     logger.info(f"🗂️ Searching for card names matching '{query}'...")
@@ -135,7 +142,8 @@ def handle_search_card_names(data: dict):
         logger.info(f"📡 Sent {len(card_names)} search results for '{query}'.")
     except Exception as e:
         logger.error(f"❌ Failed to search for card names: {e}")
-        socketio.emit("card_name_search_results", {"query": query, "card_names": []})
+        socketio.emit("card_name_search_results", {
+                      "query": query, "card_names": []})
 
 
 @socketio.on("add_card")
@@ -148,7 +156,8 @@ def handle_add_user_tracked_card(data: dict):
         username = get_username()
         if not username:
             logger.warning("🚨 Unauthenticated user tried to add a card.")
-            socketio.emit("error", {"message": "Authentication required to add cards."})
+            socketio.emit(
+                "error", {"message": "Authentication required to add cards."})
             return
         update_data = validated_data.payload.update_data
         specs_return = {}
@@ -180,7 +189,8 @@ def handle_add_user_tracked_card(data: dict):
         socketio.emit("error", {"message": f"Invalid data for add_card: {e}"})
     except exceptions.InvalidSpecificationError as e:
         logger.warning(
-            f"⚠️ User '{username}' submitted an invalid card specification: " f"{e}"
+            f"⚠️ User '{username}' submitted an invalid card specification: "
+            f"{e}"
         )
         socketio.emit("error", {"message": str(e)})
 
@@ -194,7 +204,8 @@ def handle_delete_user_tracked_card(data: dict):
         if not username:
             logger.warning("🚨 Unauthenticated user tried to delete a card.")
             socketio.emit(
-                "error", {"message": "Authentication required to delete cards."}
+                "error", {"message":
+                          "Authentication required to delete cards."}
             )
             return
 
@@ -203,7 +214,8 @@ def handle_delete_user_tracked_card(data: dict):
         )
     except (ValidationError, exceptions.InvalidMessageError) as e:
         logger.error(f"❌ Invalid 'delete_card' data received: {e}")
-        socketio.emit("error", {"message": f"Invalid data for delete_card: {e}"})
+        socketio.emit(
+            "error", {"message": f"Invalid data for delete_card: {e}"})
 
 
 @socketio.on("update_card")
@@ -215,7 +227,8 @@ def handle_update_user_tracked_cards(data: dict):
         if not username:
             logger.warning("🚨 Unauthenticated user tried to update a card.")
             socketio.emit(
-                "error", {"message": "Authentication required to update cards."}
+                "error", {"message":
+                          "Authentication required to update cards."}
             )
             return
 
@@ -234,7 +247,8 @@ def handle_update_user_stores(data: dict):
     """
     Handles a request to update the user's entire list of preferred stores.
      Implements requirement [4.3.6]."""
-    logger.info(f"📩 Received 'update_stores' request from front end. Data: {data}")
+    logger.info(
+        f"📩 Received 'update_stores' request from front end. Data: {data}")
     username = get_username()
     if not username:
         logger.warning("🚨 No username found for 'update_stores' request.")
@@ -247,7 +261,8 @@ def handle_update_user_stores(data: dict):
         logger.info(f"✅ Updated preferred stores for user '{username}'.")
     except ValidationError as e:
         logger.error(f"❌ Invalid 'update_stores' data received: {e}")
-        socketio.emit("error", {"message": f"Invalid data for update_stores: {e}"})
+        socketio.emit(
+            "error", {"message": f"Invalid data for update_stores: {e}"})
 
 
 @socketio.on("stock_data_request")
@@ -264,16 +279,18 @@ def handle_stock_data_request(data: dict):
     card_name = data.get("card_name")
     if not card_name:
         logger.error("❌ 'stock_data_request' received without 'card_name'.")
-        socketio.emit("error", {"message": "Card name is required to get stock data."})
+        socketio.emit(
+            "error", {"message": "Card name is required to get stock data."})
         return
 
     logger.info(
         f"🔍 Aggregating all available items for '{card_name}' for user "
         f"'{username}'."
     )
-    all_available_items = availability_manager.get_all_available_items_for_card(
-        username, card_name
-    )
+    all_available_items = availability_manager\
+        .get_all_available_items_for_card(
+            username, card_name
+        )
     # Emit the aggregated data back to the client.
     socketio.emit(
         "stock_data",

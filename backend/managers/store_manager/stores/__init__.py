@@ -31,8 +31,6 @@ class LazyStoreRegistry:
         }
         self._loaded = False
 
-    
-
     @property
     def keys(self):
         """Returns the keys (slugs) of the store registry,
@@ -60,7 +58,8 @@ class LazyStoreRegistry:
                 )
                 self._registry[instance.slug] = instance
         self._loaded = True
-        logger.info(f"✅ Store registry loaded with" f" {len(self._registry)} stores.")
+        logger.info(
+            f"✅ Store registry loaded with" f" {len(self._registry)} stores.")
 
     def get_registry(self) -> dict[str, Store]:
         if not self._loaded:

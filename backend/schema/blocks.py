@@ -1,5 +1,9 @@
 from typing import Literal, Optional, Any
-from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
+from pydantic import (BaseModel,
+                      Field,
+                      ConfigDict,
+                      model_validator,
+                      field_validator)
 from typing_extensions import Self
 
 
@@ -92,7 +96,9 @@ class UserSchema(BaseModel):
     """
 
     model_config = ConfigDict(from_attributes=True)
-    username: str = Field(..., description="The username of the user.", min_length=1)
+    username: str = Field(...,
+                          description="The username of the user.",
+                          min_length=1)
 
     def __str__(self) -> str:
         return self.username
@@ -121,9 +127,12 @@ class StoreSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
     slug: str = Field(
-        ..., description="The unique slug identifier for the store.", min_length=1
+        ...,
+        description="The unique slug identifier for the store.",
+        min_length=1
     )
-    name: Optional[str] = Field(None, description="The display name of the store.")
+    name: Optional[str] = Field(
+        None, description="The display name of the store.")
 
     def __str__(self) -> str:
         return self.name if self.name else self.slug

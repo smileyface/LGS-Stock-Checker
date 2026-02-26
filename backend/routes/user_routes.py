@@ -85,16 +85,17 @@ def get_tracked_cards():
         # 1. Fetch ORM objects from the manager/repo
         # (This now returns UserTrackedCards objects per your repo update)
         cards_orm = user_manager.load_card_list(current_user.username)
-        
+
         # 2. Convert ORM objects to Pydantic Models for serialization
         # This handles nested fields like 'specifications' automatically
         validated_cards = [
             orm.UserTrackedCardSchema.model_validate(card).model_dump()
             for card in cards_orm
         ]
-        
+
         return jsonify(validated_cards)
-        
+
     except Exception as e:
-        logger.error(f"Error fetching tracked cards for {current_user.username}: {e}")
+        logger.error(
+            f"Error fetching tracked cards for {current_user.username}: {e}")
         return jsonify({"error": "Failed to fetch tracked cards"}), 500

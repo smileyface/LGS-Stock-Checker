@@ -4,6 +4,12 @@ node_modules/
 # Python  
 __pycache__/  
 *.pyc  
+# Dependencies
+node_modules/
+
+# Python  
+__pycache__/  
+*.pyc  
 *.pyo  
 .venv/  
 
@@ -15,3 +21,10 @@ dist/
 .vscode/
 .git
 .gitignore
+
+# Environment
+.env
+
+# Docker
+Dockerfile
+.dockerignore

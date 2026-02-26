@@ -57,8 +57,6 @@ def trigger_availability_check_for_card(
     card_obj = card_data.get("card")
     card_name = card_obj.get("name") if card_obj else None
     if not card_name:
-        logger.error if card_obj else None
-    if not card_name:
         logger.error(
             "Cannot trigger availability check; "
             "card_data is missing 'card' object or its 'name' attribute."
@@ -171,25 +169,6 @@ def get_all_available_items_for_card(username: str, card_name: str) -> list:
         )
         return []
 
-    all_available_items = []
-    for store in user_stores:
-        # Fetch from cache
-        cached_data = availability_storage.get_cached_availability_data(
-            store.slug, card_name
-        )
-        if cached_data:  # cached_data is a list of item dicts
-            # Add the store name to each item before adding it to
-            # the aggregated list.
-            for item in cached_data:
-                item_with_store = item.copy()
-                item_with_store["store_name"] = store.name
-                all_available_items.append(item_with_store)
-
-    logger.info(
-        f"Aggregated {len(all_available_items)} available items for"
-        f" '{card_name}' for user '{username}'."
-    )
-    return all_available_items
     all_available_items = []
     for store in user_stores:
         # Fetch from cache

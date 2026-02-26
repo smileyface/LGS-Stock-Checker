@@ -71,7 +71,6 @@ def get_all_hash_fields(key: str) -> Dict[str, Any]:
         decode_responses=False
     )  # hgetall returns bytes
     assert redis_conn is not None, "Redis connection is None"
-    data = redis_conn.hgetall(key)
     data = cast(Dict[bytes, bytes], redis_conn.hgetall(key))
     return (
         {k.decode("utf-8"): json.loads(v) for k, v in data.items()}

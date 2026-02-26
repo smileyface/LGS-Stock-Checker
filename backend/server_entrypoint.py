@@ -34,4 +34,3 @@ messaging_manager.start_server_listener(app)
 app = configure_database(app, create_tables=True)
 
 logger.info("✅ App context for server is ready.")
-logger.info("✅ App context for server is ready.")

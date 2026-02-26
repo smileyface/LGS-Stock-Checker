@@ -10,7 +10,7 @@ else
 endif
 
 # Define the virtual environment directory within the backend folder
-VENV_DIR := backend/.venv
+VENV_DIR := .venv
 ifeq ($(OS),Windows_NT)
 	VENV_PYTHON := $(VENV_DIR)/Scripts/python
 else

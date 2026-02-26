@@ -62,19 +62,16 @@ def test_update_availability_single_card_success(
     mock_store_instance.fetch_card_availability.assert_called_once_with(card_name, [])
 
     # Verify result publishing to Redis
-    mock_publish_pubsub.assert_called_once_with(
-        "worker-results",
-        {
-            "type": "availability_result",
-            "payload": {
-                "store": store_name,
-                "card": card_name,
-                "items": available_items,
-            },
-        },
-    )
+    mock_publish_pubsub.assert_called_once()
+    published_msg = mock_publish_pubsub.call_args.args[0]
+    
+    assert published_msg.name == "availability_result"
+    assert published_msg.payload.store.slug == store_name
+    assert published_msg.payload.card.card.name == card_name
+    assert len(published_msg.payload.items) == 1
+    assert published_msg.payload.items[0]["price"] == 1.99
 
-    # Verify socket emission
+    # Verify socket emission using the worker mock
     expected_calls = [
         call(
             "availability_check_started",
@@ -136,7 +133,14 @@ def test_update_availability_single_card_no_items_found(
     username = "testuser"
     store_name = "test-store"
     card_name = "Obscure Card"
-    card_data = {"card_name": card_name, "specifications": []}
+    card_data = {
+        "card_name": card_name,
+        "name": card_name,
+        "amount": 1,
+        "specifications": [],
+        "card": {"name": card_name},
+        "card_specs": []
+    }
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = []
@@ -148,18 +152,14 @@ def test_update_availability_single_card_no_items_found(
     # --- Assert ---
     assert result is True
 
-    # Verify empty items list was published
-    mock_publish_pubsub.assert_called_once_with(
-        "worker-results",
-        {
-            "type": "availability_result",
-            "payload": {
-                "store": store_name,
-                "card": card_name,
-                "items": [],
-            },
-        },
-    )
+    # Verify publishing was called and check the model
+    mock_publish_pubsub.assert_called_once()
+    published_msg = mock_publish_pubsub.call_args.args[0]
+    
+    assert published_msg.name == "availability_result"
+    assert published_msg.payload.store.slug == store_name
+    assert published_msg.payload.card.card.name == card_name
+    assert len(published_msg.payload.items) == 0
 
     # Verify socket emission still happens with an empty items list
     expected_calls = [

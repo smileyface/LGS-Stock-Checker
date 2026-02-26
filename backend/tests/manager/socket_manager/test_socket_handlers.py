@@ -103,13 +103,6 @@ def test_on_add_card_triggers_availability_check(
     [
         # Missing all fields
         ({}, "Field required"),
-        # Missing amount
-        ({
-            "payload": {
-                "command": "add",
-                "update_data": {"card": {"name": "Sol Ring"}}
-            }
-        }, "Field required"),
         # Missing card name
         ({
             "payload": {

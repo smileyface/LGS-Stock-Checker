@@ -1,6 +1,7 @@
 from flask_login import current_user
 from pydantic import ValidationError
 
+from utility import logger
 from schema.messaging import messages
 from data import database
 from data.database import exceptions
@@ -9,8 +10,8 @@ from managers import availability_manager
 
 from .socket_manager import socketio
 from .socket_emit import emit_message, log_and_emit, send_user_cards
-from utility import logger
 
+# --- Helpers ---
 
 def get_username():
     """Helper function to get the username from the current_user proxy."""
@@ -18,6 +19,24 @@ def get_username():
         return current_user.username
     return None
 
+
+def _send_user_stores(username: str):
+    """Fetches a user's store list and emits it over Socket.IO."""
+    if not username:
+        logger.error("❌ Attempted to send store list for an empty username.")
+        return
+
+    logger.info(f"🏬 Fetching and sending tracked stores for user: {username}")
+    stores = database.get_user_stores(username)
+    # The stores from the DB are Pydantic models, so we can dump them to dicts.
+    store_list = [store.model_dump() for store in stores]
+
+    socketio.emit("user_stores_data", {"stores": store_list}, to=username)
+    logger.info(
+        f"📡 Sent store list to room '{username}' with {len(store_list)} items."
+    )
+
+# --- Handlers ---
 
 @socketio.on("get_card_printings")
 def handle_get_card_printings(data: dict):
@@ -37,23 +56,6 @@ def handle_get_card_printings(data: dict):
     message = messages.CardPrintingsDataMessage(payload=response_data)
     emit_message(message)
     logger.info(f"📡 Sent {len(printings)} printings for '{card_name}'.")
-
-
-def _send_user_stores(username: str):
-    """Fetches a user's store list and emits it over Socket.IO."""
-    if not username:
-        logger.error("❌ Attempted to send store list for an empty username.")
-        return
-
-    logger.info(f"🏬 Fetching and sending tracked stores for user: {username}")
-    stores = database.get_user_stores(username)
-    # The stores from the DB are Pydantic models, so we can dump them to dicts.
-    store_list = [store.model_dump() for store in stores]
-
-    socketio.emit("user_stores_data", {"stores": store_list}, to=username)
-    logger.info(
-        f"📡 Sent store list to room '{username}' with {len(store_list)} items."
-    )
 
 
 @socketio.on("get_card_availability")
@@ -180,7 +182,6 @@ def handle_add_user_tracked_card(data: dict):
         logger.warning(
             f"⚠️ User '{username}' submitted an invalid card specification: " f"{e}"
         )
-        # Send a specific, user-friendly error message to the client.
         socketio.emit("error", {"message": str(e)})
 
 

@@ -50,9 +50,9 @@
           <div class="mb-3">
             <label for="finish" class="form-label">Finish (Optional)</label>
             <select id="finish" class="form-select" v-model="selectedFinish" :disabled="!selectedCollectorNumber">
-              <option value="">Any Finish</option>
-              <option v-for="finish in finishOptions" :key="finish" :value="finish">
-                {{ finish }}
+              <option :value="undefined">Any Finish</option>
+              <option v-for="finish in finishOptions" :key="finish.id" :value="finish.id">
+                {{ finish.name }}
               </option>
             </select>
           </div>
@@ -72,11 +72,14 @@ import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useSocket } from '@/composables/useSocket';
 import { useCardPrintings } from '@/composables/useCardPrintings';
 import { debounce } from '@/utils/debounce';
+import { createCardSpecificationSchema } from '@/schema/server_types';
+import { createAddCardMessage, createCardPreferenceSchema, createCardSchema, createUpdateCardRequestPayload } from '../schema/server_types';
 
-const emit = defineEmits(['close', 'save-card']);
+const emit = defineEmits(['close']);
 
 // Get the entire socket manager from the composable.
 const socketManager = useSocket();
+const { addCard } = socketManager;
 
 // --- Local State ---
 const cardName = ref('');
@@ -89,7 +92,7 @@ const error = ref(null);
 // Selected values from dropdowns
 const selectedSet = ref('');
 const selectedCollectorNumber = ref('');
-const selectedFinish = ref('');
+const selectedFinish = ref(undefined);
 
 // --- Card Printings Logic (from composable) ---
 const { 
@@ -130,12 +133,12 @@ onUnmounted(() => {
 watch(selectedSet, () => {
   // When the set changes, reset the collector number and finish
   selectedCollectorNumber.value = '';
-  selectedFinish.value = '';
+  selectedFinish.value = undefined;
 });
 
 watch(selectedCollectorNumber, () => {
   // When the collector number changes, reset the finish
-  selectedFinish.value = '';
+  selectedFinish.value = undefined;
 });
 
 // --- Save Logic ---
@@ -147,18 +150,27 @@ const handleSave = () => {
     return;
   }
 
-  const cardData = {
-    card: cardName.value,
-    amount: amount.value,
-    card_specs: {
-      set_code: selectedSet.value,
-      collector_number: selectedCollectorNumber.value,
-      finish: selectedFinish.value,
-    },
-  };
+  // Create the specification using the factory
+  // We convert empty strings to undefined to match the schema's optional fields
+  const spec = createCardSpecificationSchema(
+    selectedSet.value || undefined,
+    selectedCollectorNumber.value || undefined,
+    selectedFinish.value
+  );
 
-  console.log(`[AddCardModal] 💾 Emitting save-card event with data:`, cardData);
-  emit('save-card', cardData);
+  const cardData = createAddCardMessage(
+    createUpdateCardRequestPayload(
+      "add", 
+      createCardPreferenceSchema(
+        createCardSchema(
+          cardName.value),
+        amount.value,
+        spec),
+    ),
+  );
+
+  console.log(`[AddCardModal] 💾 Calling addCard with:`, cardData);
+  addCard(cardData);
   emit('close');
 };
 

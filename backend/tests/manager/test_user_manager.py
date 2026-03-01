@@ -6,7 +6,7 @@ from managers.user_manager import (
     add_user,
     update_username,
     authenticate_user,
-    get_selected_stores,
+    get_user_stores,
     load_card_list,
 )
 
@@ -109,6 +109,7 @@ def test_authenticate_user_success(mocker):
     # Use mocker.patch() inside the test function.
     mock_check_hash = mocker.patch(CHECK_HASH_PATH, return_value=True)
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
+    mock_database.get_user_password_hash.return_value = "a_valid_hash"
     # The mock user object needs a `password_hash` attribute for the function
     # to access.
     mock_user = MagicMock()
@@ -135,6 +136,7 @@ def test_authenticate_user_wrong_password(mocker):
     # Arrange
     mock_check_hash = mocker.patch(CHECK_HASH_PATH, return_value=False)
     mock_database = mocker.patch(f"{USER_AUTH_MODULE_PATH}.database")
+    mock_database.get_user_password_hash.return_value = "a_valid_hash"
     # The mock user object needs a `password_hash` attribute.
     mock_user = MagicMock()
     mock_user.password_hash = "a_valid_hash"
@@ -182,7 +184,7 @@ def test_get_selected_stores(mocker):
     mock_database.get_user_stores.return_value = mock_stores
 
     # Act
-    result = get_selected_stores("testuser")
+    result = get_user_stores("testuser")
 
     # Assert
     mock_database.get_user_stores.assert_called_once_with("testuser")

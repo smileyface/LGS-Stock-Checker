@@ -31,6 +31,7 @@ This module fulfills requirements [5.1.7] and related functionality.
 from data import database
 from managers import store_manager, user_manager, task_manager, redis_manager
 from managers.socket_manager import socket_emit
+from schema import messaging
 from utility import logger
 
 
@@ -118,7 +119,7 @@ def update_availability_for_user(username: str):
         logger.warning(
             f"User '{username}' has no cards or stores to check. Skipping."
         )
-        return
+        return False
 
     for card in user_cards:
         for store in user_stores:
@@ -140,15 +141,16 @@ def update_availability_for_user(username: str):
 @task_manager.task(
     task_manager.task_definitions.UPDATE_AVAILABILITY_SINGLE_CARD
 )
-def update_availability_single_card(username, store_name, card):
+def update_availability_single_card(username: str,
+                                    store_name: str,
+                                    card: dict) -> bool:
     """
     Background task to update the availability for a single card at a store.
     """
     if not store_name:
         logger.warning(f"🚨 Invalid store name: {store_name}. Task aborted.")
         return False
-
-    card_name = card.get("card_name")
+    card_name = card.get("name")
     if not card_name:
         logger.error(
             f"❌ Task received card data without a 'card_name'. "
@@ -179,7 +181,7 @@ def update_availability_single_card(username, store_name, card):
     logger.info(f"🔍 Checking availability for {card_name} at {store_name}")
 
     # Fetch availability using the specific store's implementation
-    card_specs = card.get("specifications")
+    card_specs = card.get("card_specs")
     available_items = store.fetch_card_availability(card_name, card_specs)
 
     if available_items:
@@ -193,20 +195,18 @@ def update_availability_single_card(username, store_name, card):
             f"at {store_name}. Caching empty result."
         )
 
-    # --- Report results back to the backend ---
-    # Publish the results to a dedicated Redis channel for
-    # the backend to process.
-    # This is the correct way for a worker to report back to the
-    # main application.
-    result_payload = {
-        "type": "availability_result",
-        "payload": {
-            "store": store_name,
-            "card": card_name,
-            "items": available_items or [],
-        },
-    }
-    redis_manager.publish_pubsub("worker-results", result_payload)
+    redis_manager.publish_pubsub(
+        messaging.generator.GenerateAvailabilityResult(
+            card={"card": {
+                "name": card_name,
+                "card_specs": card_specs or []
+            }
+            },
+            store={
+                "slug": store_name},
+            items=available_items
+        )
+    )
 
     # --- Emit results to the client ---
     # The worker still emits directly to the client for real-time UI updates.
@@ -220,3 +220,40 @@ def update_availability_single_card(username, store_name, card):
         "card_availability_data", event_data, room=username
     )
     return True
+
+
+@task_manager.task(
+    task_manager.task_definitions.AVAILABILITY_TASK_ID
+)
+def queue_all_availability_checks():
+    tracked_cards = database.get_all_tracked_cards()
+    if not tracked_cards:
+        logger.info("No cards tracked")
+        return
+
+    all_users = database.get_all_users()
+    if not all_users:
+        logger.info("No users found")
+        return
+
+    for card in tracked_cards:
+        username = database.get_user_orm_by_id(card.user_id).username
+        if not username:
+            logger.warning("username does not exist")
+
+        card_data = {
+            "card_name": card.card_name,
+            "amount": card.amount,
+            # Hardcoded for now. Will be updated when specifications are more
+            #  implemented
+            "specifications": None
+        }
+        store_name = card.store.slug
+
+        redis_manager.publish_pubsub(
+            messaging.GenerateAvailabilityRequestCommand(
+                username,
+                store_name,
+                card_data
+            )
+        )

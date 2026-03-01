@@ -39,5 +39,5 @@ def test_emit_from_worker(mocker):
     # 2. Verify that the `emit` method on this new instance was called with
     # the correct parameters.
     mock_socketio_instance.emit.assert_called_once_with(
-        test_event, test_data, room=test_room
+        test_event, test_data, to=test_room
     )

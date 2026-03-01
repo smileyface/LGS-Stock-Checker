@@ -1,16 +1,13 @@
-from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 import os
+from flask import Flask  # noqa
+from flask_login import LoginManager  # noqa
+from flask import session  # noqa
+from flask_session import Session  # noqa
 
-from flask_login import LoginManager
-from flask import session
-from flask_session import Session
-
-from managers import user_manager
-
-from utility import logger
-
-import routes
+from managers import user_manager  # noqa
+from utility import logger  # noqa
+import routes  # noqa
 
 
 def initalize_flask_app(override_config=None, config_name=None):
@@ -23,9 +20,8 @@ def initalize_flask_app(override_config=None, config_name=None):
     # Apply ProxyFix middleware to make the app aware of proxy headers.
     # This is crucial for correct URL generation and security features when
     # running behind a reverse proxy like Nginx in Docker.
-    app.wsgi_app = ProxyFix(
-        app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
-    )
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1,
+                            x_proto=1, x_host=1, x_prefix=1)
 
     # --- Configuration Loading ---
     from settings import config

@@ -51,7 +51,10 @@ class User(UserMixin, Base):
 
     # Relationship to the cards the user is tracking
     cards = relationship(
-        "UserTrackedCards", back_populates="user", cascade="all, delete-orphan"
+        "UserTrackedCards",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
 
     def __init__(self, username: str,
@@ -76,12 +79,19 @@ class User(UserMixin, Base):
             "username": self.username,
             # This now correctly uses the relationship to get the store slugs
             "stores": [store.slug for store in self.selected_stores],
+            "cards": [cards.to_dict() for cards in self.cards],
         }
 
 
 class Card(Base):
     __tablename__ = "cards"
     name = Column(String, primary_key=True, index=True)
+
+    def __repr__(self):
+        return f"<Card(name={self.name})>"
+
+    def to_dict(self):
+        return {"name": self.name}
 
 
 class Set(Base):
@@ -95,6 +105,12 @@ class Set(Base):
     def __repr__(self):
         return f"<Set(code={self.code}, name={self.name})>"
 
+    def to_dict(self):
+        return {
+            "code": self.code,
+            "name": self.name
+        }
+
 
 class Finish(Base):
     """Represents a card finish type (e.g., Foil, Non-Foil)."""
@@ -105,6 +121,10 @@ class Finish(Base):
 
     def __repr__(self):
         return f"<Finish(name={self.name})>"
+
+    def to_dict(self):
+        return {"name": self.name,
+                "id": self.id}
 
 
 class CardPrinting(Base):
@@ -132,6 +152,16 @@ class CardPrinting(Base):
         ),
     )
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "card_name": self.card_name,
+            "set_code": self.set_code,
+            "collector_number": self.collector_number,
+            "available_finishes": [f.to_dict()
+                                   for f in self.available_finishes]
+        }
+
 
 class UserTrackedCards(Base):
     __tablename__ = "user_tracked_cards"
@@ -145,6 +175,7 @@ class UserTrackedCards(Base):
         "CardSpecification",
         back_populates="user_card",
         cascade="all, delete-orphan",
+        lazy="selectin"
     )
 
     # Relationship back to the user
@@ -153,13 +184,30 @@ class UserTrackedCards(Base):
     # Relationship to the card itself
     card = relationship("Card")
 
+    def __repr__(self):
+        return (f"<UserTrackedCards(user_id={self.user_id}, "
+                f"card_name={self.card_name}, amount={self.amount})>")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.card_name,
+            "amount": self.amount,
+            "specifications": [
+                spec.to_dict() for spec in self.specifications
+            ],
+        }
+
 
 class CardSpecification(Base):
     __tablename__ = "card_specifications"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_card_id = Column(
-        Integer, ForeignKey("user_tracked_cards.id"), nullable=False
+        Integer,
+        ForeignKey("user_tracked_cards.id",
+                   ondelete="CASCADE"),
+        nullable=False
     )
     set_code = Column(String, ForeignKey("sets.code"), nullable=True)
     collector_number = Column(
@@ -171,7 +219,7 @@ class CardSpecification(Base):
     user_card = relationship(
         "UserTrackedCards", back_populates="specifications"
     )
-    finish = relationship("Finish")
+    finish = relationship("Finish", lazy="joined")
     set = relationship("Set")
 
     def __repr__(self):
@@ -179,6 +227,13 @@ class CardSpecification(Base):
                 f" set_code={self.set_code}, "
                 f" collector_number={self.collector_number},"
                 f" finish_id={self.finish_id})>")
+
+    def to_dict(self):
+        return {
+            "set_code": self.set_code,
+            "collector_number": self.collector_number,
+            "finish": self.finish.name if self.finish else None,
+        }
 
 
 class Store(Base):

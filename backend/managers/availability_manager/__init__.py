@@ -1,6 +1,6 @@
 from .availability_manager import (
     check_availability,
-    get_cached_availability_or_trigger_check,
+    fetch_availability,
     trigger_availability_check_for_card,
     get_all_available_items_for_card,
 )
@@ -16,6 +16,6 @@ __all__ = [
     "get_cached_availability_data",
     "cache_availability_data",
     "get_all_available_items_for_card",
-    "get_cached_availability_or_trigger_check",
+    "fetch_availability",
     "trigger_availability_check_for_card",
 ]

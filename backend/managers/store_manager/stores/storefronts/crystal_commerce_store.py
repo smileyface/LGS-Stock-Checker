@@ -12,12 +12,12 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-
+from pydantic import ValidationError
 from managers import set_manager
 from utility import logger
 
 from ..store import Store
-from ..listing import Listing
+from schema.blocks import CardListingSchema
 
 
 def _make_request_with_retries(
@@ -94,7 +94,7 @@ class CrystalCommerceStore(Store):
             return BeautifulSoup(response.text, "html.parser")
         return None
 
-    def _scrape_listings(self, card_name: str) -> List[Listing]:
+    def _scrape_listings(self, card_name: str) -> List[CardListingSchema]:
         """
         Scrapes the store's website for raw card listings based on the
         provided card name.
@@ -104,11 +104,12 @@ class CrystalCommerceStore(Store):
             listings.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing details of
-                                  available products, including their URLs,
-                                  names, and other relevant attributes. If no
-                                  listings are found or if the response is
-                                  empty, an empty list is returned.
+            List[CardListingSchema]: A list of validated Pydantic models
+                                     containing details of available products,
+                                     including their URLs, names, and other
+                                     relevant attributes. If no listings are
+                                     found or if the response is empty,
+                                     an empty list is returned.
         """
         search_params = {"q": card_name, "c": 1}
         response = _make_request_with_retries(
@@ -154,28 +155,33 @@ class CrystalCommerceStore(Store):
 
                 variants = self._parse_variants(product)
                 for variant_details in variants:
-                    listing = {
-                        "url": full_product_url,
-                        "name": scraped_card_name,
-                        **static_details,
-                        **variant_details,
-                    }
-                    listing = Listing()
-                    listing.id = {
-                        "url": full_product_url,
-                        "name": scraped_card_name,
-                        "price": variant_details.get("price", 0.0),
-                        "condition": variant_details.get("condition", ""),
-                    }
-                    listing.details = static_details
+                    price = float(variant_details.get("price", 0.0))
+                    quantity = int(variant_details.get("quantity", 0))
 
-                    listing.finish = variant_details.get("finish", "")
-                    listing.stock = variant_details.get("stock", 0)
+                    if quantity <= 0 or price <= 0:
+                        continue
 
-                    if listing not in seen_listings:
-                        available_products.append(listing)
-                        seen_listings.add(listing)
+                    try:
+                        listing = CardListingSchema(
+                            url=full_product_url,
+                            name=scraped_card_name,
+                            set_code=static_details.get("set_code") or "",
+                            collector_number=static_details.get(
+                                "collector_number") or "",
+                            finish=variant_details.get("finish", "non-foil"),
+                            price=price,
+                            condition=variant_details.get("condition") or "",
+                            quantity=quantity
+                        )
+                        listing_key = (
+                            listing.url, listing.condition, listing.finish)
 
+                        if listing_key not in seen_listings:
+                            available_products.append(listing)
+                            seen_listings.add(listing_key)
+                    except ValidationError as e:
+                        logger.debug("Skipping invalid variant for "
+                                     f"{scraped_card_name}: {e}")
         return available_products
 
     def _get_product_listings(self, soup: BeautifulSoup) -> List[Any]:
@@ -259,7 +265,7 @@ class CrystalCommerceStore(Store):
                     {
                         "finish": finish,
                         "price": price,
-                        "stock": quantity,
+                        "quantity": quantity,
                         "condition": condition,
                     }
                 )

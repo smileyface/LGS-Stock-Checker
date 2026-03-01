@@ -346,13 +346,13 @@ def get_set(set_name: Optional[str] = None,
         logger.error("Neither set_name nor set_code provided. Aborting.")
     elif set_name:
         set_listing = session.query(Set).filter(Set.name == set_name).first()
-        if set_listing is None:
-            logger.error("Set not found in catalog. Aborting.")
     else:
         set_listing = session.query(Set).filter(Set.code == set_code).first()
-        if set_listing is None:
-            logger.error("Set not found in catalog. Aborting.")
-    return set_listing
+    if set_listing is None:
+        logger.error("Set not found in catalog. Aborting.")
+        return None
+    else:
+        return set_listing
 
 
 @db_query
@@ -364,4 +364,8 @@ def get_finish(finish_name: Optional[str] = None,
     if not finish_name:
         logger.error("No finish name provided. Aborting.")
         return None
-    return session.query(Finish).filter(Finish.name == finish_name).first()
+    finish = session.query(Finish).filter(Finish.name == finish_name).first()
+    if not finish:
+        logger.error("Finish not found in catalog. Aborting.")
+        return None
+    return finish

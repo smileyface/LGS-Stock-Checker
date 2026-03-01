@@ -28,12 +28,17 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
 
     # Fetch the full ORM object, which includes the password hash and methods.
     user_orm = database.get_user_orm_by_username(username)
+    password_hash = database.get_user_password_hash(username)
 
     if not user_orm:
         logger.warning(f"❌ User '{username}' not found.")
         return None
 
-    if check_password_hash(user_orm.password_hash, password):
+    if not password_hash:
+        logger.warning(f"❌ User '{username}' has no password hash.")
+        return None
+
+    if check_password_hash(password_hash, password):
         logger.info(f"✅ User '{username}' authenticated.")
         return user_orm
 
@@ -60,9 +65,9 @@ def update_password(
         Success or failure of the password update operation.
     """
     logger.info(f"🔑 Updating password for user: {username}")
-    user_data = database.get_user_by_username(username)
+    user_data = database.get_user_password_hash(username)
     if not user_data or not check_password_hash(
-        user_data.password_hash, old_password
+        user_data, old_password
     ):
         logger.warning(
             f"❌ Password update failed for {username}. Incorrect current"

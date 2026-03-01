@@ -1,7 +1,10 @@
+from typing import Optional
+
 from .stores import STORE_REGISTRY
+from .stores import Store
 
 
-def get_store(store_name: str = None):
+def get_store(store_name: str = "") -> Optional[Store]:
     """
     Retrieves a store instance from the registry.
 
@@ -10,4 +13,9 @@ def get_store(store_name: str = None):
     """
     if store_name:
         return STORE_REGISTRY.get_registry().get(store_name)
+    else:
+        return None
+
+
+def get_stores() -> list[Store]:
     return list(STORE_REGISTRY.get_registry().values())

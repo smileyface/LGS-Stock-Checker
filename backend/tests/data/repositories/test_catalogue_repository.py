@@ -3,11 +3,28 @@ from data.database.repositories.catalogue_repository import (
 )
 
 
-def test_get_printings_for_card(seeded_printings):
+def test_get_printings_for_card(printing_factory):
     """
     Tests that get_printings_for_card correctly retrieves all printings
     and their associated finishes for a given card.
     """
+    # Arrange
+    printing_factory(
+        card_name="Sol Ring",
+        set_code="C21",
+        collector_number="125",
+        finishes=["foil", "non-foil"])
+    printing_factory(
+        card_name="Sol Ring",
+        set_code="LTC",
+        collector_number="3",
+        finishes=["etched", "non-foil"])
+    printing_factory(
+        card_name="Sol Ring",
+        set_code="ONE",
+        collector_number="254",
+        finishes=["foil", "non-foil"])
+
     printings = get_printings_for_card("Sol Ring")
 
     assert len(printings) == 3

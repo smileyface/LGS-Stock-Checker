@@ -1,22 +1,30 @@
-# Git
+# Dependencies
+node_modules/
+
+# Python  
+__pycache__/  
+*.pyc  
+# Dependencies
+node_modules/
+
+# Python  
+__pycache__/  
+*.pyc  
+*.pyo  
+.venv/  
+
+# Build output
+dist/
+.vite/
+
+# IDE and Git
+.vscode/
 .git
 .gitignore
+
+# Environment
+.env
 
 # Docker
 Dockerfile
 .dockerignore
-
-# VS Code
-.vscode/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-venv/
-.env
-
-# Node / Frontend
-node_modules/
-dist/
-.vite/

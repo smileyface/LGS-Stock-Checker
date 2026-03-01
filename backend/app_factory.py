@@ -45,7 +45,7 @@ def create_base_app(config_name=None,
     return app
 
 
-def configure_database(app):
+def configure_database(app, create_tables=True):
     """
     Configures the database for the Flask app.
 
@@ -61,7 +61,8 @@ def configure_database(app):
     """
     from data import database
 
-    database.initialize_database(app.config.get("DATABASE_URL"))
+    database.initialize_database(app.config.get("DATABASE_URL"),
+                                 create_tables=create_tables)
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):

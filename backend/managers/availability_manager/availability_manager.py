@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional, Callable, Any
 
 # Internal package imports
 from . import availability_storage
@@ -9,18 +9,31 @@ from managers import redis_manager
 
 # Project package imports
 from data import database
-from schema import messaging
+from schema.messaging import AvailabilityRequestCommand
+from schema.messaging.payload import AvailabilityRequestPayload
+from schema.blocks import (UserSchema,
+                           StoreSchema,
+                           CardPreferenceSchema)
 from utility import logger
 
 
-def check_availability(username: str) -> Dict[str, str]:
+def check_availability(
+        username: str,
+        store_slug: Optional[str] = "",
+        card_data: Optional[Dict[str, Any]] = {}
+) -> Dict[str, str]:
     """Manually triggers an availability update for a user's card list."""
     logger.info(f"🔄 User {username} requested a manual availability refresh.")
-    command = {
-        "type": "queue_all_availability_checks",
-        "payload": {"username": username},
-    }
-    redis_manager.publish_pubsub("scheduler-requests", command)
+    payload = AvailabilityRequestPayload(
+        user=UserSchema(username=username),
+        store=StoreSchema(
+            slug=store_slug, name=store_slug) if store_slug else None,
+        card_data=(CardPreferenceSchema(**card_data)
+                   if card_data
+                   else None),
+    )
+    command = AvailabilityRequestCommand(payload=payload)
+    redis_manager.publish_pubsub(command)
     logger.info(
         f"📢 Published 'queue_all_availability_checks' "
         f"command for user '{username}'."
@@ -32,7 +45,9 @@ def check_availability(username: str) -> Dict[str, str]:
 
 
 def trigger_availability_check_for_card(
-    username: str, card_data: dict, on_complete_callback: callable = None
+    username: str,
+    card_data: dict,
+    on_complete_callback: Optional[Callable] = None
 ):
     """
     Forcefully triggers background availability checks for a single card
@@ -40,7 +55,7 @@ def trigger_availability_check_for_card(
     This fulfills requirement [5.1.6] by always queueing a new check.
     """
     card_obj = card_data.get("card")
-    card_name = card_obj.name if card_obj else None
+    card_name = card_obj.get("name") if card_obj else None
     if not card_name:
         logger.error(
             "Cannot trigger availability check; "
@@ -66,12 +81,13 @@ def trigger_availability_check_for_card(
         logger.debug(
             f"Publishing command to check '{card_name}' at '{store.slug}'."
         )
-        payload = messaging.AvailabilityRequestPayload(
-            username=username, store_slug=store.slug, card_data=card_data
+        payload = AvailabilityRequestPayload(
+            user=UserSchema(username=username),
+            store=StoreSchema(slug=store.slug, name=store.name),
+            card_data=CardPreferenceSchema(**card_data),
         )
-        command = messaging.SchedulerCommand(command="availability_request",
-                                             payload=payload)
-        redis_manager.publish_pubsub("scheduler-requests", command)
+        command = AvailabilityRequestCommand(payload=payload)
+        redis_manager.publish_pubsub(command)
 
     # After queuing all tasks, call the callback if one was provided.
     # This is used to send the updated card list back to the user
@@ -80,13 +96,13 @@ def trigger_availability_check_for_card(
         on_complete_callback()
 
 
-def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
+def fetch_availability(username: str) -> Dict[str, dict]:
     """
     Orchestrates the availability check for all of a user's tracked cards.
     It returns any data found in the cache and queues background tasks for any
     non-cached items.
     """
-    user_stores = database.get_user_stores(username)
+    user_stores = user_manager.get_user_stores(username)
     user_cards = user_manager.load_card_list(username)
 
     if not user_stores:
@@ -99,11 +115,13 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
     cached_results = {}
     for card in user_cards:
         for store in user_stores:
-            if not store or not store.slug or not card or not card.card.name:
+            if not store or not store.slug or not card:
                 continue
-
             cached_data = availability_storage.get_cached_availability_data(
                 store.slug, card.card.name
+            )
+            logger.debug(
+                f"Checking cache for {card.card.name} at {store.name}."
             )
             if cached_data is not None:
                 logger.debug(
@@ -117,16 +135,22 @@ def get_cached_availability_or_trigger_check(username: str) -> Dict[str, dict]:
                     f"⏳ Cache miss for {card.card.name} at {store.name}."
                     " Queueing check."
                 )
-                # Publish a command for the scheduler to queue the task.
-                command = {
-                    "type": "availability_request",
-                    "payload": {
-                        "username": username,
-                        "store": store.slug,
-                        "card_data": card.model_dump(),
-                    },
+
+                # Construct CardPreferenceSchema from card_data
+                # Handle potential flat dictionary from legacy/test data
+
+                pref_data = {
+                    "card": {"name": card.card.name},
+                    "amount": card.amount,
+                    "card_specs": card.specifications
                 }
-                redis_manager.publish_pubsub("scheduler-requests", command)
+                payload = AvailabilityRequestPayload(
+                    user=UserSchema(username=username),
+                    store=StoreSchema(slug=store.slug, name=store.name),
+                    card_data=CardPreferenceSchema(**pref_data),
+                )
+                command = AvailabilityRequestCommand(payload=payload)
+                redis_manager.publish_pubsub(command)
 
     return cached_results
 

@@ -28,7 +28,7 @@ from utility import logger
 def get_user_by_username(
     username: str,
     session: Session
-) -> Optional[orm.UserDBSchema]:
+) -> Optional[User]:
     # This assert tells Pylance that session is not None
     assert session is not None, "Session is injected by @db_query decorator"
     """
@@ -56,7 +56,7 @@ def get_user_by_username(
     if user_orm:
         logger.debug(f"✅ Found user '{username}'.")
         # Use UserDBSchema.model_validate to convert the ORM object
-        return orm.UserDBSchema.model_validate(user_orm)
+        return user_orm
 
     logger.debug(f"❌ User '{username}' not found in database.")
     return None
@@ -88,13 +88,22 @@ def get_user_orm_by_username(username: str,
                     joinedload(User.cards)
                     .joinedload(UserTrackedCards.specifications)
                     .joinedload(CardSpecification.set)
-                ).filter_by(username=username).first())
+    ).filter_by(username=username).first())
     logger.debug(
         f"✅ Found user ORM object for '{username}'."
         if user_orm
         else f"❌ User ORM object for '{username}' not found."
     )
+    if user_orm is None:
+        return None
     return user_orm
+
+
+def get_user_password_hash(username: str) -> Optional[str]:
+    user_orm = get_user_orm_by_username(username)
+    if not user_orm:
+        return None
+    return user_orm.password_hash
 
 
 @db_query

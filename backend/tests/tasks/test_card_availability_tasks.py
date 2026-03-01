@@ -14,54 +14,70 @@ def mock_publish_pubsub(mocker):
 
 
 def test_update_availability_single_card_success(
-    mock_store, mock_publish_pubsub, mock_socket_emit
+    mock_store, mock_publish_pubsub, mock_socket_emit_worker
 ):
     """
     GIVEN a card and store
     WHEN update_availability_single_card is called and finds available items
-    THEN it should fetch data, publish the result to Redis, and emit socket
-         events.
+    THEN it should fetch data, publish the result to Redis,
+         and emit socket events.
     """
-    # Arrange
+    # --- Arrange ---
     username = "testuser"
     store_name = "test-store"
-    card_data = {"card_name": "Sol Ring", "specifications": []}
-    available_items = [{"price": 1.99, "condition": "NM"}]
+    card_name = "Sol Ring"
+    card_data = {
+        "card_name": card_name,
+        "name": card_name,
+        "amount": 1,
+        "specifications": [],
+        "card": {"name": card_name},
+        "card_specs": []
+    }
+
+    # Mock realistic data matching what CardListingSchema would produce/dump
+    available_items = [
+        {
+            "url": "https://test.com/sol-ring",
+            "name": "Sol Ring",
+            "set_code": "C21",
+            "collector_number": "123",
+            "finish": "non-foil",
+            "price": 1.99,
+            "condition": "NM",
+            "quantity": 5
+        }
+    ]
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = available_items
     mock_store.get_store.return_value = mock_store_instance
 
-    # Act
+    # --- Act ---
     result = update_availability_single_card(username, store_name, card_data)
 
-    # Assert
+    # --- Assert ---
     assert result is True
     mock_store.get_store.assert_called_once_with(store_name)
+    # The task should unpack card_data to fetch by name and specs
     mock_store_instance.fetch_card_availability.assert_called_once_with(
-        "Sol Ring", []
-    )
+        card_name, [])
 
-    # Verify result publishing
-    mock_publish_pubsub.assert_called_once_with(
-        "worker-results",
-        {
-            "type": "availability_result",
-            "payload": {
-                "store": store_name,
-                "card": "Sol Ring",
-                "items": available_items,
-            },
-        },
-    )
+    # Verify result publishing to Redis
+    mock_publish_pubsub.assert_called_once()
+    published_msg = mock_publish_pubsub.call_args.args[0]
 
-    # Verify socket emission
-    # The task should emit two events: one when it starts, one when it
-    #  finishes.
+    assert published_msg.name == "availability_result"
+    assert published_msg.payload.store.slug == store_name
+    assert published_msg.payload.card.card.name == card_name
+    assert len(published_msg.payload.items) == 1
+    assert published_msg.payload.items[0]["price"] == 1.99
+
+    # Verify socket emission using the worker mock
     expected_calls = [
         call(
             "availability_check_started",
-            {"store": store_name, "card": "Sol Ring"},
+            {"store": store_name, "card": card_name},
             room=username,
         ),
         call(
@@ -69,89 +85,91 @@ def test_update_availability_single_card_success(
             {
                 "username": username,
                 "store": store_name,
-                "card": "Sol Ring",
+                "card": card_name,
                 "items": available_items,
             },
             room=username,
         ),
     ]
-    assert mock_socket_emit.call_count == 2
-    mock_socket_emit.assert_has_calls(expected_calls, any_order=False)
+    assert mock_socket_emit_worker.call_count == 2
+    mock_socket_emit_worker.assert_has_calls(expected_calls, any_order=False)
 
 
-def test_update_all_tracked_cards_availability(mocker):
+def test_update_all_tracked_cards_availability(user_factory,
+                                               db_session,
+                                               mocker):
     """
-    GIVEN a list of users exists in the database
+    GIVEN users exist in the database (via factories)
     WHEN the system-wide task 'update_all_tracked_cards_availability' is called
-    THEN it should call the user-specific update function for each user.
-    This test covers requirement [5.1.7].
+    THEN it queries the DB and calls the update function for each user.
     """
-    # Arrange
-    # 1. Mock the database call to return a list of users
-    mock_db = mocker.patch("tasks.card_availability_tasks.database")
-    mock_user1 = MagicMock()
-    mock_user1.username = "user1"
-    mock_user2 = MagicMock()
-    mock_user2.username = "user2"
-    mock_db.get_all_users.return_value = [mock_user1, mock_user2]
+    # --- Arrange ---
+    # Create real users in the test database instead of mocking the DB layer
+    user_factory(username="user_alpha")
+    user_factory(username="user_beta")
 
-    # 2. Mock the user-specific task function that gets called
+    # Mock the internal function that processes each user
     mock_update_for_user = mocker.patch(
         "tasks.card_availability_tasks.update_availability_for_user"
     )
 
-    # Act
+    # --- Act ---
     update_all_tracked_cards_availability()
 
-    # Assert
-    # Verify that the database was queried for all users
-    mock_db.get_all_users.assert_called_once()
+    # --- Assert ---
+    # Verify that the user-specific update function was called for both users
+    expected_calls = [call("user_alpha"), call("user_beta")]
 
-    # Verify that the user-specific update function was called for each user
-    expected_calls = [call("user1"), call("user2")]
+    # Check that calls happened regardless of DB return order
     mock_update_for_user.assert_has_calls(expected_calls, any_order=True)
     assert mock_update_for_user.call_count == 2
 
 
 def test_update_availability_single_card_no_items_found(
-    mock_store, mock_publish_pubsub, mock_socket_emit
-):  # noqa
+    mock_store, mock_publish_pubsub, mock_socket_emit_worker
+):
     """
     GIVEN a card and store
     WHEN update_availability_single_card finds no available items
     THEN it should publish an empty list and emit both start and result events.
     """
-    # Arrange
+    # --- Arrange ---
     username = "testuser"
     store_name = "test-store"
-    card_data = {"card_name": "Obscure Card", "specifications": []}
+    card_name = "Obscure Card"
+    card_data = {
+        "card_name": card_name,
+        "name": card_name,
+        "amount": 1,
+        "specifications": [],
+        "card": {"name": card_name},
+        "card_specs": []
+    }
 
     mock_store_instance = MagicMock()
     mock_store_instance.fetch_card_availability.return_value = []
     mock_store.get_store.return_value = mock_store_instance
 
-    # Act
+    # --- Act ---
     result = update_availability_single_card(username, store_name, card_data)
 
-    # Assert
+    # --- Assert ---
     assert result is True
-    mock_publish_pubsub.assert_called_once_with(
-        "worker-results",
-        {
-            "type": "availability_result",
-            "payload": {
-                "store": store_name,
-                "card": "Obscure Card",
-                "items": [],
-            },
-        },
-    )
 
-    # Verify socket emission still happens, but with an empty items list
+    # Verify publishing was called and check the model
+    mock_publish_pubsub.assert_called_once()
+    published_msg = mock_publish_pubsub.call_args.args[0]
+
+    assert published_msg.name == "availability_result"
+    assert published_msg.payload.store.slug == store_name
+    assert published_msg.payload.card.card.name == card_name
+    assert len(published_msg.payload.items) == 0
+
+    # Verify socket emission still happens with an empty items list
     expected_calls = [
         call(
             "availability_check_started",
-            {"store": store_name, "card": "Obscure Card"},
+            {"store": store_name, "card": card_name},
             room=username,
         ),
         call(
@@ -159,11 +177,11 @@ def test_update_availability_single_card_no_items_found(
             {
                 "username": username,
                 "store": store_name,
-                "card": "Obscure Card",
+                "card": card_name,
                 "items": [],
             },
             room=username,
         ),
     ]
-    assert mock_socket_emit.call_count == 2
-    mock_socket_emit.assert_has_calls(expected_calls, any_order=False)
+    assert mock_socket_emit_worker.call_count == 2
+    mock_socket_emit_worker.assert_has_calls(expected_calls, any_order=False)

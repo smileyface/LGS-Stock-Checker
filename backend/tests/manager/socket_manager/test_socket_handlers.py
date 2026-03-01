@@ -1,78 +1,101 @@
 import pytest  # noqa
 
 from managers.socket_manager import socket_handlers
-from schema.messaging import (
-    CardSpecsSchema,
-    CardSchema
+
+from data.database.models.orm_models import (
+    User,
+    UserTrackedCards,
 )
 
 
 def test_on_add_card_triggers_availability_check(
-    mock_sh_user_manager,
-    mock_sh_get_current_user,
+    db_session,
+    user_factory,
     mock_sh_emit,
     mock_sh_trigger_availability_check,
+    mock_sh_get_current_user
 ):
     """
-    GIVEN a user with preferred stores
+    GIVEN a user exists (via factory)
     WHEN they add a new card via the 'add_card' socket event
-    THEN the card is added, an availability check is queued for each store,
-    and the updated card list is emitted back to the user.
+    THEN the card is added to the DB, availability check is triggered,
+    and the updated list is emitted.
     """
     # Arrange
-    username = "testuser"
-    # This data must match the AddCardSchema
-    card_data_from_client = {
-        "card": {"name": "Sol Ring"},
-        "amount": 1,
-        "card_specs": {}}
+    # 1. Create a real user.
+    # mock_sh_get_current_user is configured to return "testuser" by default
+    # in socket_fixtures.py. So we create a user with that name.
+    user_factory(username="testuser")
 
-    # Mock the return value for the full card list after adding
-    mock_sh_user_manager.load_card_list.return_value = []
+    # 2. Prepare Payload
+    card_data_from_client = {
+        "name": "add_card",
+        "payload": {
+            "command": "add",
+            "update_data": {
+                "card": {"name": "Sol Ring"},
+                "amount": 1,
+                "card_specs": []
+            }
+        }
+    }
 
     # Act
     socket_handlers.handle_add_user_tracked_card(card_data_from_client)
 
     # Assert
-    # 1. Verify the card was added to the user's list with the
-    # correct arguments
-    mock_sh_user_manager.add_user_card.assert_called_once_with(
-        username,
-        CardSchema(name="Sol Ring"),
-        1,
-        CardSpecsSchema(set_code=None, collector_number=None, finish=None),
-    )
+    # 1. Verify DB State (Black Box)
+    # We check if the card actually ended up in the database.
+    tracked_card = db_session.query(UserTrackedCards).join(User).filter(
+        User.username == "testuser",
+        UserTrackedCards.card_name == "Sol Ring"
+    ).first()
 
-    # 2. Verify availability check was triggered for the new card ([5.1.6])
-    # The availability check uses a dictionary representation
-    card_data_for_task = {
-        "card": CardSchema(name="Sol Ring"),
-        "specifications": CardSpecsSchema(
-            set_code=None, collector_number=None, finish=None
-        ),
-    }
+    assert tracked_card is not None
+    assert tracked_card.amount == 1
+
+    # 2. Verify Availability Check Triggered
+    # We still mock this because we don't want to spin up Redis/Workers here
     mock_sh_trigger_availability_check.assert_called_once()
-    # Check the positional arguments passed to the trigger function
-    assert mock_sh_trigger_availability_check.call_args.args[0] == username
-    assert (mock_sh_trigger_availability_check.call_args.args[1] ==
-            card_data_for_task)
-    # Check that a callback was passed
-    assert ("on_complete_callback" in
-            mock_sh_trigger_availability_check.call_args.kwargs)
 
-    # 3. Verify the client was notified with the updated card list via
-    # the callback
-    # To test this properly, we execute the callback that was passed to
-    # the mock
-    callback = mock_sh_trigger_availability_check.call_args.kwargs[
-        "on_complete_callback"
+    call_args = mock_sh_trigger_availability_check.call_args
+    assert call_args.args[0] == "testuser"
+    assert call_args.args[1]["card"]["name"] == "Sol Ring"
+
+    # 3. Verify Emission via Callback
+    # Execute the callback passed to the trigger function
+    callback = call_args.kwargs.get("on_complete_callback")
+    assert callback is not None
+
+    callback()  # This triggers user_manager.send_user_cards("testuser")
+
+    # Verify the emit happened with the correct data structure
+    mock_sh_emit.assert_called()
+
+    # Find the 'cards_data' emission
+    emit_calls = [
+        c for c in mock_sh_emit.call_args_list
+        if c.args[0] == "cards_data"
     ]
-    callback()
-    mock_sh_emit.assert_called_with(
-        "cards_data",
-        {"username": "testuser", "tracked_cards": []},
-        room="testuser",
-    )
+    assert len(emit_calls) > 0
+
+    last_call = emit_calls[-1]
+    event_name = last_call.args[0]
+    # Check payload which might be arg 1 or 2 depending on how emit is called
+    payload = last_call.args[1]
+    kwargs = last_call.kwargs
+
+    assert "payload" in payload
+    payload = payload["payload"]
+
+    assert event_name == "cards_data"
+    assert kwargs.get("to") == "testuser"
+
+    # Verify the payload contains our new card
+    # Payload structure: {"username": str, "cards": list}
+    assert "cards" in payload
+    cards_list = payload["cards"]
+    assert any(c["card"]["name"] == "Sol Ring" for c in cards_list)
 
 
 @pytest.mark.parametrize(
@@ -80,25 +103,49 @@ def test_on_add_card_triggers_availability_check(
     [
         # Missing all fields
         ({}, "Field required"),
-        # Missing amount
-        ({"card": {"name": "Sol Ring"}}, "Field required"),
         # Missing card name
-        ({"amount": 1}, "Field required"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"amount": 1}
+            }
+        }, "Field required"),
         # Empty card name
-        ({"card": {"name": ""}, "amount": 1}, "at least 1 character"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"card": {"name": ""}, "amount": 1}
+            }
+        }, "at least 1 character"),
         # Invalid amount
-        ({"card": {"name": "Sol Ring"}, "amount": 0}, "greater than 0"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"card": {"name": "Sol Ring"}, "amount": 0}
+            }
+        }, "greater than 0"),
         # Negative amount
-        ({"card": {"name": "Sol Ring"}, "amount": -3}, "greater than 0"),
+        ({
+            "payload": {
+                "command": "add",
+                "update_data": {"card": {"name": "Sol Ring"}, "amount": -3}
+            }
+        }, "greater than 0"),
         # Invalid finish
         ({
-            "card": {"name": "Sol Ring"},
-            "amount": 1,
-            "card_specs": {"finish": "invalid"},
+            "payload": {
+                "command": "add",
+                "update_data": {
+                    "card": {"name": "Sol Ring"},
+                    "amount": 1,
+                    "card_specs": {"finish": "invalid"},
+                }
+            }
         }, "Input should be"),
     ],
 )
-def test_on_add_card_with_invalid_data(mock_sh_emit,
+def test_on_add_card_with_invalid_data(mock_sh_get_current_user,
+                                       mock_sh_emit,
                                        invalid_data,
                                        expected_error_part):
     """
@@ -115,28 +162,36 @@ def test_on_add_card_with_invalid_data(mock_sh_emit,
 @pytest.mark.parametrize(
     "invalid_data, expected_error_part",
     [
-        ({}, "card"),  # Missing all fields
-        ({}, "update_data"),  # Missing all fields
-        ({"card": {"name": "Sol Ring"}},
-         "update_data"),  # Missing update_data
-        ({"update_data": {}}, "card"),  # Missing card name
-        (
-            {
-                "card": {"name": "Sol Ring"},
-                "update_data":
-                {
-                    "specifications":
-                        {"finish": "invalid"}
-                },
-            },
-            "specifications",
-        ),  # Invalid Finsih
+        ({}, "Field required"),
+        # Missing update_data
+        ({
+            "payload": {
+                "command": "update"
+            }
+        }, "Field required"),
+        # Missing card name
+        ({
+            "payload": {
+                "command": "update",
+                "update_data": {}
+            }
+        }, "Field required"),
+        # Invalid Finish
+        ({
+            "payload": {
+                "command": "update",
+                "update_data": {
+                    "card": {"name": "Sol Ring"},
+                    "amount": 1,
+                    "card_specs": {"finish": "invalid"}
+                }
+            }
+        }, "Input should be"),
     ],
 )
 def test_on_update_card_with_invalid_data(
     seeded_user_with_cards,
     mock_sh_emit,
-    mock_sh_get_current_user,
     invalid_data,
     expected_error_part,
 ):
@@ -148,14 +203,10 @@ def test_on_update_card_with_invalid_data(
 
     socket_handlers.handle_update_user_tracked_cards(invalid_data)
 
-    # Convert the error to a dictionary for easier inspection
-    errors = mock_sh_emit.call_args.args[1].get('details', [])
-
+    mock_sh_emit.assert_called_once()
     # Check that at least one error message contains the expected part
-    error_found = any(expected_error_part in str(error['loc'])
-                      for error in errors)
-    assert error_found, f"Expected error part '{expected_error_part}'\
-    not found in validation errors."
+    assert mock_sh_emit.call_args.args[0] == "server_log"
+    assert expected_error_part in str(mock_sh_emit.call_args.args[1])
 
 
 @pytest.mark.parametrize(
@@ -163,7 +214,14 @@ def test_on_update_card_with_invalid_data(
     [
         ({}, "Field required"),  # Missing card field
         # Empty card name
-        ({"card": ""}, "validation error for DeleteCardSchema"),
+        ({
+            "payload": {
+                "command": "delete",
+                "update_data": {
+                    "card": {"name": ""}
+                }
+            }
+        }, "at least 1 character"),
     ],
 )
 def test_on_delete_card_with_invalid_data(
@@ -188,7 +246,10 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     """
     # Arrange
     card_name = "Sol Ring"
-    client_data = {"card_name": card_name}
+    client_data = {
+        "name": "get_card_printings",
+        "payload": {"card": {"name": card_name}}
+    }
     mock_printings = [
         {
             "set_code": "C21",
@@ -206,9 +267,13 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     # Assert
     mock_sh_database.is_card_in_catalog.assert_called_once_with(card_name)
     mock_sh_database.get_printings_for_card.assert_called_once_with(card_name)
-    expected_payload = {"card_name": card_name, "printings": mock_printings}
+    expected_message = {
+        "name": "card_printings_data",
+        "payload": {"card_name": card_name, "printings": mock_printings}
+    }
     mock_sh_emit.assert_called_once_with("card_printings_data",
-                                         expected_payload)
+                                         expected_message,
+                                         to="")
 
 
 @pytest.mark.parametrize(
@@ -227,3 +292,56 @@ def test_handle_get_card_printings_invalid_data(mock_sh_emit, invalid_data):
     with pytest.raises(Exception):  # Pydantic raises ValidationError
         socket_handlers.handle_get_card_printings(data=invalid_data)
     mock_sh_emit.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "fixture_name, username, expect_emit",
+    [
+        ("seeded_user_with_cards", "testuser", True),
+        ("seeded_user", "testuser", True),
+        ("seeded_user", "", False),
+    ],
+    ids=["success", "empty_list", "missing_username"]
+)
+def test_send_user_cards(request, mock_sh_emit, fixture_name,
+                         username, expect_emit):
+    """
+    GIVEN a username and a database state (seeded with cards or empty)
+    WHEN _send_user_cards is called
+    THEN it should fetch from the DB and emit the correct 'cards_data' event.
+    """
+    # Arrange
+    # Initialize the database state using the fixture
+    request.getfixturevalue(fixture_name)
+
+    # Act
+    socket_handlers.send_user_cards(username)
+
+    # Assert
+    if expect_emit:
+        mock_sh_emit.assert_called_once()
+        args, kwargs = mock_sh_emit.call_args
+        assert args[0] == "cards_data"
+        assert kwargs["to"] == username
+
+        actual_payload = args[1]["payload"]
+        actual_cards = actual_payload["cards"]
+
+        if fixture_name == "seeded_user_with_cards":
+            # Verify the presence of seeded cards
+            # We check for specific cards known to be in the fixture
+            card_names = [c["card"]["name"] for c in actual_cards]
+            assert "Lightning Bolt" in card_names
+            assert "Counterspell" in card_names
+            assert "Sol Ring" in card_names
+
+            # Spot check one card's details
+            bolt = next(c for c in actual_cards
+                        if c["card"]["name"] == "Lightning Bolt")
+            assert bolt["amount"] == 4
+            assert len(bolt["card_specs"]) == 2
+        else:
+            # For seeded_user (empty list)
+            assert actual_cards == []
+    else:
+        mock_sh_emit.assert_not_called()

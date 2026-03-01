@@ -17,12 +17,13 @@ from .db_config import initialize_database
 from .session_manager import get_session, remove_session, health_check
 
 from .repositories.card_repository import (
+    modify_user_tracked_card,
     get_users_cards,
-    add_card_to_user,
     delete_user_card,
     update_user_tracked_card_preferences,
     search_card_names,
     filter_existing_card_names,
+    get_all_tracked_cards
 )
 from .repositories.user_repository import (
     get_user_by_username,
@@ -39,6 +40,7 @@ from .repositories.user_repository import (
     get_tracking_users_for_cards,
     get_user_orm_by_id,
     get_user_orm_by_username,
+    get_user_password_hash,
 )
 from .repositories.store_repository import (
     get_store_metadata,
@@ -68,8 +70,8 @@ __all__ = [
     "remove_session",
     "health_check",
     # Card Repository
+    "modify_user_tracked_card",
     "get_users_cards",
-    "add_card_to_user",
     "delete_user_card",
     "update_user_tracked_card_preferences",
     "search_card_names",
@@ -90,6 +92,10 @@ __all__ = [
     "is_card_in_catalog",
     "filter_existing_card_names",
     "is_valid_printing_specification",
+    "get_user_password_hash",
+    "get_all_tracked_cards",
+    # User Repository
+    "get_user_by_username",
     # Store Repository
     "get_store_metadata",
     "get_all_stores",

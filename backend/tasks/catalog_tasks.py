@@ -8,6 +8,7 @@ from managers import redis_manager
 from utility import logger
 from datetime import datetime
 import time
+from schema.messaging import messages
 
 
 # --- Constants ---
@@ -31,14 +32,9 @@ def update_card_catalog():
             f"Updating database catalog..."
         )
         redis_manager.publish_pubsub(
-            "worker-results",
-            {
-                "type": "catalog_card_names_result",
-                "payload":
-                {
-                    "names": card_names
-                }
-            }
+            messages.CatalogCardNamesResultMessage(
+                payload=(messages
+                         .CatalogCardNamesResultPayload(names=card_names)))
         )
 
     logger.info("🏁 Finished background task: update_card_catalog")
@@ -64,7 +60,7 @@ def update_set_catalog():
                 "code": s.get("code"),
                 "name": s.get("name"),
                 "release_date": (
-                    datetime.strptime(s.get("released_at"),
+                    datetime.strptime(str(s.get("released_at")),
                                       "%Y-%m-%d").date()
                     if s and s.get("released_at")
                     else None
@@ -79,14 +75,10 @@ def update_set_catalog():
             f"source. Updating database catalog..."
         )
         redis_manager.publish_pubsub(
-            "worker-results",
-            {
-                "type": "catalog_set_data_result",
-                "payload":
-                {
-                    "sets": set_data_to_add
-                }
-            }
+            messages.CatalogSetDataResultMessage(
+                payload=(messages
+                         .CatalogSetDataResultPayload(sets=set_data_to_add))
+            )
         )
 
         logger.info("✅ Successfully updated set catalog in the database.")
@@ -159,11 +151,11 @@ def update_full_catalog():
                 logger.info(f"Publishing chunk of {len(printings_chunk)}\
                              printings... (took {chunk_duration:.2f}s)")
                 redis_manager.publish_pubsub(
-                    "worker-results",
-                    {
-                        "type": "catalog_printings_chunk_result",
-                        "payload": {"printings": printings_chunk}
-                    }
+                    messages.CatalogPrintingsChunkResultMessage(
+                        payload=messages.CatalogPrintingsChunkResultPayload(
+                            printings=printings_chunk
+                        )
+                    )
                 )
                 printings_chunk = []
                 chunk_start_time = time.monotonic()
@@ -172,11 +164,11 @@ def update_full_catalog():
         if printings_chunk:
             logger.info("Processing final chunk...")
             redis_manager.publish_pubsub(
-                "worker-results",
-                {
-                    "type": "catalog_printings_chunk_result",
-                    "payload": {"printings": printings_chunk}
-                }
+                messages.CatalogPrintingsChunkResultMessage(
+                    payload=messages.CatalogPrintingsChunkResultPayload(
+                        printings=printings_chunk
+                    )
+                )
             )
 
         # Add all unique finishes found across all chunks at the end
@@ -186,13 +178,10 @@ def update_full_catalog():
                 f"Updating database."
             )
             redis_manager.publish_pubsub(
-                "worker-results",
-                {
-                    "type": "catalog_finishes_chunk_result",
-                    "payload": {
-                        "finishes": list(all_finishes_found)
-                    },
-                },
+                messages.CatalogFinishesChunkResultMessage(
+                    payload=messages.CatalogFinishesChunkResultPayload(
+                        finishes=list(all_finishes_found)
+                    ))
             )
 
     except Exception as e:

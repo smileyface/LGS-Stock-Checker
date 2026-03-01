@@ -48,12 +48,13 @@ def configure_socket_io(app):
     message_queue_url = app.config.get(
         "SOCKETIO_MESSAGE_QUEUE", redis_manager.REDIS_URL
     )
+    async_mode = app.config.get("SOCKETIO_ASYNC_MODE", "eventlet")
     # Initialize SocketIO with the app and specific configurations
     socketio.init_app(
         app,
         message_queue=message_queue_url,
         cors_allowed_origins=allowed_origins,
-        async_mode="eventlet",
+        async_mode=async_mode,
         engineio_logger=False,  # Set to True for detailed Engine.IO debugging
     )
     # Discover and register all socket event handlers

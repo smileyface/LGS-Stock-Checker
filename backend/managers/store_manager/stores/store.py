@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
 import requests
+from schema.blocks import CardListingSchema
 
 from managers.store_manager.filtering import filter_listings
 from utility import logger
@@ -17,7 +18,7 @@ class Store(ABC):
         self.search_url = search_url
 
     @abstractmethod
-    def _scrape_listings(self, card_name: str) -> List[Dict[str, Any]]:
+    def _scrape_listings(self, card_name: str) -> List[CardListingSchema]:
         """
         Scrapes the store's website for raw card listings.
         This method must be implemented by each subclass.
@@ -25,7 +26,7 @@ class Store(ABC):
         pass  # pragma: no cover
 
     def fetch_card_availability(
-        self, card_name: str, specifications: List[Dict[str, Any]] = None
+        self, card_name: str, specifications: List[Dict[str, Any]] = []
     ) -> List[Dict[str, Any]]:
         """Fetches and filters card availability from the store."""
         logger.info(

@@ -10,6 +10,7 @@ the `STORE_REGISTRY`, making them available to the rest of the application.
 from utility import logger
 from .storefronts.crystal_commerce_store import CrystalCommerceStore
 from .storefronts.default import DefaultStore
+from ..stores.store import Store
 
 
 class LazyStoreRegistry:
@@ -23,11 +24,12 @@ class LazyStoreRegistry:
     """
 
     def __init__(self):
-        self._registry = None
+        self._registry: dict[str, Store] = {}
         self._strategy_map = {
             "crystal_commerce": CrystalCommerceStore,
             "default": DefaultStore,
         }
+        self._loaded = False
 
     @property
     def keys(self):
@@ -35,7 +37,7 @@ class LazyStoreRegistry:
         triggering a lazy load if necessary."""
         return list(self.get_registry().keys())
 
-    def _load_stores(self):
+    def _load_stores(self) -> None:
         logger.info("🔧 Lazily loading store registry from database...")
         # This import is intentionally placed here to
         # avoid circular dependencies
@@ -55,12 +57,12 @@ class LazyStoreRegistry:
                     search_url=store_model.search_url,
                 )
                 self._registry[instance.slug] = instance
+        self._loaded = True
         logger.info(
-            f"✅ Store registry loaded with" f" {len(self._registry)} stores."
-        )
+            f"✅ Store registry loaded with" f" {len(self._registry)} stores.")
 
-    def get_registry(self):
-        if self._registry is None:
+    def get_registry(self) -> dict[str, Store]:
+        if not self._loaded:
             self._load_stores()
         return self._registry
 

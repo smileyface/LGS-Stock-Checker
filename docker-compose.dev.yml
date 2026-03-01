@@ -13,6 +13,10 @@ services:
     volumes:
       # Mount the source code into the container.
       - ./backend:/app
+      # Anonymous volume to prevent host .venv from leaking into container
+      - /app/.venv
+    ports:
+      - "5000:5000"
     environment:
       <<: *common-backend-env
 
@@ -21,18 +25,25 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+    command: npm run dev
     volumes:
       - ./frontend:/app
       # Anonymous volume to prevent host node_modules from overwriting the container's.
       - /app/node_modules
     ports:
-      # Override the production port mapping.
-      # Expose the Vite dev server's port (5173) to the host.
       - "5173:5173"
 
   worker:
     volumes:
       - ./backend:/app
+      - /app/.venv
+    environment:
+      <<: *common-backend-env
+
+  scheduler:
+    volumes:
+      - ./backend:/app
+      - /app/.venv
     environment:
       <<: *common-backend-env
 

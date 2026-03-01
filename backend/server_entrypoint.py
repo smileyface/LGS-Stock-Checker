@@ -6,13 +6,14 @@ This file creates and configures the Flask app and its extensions.
 # This is the most critical part for running with Gunicorn and eventlet.
 # It must be done at the very top, before any other modules are imported.
 import eventlet
+eventlet.monkey_patch()
 
 # These imports must come AFTER monkey_patching
-from app_factory import create_base_app, configure_web_app, configure_database
-from managers import flask_manager
-from utility import logger
-
-eventlet.monkey_patch()
+from app_factory import (create_base_app,  # noqa: E402
+                         configure_web_app,
+                         configure_database)
+from managers import messaging_manager  # noqa: E402
+from utility import logger  # noqa: E402
 
 
 # When Gunicorn starts, it will load this file and look for an 'app' variable.
@@ -27,8 +28,9 @@ app = create_base_app()
 app = configure_web_app(app)
 
 # 3. Start the background listener for results from RQ workers
-flask_manager.start_server_listener(app)
+messaging_manager.start_server_listener(app)
 
-app = configure_database(app)  # Configure the database connection
+
+app = configure_database(app, create_tables=True)
 
 logger.info("✅ App context for server is ready.")

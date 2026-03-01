@@ -2,12 +2,11 @@
 Manages a user's tracked card list, including adding, updating, deleting,
 and sending updates back to the client.
 """
-from typing import List
-
+from typing import Optional
+from data.database.models.orm_models import UserTrackedCards
 from data import database
-from schema import orm
+from managers import socket_manager
 from utility import logger
-from managers.socket_manager import socketio
 
 
 def _send_updated_card_list(username: str):
@@ -19,30 +18,49 @@ def _send_updated_card_list(username: str):
         f"📜 Fetching and sending updated tracked cards for user: {username}"
     )
     cards = database.get_users_cards(username)
+    if cards is None:
+        cards = []
 
     # Serialize the list of Pydantic objects into a JSON-serializable format.
     # This is crucial for the data to be correctly interpreted by the frontend.
-    card_list = [
-        {
-            "card_name": card.card.name if card.card else None,
-            "amount": card.amount,
-            "specifications": (
-                [
-                    {
-                        "set_code": spec.set_code,
-                        "collector_number": spec.collector_number,
-                        "finish": spec.finish,
-                    }
-                    for spec in card.specifications
-                ]
-                if card.specifications
-                else []
-            ),
-        }
-        for card in cards
-    ]
+    card_list = []
+    for card in cards:
+        if isinstance(card, dict):
+            card_obj = card.get("card")
+            card_name = (card_obj.get("name")
+                         if isinstance(card_obj, dict)
+                         else None)
+            amount = card.get("amount")
+            specs = card.get("specifications") or []
+            formatted_specs = [
+                {
+                    "set_code": spec.get("set_code"),
+                    "collector_number": spec.get("collector_number"),
+                    "finish": spec.get("finish"),
+                }
+                for spec in specs
+            ]
+        else:
+            card_name = card.card.name if card.card else None
+            amount = card.amount
+            specs = card.specifications or []
+            formatted_specs = [
+                {
+                    "set_code": spec.set_code,
+                    "collector_number": spec.collector_number,
+                    "finish": spec.finish,
+                }
+                for spec in specs
+            ]
 
-    socketio.emit("cards_data", {"tracked_cards": card_list}, room=username)
+        card_list.append({"card_name": card_name,
+                          "amount": amount,
+                          "specifications": formatted_specs})
+
+    socket_manager.emit_from_worker(
+        "cards_data", {"username": username, "tracked_cards": card_list},
+        room=username
+    )
     logger.info(
         f"📡 Sent updated card list to room '{username}' "
         f"with {len(card_list)} items."
@@ -55,14 +73,12 @@ def add_user_card(username: str,
                   card_specs: dict):
     """Adds a card to a user's list and sends an update."""
     logger.info(f"Adding card '{card_name}' for user '{username}'.")
-    # The data layer expects a single dictionary that conforms to the
-    # UserTrackedCardSchema.
     card_data = {
-        "card": {"name": card_name},
+        "card_name": card_name,
         "amount": amount,
         "specifications": [card_specs] if card_specs else [],
     }
-    database.add_card_to_user(username, card_data)
+    database.modify_user_tracked_card("add", username, card_data)
     _send_updated_card_list(username)
 
 
@@ -82,15 +98,17 @@ def delete_user_card(username: str, card_name: str):
     _send_updated_card_list(username)
 
 
-def load_card_list(username: str) -> List[orm.UserTrackedCardSchema]:
+def load_card_list(username: str) -> Optional[UserTrackedCards]:
     """Loads a user's card list from the database without sending an update."""
     logger.info(f"📖 Loading card list for user: '{username}'")
     if not database.get_user_by_username(username):
         logger.warning(
             f"User '{username}' not found when trying to load card list."
         )
-        return []
+        return None
 
     cards = database.get_users_cards(username)
+    if cards is None:
+        cards = []
     logger.info(f"✅ Loaded {len(cards)} cards for user: '{username}'")
     return cards

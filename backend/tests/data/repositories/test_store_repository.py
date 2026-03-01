@@ -1,12 +1,15 @@
 import data.database as data
 
 
-def test_get_store_metadata(seeded_store):
+def test_get_store_metadata(store_factory):
     """
     GIVEN a store exists in the database
     WHEN get_store_metadata is called with the store's slug
     THEN the correct store object is returned.
     """
+    # Arrange
+    store_factory(name="Test Store", slug="test_store")
+
     # Act
     store = data.get_store_metadata("test_store")
 

@@ -112,7 +112,7 @@ def handle_get_card_availability(data: dict = {}):
 
 
 @socketio.on("get_cards")
-def handle_get_cards():
+def handle_get_cards(data: dict):
     """Handles a request to retrieve the user's tracked cards."""
     logger.info("📩 Received 'get_cards' request from front end.")
     username = get_username()

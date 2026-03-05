@@ -18,7 +18,6 @@ class CardPrintingSchema(DatabaseSchema):
 
     # The ORM has 'card_name' (string)
     card_name: str = Field(..., description="Name of the card.")
-
     amount: int = Field(..., description="Quantity.")
 
     # We use the schema from blocks.py that handles the

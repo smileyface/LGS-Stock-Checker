@@ -111,18 +111,46 @@ def bulk_add_finishes(finish_names: List[str],
 
 
 @db_query
-def bulk_add_card_printings(printings: List[Dict[str, Any]],
-                            *,
-                            session: Session
-                            ) -> None:
-    assert session is not None, "Session is injected by @db_query decorator"
+def bulk_add_card_printings(printings: List[Dict[str, Any]], *, session: Session) -> None:
     if not printings:
         return
-    stmt = insert(CardPrinting).values(printings)
-    stmt = stmt.on_conflict_do_nothing()
-    session.execute(stmt)
-    logger.info(f"Attempted to bulk insert {len(printings)} card printings.")
 
+    # 1. Filter out the "Spirit/Token" orphans first
+    valid_names = {n[0] for n in session.query(Card.name).all()}
+    safe_printings = [p for p in printings if p.get('card_name') in valid_names]
+
+    if not safe_printings:
+        return
+
+    # 2. SUB-CHUNK: Postgres hates huge IN clauses. 
+    # We break the 20,000 into bites of 1,000.
+    chunk_size = 500
+    for i in range(0, len(safe_printings), chunk_size):
+        sub_chunk = safe_printings[i : i + chunk_size]
+        
+        stmt = insert(CardPrinting).values([
+            {
+                "card_name": p["card_name"],
+                "set_code": p["set_code"],
+                "collector_number": p["collector_number"]
+            } for p in sub_chunk
+        ])
+        stmt = stmt.on_conflict_do_nothing(
+            # These 3 define what makes a card "the same card"
+            index_elements=['card_name', 'set_code', 'collector_number'],
+            
+            # TODO: Add finishes to the card_printings table
+            # This defines what to change if the card IS the same
+            #set_={
+            #    'finishes': stmt.excluded.finishes  # Overwrite old finishes with the new list
+            #}
+        )
+        
+        session.execute(stmt)
+        # We commit inside the loop or rely on the @db_query decorator 
+        # to commit at the very end. 
+    
+    logger.info(f"Successfully processed {len(safe_printings)} printings in sub-chunks.")
 
 @db_query
 def get_all_printings_map(*,

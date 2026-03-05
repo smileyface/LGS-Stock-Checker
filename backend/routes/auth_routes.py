@@ -14,14 +14,13 @@ auth_bp = Blueprint("auth_bp", __name__)
 @auth_bp.route("/api/login", methods=["POST"])
 def login():
 
-    message = LoginUserMessage(**request.json)
-    data = message.payload
+    data = LoginUserMessage(**request.json)
 
     if not data:
         return jsonify({"error": "Invalid JSON"}), 400
 
-    username = data.user.username
-    password = data.password
+    username = data.payload.user.username
+    password = data.payload.password
 
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400

@@ -4,19 +4,24 @@ from flask_login import login_user, logout_user, login_required, current_user
 from managers import user_manager
 from managers import socket_manager
 
+from schema.messaging.messages import (
+    LoginUserMessage
+)
+
 
 auth_bp = Blueprint("auth_bp", __name__)
-
 
 @auth_bp.route("/api/login", methods=["POST"])
 def login():
 
-    data = request.get_json()
+    message = LoginUserMessage(**request.json)
+    data = message.payload
+
     if not data:
         return jsonify({"error": "Invalid JSON"}), 400
 
-    username = data.get("username")
-    password = data.get("password")
+    username = data.user.username
+    password = data.password
 
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400

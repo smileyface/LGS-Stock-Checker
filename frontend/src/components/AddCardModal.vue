@@ -72,14 +72,13 @@ import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useSocket } from '@/composables/useSocket';
 import { useCardPrintings } from '@/composables/useCardPrintings';
 import { debounce } from '@/utils/debounce';
-import { createCardSpecificationSchema } from '@/schema/server_types';
-import { createAddCardMessage, createCardPreferenceSchema, createCardSchema, createUpdateCardRequestPayload } from '../schema/server_types';
-
+import { createAddCardMessage, 
+        createCardPreferenceSchema, 
+        createCardSpecificationSchema,
+        createCardSchema, 
+        createUpdateCardRequestPayload } from '@/schema/server_types.ts';
+import { AppMessage } from '../types/messaging';
 const emit = defineEmits(['close']);
-
-// Get the entire socket manager from the composable.
-const socketManager = useSocket();
-const { addCard } = socketManager;
 
 // --- Local State ---
 const cardName = ref('');
@@ -105,9 +104,10 @@ const {
 
 // 1. Debounce the search function to avoid spamming the server while typing.
 const debouncedSearch = debounce((query) => {
-  if (query.length > 2 && socketManager.socket) {
-    console.log(`[AddCardModal] 📡 Searching for card names matching: ${query}`);
-    socketManager.socket.emit('search_card_names', { query });
+if (query.length > 2) {
+    console.log(`[AddCardModal] 📡 Searching for: ${query}`);
+    // This is now type-safe!
+    socketManager.emitMessage('search_card_names', { query });
   }
 }, 300);
 
@@ -145,32 +145,38 @@ watch(selectedCollectorNumber, () => {
 
 const handleSave = () => {
   error.value = null;
-  if (amount.value < 1) {
-    error.value = 'Amount must be at least 1.';
+  if (!cardName.value) {
+    error.value = 'Card name is required.';
     return;
   }
 
-  // Create the specification using the factory
-  // We convert empty strings to undefined to match the schema's optional fields
+  // 1. Build the leaf nodes (Spec and Card)
   const spec = createCardSpecificationSchema(
     selectedSet.value || undefined,
     selectedCollectorNumber.value || undefined,
     selectedFinish.value
   );
 
-  const cardData = createAddCardMessage(
-    createUpdateCardRequestPayload(
-      "add", 
-      createCardPreferenceSchema(
-        createCardSchema(
-          cardName.value),
-        amount.value,
-        spec),
-    ),
+  const card = createCardSchema(cardName.value);
+
+  // 2. Build the Preference (Card + Amount + Spec)
+  const preference = createCardPreferenceSchema(
+    card,
+    amount.value,
+    spec
   );
 
-  console.log(`[AddCardModal] 💾 Calling addCard with:`, cardData);
-  addCard(cardData);
+  // 3. Build the Payload for the 'update_card' command
+  const payload = createUpdateCardRequestPayload(
+    "add", 
+    preference
+  );
+
+  // 4. EMIT! 
+  // We use the channel name 'update_card' and send the payload
+  console.log(`[AddCardModal] 💾 Sending update_card:`, payload);
+  socketManager.emitMessage('update_card', payload);
+  
   emit('close');
 };
 

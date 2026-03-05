@@ -1,4 +1,4 @@
-from typing import Union, Literal, TypeVar, Generic, ClassVar
+from typing import Union, Literal, TypeVar, Generic, ClassVar, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import Annotated
 from .payload import (
@@ -197,13 +197,19 @@ class UpdateStoreMessage(APIMessage):
 
 class LoginUserMessage(APIMessage):
     """
-    Message to retrieve the currently authenticated user's information.
+    Payload for a login request.
     """
 
     name: Literal["login_user_me"] = "login_user_me"
     payload: LoginUserPayload
 
 
+class GetCardsMessage(APIMessage):
+    """
+    Message to get users cards
+    """
+    name: Literal["get_cards"]
+    payload: Dict[str, Any] = {}
 # --- End API Message Definitions ---
 
 
@@ -291,6 +297,7 @@ PubSubMessages = Annotated[
 
 APIMessages = Annotated[
     Union[
+        GetCardsMessage,
         GetCardPrintingsMessage,
         ParseCardListMessage,
         UpdateCardRequest,

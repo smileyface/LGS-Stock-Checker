@@ -29,6 +29,7 @@
 import { ref } from 'vue';
 import { authStore } from '../stores/auth.js';
 import { RouterLink } from 'vue-router';
+import { createUserSchema, createLoginUserMessage, createLoginUserPayload } from '../schema/server_types.js';
 
 const username = ref('');
 const password = ref('');
@@ -39,10 +40,11 @@ async function handleLogin() {
     isLoading.value = true;
     error.value = null;
     try {
-        await authStore.login({
-            username: username.value,
-            password: password.value
-        });
+        // 3. Wrap it in the Message envelope
+        const loginMessage = createLoginUserMessage(createLoginUserPayload(createUserSchema(username.value), 
+                                            password.value));
+        // 4. Pass the correctly packed MESSAGE to the store
+        await authStore.login(loginMessage);
         // The store handles redirection on success
     } catch (err) {
         error.value = 'Login failed. Please check your username and password.';

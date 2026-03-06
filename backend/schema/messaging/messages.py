@@ -14,6 +14,7 @@ from .payload import (
     UpdateStoresPayload,
     LoginUserPayload,
     CardListPayload,
+    GetCardsPayload,
 )
 
 
@@ -208,8 +209,8 @@ class GetCardsMessage(APIMessage):
     """
     Message to get users cards
     """
-    name: Literal["get_cards"]
-    payload: Dict[str, Any] = {}
+    name: Literal["get_cards"] = "get_cards"
+    payload: GetCardsPayload
 # --- End API Message Definitions ---
 
 

@@ -153,6 +153,13 @@ class LoginUserPayload(Payload):
     password: str = Field(..., description="The user's password.")
 
 
+class GetCardsPayload(Payload):
+    """
+    Payload for getting a card
+    """
+    user: UserSchema = Field(..., description="The User")
+
+
 class UpdateStoresPayload(Payload):
     """
     Payload for updating a user's preferred stores.

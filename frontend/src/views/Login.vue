@@ -43,6 +43,7 @@ async function handleLogin() {
         // 3. Wrap it in the Message envelope
         const loginMessage = createLoginUserMessage(createLoginUserPayload(createUserSchema(username.value), 
                                             password.value));
+        localStorage.setItem("username", username.value);
         // 4. Pass the correctly packed MESSAGE to the store
         await authStore.login(loginMessage);
         // The store handles redirection on success

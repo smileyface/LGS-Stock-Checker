@@ -8,10 +8,35 @@ import type {
     UpdateCardRequestPayload,
     AppMessage
 } from '../types/messaging';
+import { 
+    createUserSchema,
+    createGetCardsPayload
+} from '../schema/server_types';
 
 // --- State ---
 const trackedCards = ref([]); // We'll type this once we finish the "Receive" schemas
 const isConnected = ref(false);
+
+const handleIncomingCards = (message) => {
+    // 1. Log it so you can see the data in the browser console
+    console.log("📥 Received cards_data message:", message);
+
+    // 2. Extract the cards from the payload
+    // Based on your backend: payload = CardListPayload(cards=packed_cards)
+    const cardList = message.payload.cards;
+
+    if (!cardList || cardList.length === 0) {
+        console.warn("⚠️ Received an empty card list.");
+        return;
+    }
+
+    // 3. Map the data to your UI state
+    // Remember: your pack_card function sends { card: {name}, amount, card_specs }
+    console.log(`✅ Successfully loaded ${cardList.length} cards.`);
+    
+    // If using React, you'd call your state setter here:
+    // setCards(cardList);
+};
 
 // --- Socket Connection ---
 const socket: Socket = io({
@@ -21,14 +46,20 @@ const socket: Socket = io({
 
 // --- Connection Logic ---
 socket.on('connect', () => {
+    const username = localStorage.getItem("username");
     isConnected.value = true;
     console.log("🔗 Connected!");
-    emitMessage("get_cards", {})
+    const user = createGetCardsPayload(createUserSchema(username))
+    emitMessage("get_cards", user);
 });
 
 socket.on('disconnect', () => {
     isConnected.value = false;
 });
+
+// --- Response Message Connecting ---
+// ADD THIS HERE
+socket.on("cards_data", handleIncomingCards);
 
 // --- Emitter Functions (The "Clean" Way) ---
 

@@ -118,7 +118,8 @@ def handle_get_cards(data: dict):
     logger.info("📩 Received 'get_cards' request from front end.")
     
     try:
-        data_payload = payload.GetCardsPayload.model_validate(data.get("payload", {}))
+        data_payload = payload.GetCardsPayload.model_validate(
+            data.get("payload", {}))
         
         username = data_payload.user.username
         

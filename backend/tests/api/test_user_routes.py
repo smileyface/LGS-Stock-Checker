@@ -2,6 +2,15 @@ import json
 from managers.user_manager import add_user
 from data.database.models.orm_models import User
 
+
+from schema.blocks import UserSchema
+from schema.messaging.messages import LoginUserMessage
+
+from schema.messaging.payload import LoginUserPayload
+
+
+test_user = UserSchema(username="testuser")
+
 # --- Tests for /api/stores ---
 
 
@@ -12,9 +21,14 @@ def test_get_all_stores_success(client, seeded_user, seeded_stores):
     THEN the response should be 200 OK with a list of store slugs.
     """
     # Log in the user
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
     response = client.get("/api/stores")
@@ -49,6 +63,16 @@ def test_update_another_user_is_impossible(client, db_session):
     THEN only 'user_A's username is changed, and 'user_B' is unaffected,
     proving that the endpoint correctly uses the logged-in user's session.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
+    client.post(
+        "/api/login",
+        data=message.model_dump_json(),
+        content_type="application/json",
+    )
     # Arrange: Create two users
     add_user("user_A", "password_A")
     add_user("user_B", "password_B")
@@ -56,7 +80,10 @@ def test_update_another_user_is_impossible(client, db_session):
     # Log in as user_A
     login_res = client.post(
         "/api/login",
-        data=json.dumps({"username": "user_A", "password": "password_A"}),
+        data=json.dumps({
+            "name": "login_user",
+            "payload": {"username": "user_A", "password": "password_A"}
+        }),
         content_type="application/json",
     )
     assert login_res.status_code == 200

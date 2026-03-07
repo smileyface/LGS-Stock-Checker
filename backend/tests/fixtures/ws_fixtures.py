@@ -2,6 +2,11 @@ import pytest
 import json
 import managers.socket_manager.socket_connections as socket_connections_module
 
+from schema.blocks import UserSchema
+from schema.messaging.messages import LoginUserMessage
+
+from schema.messaging.payload import LoginUserPayload
+
 
 @pytest.fixture(params=["anonymous", "authenticated"])
 def websocket_client_factory(request, app, seeded_user, mocker):
@@ -30,10 +35,13 @@ def websocket_client_factory(request, app, seeded_user, mocker):
     flask_client = app.test_client()
     if request.param == "authenticated":
         with flask_client:
+            message = LoginUserMessage(
+                payload=LoginUserPayload(user=UserSchema(username="testuser"),
+                                         password="password")
+            )
             login_response = flask_client.post(
                 "/api/login",
-                data=json.dumps({"username": "testuser",
-                                 "password": "password"}),
+                data=message.model_dump_json(),
                 content_type="application/json",
             )
             assert login_response.status_code == 200

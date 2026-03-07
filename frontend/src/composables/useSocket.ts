@@ -1,4 +1,4 @@
-import { ref, readonly, Ref } from 'vue';
+import { ref, readonly} from 'vue';
 import { io, Socket } from 'socket.io-client';
 import { 
     //Import Unions
@@ -9,6 +9,7 @@ import {
     //Import Requests
     CardPreferenceSchema,
     UpdateCardRequest,
+    CardsDataMessage,
     //Creation functions
     createGetCardsPayload,
     createUserSchema,
@@ -63,7 +64,7 @@ socket.on('disconnect', () => {
 });
 
 // --- Response Message Connecting ---
-socket.on("cards_data", handleIncomingCards);
+socket.on("cards_data", (data: any) => handleIncomingCards(data as CardsDataMessage));
 
 // --- Emitter Functions (The "Clean" Way) ---
 

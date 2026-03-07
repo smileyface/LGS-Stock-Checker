@@ -1,6 +1,7 @@
 from werkzeug.middleware.proxy_fix import ProxyFix
+from pydantic import ValidationError # noqa
 import os
-from flask import Flask  # noqa
+from flask import Flask, jsonify  # noqa
 from flask_login import LoginManager  # noqa
 from flask import session  # noqa
 from flask_session import Session  # noqa
@@ -31,6 +32,19 @@ def initalize_flask_app(override_config=None, config_name=None):
         app.config.update(override_config)
 
     config[config_name].init_app(app)
+
+    # --- Global Error Handlers ---
+    @app.errorhandler(ValidationError)
+    def handle_pydantic_validation_error(e):
+        """
+        Catches any Pydantic ValidationError raised in any route 
+        and returns a 400 instead of a 500.
+        """
+        logger.warning(f"⚠️ Validation Error: {e.json()}")
+        return jsonify({
+            "error": "Invalid request data",
+            "details": e.errors()
+        }), 400
 
     # Initialize session management. The configuration (e.g., SESSION_TYPE)
     # is now correctly loaded from the config object.

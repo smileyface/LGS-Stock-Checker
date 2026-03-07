@@ -1,20 +1,22 @@
 import { ref, readonly, Ref } from 'vue';
 import { io, Socket } from 'socket.io-client';
-// 1. Import your new types
-import type { 
-    UpdateCardRequest, 
-    LoginUserPayload,
-    CardPreferenceSchema,
-    UpdateCardRequestPayload,
-    AppMessage
-} from '../types/messaging';
 import { 
+    //Import Unions
+    APIMessages,
+    //Import Payloads
+    UpdateCardRequestPayload,
+    LoginUserPayload,
+    //Import Requests
+    CardPreferenceSchema,
+    UpdateCardRequest,
+    //Creation functions
+    createGetCardsPayload,
     createUserSchema,
-    createGetCardsPayload
+
 } from '../schema/server_types';
 
 // --- State ---
-const trackedCards = ref([]); // We'll type this once we finish the "Receive" schemas
+const trackedCards = ref([]);
 const isConnected = ref(false);
 
 const handleIncomingCards = (message) => {
@@ -31,11 +33,14 @@ const handleIncomingCards = (message) => {
     }
 
     // 3. Map the data to your UI state
-    // Remember: your pack_card function sends { card: {name}, amount, card_specs }
+
+    trackedCards.value = message.payload.cards.map(item => ({
+        ...item,
+        specifications: item.card_specs || [], 
+        card_name: item.card.name 
+    }));
     console.log(`✅ Successfully loaded ${cardList.length} cards.`);
     
-    // If using React, you'd call your state setter here:
-    // setCards(cardList);
 };
 
 // --- Socket Connection ---
@@ -58,7 +63,6 @@ socket.on('disconnect', () => {
 });
 
 // --- Response Message Connecting ---
-// ADD THIS HERE
 socket.on("cards_data", handleIncomingCards);
 
 // --- Emitter Functions (The "Clean" Way) ---
@@ -121,13 +125,26 @@ export function useSocket() {
 }
 
 /**
- * Generic Emitter
- * T extends the 'name' field of any message in our AppMessage union.
+ * EMIT MESSAGE HELPER
+ * * How the 'payload' type works:
+ * 1. It takes the T (the message name, e.g., 'add_card').
+ * 2. It looks at the APIMessages union and builds a temporary "Lookup Table".
+ * 3. It maps every Message Name to its specific Payload type.
+ * 4. It then picks the exact Payload type that matches the 'name' you provided.
+ * * Why do it this way? 
+ * This prevents TypeScript from getting confused when multiple messages share 
+ * the same payload model. It's high-performance (zero runtime cost) and 
+ * provides 100% accurate autocomplete based on the Python Pydantic models.
+ * * If this is red: 
+ * Check 'server_types.ts' to ensure the message in question actually has 
+ * a 'payload' field defined in Python.
  */
-function emitMessage<T extends AppMessage['name']>(
+function emitMessage<T extends APIMessages['name']>(
     name: T, 
     // This looks up the specific payload for the name provided
-    payload: Extract<AppMessage, { name: T }>['payload']
+    payload: { 
+    [K in APIMessages as K["name"]]: K extends { payload: infer P } ? P : never 
+}[T]
 ) {
     if (!socket.connected) {
         console.error("🚫 Socket not connected!");

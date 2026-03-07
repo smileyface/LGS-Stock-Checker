@@ -10,7 +10,6 @@ from ..blocks import (
 
 class Payload(BaseModel):
     """Base class for all messaging payloads."""
-
     pass
 
 

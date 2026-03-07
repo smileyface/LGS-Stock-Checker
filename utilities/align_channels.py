@@ -8,7 +8,7 @@ from pydantic import BaseModel
 # Add the project root to sys.path so we can import backend modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import backend.schema as schema  # noqa
-from backend.schema.messaging.messages import PubSubMessage  # noqa
+from backend.schema.messaging.messages import PubSubMessage, APIMessages, APIMessageResponses  # noqa
 from backend.schema.orm.base_schema import DatabaseSchema  # noqa
 
 
@@ -79,6 +79,82 @@ def map_json_type_to_ts(prop: dict) -> str:
 
     return "any"
 
+def generate_interface(name: str, schema_dict: dict, required: set) -> list:
+    """Generates the TypeScript interface block."""
+    lines = []
+    if "description" in schema_dict:
+        lines.append(f"/**\n * {schema_dict['description']}\n */")
+    
+    lines.append(f"export interface {name} {{")
+    
+    for field_name, field_schema in schema_dict.get("properties", {}).items():
+        ts_type = map_json_type_to_ts(field_schema)
+        
+        # Discriminators and Consts are never optional
+        is_const = "const" in field_schema or ("enum" in field_schema and len(field_schema["enum"]) == 1)
+        is_optional = (field_name not in required) and (not is_const) and (field_name != "name")
+        
+        # Nullable check
+        if "null" in ts_type.split(" | "):
+            is_optional = True
+            ts_type = ts_type.replace(" | null", "").replace("null | ", "")
+
+        lines.append(f"  {field_name}{'?' if is_optional else ''}: {ts_type};")
+    
+    lines.append("}\n")
+    return lines
+
+def generate_factory(name: str, schema_dict: dict) -> list:
+    """Generates a TypeScript factory using a single object argument."""
+    props = schema_dict.get("properties", {})
+    required = schema_dict.get("required", [])
+    
+    # If there are no properties (like a base 'Payload' class), 
+    # the factory takes no arguments.
+    if not props:
+        return [
+            "/**",
+            f" * Factory to create an empty {name} object.",
+            " */",
+            f"export function create{name}(): {name} {{",
+            "  return {};",
+            "}\n"
+        ]
+    if len(required) == 1 and len(props) == 1:
+        field_name = required[0]
+        field_schema = props[field_name]
+        ts_type = map_json_type_to_ts(field_schema)
+        
+        return [
+            f"export function create{name}({field_name}: {ts_type}): {name} {{",
+            f"  return {{ {field_name} }};",
+            "}\n"
+        ]
+
+    # We determine if the argument object itself should be optional.
+    # If EVERY field in the model is optional, the whole argument is optional.
+
+    is_entire_model_optional = True
+    for field_name, field_schema in props.items():
+        # A field is 'truly required' if it's in the required list 
+        # AND isn't a constant (like 'name').
+        is_const = "const" in field_schema or ("enum" in field_schema and len(field_schema["enum"]) == 1)
+        if field_name in required and not is_const:
+            is_entire_model_optional = False
+            break
+
+    # Build the factory
+    return [
+        "/**",
+        f" * Factory to create a typed {name} object.",
+        " */",
+        f"export function create{name}(fields{ '?' if is_entire_model_optional else '' }: {name}): {name} {{",
+        # We spread the fields and ensure any 'fixed' values (like name: "delete_card") 
+        # are applied last so they can't be accidentally overridden.
+        f"  return {{ ...fields }};",
+        "}\n"
+    ]
+
 
 def generate_typescript_definitions(models: typing.List[typing.Type[BaseModel]],
                                     output_dir: str):
@@ -93,66 +169,32 @@ def generate_typescript_definitions(models: typing.List[typing.Type[BaseModel]],
     ]
 
     for model in models:
-        schema = model.model_json_schema()
-        name = schema.get("title", model.__name__)
-        name = name.replace("[", "_").replace("]", "")
+        s = model.model_json_schema()
+        n = s.get("title", model.__name__).replace("[", "_").replace("]", "")
+        r = set(s.get("required", []))
 
-        # Handle Class Docstring
-        if "description" in schema:
-            lines.append("/**")
-            lines.append(f" * {schema['description']}")
-            lines.append(" */")
+        # Now it's perfectly clear what is happening
+        lines.extend(generate_interface(n, s, r))
+        lines.extend(generate_factory(n, s))
 
-        lines.append(f"export interface {name} {{")
+# --- ADD THE NEW UNION EXPORTS AT THE BOTTOM ---
+    def get_union_members(union_type):
+        """Extracts class names from Union or Annotated[Union]"""
+        origin = typing.get_origin(union_type)
+        args = typing.get_args(union_type)
+        if origin is typing.Annotated:
+            return get_union_members(args[0])
+        return [t.__name__.replace("[", "_").replace("]", "") for t in args]
 
-        props = schema.get("properties", {})
-        required = set(schema.get("required", []))
+    lines.append("/* --- Message Unions --- */")
+    
+    req_members = get_union_members(APIMessages)
+    lines.append(f"export type APIMessages = {' | '.join(req_members)};")
+    lines.append("")
 
-        for field_name, field_schema in props.items():
-            ts_type = map_json_type_to_ts(field_schema)
-            is_optional = field_name not in required
-            # Handle nullable fields (Optional in Python)
-            if "null" in ts_type.split(" | "):
-                is_optional = True
-                ts_type = ts_type.replace(" | null", "").replace("null | ", "")
-
-            lines.append(f"  {field_name}{'?' if is_optional else ''}: {ts_type};")
-
-        lines.append("}")
-        lines.append("")
-
-        # Factory Generation
-        factory_params = []
-        factory_assignments = []
-
-        for field_name, field_schema in props.items():
-            ts_type = map_json_type_to_ts(field_schema)
-            is_optional = field_name not in required
-            if "null" in ts_type.split(" | "):
-                is_optional = True
-                ts_type = ts_type.replace(" | null", "").replace("null | ", "")
-
-            # Check for const/literal
-            fixed_val = None
-            if "const" in field_schema:
-                fixed_val = field_schema["const"]
-            elif "enum" in field_schema and len(field_schema["enum"]) == 1:
-                fixed_val = field_schema["enum"][0]
-
-            if fixed_val is not None:
-                val_str = f'"{fixed_val}"' if isinstance(fixed_val, str) else str(fixed_val)
-                factory_assignments.append(f"{field_name}: {val_str}")
-            else:
-                factory_params.append(f"{field_name}{'?' if is_optional else ''}: {ts_type}")
-                factory_assignments.append(field_name)
-
-        lines.append("/**")
-        lines.append(f" * Factory to create a typed {name} object.")
-        lines.append(" */")
-        lines.append(f"export function create{name}({', '.join(factory_params)}): {name} {{")
-        lines.append(f"  return {{ {', '.join(factory_assignments)} }};")
-        lines.append("}")
-        lines.append("")
+    res_members = get_union_members(APIMessageResponses)
+    lines.append(f"export type APIMessageResponses = {' | '.join(res_members)};")
+    lines.append("")
 
     lines.append("/**")
     lines.append(" * Helper to cast a dictionary to a specific type.")

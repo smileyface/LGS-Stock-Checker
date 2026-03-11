@@ -11,6 +11,7 @@ from schema.messaging.messages import (
 
 auth_bp = Blueprint("auth_bp", __name__)
 
+
 @auth_bp.route("/api/login", methods=["POST"])
 def login():
 

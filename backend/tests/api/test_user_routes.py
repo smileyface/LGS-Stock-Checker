@@ -63,27 +63,18 @@ def test_update_another_user_is_impossible(client, db_session):
     THEN only 'user_A's username is changed, and 'user_B' is unaffected,
     proving that the endpoint correctly uses the logged-in user's session.
     """
-    message = LoginUserMessage(
-        payload=LoginUserPayload(user=test_user,
-                                 password="password")
-    )
-
-    client.post(
-        "/api/login",
-        data=message.model_dump_json(),
-        content_type="application/json",
-    )
     # Arrange: Create two users
     add_user("user_A", "password_A")
     add_user("user_B", "password_B")
 
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=UserSchema(username="user_A"),
+                                 password="password_A")
+    )
     # Log in as user_A
     login_res = client.post(
         "/api/login",
-        data=json.dumps({
-            "name": "login_user",
-            "payload": {"username": "user_A", "password": "password_A"}
-        }),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
     assert login_res.status_code == 200
@@ -126,9 +117,14 @@ def test_update_invalid_username(client, seeded_user):
          with an invalid username
     THEN the response should be 400 Bad Request.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -161,9 +157,14 @@ def test_update_invalid_password(client, seeded_user):
          with an invalid password
     THEN the response should be 400 Bad Request.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -201,9 +202,14 @@ def test_get_tracked_cards_success(client, seeded_user_with_cards, mocker):
     THEN the response should be 200 OK with a list of the user's tracked cards.
     """
     # Arrange: Log in the user
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -246,9 +252,14 @@ def test_get_tracked_cards_no_cards(client, seeded_user, mocker):
     THEN the response should be 200 OK with an empty list.
     """
     # Arrange: Log in the user
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 

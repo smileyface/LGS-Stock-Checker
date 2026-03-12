@@ -1,5 +1,4 @@
 import pytest
-import json
 import managers.socket_manager.socket_connections as socket_connections_module
 
 from schema.blocks import UserSchema

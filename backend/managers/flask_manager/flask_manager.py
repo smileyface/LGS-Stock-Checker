@@ -37,7 +37,7 @@ def initalize_flask_app(override_config=None, config_name=None):
     @app.errorhandler(ValidationError)
     def handle_pydantic_validation_error(e):
         """
-        Catches any Pydantic ValidationError raised in any route 
+        Catches any Pydantic ValidationError raised in any route
         and returns a 400 instead of a 500.
         """
         logger.warning(f"⚠️ Validation Error: {e.json()}")

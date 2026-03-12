@@ -129,7 +129,7 @@ def bulk_add_card_printings(printings: List[Dict[str, Any]],
     # We break the 20,000 into bites of 1,000.
     chunk_size = 500
     for i in range(0, len(safe_printings), chunk_size):
-        sub_chunk = safe_printings[i : i + chunk_size]
+        sub_chunk = safe_printings[i: i + chunk_size]
 
         stmt = insert(CardPrinting).values([
             {

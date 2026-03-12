@@ -105,11 +105,13 @@ class CatalogFinishesChunkPayload(Payload):
 
 class CardPrintingsDataPayload(Payload):
     """
-    Payload for the 'card_printings_data' event. 
+    Payload for the 'card_printings_data' event.
     Provides all valid printings for a specific card name.
     """
     card_name: str = Field(..., description="The name of the card.")
-    printings: List[Dict[str, Any]] = Field(..., description="The list of valid printings.")
+    printings: List[
+            Dict[str, Any]
+            ] = Field(..., description="The list of valid printings.")
 
 
 class CatalogPrintingsChunkPayload(Payload):

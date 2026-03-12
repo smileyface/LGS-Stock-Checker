@@ -121,15 +121,15 @@ def handle_get_cards(data: dict):
     try:
         data_payload = payload.GetCardsPayload.model_validate(
             data.get("payload", {}))
-        
+
         username = data_payload.user.username
-        
+
         if username:
-            join_room(username) 
+            join_room(username)
             send_user_cards(username)
         else:
             logger.warning("🚨 No username found in GetCardsPayload.")
-            
+
     except Exception as e:
         logger.error(f"❌ Failed to validate get_cards payload: {e}")
 

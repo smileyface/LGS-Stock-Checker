@@ -72,13 +72,12 @@ import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useSocket } from '@/composables/useSocket';
 import { useCardPrintings } from '@/composables/useCardPrintings';
 import { debounce } from '@/utils/debounce';
-import { createAddCardMessage, 
-        createCardPreferenceSchema, 
+import {createCardPreferenceSchema, 
         createCardSpecificationSchema,
         createCardSchema, 
         createUpdateCardRequestPayload } from '@/schema/server_types.ts';
-import { AppMessage } from '../types/messaging';
 const emit = defineEmits(['close']);
+const socket = useSocket();
 
 // --- Local State ---
 const cardName = ref('');
@@ -107,7 +106,7 @@ const debouncedSearch = debounce((query) => {
 if (query.length > 2) {
     console.log(`[AddCardModal] 📡 Searching for: ${query}`);
     // This is now type-safe!
-    socketManager.emitMessage('search_card_names', { query });
+    socket.emitMessage('search_card_names', { query });
   }
 }, 300);
 
@@ -118,14 +117,14 @@ watch(cardName, (newQuery) => {
 });
 
 onMounted(() => {
-  socketManager.socket?.on('card_name_search_results', (data) => {
+  socket.socket?.on('card_name_search_results', (data) => {
     console.log(`[AddCardModal] 📩 Received search results:`, data.card_names);
     searchResults.value = data.card_names;
   });
 });
 
 onUnmounted(() => {
-  socketManager.socket?.off('card_name_search_results');
+  socket.socket?.off('card_name_search_results');
 });
 
 // --- Watchers to reset dependent dropdowns ---
@@ -175,7 +174,7 @@ const handleSave = () => {
   // 4. EMIT! 
   // We use the channel name 'update_card' and send the payload
   console.log(`[AddCardModal] 💾 Sending update_card:`, payload);
-  socketManager.emitMessage('update_card', payload);
+  socket.emitMessage('update_card', payload);
   
   emit('close');
 };

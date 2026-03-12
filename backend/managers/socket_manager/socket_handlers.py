@@ -1,5 +1,5 @@
 from flask_login import current_user
-from flask_socketio import emit, join_room, leave_room
+from flask_socketio import join_room
 from pydantic import ValidationError
 
 from utility import logger
@@ -56,7 +56,8 @@ def handle_get_card_printings(data: dict):
 
     printings = database.get_printings_for_card(card_name)
     response_data = {"card_name": card_name, "printings": printings}
-    message = messages.CardPrintingsDataMessage(payload=response_data)
+    message = messages.CardPrintingsDataMessage(
+        payload=payload.CardPrintingsDataPayload(**response_data))
     emit_message(message)
     logger.info(f"📡 Sent {len(printings)} printings for '{card_name}'.")
 
@@ -116,7 +117,7 @@ def handle_get_card_availability(data: dict = {}):
 def handle_get_cards(data: dict):
     """Handles a request to retrieve the user's tracked cards."""
     logger.info("📩 Received 'get_cards' request from front end.")
-    
+
     try:
         data_payload = payload.GetCardsPayload.model_validate(
             data.get("payload", {}))

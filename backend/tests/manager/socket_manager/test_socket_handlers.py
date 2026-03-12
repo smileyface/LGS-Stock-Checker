@@ -239,27 +239,26 @@ def test_on_delete_card_with_invalid_data(
 
 
 def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
-    """
-    GIVEN a card name
-    WHEN a client emits 'get_card_printings'
-    THEN the handler should fetch the printing data and emit it back.
-    """
     # Arrange
     card_name = "Sol Ring"
+    # 1. Update client_data to match what Pydantic expects (payload.card.name)
     client_data = {
         "name": "get_card_printings",
-        "payload": {"card": {"name": card_name}}
+        "payload": {
+            "card": {"name": card_name}
+        }
     }
-    mock_printings = [
+    # 2. This should be a LIST of dicts, which is what the database returns
+    mock_printings_list = [
         {
             "set_code": "C21",
             "collector_number": "125",
-            "finishes": ["foil", "non-foil"],
+            "finishes": ["non-foil", "foil"]
         }
     ]
-    # Configure the mock provided by the fixture
+
     mock_sh_database.is_card_in_catalog.return_value = True
-    mock_sh_database.get_printings_for_card.return_value = mock_printings
+    mock_sh_database.get_printings_for_card.return_value = mock_printings_list
 
     # Act
     socket_handlers.handle_get_card_printings(data=client_data)
@@ -267,13 +266,21 @@ def test_handle_get_card_printings(mock_sh_emit, mock_sh_database):
     # Assert
     mock_sh_database.is_card_in_catalog.assert_called_once_with(card_name)
     mock_sh_database.get_printings_for_card.assert_called_once_with(card_name)
+
+    # 3. Match the response structure the handler emits
     expected_message = {
         "name": "card_printings_data",
-        "payload": {"card_name": card_name, "printings": mock_printings}
+        "payload": {
+            "card_name": card_name,
+            "printings": mock_printings_list
+        }
     }
-    mock_sh_emit.assert_called_once_with("card_printings_data",
-                                         expected_message,
-                                         to="")
+
+    mock_sh_emit.assert_called_once_with(
+        "card_printings_data",  # The first argument (event name)
+        expected_message,       # The second argument (the whole dictionary)
+        to=""                   # The keyword argument
+    )
 
 
 @pytest.mark.parametrize(

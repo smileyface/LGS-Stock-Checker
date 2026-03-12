@@ -15,6 +15,7 @@ from .payload import (
     LoginUserPayload,
     CardListPayload,
     GetCardsPayload,
+    CardPrintingsDataPayload,
 )
 
 
@@ -230,7 +231,7 @@ class CardPrintingsDataMessage(APIMessage):
     """
 
     name: Literal["card_printings_data"] = "card_printings_data"
-    payload: Payload
+    payload: CardPrintingsDataPayload
 
 
 class CardAvailabilityDataMessage(APIMessage):

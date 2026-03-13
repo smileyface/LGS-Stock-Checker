@@ -59,7 +59,7 @@ jobs:
       - name: Generate Server Types
         run: |
           pip install -r ../backend/requirements.txt
-          make generate-types
+          python3 utilities/align_channels.py
 
       - name: Run Linter
         # Runs the "lint" script from your package.json

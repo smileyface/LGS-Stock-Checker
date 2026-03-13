@@ -54,7 +54,12 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install eslint eslint-plugin-vue --save-dev
+          npm ci
+      
+      - name: Generate Server Types
+        run: |
+          pip install -r ../backend/requirements.txt
+          make generate-types
 
       - name: Run Linter
         # Runs the "lint" script from your package.json

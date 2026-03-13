@@ -94,3 +94,16 @@ db-migrate:
 db-upgrade:
 	@echo "Applying migrations..."
 	docker-compose -f docker-compose.yml -f docker-compose.dev.yml exec backend flask db upgrade
+
+# --- Frontend Commands ---
+install-frontend:
+	@echo "Installing frontend dependencies..."
+	docker-compose -f docker-compose.yml -f docker-compose.dev.yml run --rm frontend npm install
+
+frontend-shell:
+	@echo "Opening a shell in the frontend container..."
+	docker-compose -f docker-compose.yml -f docker-compose.dev.yml exec frontend sh
+
+generate-types:
+	@echo "Generating server types"
+	python3 utilities/align_channels.py

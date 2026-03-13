@@ -8,8 +8,8 @@
         "build": "vite build",
         "preview": "vite preview",
         "test:unit": "vitest run",
-        "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs",
-        "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix"
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix"
     },
     "devDependencies": {
         "@vitejs/plugin-vue": "^5.0.0",

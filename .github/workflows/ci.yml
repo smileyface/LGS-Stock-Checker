@@ -53,8 +53,7 @@ jobs:
           node-version: '20' # Or whatever version you use
 
       - name: Install Dependencies
-        run: |
-          npm ci
+        run: npm install
       
       - name: Generate Server Types
         run: |
@@ -62,9 +61,7 @@ jobs:
           python3 ../utilities/align_channels.py
 
       - name: Run Linter
-        # Runs the "lint" script from your package.json
         run: npm run lint
 
       - name: Run Unit Tests
-        # Runs the "test:unit" script from your package.json
         run: npm run test:unit

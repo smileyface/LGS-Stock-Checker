@@ -143,39 +143,38 @@ watch(selectedCollectorNumber, () => {
 // --- Save Logic ---
 
 const handleSave = () => {
-  error.value = null;
-  if (!cardName.value) {
-    error.value = 'Card name is required.';
-    return;
-  }
+  // ... validation ...
 
-  // 1. Build the leaf nodes (Spec and Card)
-  const spec = createCardSpecificationSchema(
-    selectedSet.value || undefined,
-    selectedCollectorNumber.value || undefined,
-    selectedFinish.value
-  );
+  error.value = null;
+  if (!cardName.value || cardName.value.trim() === '') {
+    error.value = 'Card name is required.'; // This triggers the UI update
+    return; // This stops the code from sending a message to the server
+  }
+  
+  // 1. Build the leaf nodes (ensure these use the {fields} pattern if they are also auto-gen)
+  const spec = createCardSpecificationSchema({
+    set_code: selectedSet.value || undefined,
+    collector_number: selectedCollectorNumber.value || undefined,
+    finish: selectedFinish.value
+  });
 
   const card = createCardSchema(cardName.value);
 
-  // 2. Build the Preference (Card + Amount + Spec)
-  const preference = createCardPreferenceSchema(
+  // 2. Build the Preference
+  const preference = createCardPreferenceSchema({
     card,
-    amount.value,
-    spec
-  );
+    amount: amount.value,
+    specifications: spec // check if your backend renamed this to 'specifications' or 'spec'
+  });
 
-  // 3. Build the Payload for the 'update_card' command
-  const payload = createUpdateCardRequestPayload(
-    "add", 
-    preference
-  );
+  // 3. Build the Payload (The one we just fixed!)
+  const payload = createUpdateCardRequestPayload({
+    command: "add", 
+    update_data: preference
+  });
 
-  // 4. EMIT! 
-  // We use the channel name 'update_card' and send the payload
-  console.log(`[AddCardModal] 💾 Sending update_card:`, payload);
+  // 4. EMIT
   socket.emitMessage('update_card', payload);
-  
   emit('close');
 };
 

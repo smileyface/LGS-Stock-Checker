@@ -1,7 +1,6 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useSocket } from '@/composables/useSocket';
 import {
-    createGetCardPrintingsMessage,
     createGetPrintingsRequestPayload,
     createCardSchema
 } from '@/schema/server_types';
@@ -25,12 +24,14 @@ export function useCardPrintings(cardNameRef, selectedSetRef, selectedCollectorN
             console.log(`[useCardPrintings] 📡 Requesting printings for card: ${name}`);
             printings.value = []; // Clear old data before new fetch
 
-            // Use factories to ensure strict adherence to backend types
-            const msg = createGetCardPrintingsMessage(
-                createGetPrintingsRequestPayload(createCardSchema(name))
-            );
+    // 1. Build the leaf node (createCardSchema expects a raw string)
+        const cardNode = createCardSchema(name);
 
-            socketManager.socket.emit(msg.type, msg);
+        // 2. Build the payload (wrap in an object so it doesn't get shredded!)
+        const payload = createGetPrintingsRequestPayload(cardNode);
+
+        // 3. Emit with the hardcoded event string and the payload
+        socketManager.socket.emitMessage('get_card_printings', payload);
         }
     };
 
@@ -72,11 +73,16 @@ export function useCardPrintings(cardNameRef, selectedSetRef, selectedCollectorN
     });
 
     const finishOptions = computed(() => {
-        if (!selectedSetRef.value || !selectedCollectorNumberRef.value) return [];
-        const printing = printings.value.find(
-            p => p.set_code === selectedSetRef.value && p.collector_number === selectedCollectorNumberRef.value
+        if (!selectedSetRef.value || !selectedCollectorNumberRef.value) {
+            return []; // Always return an array, not undefined!
+        }
+
+        const matchingPrinting = printings.value.find(
+            (p) => p.set_code === selectedSetRef.value && p.collector_number === selectedCollectorNumberRef.value
         );
-        return printing ? printing.available_finishes : [];
+
+        // Ensure we return an array, even if finishes is missing
+        return matchingPrinting?.finishes || []; 
     });
 
     return { printings, setOptions, collectorNumberOptions, finishOptions, fetchPrintings };

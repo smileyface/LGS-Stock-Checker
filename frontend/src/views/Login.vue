@@ -40,13 +40,27 @@ async function handleLogin() {
     isLoading.value = true;
     error.value = null;
     try {
-        // 3. Wrap it in the Message envelope
-        const loginMessage = createLoginUserMessage(createLoginUserPayload(createUserSchema(username.value), 
-                                            password.value));
+        // 1. Build the User Schema
+        // (Assuming createUserSchema takes a string based on your output, 
+        // if it expects an object, use { username: username.value })
+        const user = createUserSchema(username.value); 
+
+        // 2. Build the Payload (Wrap arguments in an object!)
+        const payload = createLoginUserPayload({
+            user: user,
+            password: password.value
+        });
+
+        // 3. Build the Message Envelope (Wrap arguments in an object!)
+        const loginMessage = createLoginUserMessage({
+            payload: payload
+            // Note: If your factory requires the 'name' property, add it here:
+            // name: "login_user" 
+        });
+
         localStorage.setItem("username", username.value);
-        // 4. Pass the correctly packed MESSAGE to the store
         await authStore.login(loginMessage);
-        // The store handles redirection on success
+        
     } catch (err) {
         error.value = 'Login failed. Please check your username and password.';
         console.error('Login error:', err);

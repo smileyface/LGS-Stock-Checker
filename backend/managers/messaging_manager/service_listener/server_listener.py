@@ -79,6 +79,7 @@ def _handle_catalog_printings_chunk_result(payload: dict):
     database.bulk_add_card_printings(printings_to_add)
 
     # Now handle the associations
+# TODO: reincorporate this chunk
 #    printings_map = database.get_chunk_printing_ids(printings_chunk)
 #    unique_finishes = {finish_name for printing in printings_chunk
 #                       for finish_name in printing.get("finishes", [])}

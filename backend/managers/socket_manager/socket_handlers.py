@@ -130,7 +130,7 @@ def handle_get_cards(data: dict):
         else:
             logger.warning("🚨 No username found in GetCardsPayload.")
 
-    except Exception as e:
+    except ValidationError as e:
         logger.error(f"❌ Failed to validate get_cards payload: {e}")
 
 

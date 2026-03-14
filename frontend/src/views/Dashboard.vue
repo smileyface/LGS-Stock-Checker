@@ -36,7 +36,7 @@ v-if="cardToEdit"
                         <td>
                             <div class="action-buttons">
                                 <button class="btn btn-sm btn-light" title="Edit" @click="editCard(card)">✏️</button>
-                                <button class="btn btn-sm btn-light" title="Delete" @click="deleteCard(card.card.name)">❌</button>
+                                <button class="btn btn-sm btn-light" title="Delete" @click="deleteCard(card)">❌</button>
                             </div>
                         </td>
                         <td>{{ card.amount }}</td>

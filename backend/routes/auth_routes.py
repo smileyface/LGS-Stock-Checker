@@ -4,6 +4,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from managers import user_manager
 from managers import socket_manager
 
+from pydantic import ValidationError
+
 from schema.messaging.messages import (
     LoginUserMessage
 )
@@ -15,10 +17,10 @@ auth_bp = Blueprint("auth_bp", __name__)
 @auth_bp.route("/api/login", methods=["POST"])
 def login():
 
-    data = LoginUserMessage(**request.json)
-
-    if not data:
-        return jsonify({"error": "Invalid JSON"}), 400
+    try:
+        data = LoginUserMessage(**request.json)
+    except ValidationError as e:
+        return jsonify({"error": f"Invalid JSON\n{e}"}), 400
 
     username = data.payload.user.username
     password = data.payload.password

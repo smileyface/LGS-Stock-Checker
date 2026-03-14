@@ -5,11 +5,11 @@
             <form @submit.prevent="handleLogin">
                 <div class="mb-3">
                     <label for="username" class="form-label">Username</label>
-                    <input type="text" class="form-control" id="username" v-model="username" required>
+                    <input id="username" v-model="username" type="text" class="form-control" required>
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" v-model="password" required>
+                    <input id="password" v-model="password" type="password" class="form-control" required>
                 </div>
                 <div v-if="error" class="alert alert-danger">
                     {{ error }}

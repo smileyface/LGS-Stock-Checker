@@ -12,7 +12,7 @@
           <!-- Card Name Input -->
           <div class="mb-3">
             <label for="cardName" class="form-label">Card Name</label>
-            <input type="text" class="form-control" id="cardName" v-model="cardName" list="cardNameDatalist" autocomplete="off" />
+            <input id="cardName" v-model="cardName" type="text" class="form-control" list="cardNameDatalist" autocomplete="off" />
             <datalist id="cardNameDatalist">
               <option v-for="name in searchResults" :key="name" :value="name"></option>
             </datalist>
@@ -21,13 +21,13 @@
           <!-- Amount -->
           <div class="mb-3">
             <label for="amount" class="form-label">Amount to Track</label>
-            <input type="number" class="form-control" id="amount" v-model.number="amount" min="1" />
+            <input id="amount" v-model.number="amount" type="number" class="form-control" min="1" />
           </div>
 
           <!-- Set Dropdown -->
           <div class="mb-3">
             <label for="set" class="form-label">Set (Optional)</label>
-            <select id="set" class="form-select" v-model="selectedSet">
+            <select id="set" v-model="selectedSet" class="form-select">
               <option value="">Any Set</option>
               <option v-for="set in setOptions" :key="set" :value="set">
                 {{ set.toUpperCase() }}
@@ -38,7 +38,7 @@
           <!-- Collector Number Dropdown -->
           <div class="mb-3">
             <label for="collectorNumber" class="form-label">Collector # (Optional)</label>
-            <select id="collectorNumber" class="form-select" v-model="selectedCollectorNumber" :disabled="!selectedSet">
+            <select id="collectorNumber" v-model="selectedCollectorNumber" class="form-select" :disabled="!selectedSet">
               <option value="">Any Number</option>
               <option v-for="num in collectorNumberOptions" :key="num" :value="num">
                 {{ num }}
@@ -49,7 +49,7 @@
           <!-- Finish Dropdown -->
           <div class="mb-3">
             <label for="finish" class="form-label">Finish (Optional)</label>
-            <select id="finish" class="form-select" v-model="selectedFinish" :disabled="!selectedCollectorNumber">
+            <select id="finish" v-model="selectedFinish" class="form-select" :disabled="!selectedCollectorNumber">
               <option :value="undefined">Any Finish</option>
               <option v-for="finish in finishOptions" :key="finish.id" :value="finish.id">
                 {{ finish.name }}

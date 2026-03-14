@@ -1,16 +1,16 @@
 <template>
-  <div class="modal fade" ref="inStockModalRef" id="inStockModal" tabindex="-1" aria-labelledby="inStockModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" ref="inStockModalElement">
+  <div id="inStockModal" ref="inStockModalRef" class="modal fade" tabindex="-1" aria-labelledby="inStockModalLabel" aria-hidden="true">
+    <div ref="inStockModalElement" class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="inStockModalLabel">Stock for: {{ cardName }}</h5>
+          <h5 id="inStockModalLabel" class="modal-title">Stock for: {{ cardName }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div v-if="!displayItems || displayItems.length === 0" class="text-center">
             <p>No stock found for this card in your selected stores.</p>
           </div>
-          <ul v-else class="list-group" id="in-stock-list">
+          <ul v-else id="in-stock-list" class="list-group">
             <li v-for="(item, index) in sortedItems" :key="index" class="list-group-item">
               <div class="row g-3 align-items-center">
                 <div class="col-md-9">

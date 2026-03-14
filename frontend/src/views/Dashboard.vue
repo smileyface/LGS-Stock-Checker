@@ -1,12 +1,14 @@
 <template>
     <BaseLayout :title="pageTitle">
-        <AddCardModal v-if="isAddModalVisible" 
+        <AddCardModal
+v-if="isAddModalVisible" 
             ref="addCardModalRef" 
             @save-card="saveCard" 
             @close="isAddModalVisible = false" />
-        <EditCardModal v-if="cardToEdit" 
-            :card-to-edit="cardToEdit" 
+        <EditCardModal
+v-if="cardToEdit" 
             ref="editCardModalRef" 
+            :card-to-edit="cardToEdit" 
             @update-card="updateCard" /> 
         <InStockModal 
             ref="inStockModalRef"
@@ -18,7 +20,7 @@
             <p>Welcome, <strong>{{ username }}</strong>!</p>
 
             <h2>Your Tracked Cards</h2>
-            <table class="table table-striped table-bordered" id="cardTable">
+            <table id="cardTable" class="table table-striped table-bordered">
                 <thead>
                     <tr>
                         <th style="width: 80px;"></th> <th>Amount</th>

@@ -17,7 +17,7 @@ export const authStore = reactive({
             } else {
                 throw new Error('Not authenticated');
             }
-        } catch (error) {
+        } catch {
             // A 401 or other error means the user is not authenticated
             this.isAuthenticated = false;
             this.user = null;

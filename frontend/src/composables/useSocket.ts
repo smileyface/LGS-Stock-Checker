@@ -5,7 +5,6 @@ import {
     APIMessages,
     //Import Payloads
     UpdateCardRequestPayload,
-    LoginUserPayload,
     //Import Requests
     CardPreferenceSchema,
     UpdateCardRequest,
@@ -64,7 +63,7 @@ socket.on('disconnect', () => {
 });
 
 // --- Response Message Connecting ---
-socket.on("cards_data", (data: any) => handleIncomingCards(data as CardsDataMessage));
+socket.on("cards_data", (data: unknown) => handleIncomingCards(data as CardsDataMessage));
 
 // --- Emitter Functions (The "Clean" Way) ---
 
@@ -82,6 +81,7 @@ function sendCardUpdate(payload: UpdateCardRequestPayload) {
 }
 
 // In your Auth Store or Login logic (NOT using emitMessage)
+/**
 async function login(credentials: LoginUserPayload) {
     const response = await fetch('/auth/login', {
         method: 'POST',
@@ -94,7 +94,7 @@ async function login(credentials: LoginUserPayload) {
         //connectSocket(); 
         //TODO:Handle the socket connection 
     }
-}
+}*/
 
 // Specific helpers that use the generic function above
 function addCard(preference: CardPreferenceSchema) {

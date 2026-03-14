@@ -164,7 +164,7 @@ def generate_factory(name: str, schema_dict: dict) -> list:
         # We spread the fields and ensure any 'fixed' values
         # (like name: "delete_card")
         # are applied last so they can't be accidentally overridden.
-        "  return {{ ...fields }};",
+        "  return { ...fields };",
         "}\n"
     ]
 

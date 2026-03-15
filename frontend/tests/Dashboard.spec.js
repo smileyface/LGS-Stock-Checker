@@ -100,7 +100,7 @@ describe('Dashboard.vue', () => {
         await wrapper.find('button[title="Delete"]').trigger('click');
 
         // Verify it passes the name from the nested object
-        expect(deleteCard).toHaveBeenCalledWith(name);
+        expect(deleteCard).toHaveBeenCalledWith(trackedCards.value[0]);
     });
 
     it('opens the edit modal correctly', async () => {

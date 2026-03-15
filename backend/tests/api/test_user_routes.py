@@ -2,6 +2,15 @@ import json
 from managers.user_manager import add_user
 from data.database.models.orm_models import User
 
+
+from schema.blocks import UserSchema
+from schema.messaging.messages import LoginUserMessage
+
+from schema.messaging.payload import LoginUserPayload
+
+
+test_user = UserSchema(username="testuser")
+
 # --- Tests for /api/stores ---
 
 
@@ -12,9 +21,14 @@ def test_get_all_stores_success(client, seeded_user, seeded_stores):
     THEN the response should be 200 OK with a list of store slugs.
     """
     # Log in the user
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
     response = client.get("/api/stores")
@@ -53,10 +67,14 @@ def test_update_another_user_is_impossible(client, db_session):
     add_user("user_A", "password_A")
     add_user("user_B", "password_B")
 
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=UserSchema(username="user_A"),
+                                 password="password_A")
+    )
     # Log in as user_A
     login_res = client.post(
         "/api/login",
-        data=json.dumps({"username": "user_A", "password": "password_A"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
     assert login_res.status_code == 200
@@ -99,9 +117,14 @@ def test_update_invalid_username(client, seeded_user):
          with an invalid username
     THEN the response should be 400 Bad Request.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -134,9 +157,14 @@ def test_update_invalid_password(client, seeded_user):
          with an invalid password
     THEN the response should be 400 Bad Request.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -174,9 +202,14 @@ def test_get_tracked_cards_success(client, seeded_user_with_cards, mocker):
     THEN the response should be 200 OK with a list of the user's tracked cards.
     """
     # Arrange: Log in the user
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -219,9 +252,14 @@ def test_get_tracked_cards_no_cards(client, seeded_user, mocker):
     THEN the response should be 200 OK with an empty list.
     """
     # Arrange: Log in the user
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 

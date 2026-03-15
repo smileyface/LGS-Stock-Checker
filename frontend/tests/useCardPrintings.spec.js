@@ -10,10 +10,12 @@ const mockSocket = {
     on: vi.fn(),
     off: vi.fn(),
     emit: vi.fn(),
+    emitMessage: vi.fn()
 };
 vi.mock('../src/composables/useSocket', () => ({
     useSocket: vi.fn(() => ({
         socket: mockSocket,
+        emitMessage: mockSocket.emitMessage
     })),
 }));
 
@@ -80,7 +82,13 @@ describe('useCardPrintings.js', () => {
         cardNameRef.value = 'Sol Ring';
         await new Promise(resolve => setTimeout(resolve, 0)); // Wait for watcher
 
-        expect(mockSocket.emit).toHaveBeenCalledWith('get_card_printings', { card_name: 'Sol Ring' });
+        // Assert against the new enveloped structure!
+        expect(mockSocket.emitMessage).toHaveBeenCalledWith(
+            'get_card_printings', 
+            expect.objectContaining({
+                card: { name: 'Sol Ring' }
+            })
+        );
     });
 
     it('updates printings ref when matching data is received', () => {

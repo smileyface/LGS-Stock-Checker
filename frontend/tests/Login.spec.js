@@ -81,11 +81,17 @@ describe('Login.vue', () => {
         await wrapper.find('input#password').setValue('password123')
         await wrapper.find('form').trigger('submit')
 
-        // Assert that the spy was called with the correct credentials
-        expect(loginSpy).toHaveBeenCalledWith({
-            username: 'testuser',
-            password: 'password123'
-        })
+        // Assert against the new nested Pydantic structure!
+        expect(loginSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    user: expect.objectContaining({
+                        username: 'testuser'
+                    }),
+                    password: 'password123'
+                })
+            })
+        );
     })
 
     it('displays an error message on failed login', async () => {

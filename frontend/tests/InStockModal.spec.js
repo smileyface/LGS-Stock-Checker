@@ -4,13 +4,13 @@ import InStockModal from '../src/components/InStockModal.vue';
 
 // --- Mocks ---
 
-// Mock Bootstrap's Modal to control its behavior and spy on its methods
+// 1. Mock Bootstrap Modal
 const mockModalInstance = {
     show: vi.fn(),
     hide: vi.fn(),
+    dispose: vi.fn(), // Added dispose since your component calls it on unmount!
 };
 vi.mock('bootstrap', () => ({
-// Mock the Modal as a class that returns our instance
     Modal: class {
         constructor() {
             return mockModalInstance;
@@ -18,25 +18,37 @@ vi.mock('bootstrap', () => ({
     }
 }));
 
+// 2. Mock the Socket Composable
+const mockSocketOn = vi.fn();
+const mockSocketOff = vi.fn();
+const mockGetStockData = vi.fn();
+
+vi.mock('@/composables/useSocket', () => ({
+    useSocket: vi.fn(() => ({
+        socket: {
+            on: mockSocketOn,
+            off: mockSocketOff
+        },
+        getStockData: mockGetStockData
+    }))
+}));
 
 describe('InStockModal.vue', () => {
     const cardNameProp = 'Sol Ring';
     const availableItemsProp = [
-        { store_name: 'Store B', price: 5.99, set_code: 'LTC', collector_number: '350', finish: 'foil' },
-        { store_name: 'Store A', price: 1.99, set_code: 'C21', collector_number: '125', finish: 'non-foil' },
-    ]; // Note: The component doesn't use all these fields anymore.
+        { store_name: 'Store B', price: 5.99, set_code: 'LTC', quantity: 1 },
+        { store_name: 'Store A', price: 1.99, set_code: 'C21', quantity: 4 },
+    ]; 
 
     let wrapper;
 
     beforeEach(() => {
-        // Reset mocks before each test
         vi.clearAllMocks();
 
-        // Mount the component for each test
         wrapper = mount(InStockModal, {
             props: {
                 cardName: cardNameProp,
-                items: availableItemsProp, // Prop name is 'items'
+                items: availableItemsProp,
             },
         });
     });
@@ -49,13 +61,14 @@ describe('InStockModal.vue', () => {
         const items = wrapper.findAll('.list-group-item');
         expect(items.length).toBe(2);
 
+        // Because it sorts by price automatically, Store A ($1.99) should be first
         const firstItemText = items[0].text();
         expect(firstItemText).toContain('Store A');
         expect(firstItemText).toContain('$1.99');
         expect(firstItemText).toContain('Set: C21');
     });
+
     it('displays a message when no items are available', async () => {
-        // Mount a new wrapper to ensure clean state
         const emptyWrapper = mount(InStockModal, {
             props: { cardName: cardNameProp, items: [] }
         });
@@ -71,9 +84,26 @@ describe('InStockModal.vue', () => {
         expect(prices[1].text()).toBe('$5.99');
     });
 
-    it('exposes a show method that calls the Bootstrap modal instance', () => {
+    it('exposes a show method that calls the Bootstrap modal and requests stock data', () => {
         wrapper.vm.show();
+        
+        // Verifies Bootstrap modal opened
         expect(mockModalInstance.show).toHaveBeenCalledTimes(1);
+        
+        // Verifies it asked the backend for fresh data
+        expect(mockGetStockData).toHaveBeenCalledTimes(1);
+        expect(mockGetStockData).toHaveBeenCalledWith('Sol Ring');
     });
 
+    it('registers and cleans up socket listeners', () => {
+        // Assert it registered on mount
+        expect(mockSocketOn).toHaveBeenCalledWith('stock_data', expect.any(Function));
+
+        // Unmount the component
+        wrapper.unmount();
+
+        // Assert it cleaned up
+        expect(mockSocketOff).toHaveBeenCalledWith('stock_data');
+        expect(mockModalInstance.dispose).toHaveBeenCalledTimes(1);
+    });
 });

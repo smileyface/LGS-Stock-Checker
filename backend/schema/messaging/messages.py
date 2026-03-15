@@ -14,6 +14,8 @@ from .payload import (
     UpdateStoresPayload,
     LoginUserPayload,
     CardListPayload,
+    GetCardsPayload,
+    CardPrintingsDataPayload,
 )
 
 
@@ -136,7 +138,7 @@ class ParseCardListMessage(APIMessage):
     """
 
     name: Literal["parse_card_list"] = "parse_card_list"
-    payload: dict
+    payload: Payload
 
 
 class UpdateCardRequest(APIMessage):
@@ -183,7 +185,7 @@ class SearchCardNamesMessage(APIMessage):
     """
 
     name: Literal["search_card_names"] = "search_card_names"
-    payload: dict
+    payload: Payload
 
 
 class UpdateStoreMessage(APIMessage):
@@ -197,13 +199,19 @@ class UpdateStoreMessage(APIMessage):
 
 class LoginUserMessage(APIMessage):
     """
-    Message to retrieve the currently authenticated user's information.
+    Payload for a login request.
     """
 
     name: Literal["login_user_me"] = "login_user_me"
     payload: LoginUserPayload
 
 
+class GetCardsMessage(APIMessage):
+    """
+    Message to get users cards
+    """
+    name: Literal["get_cards"] = "get_cards"
+    payload: GetCardsPayload
 # --- End API Message Definitions ---
 
 
@@ -223,7 +231,7 @@ class CardPrintingsDataMessage(APIMessage):
     """
 
     name: Literal["card_printings_data"] = "card_printings_data"
-    payload: dict
+    payload: CardPrintingsDataPayload
 
 
 class CardAvailabilityDataMessage(APIMessage):
@@ -232,7 +240,7 @@ class CardAvailabilityDataMessage(APIMessage):
     """
 
     name: Literal["card_availability_data"] = "card_availability_data"
-    payload: dict
+    payload: Payload
 
 
 class CardNameSearchResultsMessage(APIMessage):
@@ -241,7 +249,7 @@ class CardNameSearchResultsMessage(APIMessage):
     """
 
     name: Literal["card_name_search_results"] = "card_name_search_results"
-    payload: dict
+    payload: Payload
 
 
 class UserStoresDataMessage(APIMessage):
@@ -250,7 +258,7 @@ class UserStoresDataMessage(APIMessage):
     """
 
     name: Literal["user_stores_data"] = "user_stores_data"
-    payload: dict
+    payload: Payload
 
 
 class StockDataMessage(APIMessage):
@@ -259,7 +267,7 @@ class StockDataMessage(APIMessage):
     """
 
     name: Literal["stock_data"] = "stock_data"
-    payload: dict
+    payload: Payload
 
 
 class ErrorMessage(APIMessage):
@@ -268,7 +276,7 @@ class ErrorMessage(APIMessage):
     """
 
     name: Literal["error"] = "error"
-    payload: dict
+    payload: Payload
 
 
 # --- End API Response Message Definitions ---)
@@ -291,6 +299,7 @@ PubSubMessages = Annotated[
 
 APIMessages = Annotated[
     Union[
+        GetCardsMessage,
         GetCardPrintingsMessage,
         ParseCardListMessage,
         UpdateCardRequest,

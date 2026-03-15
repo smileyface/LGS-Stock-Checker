@@ -1,16 +1,16 @@
 <template>
-  <div class="modal fade" ref="editCardModalRef" tabindex="-1" aria-labelledby="editCardModalLabel" aria-hidden="true">
+  <div ref="editCardModalRef" class="modal fade" tabindex="-1" aria-labelledby="editCardModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="editCardModalLabel">Edit: {{ cardToEdit.card_name }}</h5>
+          <h5 id="editCardModalLabel" class="modal-title">Edit: {{ cardToEdit.card_name }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form v-if="editableCard" @submit.prevent="submitUpdate">
             <div class="mb-3">
               <label for="editCardAmount" class="form-label">Amount</label>
-              <input type="number" class="form-control" id="editCardAmount" v-model.number="editableCard.amount" min="1" required>
+              <input id="editCardAmount" v-model.number="editableCard.amount" type="number" class="form-control" min="1" required>
             </div>
             <h6 class="mt-4">Specifications</h6>
             <p class="text-muted small">Currently, only editing the first specification is supported.</p>
@@ -18,7 +18,7 @@
             <!-- Set Dropdown -->
             <div class="mb-3">
               <label for="edit_set_code" class="form-label">Set Code</label>
-              <select id="edit_set_code" class="form-select" v-model="editableCard.specifications[0].set_code">
+              <select id="edit_set_code" v-model="editableCard.specifications[0].set_code" class="form-select">
                 <option value="">Any Set</option>
                 <option v-for="set in setOptions" :key="set" :value="set">
                   {{ set.toUpperCase() }}
@@ -28,7 +28,7 @@
             <!-- Collector Number Dropdown -->
             <div class="mb-3">
               <label for="edit_collector_number" class="form-label">Collector Number</label>
-              <select id="edit_collector_number" class="form-select" v-model="editableCard.specifications[0].collector_number" :disabled="!editableCard.specifications[0].set_code">
+              <select id="edit_collector_number" v-model="editableCard.specifications[0].collector_number" class="form-select" :disabled="!editableCard.specifications[0].set_code">
                 <option value="">Any Number</option>
                 <option v-for="num in collectorNumberOptions" :key="num" :value="num">
                   {{ num }}
@@ -38,7 +38,7 @@
             <!-- Finish Dropdown -->
             <div class="mb-3">
               <label for="edit_finish" class="form-label">Finish</label>
-              <select class="form-select" id="edit_finish" v-model="editableCard.specifications[0].finish" :disabled="!editableCard.specifications[0].collector_number">
+              <select id="edit_finish" v-model="editableCard.specifications[0].finish" class="form-select" :disabled="!editableCard.specifications[0].collector_number">
                 <option value="">Any Finish</option>
                 <option v-for="finish in finishOptions" :key="finish" :value="finish">
                   {{ finish }}

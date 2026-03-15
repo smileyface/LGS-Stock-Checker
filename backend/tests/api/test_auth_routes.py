@@ -1,5 +1,13 @@
 import json
 
+from schema.blocks import UserSchema
+from schema.messaging.messages import LoginUserMessage
+
+from schema.messaging.payload import LoginUserPayload
+
+
+test_user = UserSchema(username="testuser")
+
 
 def test_login_success(client, seeded_user):
     """
@@ -7,9 +15,14 @@ def test_login_success(client, seeded_user):
     WHEN a POST request is made to /api/login with correct credentials
     THEN the response should be 200 OK with a success message.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     response = client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
     assert response.status_code == 200
@@ -22,9 +35,12 @@ def test_login_wrong_password(client, seeded_user):
     WHEN a POST request is made to /api/login with an incorrect password
     THEN the response should be 401 Unauthorized.
     """
+
+    message = LoginUserMessage(payload=LoginUserPayload(user=test_user,
+                               password="wrongpassword"))
     response = client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "wrongpassword"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
     assert response.status_code == 401
@@ -37,9 +53,12 @@ def test_login_user_not_found(client, db_session):
     WHEN a POST request is made to /api/login
     THEN the response should be 401 Unauthorized.
     """
+    message = LoginUserMessage(payload=LoginUserPayload(
+                                 user=UserSchema(username="nonexistent"),
+                               password="password"))
     response = client.post(
         "/api/login",
-        data=json.dumps({"username": "nonexistent", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
     assert response.status_code == 401
@@ -53,7 +72,7 @@ def test_login_bad_request(client, db_session):
     """
     response = client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser"}),  # Missing password
+        data=json.dumps({"user": {"username": "testuser"}}),
         content_type="application/json",
     )
     assert response.status_code == 400
@@ -66,9 +85,14 @@ def test_logout_success(client, seeded_user):
     THEN the user should be logged out successfully.
     """
     # First, log in the user
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -99,9 +123,14 @@ def test_user_data_success(client, seeded_user_with_stores):
     THEN the response should be 200 OK with the user's data.
     """
     # Log in the user
-    client.post(
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
+    response = client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -119,14 +148,19 @@ def test_invalid_user_data_request(client, db_session):
     WHEN a GET request is made to /api/user_data
     THEN the response should be 401 Unauthorized.
     """
-    client.post(
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
+    response = client.post(
         "/api/login",
-        data=json.dumps({"username": "invaliduser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
-    responce = client.get("/api/user_data")
-    assert responce.status_code == 401
+    response = client.get("/api/user_data")
+    assert response.status_code == 401
 
 
 def test_update_invalid_username(client, seeded_user):
@@ -136,9 +170,14 @@ def test_update_invalid_username(client, seeded_user):
          invalid username
     THEN the response should be 400 Bad Request.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 
@@ -166,9 +205,14 @@ def test_update_invalid_password(client, seeded_user):
          invalid password
     THEN the response should be 400 Bad Request.
     """
+    message = LoginUserMessage(
+        payload=LoginUserPayload(user=test_user,
+                                 password="password")
+    )
+
     client.post(
         "/api/login",
-        data=json.dumps({"username": "testuser", "password": "password"}),
+        data=message.model_dump_json(),
         content_type="application/json",
     )
 

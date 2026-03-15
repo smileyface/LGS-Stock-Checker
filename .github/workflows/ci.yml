@@ -53,13 +53,15 @@ jobs:
           node-version: '20' # Or whatever version you use
 
       - name: Install Dependencies
+        run: npm install
+      
+      - name: Generate Server Types
         run: |
-          npm install eslint eslint-plugin-vue --save-dev
+          pip install -r ../backend/requirements.txt
+          python3 ../utilities/align_channels.py
 
       - name: Run Linter
-        # Runs the "lint" script from your package.json
         run: npm run lint
 
       - name: Run Unit Tests
-        # Runs the "test:unit" script from your package.json
         run: npm run test:unit

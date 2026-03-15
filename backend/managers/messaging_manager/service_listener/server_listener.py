@@ -78,27 +78,6 @@ def _handle_catalog_printings_chunk_result(payload: dict):
     ]
     database.bulk_add_card_printings(printings_to_add)
 
-    # Now handle the associations
-    printings_map = database.get_chunk_printing_ids(printings_chunk)
-    unique_finishes = {finish_name for printing in printings_chunk
-                       for finish_name in printing.get("finishes", [])}
-    finishes_map = database.get_chunk_finish_ids(list(unique_finishes))
-    associations_to_add = []
-    for card in printings_chunk:
-        printing_key = (card.get("card_name"),
-                        card.get("set_code"),
-                        card.get("collector_number"))
-        printing_id = printings_map.get(printing_key)
-        if printing_id:
-            for finish_name in card.get("finishes", []):
-                finish_id = finishes_map.get(finish_name)
-                if finish_id:
-                    associations_to_add.append({"printing_id": printing_id,
-                                                "finish_id": finish_id})
-
-    if associations_to_add:
-        database.bulk_add_printing_finish_associations(associations_to_add)
-
 
 # A map of event types to their corresponding handler functions.
 HANDLER_MAP = {
@@ -106,6 +85,7 @@ HANDLER_MAP = {
     "catalog_card_names_result": _handle_catalog_card_names_result,
     "catalog_set_data_result": _handle_catalog_set_data_result,
     "catalog_finishes_result": _handle_catalog_finishes_result,
+    "catalog_finishes_chunk_result": _handle_catalog_finishes_result,
     "catalog_printings_chunk_result": _handle_catalog_printings_chunk_result,
 }
 

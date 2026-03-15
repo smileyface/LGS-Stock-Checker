@@ -12,7 +12,7 @@
           <!-- Card Name Input -->
           <div class="mb-3">
             <label for="cardName" class="form-label">Card Name</label>
-            <input type="text" class="form-control" id="cardName" v-model="cardName" list="cardNameDatalist" autocomplete="off" />
+            <input id="cardName" v-model="cardName" type="text" class="form-control" list="cardNameDatalist" autocomplete="off" />
             <datalist id="cardNameDatalist">
               <option v-for="name in searchResults" :key="name" :value="name"></option>
             </datalist>
@@ -21,13 +21,13 @@
           <!-- Amount -->
           <div class="mb-3">
             <label for="amount" class="form-label">Amount to Track</label>
-            <input type="number" class="form-control" id="amount" v-model.number="amount" min="1" />
+            <input id="amount" v-model.number="amount" type="number" class="form-control" min="1" />
           </div>
 
           <!-- Set Dropdown -->
           <div class="mb-3">
             <label for="set" class="form-label">Set (Optional)</label>
-            <select id="set" class="form-select" v-model="selectedSet">
+            <select id="set" v-model="selectedSet" class="form-select">
               <option value="">Any Set</option>
               <option v-for="set in setOptions" :key="set" :value="set">
                 {{ set.toUpperCase() }}
@@ -38,7 +38,7 @@
           <!-- Collector Number Dropdown -->
           <div class="mb-3">
             <label for="collectorNumber" class="form-label">Collector # (Optional)</label>
-            <select id="collectorNumber" class="form-select" v-model="selectedCollectorNumber" :disabled="!selectedSet">
+            <select id="collectorNumber" v-model="selectedCollectorNumber" class="form-select" :disabled="!selectedSet">
               <option value="">Any Number</option>
               <option v-for="num in collectorNumberOptions" :key="num" :value="num">
                 {{ num }}
@@ -49,7 +49,7 @@
           <!-- Finish Dropdown -->
           <div class="mb-3">
             <label for="finish" class="form-label">Finish (Optional)</label>
-            <select id="finish" class="form-select" v-model="selectedFinish" :disabled="!selectedCollectorNumber">
+            <select id="finish" v-model="selectedFinish" class="form-select" :disabled="!selectedCollectorNumber">
               <option :value="undefined">Any Finish</option>
               <option v-for="finish in finishOptions" :key="finish.id" :value="finish.id">
                 {{ finish.name }}
@@ -72,14 +72,12 @@ import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useSocket } from '@/composables/useSocket';
 import { useCardPrintings } from '@/composables/useCardPrintings';
 import { debounce } from '@/utils/debounce';
-import { createCardSpecificationSchema } from '@/schema/server_types';
-import { createAddCardMessage, createCardPreferenceSchema, createCardSchema, createUpdateCardRequestPayload } from '../schema/server_types';
-
+import {createCardPreferenceSchema, 
+        createCardSpecificationSchema,
+        createCardSchema, 
+        createUpdateCardRequestPayload } from '@/schema/server_types.ts';
 const emit = defineEmits(['close']);
-
-// Get the entire socket manager from the composable.
-const socketManager = useSocket();
-const { addCard } = socketManager;
+const socket = useSocket();
 
 // --- Local State ---
 const cardName = ref('');
@@ -105,9 +103,10 @@ const {
 
 // 1. Debounce the search function to avoid spamming the server while typing.
 const debouncedSearch = debounce((query) => {
-  if (query.length > 2 && socketManager.socket) {
-    console.log(`[AddCardModal] 📡 Searching for card names matching: ${query}`);
-    socketManager.socket.emit('search_card_names', { query });
+if (query.length > 2) {
+    console.log(`[AddCardModal] 📡 Searching for: ${query}`);
+    // This is now type-safe!
+    socket.emitMessage('search_card_names', { query });
   }
 }, 300);
 
@@ -118,14 +117,14 @@ watch(cardName, (newQuery) => {
 });
 
 onMounted(() => {
-  socketManager.socket?.on('card_name_search_results', (data) => {
+  socket.socket?.on('card_name_search_results', (data) => {
     console.log(`[AddCardModal] 📩 Received search results:`, data.card_names);
     searchResults.value = data.card_names;
   });
 });
 
 onUnmounted(() => {
-  socketManager.socket?.off('card_name_search_results');
+  socket.socket?.off('card_name_search_results');
 });
 
 // --- Watchers to reset dependent dropdowns ---
@@ -144,33 +143,38 @@ watch(selectedCollectorNumber, () => {
 // --- Save Logic ---
 
 const handleSave = () => {
+  // ... validation ...
+
   error.value = null;
-  if (amount.value < 1) {
-    error.value = 'Amount must be at least 1.';
-    return;
+  if (!cardName.value || cardName.value.trim() === '') {
+    error.value = 'Card name is required.'; // This triggers the UI update
+    return; // This stops the code from sending a message to the server
   }
+  
+  // 1. Build the leaf nodes (ensure these use the {fields} pattern if they are also auto-gen)
+  const spec = createCardSpecificationSchema({
+    set_code: selectedSet.value || undefined,
+    collector_number: selectedCollectorNumber.value || undefined,
+    finish: selectedFinish.value
+  });
 
-  // Create the specification using the factory
-  // We convert empty strings to undefined to match the schema's optional fields
-  const spec = createCardSpecificationSchema(
-    selectedSet.value || undefined,
-    selectedCollectorNumber.value || undefined,
-    selectedFinish.value
-  );
+  const card = createCardSchema(cardName.value);
 
-  const cardData = createAddCardMessage(
-    createUpdateCardRequestPayload(
-      "add", 
-      createCardPreferenceSchema(
-        createCardSchema(
-          cardName.value),
-        amount.value,
-        spec),
-    ),
-  );
+  // 2. Build the Preference
+  const preference = createCardPreferenceSchema({
+    card,
+    amount: amount.value,
+    specifications: spec // check if your backend renamed this to 'specifications' or 'spec'
+  });
 
-  console.log(`[AddCardModal] 💾 Calling addCard with:`, cardData);
-  addCard(cardData);
+  // 3. Build the Payload (The one we just fixed!)
+  const payload = createUpdateCardRequestPayload({
+    command: "add", 
+    update_data: preference
+  });
+
+  // 4. EMIT
+  socket.emitMessage('update_card', payload);
   emit('close');
 };
 

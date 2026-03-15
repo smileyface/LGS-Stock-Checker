@@ -1,12 +1,14 @@
 <template>
     <BaseLayout :title="pageTitle">
-        <AddCardModal v-if="isAddModalVisible" 
+        <AddCardModal
+v-if="isAddModalVisible" 
             ref="addCardModalRef" 
             @save-card="saveCard" 
             @close="isAddModalVisible = false" />
-        <EditCardModal v-if="cardToEdit" 
-            :card-to-edit="cardToEdit" 
+        <EditCardModal
+v-if="cardToEdit" 
             ref="editCardModalRef" 
+            :card-to-edit="cardToEdit" 
             @update-card="updateCard" /> 
         <InStockModal 
             ref="inStockModalRef"
@@ -18,7 +20,7 @@
             <p>Welcome, <strong>{{ username }}</strong>!</p>
 
             <h2>Your Tracked Cards</h2>
-            <table class="table table-striped table-bordered" id="cardTable">
+            <table id="cardTable" class="table table-striped table-bordered">
                 <thead>
                     <tr>
                         <th style="width: 80px;"></th> <th>Amount</th>
@@ -30,11 +32,11 @@
                     </tr>
                 </thead>
                 <tbody @dblclick="handleTableDoubleClick">
-                    <tr v-for="card in trackedCards" :key="card.card_name">
+                    <tr v-for="card in trackedCards" :key="card.card.name">
                         <td>
                             <div class="action-buttons">
                                 <button class="btn btn-sm btn-light" title="Edit" @click="editCard(card)">✏️</button>
-                                <button class="btn btn-sm btn-light" title="Delete" @click="deleteCard(card.card_name)">❌</button>
+                                <button class="btn btn-sm btn-light" title="Delete" @click="deleteCard(card)">❌</button>
                             </div>
                         </td>
                         <td>{{ card.amount }}</td>
@@ -42,7 +44,18 @@
                         <td>{{ card.specifications?.[0]?.set_code || "Any" }}</td>
                         <td>{{ card.specifications?.[0]?.collector_number || "Any" }}</td>
                         <td>{{ card.specifications?.[0]?.finish || "Non-Foil" }}</td>
-                        <td v-html="renderAvailability(card.card_name)"></td>
+                        <td>
+                            <span v-if="availabilityMap[card.card.name]?.status === 'searching'" class="badge bg-info text-dark d-inline-flex align-items-center">
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                Searching
+                            </span>
+                            <span v-else-if="availabilityMap[card.card.name]?.status === 'completed' && availabilityMap[card.card.name]?.items?.length > 0" class="badge bg-success available-badge" style="cursor: pointer;" :data-card-name="card.card.name">
+                                Available
+                            </span>
+                            <span v-else class="badge bg-secondary">
+                                Not Available
+                            </span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -84,24 +97,6 @@ const {
     getStockData
 } = useSocket();
 
-function renderAvailability(cardName) {
-    const availability = availabilityMap.value[cardName];
-
-    // 1. Explicitly check for 'searching' status
-    if (availability && availability.status === 'searching') {
-        return `<span class="badge bg-info text-dark d-inline-flex align-items-center">
-                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                    Searching</span>`;
-    }
-
-    // 2. Check for 'Available' status
-    if (availability && availability.status === 'completed' && availability.items && availability.items.length > 0) {
-        return `<span class="badge bg-success available-badge" style="cursor: pointer;" data-card-name="${cardName}">Available</span>`;
-    }
-
-    // 3. Default to 'Not Available' for all other cases (e.g., not yet searched, or completed with no items)
-    return '<span class="badge bg-secondary">Not Available</span>';
-}
 
 function editCard(card) {
     console.log(`✏️ Opening edit modal for: ${card.card_name}`);

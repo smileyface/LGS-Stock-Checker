@@ -10,7 +10,6 @@ from ..blocks import (
 
 class Payload(BaseModel):
     """Base class for all messaging payloads."""
-
     pass
 
 
@@ -104,6 +103,17 @@ class CatalogFinishesChunkPayload(Payload):
     finishes: list[str] = Field(..., description="A list of unique finishes.")
 
 
+class CardPrintingsDataPayload(Payload):
+    """
+    Payload for the 'card_printings_data' event.
+    Provides all valid printings for a specific card name.
+    """
+    card_name: str = Field(..., description="The name of the card.")
+    printings: List[
+            Dict[str, Any]
+            ] = Field(..., description="The list of valid printings.")
+
+
 class CatalogPrintingsChunkPayload(Payload):
     """
     Payload for a chunk of printings data to be processed.
@@ -151,6 +161,13 @@ class LoginUserPayload(Payload):
 
     user: UserSchema = Field(..., description="The user data.")
     password: str = Field(..., description="The user's password.")
+
+
+class GetCardsPayload(Payload):
+    """
+    Payload for getting a card
+    """
+    user: UserSchema = Field(..., description="The User")
 
 
 class UpdateStoresPayload(Payload):

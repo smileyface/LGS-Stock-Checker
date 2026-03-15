@@ -1,8 +1,9 @@
 from flask_login import current_user
+from flask_socketio import join_room
 from pydantic import ValidationError
 
 from utility import logger
-from schema.messaging import messages
+from schema.messaging import messages, payload
 from data import database
 from data.database import exceptions
 from managers import user_manager
@@ -55,7 +56,8 @@ def handle_get_card_printings(data: dict):
 
     printings = database.get_printings_for_card(card_name)
     response_data = {"card_name": card_name, "printings": printings}
-    message = messages.CardPrintingsDataMessage(payload=response_data)
+    message = messages.CardPrintingsDataMessage(
+        payload=payload.CardPrintingsDataPayload(**response_data))
     emit_message(message)
     logger.info(f"📡 Sent {len(printings)} printings for '{card_name}'.")
 
@@ -112,14 +114,24 @@ def handle_get_card_availability(data: dict = {}):
 
 
 @socketio.on("get_cards")
-def handle_get_cards():
+def handle_get_cards(data: dict):
     """Handles a request to retrieve the user's tracked cards."""
     logger.info("📩 Received 'get_cards' request from front end.")
-    username = get_username()
-    if username:
-        send_user_cards(username)
-    else:
-        logger.warning("🚨 No username found for 'get_cards' request.")
+
+    try:
+        data_payload = payload.GetCardsPayload.model_validate(
+            data.get("payload", {}))
+
+        username = data_payload.user.username
+
+        if username:
+            join_room(username)
+            send_user_cards(username)
+        else:
+            logger.warning("🚨 No username found in GetCardsPayload.")
+
+    except ValidationError as e:
+        logger.error(f"❌ Failed to validate get_cards payload: {e}")
 
 
 @socketio.on("search_card_names")

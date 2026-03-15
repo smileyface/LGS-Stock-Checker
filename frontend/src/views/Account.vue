@@ -9,23 +9,23 @@
             <div class="row">
                 <div class="col-md-6">
                     <h2 class="h4">Update Username</h2>
-                    <form @submit.prevent="handleUpdateUsername" class="mb-4">
+                    <form class="mb-4" @submit.prevent="handleUpdateUsername">
                         <div class="mb-3">
                             <label for="new_username" class="form-label">New Username</label>
-                            <input type="text" id="new_username" class="form-control" v-model="newUsername" placeholder="Enter new username">
+                            <input id="new_username" v-model="newUsername" type="text" class="form-control" placeholder="Enter new username">
                         </div>
                         <button type="submit" class="btn btn-primary">Update Username</button>
                     </form>
 
                     <h2 class="h4">Update Password</h2>
-                    <form @submit.prevent="handleUpdatePassword" class="mb-4">
+                    <form class="mb-4" @submit.prevent="handleUpdatePassword">
                         <div class="mb-3">
                             <label for="current_password" class="form-label">Current Password</label>
-                            <input type="password" id="current_password" class="form-control" v-model="currentPassword" placeholder="Current Password">
+                            <input id="current_password" v-model="currentPassword" type="password" class="form-control" placeholder="Current Password">
                         </div>
                         <div class="mb-3">
                             <label for="new_password" class="form-label">New Password</label>
-                            <input type="password" id="new_password" class="form-control" v-model="newPassword" placeholder="New Password">
+                            <input id="new_password" v-model="newPassword" type="password" class="form-control" placeholder="New Password">
                         </div>
                         <button type="submit" class="btn btn-primary">Update Password</button>
                     </form>
@@ -39,7 +39,7 @@
                             <label v-for="store in allStores" :key="store" class="list-group-item d-flex align-items-center justify-content-between">
                                 <span>{{ store }}</span>
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input store-checkbox" type="checkbox" name="stores" :value="store" :id="'store_' + store" v-model="selectedStores">
+                                    <input :id="'store_' + store" v-model="selectedStores" class="form-check-input store-checkbox" type="checkbox" name="stores" :value="store">
                                 </div>
                             </label>
                         </div>

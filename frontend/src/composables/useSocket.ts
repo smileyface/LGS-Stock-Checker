@@ -1,158 +1,158 @@
-import { ref, readonly, Ref } from 'vue';
+import { ref, readonly} from 'vue';
 import { io, Socket } from 'socket.io-client';
-import {
-    createCardPreferenceSchema,
-    createUpdateCardRequest,
-    createUpdateCardRequestPayload,
-    createDeleteCardMessage,
-    createCardSchema
-} from '../schema/server_types';
-import type {
-    UserTrackedCardSchema,
-    CardPreferenceSchema,
+import { 
+    //Import Unions
+    APIMessages,
+    //Import Payloads
     UpdateCardRequestPayload,
-    CardSpecificationSchema,
-    AvailabilityResultPayload,
-    AddCardMessage,
-    DeleteCardMessage,
-    CardsDataMessage
-} from '../schema/server_types'; // Adjust path if needed
+    //Import Requests
+    CardPreferenceSchema,
+    UpdateCardRequest,
+    CardsDataMessage,
+    //Creation functions
+    createGetCardsPayload,
+    createUserSchema,
 
-// --- Wire Types (To handle current backend response format) ---
-// This matches what backend/managers/user_manager/user_cards.py currently emits.
-interface WireUserTrackedCard {
-    card_name: string;
-    amount: number;
-    specifications: CardSpecificationSchema[];
-}
-
-interface WireCardsDataPayload {
-    username: string;
-    tracked_cards: WireUserTrackedCard[];
-}
-
-// --- Local Types for State ---
-interface AvailabilityStatus {
-    status: 'searching' | 'completed' | 'stalled';
-    items: any[];
-}
+} from '../schema/server_types';
 
 // --- State ---
-const trackedCards: Ref<UserTrackedCardSchema[]> = ref([]);
-const availabilityMap: Ref<Record<string, AvailabilityStatus>> = ref({});
+const trackedCards = ref([]);
 const isConnected = ref(false);
 
+const handleIncomingCards = (message) => {
+    // 1. Log it so you can see the data in the browser console
+    console.log("📥 Received cards_data message:", message);
+
+    // 2. Extract the cards from the payload
+    // Based on your backend: payload = CardListPayload(cards=packed_cards)
+    const cardList = message.payload.cards;
+
+    if (!cardList || cardList.length === 0) {
+        console.warn("⚠️ Received an empty card list.");
+        return;
+    }
+
+    // 3. Map the data to your UI state
+
+    trackedCards.value = message.payload.cards;
+    console.log(`✅ Successfully loaded ${cardList.length} cards.`);
+    
+};
+
 // --- Socket Connection ---
-// const VITE_SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const socket: Socket = io({
     withCredentials: true,
     autoConnect: false
 });
 
-// --- Event Handlers ---
+// --- Connection Logic ---
 socket.on('connect', () => {
+    const username = localStorage.getItem("username");
     isConnected.value = true;
-    console.log("🔗 Connected to WebSocket Server!");
-    socket.emit("get_cards");
-    socket.emit("get_card_availability");
+    console.log("🔗 Connected!");
+    const user = createGetCardsPayload(createUserSchema(username))
+    emitMessage("get_cards", user);
 });
 
 socket.on('disconnect', () => {
     isConnected.value = false;
-    console.log("🔌 Disconnected from WebSocket Server");
 });
 
-socket.on('cards_data', (data: CardsDataMessage) => {
-    console.log("🛠️ Received 'cards_data' (Wire Format):", data);
+// --- Response Message Connecting ---
+socket.on("cards_data", (data: unknown) => handleIncomingCards(data as CardsDataMessage));
 
-    // TRANSFORM: Convert flat wire format to strictly typed Schema format
-    // This allows the rest of the frontend to use 'card.name' consistently.
-    const transformedCards: UserTrackedCardSchema[] = (data.payload.cards || []);
+// --- Emitter Functions (The "Clean" Way) ---
 
-    trackedCards.value = transformedCards;
-});
+/**
+ * Generic function to send card updates. 
+ * TypeScript will now ensure 'data' matches our Pydantic backend.
+ */
+function sendCardUpdate(payload: UpdateCardRequestPayload) {
+    const message: UpdateCardRequest = {
+        name: "update_card",
+        payload: payload
+    };
+    console.log("💾 Sending to Backend:", message);
+    socket.emit('update_card', message);
+}
 
-socket.on('availability_check_started', (data: { card: string }) => {
-    if (!data?.card) return;
-    const cardName = data.card;
-    const existingEntry = availabilityMap.value[cardName] || { items: [] };
-    availabilityMap.value[cardName] = { ...existingEntry, status: 'searching' };
-});
+// In your Auth Store or Login logic (NOT using emitMessage)
+/**
+async function login(credentials: LoginUserPayload) {
+    const response = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials) // Still using your Pydantic-aligned structure!
+    });
 
-socket.on('card_availability_data', (data: { card: string, store_slug: string, items: any[] }) => {
-    if (!data?.card || !data.store_slug) return;
-    const cardName = data.card;
-    const newItems = data.items || [];
-
-    if (!availabilityMap.value[cardName]) {
-        availabilityMap.value[cardName] = { status: 'completed', items: [] };
+    if (response.ok) {
+        // Now that we are logged in, we "Wake up" the socket
+        //connectSocket(); 
+        //TODO:Handle the socket connection 
     }
+}*/
 
-    const existingItems = availabilityMap.value[cardName].items || [];
-    // Replace items for this specific store
-    const otherStoreItems = existingItems.filter(item => item.store_slug !== data.store_slug);
-    const itemsForCurrentStore = newItems.map(item => ({ ...item, store_slug: data.store_slug }));
-
-    availabilityMap.value[cardName].items = [...otherStoreItems, ...itemsForCurrentStore];
-    availabilityMap.value[cardName].status = 'completed';
-});
-
-socket.on('stock_data', (data: { card_name: string, items: any[] }) => {
-    // Handle aggregate stock data if needed
-    console.log(`📦 Received stock data for ${data.card_name}`);
-});
-
-// --- Emitter Functions ---
-
-function addCard(cardData: AddCardMessage) {
-    // Backend expects strict Pydantic structure now
-    console.log("💾 Emitting 'add_card' with data:", cardData);
-    socket.emit('add_card', cardData);
+// Specific helpers that use the generic function above
+function addCard(preference: CardPreferenceSchema) {
+    sendCardUpdate({ command: 'add', update_data: preference });
 }
 
-function updateCard(cardData: CardPreferenceSchema) {
-    console.log("🔄 Emitting 'update_card' with data:", cardData);
-    const payload = createUpdateCardRequest(
-        createUpdateCardRequestPayload(
-            "update",
-            // cardData is already a CardPreferenceSchema, so we pass it directly
-            cardData
-        )
-    );
-    socket.emit('update_card', payload);
+function updateCard(preference: CardPreferenceSchema) {
+    sendCardUpdate({ command: 'update', update_data: preference });
 }
 
-function deleteCard(cardName: string) {
-    // We construct the full message required for deletion
-    const payload = createDeleteCardMessage(
-        createUpdateCardRequestPayload(
-            "delete",
-            createCardPreferenceSchema(
-                createCardSchema(cardName),
-                0)
-        )
-    );
-    console.log("❌ Emitting 'delete_card' with data:", payload);
-    socket.emit('delete_card', payload);
+function deleteCard(preference: CardPreferenceSchema) {
+    sendCardUpdate({ command: 'delete', update_data: preference });
 }
 
-function getStockData(cardName: string) {
-    socket.emit('stock_data_request', { card_name: cardName });
-}
-
+// --- The Composable ---
 export function useSocket() {
     if (!socket.connected) {
         socket.connect();
     }
 
     return {
-        socket,
         isConnected: readonly(isConnected),
         trackedCards: readonly(trackedCards),
-        availabilityMap: readonly(availabilityMap),
-        deleteCard,
+        // Exporting our new clean functions
         addCard,
         updateCard,
-        getStockData
+        deleteCard
     };
+}
+
+/**
+ * EMIT MESSAGE HELPER
+ * * How the 'payload' type works:
+ * 1. It takes the T (the message name, e.g., 'add_card').
+ * 2. It looks at the APIMessages union and builds a temporary "Lookup Table".
+ * 3. It maps every Message Name to its specific Payload type.
+ * 4. It then picks the exact Payload type that matches the 'name' you provided.
+ * * Why do it this way? 
+ * This prevents TypeScript from getting confused when multiple messages share 
+ * the same payload model. It's high-performance (zero runtime cost) and 
+ * provides 100% accurate autocomplete based on the Python Pydantic models.
+ * * If this is red: 
+ * Check 'server_types.ts' to ensure the message in question actually has 
+ * a 'payload' field defined in Python.
+ */
+function emitMessage<T extends APIMessages['name']>(
+    name: T, 
+    // This looks up the specific payload for the name provided
+    payload: { 
+    [K in APIMessages as K["name"]]: K extends { payload: infer P } ? P : never 
+}[T]
+) {
+    if (!socket.connected) {
+        console.error("🚫 Socket not connected!");
+        return;
+    }
+
+    // We construct the full Pydantic-ready object here
+    const message = { name, payload };
+
+    console.log(`📡 Emitting to [${name}]:`, message);
+    
+    // We emit to the channel 'name', sending the whole 'message' object
+    socket.emit(name, message);
 }

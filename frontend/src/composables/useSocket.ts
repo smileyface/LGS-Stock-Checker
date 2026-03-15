@@ -34,11 +34,7 @@ const handleIncomingCards = (message) => {
 
     // 3. Map the data to your UI state
 
-    trackedCards.value = message.payload.cards.map(item => ({
-        ...item,
-        specifications: item.card_specs || [], 
-        card_name: item.card.name 
-    }));
+    trackedCards.value = message.payload.cards;
     console.log(`✅ Successfully loaded ${cardList.length} cards.`);
     
 };

@@ -113,8 +113,6 @@ describe('useSocket Composable', () => {
         expect(trackedCards.value).toEqual([{
             amount: 1,
             card: { name: 'Sol Ring' },
-            card_name: 'Sol Ring', // Added by your composable
-            specifications: []     // Added by your composable
         }]);
     });
 

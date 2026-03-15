@@ -135,8 +135,6 @@ def test_handle_catalog_printings_chunk_result(
         }
     ])
 
-
-
 # --- Integration Tests ---
 
 

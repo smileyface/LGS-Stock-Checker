@@ -16,6 +16,7 @@ from .payload import (
     CardListPayload,
     GetCardsPayload,
     CardPrintingsDataPayload,
+    StockDataPayload,
 )
 
 
@@ -267,7 +268,7 @@ class StockDataMessage(APIMessage):
     """
 
     name: Literal["stock_data"] = "stock_data"
-    payload: Payload
+    payload: StockDataPayload
 
 
 class ErrorMessage(APIMessage):

@@ -1,3 +1,4 @@
+from backend.schema.blocks import CardListingSchema
 from typing import Any, Dict, Literal, Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 from ..blocks import (
@@ -178,3 +179,11 @@ class UpdateStoresPayload(Payload):
     stores: list[StoreSchema] = Field(...,
                                       description="A list of store slugs.")
     user: UserSchema = Field(..., description="The user data.")
+
+
+class StockDataPayload(Payload):
+    """
+    Payload for returning the stock for a user
+    """
+    card: CardSchema
+    cards_in_stock: list[CardListingSchema]

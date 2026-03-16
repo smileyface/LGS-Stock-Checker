@@ -4,27 +4,31 @@ This document provides a detailed reference for the data structures of the real-
 
 ## Requirement Directory
 
-| Requirement ID |            Name            |                                   Description                                    |
-|----------------|----------------------------|----------------------------------------------------------------------------------|
-| `[MPR-1.1.1]`  |`get_cards`                 | Requests the user's complete list of tracked cards.                              |
-| `[MPR-1.1.2]`  |`add_card`                  | Adds a new card to the user's tracked list.                                      |
-| `[MPR-1.1.3]`  |`update_card`               | Updates an existing tracked card's amount or specifications.                     |
-| `[MPR-1.1.4]`  |`delete_card`               | Removes a card from the user's tracked list.                                     |
-| `[MPR-1.1.5]`  |`search_card_names`         | Requests a list of card names for autocomplete functionality.                    |
-| `[MPR-1.1.6]`  |`get_card_availability`     | Triggers a check for the availability of all the user's tracked cards.           |
-| `[MPR-1.1.7]`  |`get_card_printings`        | Requests all valid printings for a given card name.                              |
-| `[MPR-1.1.8]`  |`update_stores`             | Updates the user's list of preferred stores.                                     |
-| `[MPR-1.1.9]`  |`stock_data_request`        | Requests aggregated stock details for a single card across all preferred stores. |
-| `[MPR-1.2.1]`  |`cards_data`                | Provides the client with the user's complete and updated list of tracked cards.  |
-| `[MPR-1.2.2]`  |`card_name_search_results`  | Returns a list of card names for autocomplete functionality.                     |
-| `[MPR-1.2.3]`  |`availability_check_started`| Notifies the client that a background availability check has started.            |
-| `[MPR-1.2.4]`  |`card_availability_data`    | Sends real-time stock information for a specific card from a store.              |
-| `[MPR-1.2.5]`  |`card_printings_data`       | Provides the client with all valid printings for a specific card.                |
-| `[MPR-1.2.6]`  |`user_stores_data`        | Provides the client with the user's list of preferred stores.            |
-| `[MPR-1.2.7]`  |`stock_data`              | Provides aggregated stock details for a card.                            |
-| `[MPR-1.2.8]`  |`error`                     | Sends an error message to the client for display.                                |
-| `[MPR-2.1.1]`  |`availability_request`      | Commands the Scheduler to enqueue a web scraping task.                           |
-| `[MPR-2.2.1]`  |`availability_result`       | Reports the results of a web scraping task to the Backend API.                   |
+| Requirement ID | Name                              | Description                                                                      |
+|----------------|-----------------------------------|----------------------------------------------------------------------------------|
+| `[MPR-1.1.1]`  | `get_cards`                       | Requests the user's complete list of tracked cards.                              |
+| `[MPR-1.1.2]`  | `add_card`                        | Adds a new card to the user's tracked list.                                      |
+| `[MPR-1.1.3]`  | `update_card`                     | Updates an existing tracked card's amount or specifications.                     |
+| `[MPR-1.1.4]`  | `delete_card`                     | Removes a card from the user's tracked list.                                     |
+| `[MPR-1.1.5]`  | `search_card_names`               | Requests a list of card names for autocomplete functionality.                    |
+| `[MPR-1.1.6]`  | `get_card_availability`           | Triggers a check for the availability of all the user's tracked cards.           |
+| `[MPR-1.1.7]`  | `get_card_printings`              | Requests all valid printings for a given card name.                              |
+| `[MPR-1.1.8]`  | `update_stores`                   | Updates the user's list of preferred stores.                                     |
+| `[MPR-1.1.9]`  | `stock_data_request`              | Requests aggregated stock details for a single card across all preferred stores. |
+| `[MPR-1.1.10]` | `parse_card_list`                 | Submits a raw text list of cards to be parsed.                                   |
+| `[MPR-1.1.11]` | `login_user_me`                   | Authenticates the current user session.                                          |
+| `[MPR-1.2.1]`  | `cards_data`                      | Provides the client with the user's complete and updated list of tracked cards.  |
+| `[MPR-1.2.2]`  | `card_name_search_results`        | Returns a list of card names for autocomplete functionality.                     |
+| `[MPR-1.2.3]`  | `availability_check_started`      | Notifies the client that a background availability check has started.            |
+| `[MPR-1.2.4]`  | `card_availability_data`          | Sends real-time stock information for a specific card from a store.              |
+| `[MPR-1.2.5]`  | `card_printings_data`             | Provides the client with all valid printings for a specific card.                |
+| `[MPR-1.2.6]`  | `user_stores_data`                | Provides the client with the user's list of preferred stores.                    |
+| `[MPR-1.2.7]`  | `stock_data`                      | Provides aggregated stock details for a card.                                    |
+| `[MPR-1.2.8]`  | `error`                           | Sends an error message to the client for display.                                |
+| `[MPR-2.1.1]`  | `availability_request`            | Commands the Scheduler to enqueue a web scraping task.                           |
+| `[MPR-2.1.2]`  | `queue_all_availability_checks`   | Commands the Scheduler to queue checks for all tracked cards.                    |
+| `[MPR-2.2.1]`  | `availability_result`             | Reports the results of a web scraping task to the Backend API.                   |
+| `[MPR-2.2.2]`  | `catalog_*_result`                | Reports the results of various catalog population tasks.                         |
 
 ---
 
@@ -40,7 +44,15 @@ These are messages the client sends to the server.
 
 Requests the user's complete list of tracked cards.
 
-* **Schema:** `None`
+* **Schema:**
+
+    ```json
+    {
+      "user": {
+        "username": "string"
+      }
+    }
+    ```
 
 #### `add_card`
 
@@ -50,12 +62,23 @@ Adds a new card to the user's tracked list.
 
     ```json
     {
-      "card": "Card Name",
-      "amount": 1,
-      "card_specs": {
-        "set_code": "M21",
-        "collector_number": "123",
-        "finish": "foil"
+      "command": "add",
+      "update_data": {
+        "card": {
+          "name": "Card Name"
+        },
+        "amount": 1,
+        "card_specs": [
+          {
+            "set_code": {
+              "code": "M21"
+            },
+            "collector_number": "123",
+            "finish": {
+              "name": "foil"
+            }
+          }
+        ]
       }
     }
     ```
@@ -68,19 +91,26 @@ Updates an existing tracked card's amount or specifications.
 
     ```json
     {
-      "card": "Card Name",
+      "command": "update",
       "update_data": {
+        "card": {
+          "name": "Card Name"
+        },
         "amount": 2,
-        "specifications": [
-            //for set 2X2 with a non-foil finish
-            {
-            "set_code": "2X2",
-            "finish": "non-foil"
+        "card_specs": [
+          {
+            "set_code": {
+              "code": "2X2"
             },
-            //for any etched finish
-            {
-                "finish": "etched"
+            "finish": {
+              "name": "non-foil"
             }
+          },
+          {
+            "finish": {
+              "name": "etched"
+            }
+          }
         ]
       }
     }
@@ -94,7 +124,12 @@ Removes a card from the user's tracked list.
 
     ```json
     {
-      "card": "Card Name"
+      "command": "delete",
+      "update_data": {
+        "card": {
+          "name": "Card Name"
+        }
+      }
     }
     ```
 
@@ -124,7 +159,9 @@ Requests all valid printings for a given card name.
 
     ```json
     {
-        "card_name": "Card Name"
+        "card": {
+            "name": "Card Name"
+        }
     }
     ```
 
@@ -136,7 +173,19 @@ Updates the user's list of preferred stores.
 
     ```json
     {
-        "stores": ["slug-1", "slug-2"]
+        "stores": [
+            {
+                "slug": "slug-1",
+                "name": "Store One"
+            },
+            {
+                "slug": "slug-2",
+                "name": "Store Two"
+            }
+        ],
+        "user": {
+            "username": "string"
+        }
     }
     ```
 
@@ -152,6 +201,33 @@ Requests aggregated stock details for a single card across all preferred stores.
     }
     ```
 
+#### `parse_card_list`
+
+Parses a raw text string representing a card list.
+
+* **Schema:**
+
+    ```json
+    {
+        "raw_list": "1x Card Name (SET) 123 *foil*"
+    }
+    ```
+
+#### `login_user_me`
+
+Authenticates the requesting client.
+
+* **Schema:**
+
+    ```json
+    {
+        "user": {
+            "username": "string"
+        },
+        "password": "string"
+    }
+    ```
+
 ### 1.2. Server-to-Client Events
 
 These are messages the server sends to the client.
@@ -164,17 +240,24 @@ Provides the client with the user's complete and updated list of tracked cards. 
 
     ```json
     {
-        "username": "string",
-        "tracked_cards": [
+        "cards": [
             {
-                "card_name": "string",
+                "card": {
+                    "name": "string"
+                },
                 "amount": "integer",
-                "specifications":
-                {
-                    "set_code": "string | null",
-                    "collector_number": "string | null",
-                    "finish": "string | null"
-                }
+                "card_specs": [
+                    {
+                        "set_code": {
+                            "code": "string",
+                            "name": "string"
+                        },
+                        "collector_number": "string",
+                        "finish": {
+                            "name": "string"
+                        }
+                    }
+                ]
             }
         ]
     }
@@ -188,8 +271,7 @@ Returns a list of autocomplete suggestions in response to a `search_card_names` 
 
     ```json
     {   
-        "query": "string", 
-        "card_names": ["string"]
+        "names": ["string"]
     }
     ```
 
@@ -214,9 +296,17 @@ Sends real-time stock information for a specific card from a specific store. Thi
 
     ```json
     {
-      "username": "string",
-      "store_slug": "string",
-      "card": "string (Card Name)",
+      "card": {
+        "card": {
+            "name": "Card Name"
+        },
+        "amount": 1,
+        "card_specs": null
+      },
+      "store": {
+        "slug": "store-slug",
+        "name": "Store Name"
+      },
       "items": [
         {
           "price": "float",
@@ -325,15 +415,29 @@ Commands the Scheduler to enqueue a web scraping task for a specific card at a s
     {
         "command": "availability_request",
         "payload": {
-            "username": "string",
-            "store_slug": "string",
+            "user": {
+                "username": "string"
+            },
+            "store": {
+                "slug": "string",
+                "name": "string"
+            },
             "card_data": {
-                "card_name": "string",
-                "specifications": "object | null"
+                "card": {
+                    "name": "string"
+                },
+                "amount": "integer",
+                "card_specs": "array | null"
             }
         }
     }
     ```
+
+#### `queue_all_availability_checks`
+
+Commands the Scheduler to queue availability checks for all tracked cards for users.
+
+* **Schema:** `None`
 
 ### 2.2. `worker-results` Channel
 
@@ -347,9 +451,38 @@ Reports the results of a web scraping task to the Backend API for caching and po
 
     ```json
     {
-        "username": "string",
-        "store_slug": "string",
-        "card": "string (Card Name)",
-        "items": "array"
+        "card": {
+            "card": { "name": "string" },
+            "amount": "integer",
+            "card_specs": "array | null"
+        },
+        "store": {
+            "slug": "string",
+            "name": "string"
+        },
+        "items": [
+            {
+                "name": "string",
+                "set_code": "string",
+                "collector_number": "string",
+                "finish": "string",
+                "price": "float",
+                "condition": "string",
+                "quantity": "integer",
+                "url": "string"
+            }
+        ]
+    }
+    ```
+
+#### Catalog Tasks
+
+Report results for catalog population functions like `catalog_card_names_result`, `catalog_set_data_result`, `catalog_printings_chunk_result`, and `catalog_finishes_chunk_result`.
+
+* **Schema (e.g. `catalog_card_names_result`):**
+
+    ```json
+    {
+        "names": ["string"]
     }
     ```

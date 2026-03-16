@@ -144,10 +144,10 @@ class CardListingSchema(BaseModel):
     """
 
     model_config = ConfigDict(from_attributes=True)
-    name: str = Field(..., description="The name of the card.")
-    set_code: str = Field(..., description="The set code of the card.")
+    set_code: SetSchema = Field(..., description="The set code of the card.")
     collector_number: str = Field(..., description="The collector number.")
-    finish: str = Field(..., description="The finish type of the card.")
+    finish: FinishSchema = Field(...,
+                                 description="The finish type of the card.")
     price: float = Field(..., gt=0, description="The price of the card.")
     condition: str = Field(..., description="The condition of the card.")
     quantity: int = Field(..., gt=0, description="The quantity available.")

@@ -4,9 +4,9 @@ Unit tests for the CrystalCommerceStore base scraper.
 
 import unittest
 from unittest.mock import patch, MagicMock
-from schema.blocks import CardListingSchema
 from bs4 import BeautifulSoup
 
+from schema.blocks import CardListingSchema
 from managers.store_manager.stores.storefronts.crystal_commerce_store import (
     CrystalCommerceStore,
 )

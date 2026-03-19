@@ -1,4 +1,3 @@
-from backend.schema.blocks import CardListingSchema
 from typing import Any, Dict, Literal, Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 from ..blocks import (
@@ -6,6 +5,7 @@ from ..blocks import (
     UserSchema,
     CardPreferenceSchema,
     StoreSchema,
+    CardListingSchema,
 )
 
 

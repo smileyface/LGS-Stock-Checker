@@ -14,6 +14,7 @@ import requests
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 from managers import set_manager
+from data.database import get_set
 from utility import logger
 
 from ..store import Store
@@ -162,16 +163,10 @@ class CrystalCommerceStore(Store):
                         continue
 
                     try:
-                        listing = CardListingSchema(
+                        listing = CardListingSchema.from_raw_data(
                             url=full_product_url,
-                            name=scraped_card_name,
-                            set_code=static_details.get("set_code") or "",
-                            collector_number=static_details.get(
-                                "collector_number") or "",
-                            finish=variant_details.get("finish", "non-foil"),
-                            price=price,
-                            condition=variant_details.get("condition") or "",
-                            quantity=quantity
+                            static_details=static_details,
+                            variant_details=variant_details
                         )
                         listing_key = (
                             listing.url, listing.condition, listing.finish)
@@ -211,7 +206,8 @@ class CrystalCommerceStore(Store):
         # Handle cases where the set name might not be found.
         raw_set_name = get_detail("set-name")
         details["set_code"] = (
-            set_manager.set_code(raw_set_name) if raw_set_name else None
+            get_set(set_name=raw_set_name) if
+            raw_set_name else None
         )
 
         card_number_raw = get_detail("card-number")

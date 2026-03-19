@@ -59,6 +59,7 @@ from .repositories.catalogue_repository import (
     is_valid_printing_specification,
     get_chunk_printing_ids,
     get_chunk_finish_ids,
+    get_set,
 )
 
 # Define the public API of the `data.database` package.
@@ -111,4 +112,5 @@ __all__ = [
     "is_card_in_catalog",
     "get_chunk_printing_ids",
     "get_chunk_finish_ids",
+    "get_set",
 ]

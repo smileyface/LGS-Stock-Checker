@@ -152,3 +152,34 @@ class CardListingSchema(BaseModel):
     condition: str = Field(..., description="The condition of the card.")
     quantity: int = Field(..., gt=0, description="The quantity available.")
     url: str = Field(..., description="URL to the listing.")
+
+    @classmethod
+    def from_raw_data(
+        cls,
+        url: str,
+        static_details: dict,
+        variant_details: dict
+    ) -> "CardListingSchema":
+        """
+        Factory method to safely build a listing from scraper dictionaries.
+        """
+        # 1. Handle SetSchema (Needs 'code' or 'name')
+        set_code_val = static_details.get("set_code")
+        set_name_val = static_details.get("set_name")
+        # Build the object using kwargs because it's a BaseModel
+        set_obj = SetSchema(code=set_code_val, name=set_name_val)
+
+        # 2. Handle FinishSchema (Needs the literal 'name')
+        # We ensure it defaults to 'non-foil' if missing or empty
+        finish_val = variant_details.get("finish") or "non-foil"
+        finish_obj = FinishSchema(name=finish_val)
+
+        return cls(
+            url=url,
+            set_code=set_obj,
+            collector_number=str(static_details.get("collector_number") or ""),
+            finish=finish_obj,
+            price=float(variant_details.get("price", 0.0)),
+            condition=variant_details.get("condition", "Unknown"),
+            quantity=int(variant_details.get("quantity", 0))
+        )
